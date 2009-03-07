@@ -1,0 +1,16 @@
+= Treequel
+
+Treequel is a Sequel-like DSL library for interacting with hierarchical datasets. It's mostly experimental still. 
+
+You can check out the current development source with Subversion from the
+following URL:
+
+    svn://deveiate.org/Treequel/trunk
+
+The project page is also likely to have more details:
+
+    http://deveiate.org/projects/Treequel
+
+== License
+
+See the LICENSE file in the same directory for licensing details.
