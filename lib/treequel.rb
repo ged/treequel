@@ -32,7 +32,11 @@ module Treequel
 
 
 	# Load the logformatters and some other stuff first
+	require 'treequel/constants'
 	require 'treequel/utils'
+
+	include Treequel::Constants
+
 
 	### Logging 
 	@default_logger = Logger.new( $stderr )
@@ -79,9 +83,6 @@ module Treequel
 		vstring << " (build %d)" % [ SVNRev[/\d+/].to_i ] if include_buildnum
 		return vstring
 	end
-
-
-	
 
 end # module Treequel
 

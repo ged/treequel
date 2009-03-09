@@ -15,7 +15,8 @@ module Treequel::TestConstants # :nodoc:all
 		
 		TEST_BIND_DN   = "cn=admin,#{TEST_BASE_DN}"
 		TEST_BIND_PASS = 'passomaquoddy'
-		
+
+		TEST_PEOPLE_DN = 'uid=arogers,ou=people,o=Acme'
 
 		constants.each do |cname|
 			const_get(cname).freeze

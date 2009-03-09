@@ -4,13 +4,11 @@ require 'ldap'
 
 require 'treequel' 
 require 'treequel/mixins'
+require 'treequel/constants'
 
 
 # The object in Treequel that represents a connection to a directory, the
 # binding to that directory, and the base from which all DNs start.
-# 
-# 
-# 
 # 
 # == Subversion Id
 #
@@ -27,7 +25,8 @@ require 'treequel/mixins'
 # Please see the file LICENSE in the BASE directory for licensing details.
 #
 class Treequel::Directory
-	include Treequel::Loggable
+	include Treequel::Loggable,
+	        Treequel::Constants
 
 
 	# SVN Revision
@@ -148,6 +147,24 @@ class Treequel::Directory
 	end
 
 
+	### Given a Treequel::Branch object, find its corresponding LDAP::Entry and return
+	### it.
+	def get_entry( branch )
+		base = branch.base
+		filter = branch.attr_pair
+		
+		return self.conn.search2( base, SCOPE[:onelevel], filter ).first
+	end
+	
+	
+	### Perform a +scope+ search at +base+ using the specified +filter+. The +scope+ argument
+	### can be one of +:onelevel+, +:base+, or +:subtree+.
+	def search( base, scope, filter )
+		
+	end
+	
+	
+
 	#########
 	protected
 	#########
@@ -181,6 +198,6 @@ class Treequel::Directory
 		@conn = original_conn
 	end
 
-end # module Treequel
+end # class Treequel::Directory
 
 

@@ -28,13 +28,14 @@ end
 
 
 include Treequel::TestConstants
-# include Treequel::Constants
+include Treequel::Constants
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
 describe Treequel, "mixin" do
+	include Treequel::SpecHelpers
 
 	describe Treequel::Loggable, "mixed into a class" do
 		before(:each) do
@@ -141,6 +142,113 @@ describe Treequel, "mixin" do
 			result.should_not be_equal( testarray )
 			result.should == [:a, :b, :c, [:d, :e, [:f, :g]]]
 		end
+	end
+
+
+	describe Treequel::Delegation do
+		
+		before( :all ) do
+			setup_logging( :debug )
+		end
+		after( :all ) do
+			reset_logging()
+		end
+		
+		describe "method delegation" do
+			before( :all ) do
+				@testclass = Class.new do
+					extend Treequel::Delegation
+				
+					def initialize( obj )
+						@obj = obj
+					end
+				
+					def_method_delegators :demand_loaded_object, :delegated_method
+					def_method_delegators :nonexistant_method, :erroring_delegated_method
+								
+					def demand_loaded_object
+						return @obj
+					end
+				end
+			end
+		
+			before( :each ) do
+				@subobj = mock( "delegate" )
+				@obj = @testclass.new( @subobj )
+			end
+		
+		
+			it "can be used to set up delegation through a method" do
+				@subobj.should_receive( :delegated_method )
+				@obj.delegated_method
+			end
+
+			it "passes any arguments through to the delegate object's method" do
+				@subobj.should_receive( :delegated_method ).with( :arg1, :arg2 )
+				@obj.delegated_method( :arg1, :arg2 )
+			end
+			
+			it "reports errors from its caller's perspective" do
+				begin
+					@obj.erroring_delegated_method
+				rescue NoMethodError => err
+					err.message.should =~ /nonexistant_method/
+					err.backtrace.first.should =~ /#{__FILE__}/
+				rescue ::Exception => err
+					fail "Expected a NoMethodError, but got a %p (%s)" % [ err.class, err.message ]
+				else
+					fail "Expected a NoMethodError, but no exception was raised."
+				end
+			end
+			
+		end
+
+		describe "instance variable delegation (ala Forwardable)" do
+			before( :all ) do
+				@testclass = Class.new do
+					extend Treequel::Delegation
+				
+					def initialize( obj )
+						@obj = obj
+					end
+				
+					def_ivar_delegators :@obj, :delegated_method
+					def_ivar_delegators :@glong, :erroring_delegated_method
+								
+				end
+			end
+		
+			before( :each ) do
+				@subobj = mock( "delegate" )
+				@obj = @testclass.new( @subobj )
+			end
+		
+		
+			it "can be used to set up delegation through a method" do
+				@subobj.should_receive( :delegated_method )
+				@obj.delegated_method
+			end
+			
+			it "passes any arguments through to the delegate's method" do
+				@subobj.should_receive( :delegated_method ).with( :arg1, :arg2 )
+				@obj.delegated_method( :arg1, :arg2 )
+			end
+			
+			it "reports errors from its caller's perspective" do
+				begin
+					@obj.erroring_delegated_method
+				rescue NoMethodError => err
+					err.message.should =~ /`erroring_delegated_method' for nil/
+					err.backtrace.first.should =~ /#{__FILE__}/
+				rescue ::Exception => err
+					fail "Expected a NoMethodError, but got a %p (%s)" % [ err.class, err.message ]
+				else
+					fail "Expected a NoMethodError, but no exception was raised."
+				end
+			end
+			
+		end
+		
 	end
 
 end
