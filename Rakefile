@@ -4,7 +4,7 @@
 #
 # Based on various other Rakefiles, especially one by Ben Bleything
 #
-# Copyright (c) 2008 The FaerieMUD Consortium
+# Copyright (c) 2007-2009 The FaerieMUD Consortium
 #
 # Authors:
 #  * Michael Granger <ged@FaerieMUD.org>
@@ -21,15 +21,13 @@ BEGIN {
 	$LOAD_PATH.unshift( extdir.to_s ) unless $LOAD_PATH.include?( extdir.to_s )
 }
 
-require 'rubygems'
-gem 'rake', '>= 0.8.3'
-
 require 'rbconfig'
 require 'rake'
 require 'rake/rdoctask'
 require 'rake/testtask'
 require 'rake/packagetask'
 require 'rake/clean'
+require 'rake/191_compat.rb'
 
 $dryrun = false
 
@@ -133,6 +131,7 @@ RDOC_OPTIONS = [
 	'-SHN',
 	'-i', '.',
 	'-m', 'README',
+	'-t', PKG_NAME,
 	'-W', 'http://deveiate.org/projects/Treequel/browser/trunk/'
   ]
 
@@ -183,10 +182,10 @@ GEMSPEC   = Gem::Specification.new do |gem|
 	gem.version           = PKG_VERSION
 
 	gem.summary           = PKG_SUMMARY
-	gem.description       = <<-EOD
-	A Sequel-like DSL library for interacting with hierarchical datasets. It's mostly experimental
-	still.
-	EOD
+	gem.description       = [
+		"A Sequel-like DSL library for interacting with hierarchical datasets. It's mostly experimental",
+		"still.",
+  	  ].join( "\n" )
 
 	gem.authors           = 'Michael Granger'
 	gem.email             = 'ged@FaerieMUD.org'

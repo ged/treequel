@@ -32,7 +32,7 @@ module Treequel
 
 
 	# Load the logformatters and some other stuff first
-	require 'redleaf/utils'
+	require 'treequel/utils'
 
 	### Logging 
 	@default_logger = Logger.new( $stderr )
@@ -79,6 +79,9 @@ module Treequel
 		vstring << " (build %d)" % [ SVNRev[/\d+/].to_i ] if include_buildnum
 		return vstring
 	end
+
+
+	
 
 end # module Treequel
 
