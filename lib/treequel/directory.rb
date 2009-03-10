@@ -170,8 +170,8 @@ class Treequel::Directory
 		base_dn = base.respond_to?( :dn ) ? base.dn : base
 		scope = SCOPE[scope] if scope.is_a?( Symbol )
 
-		return self.conn.search( base_dn, scope, filter ).collect do |entry|
-			Treequel::Branch.new_from_entry( self, entry, base )
+		return self.conn.search2( base_dn, scope, filter ).collect do |entry|
+			Treequel::Branch.new_from_entry( entry, self )
 		end
 	end
 	
@@ -181,6 +181,16 @@ class Treequel::Directory
 	protected
 	#########
 
+	### Proxy method: return a new Branch with the new +attribute+ and +value+ as
+	### its base.
+	def method_missing( attribute, value, *extra_args )
+		raise ArgumentError,
+			"wrong number of arguments (%d for 1)" % [ extra_args.length + 1 ] unless
+			extra_args.empty?
+		return Treequel::Branch.new( self, attribute, value, self.base )
+	end
+	
+	
 	### Create a new LDAP::Conn object with the current host, port, and connect_type
 	### and return it.
 	def connect

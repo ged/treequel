@@ -46,8 +46,25 @@ describe Treequel::Branch do
 		@directory = mock( "treequel directory" )
 	end
 	
-
+		
 	it "can be constructed from a DN" 
+	# do
+	# 	branch = Treequel::Branch.new_from_dn( TEST_PEOPLE_DN, @directory )
+	# 	branch.dn.should == TEST_PEOPLE_DN
+	# end
+
+	it "can be constructed from an entry returned from LDAP::Conn.search2"  do
+		entry = {
+			'dn'                => [TEST_PERSON_DN],
+			TEST_PERSON_DN_ATTR => TEST_PERSON_DN_VALUE,
+		}
+		branch = Treequel::Branch.new_from_entry( entry, @directory )
+		
+		branch.attribute.should == TEST_PERSON_DN_ATTR
+		branch.value.should == TEST_PERSON_DN_VALUE
+		branch.entry.should == entry
+	end
+	
 	# do
 	# 	branch = Treequel::Branch.new_from_dn( TEST_PEOPLE_DN, @directory )
 	# 	branch.dn.should == TEST_PEOPLE_DN

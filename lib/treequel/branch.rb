@@ -42,7 +42,7 @@ class Treequel::Branch
 
 	### Create a new Treequel::Branch for the specified +dn+ starting from the
 	### given +directory+.
-	def self::new_from_dn( dn, directory, entry=nil )
+	def self::new_from_dn( dn, directory )
 		rdn = directory.rdn_to( dn )
 
 		return rdn.split(/,/).reverse.inject( dir ) do |prev, pair|
@@ -50,6 +50,17 @@ class Treequel::Branch
 			self.debug "new_from_dn: fetching %s=%s from %p" % [ attribute, value, prev ]
 			prev.send( attribute, value )
 		end
+	end
+	
+	
+	### Create a new Treequel::Branch from the given +entry+ hash from the specified +directory+
+	### and +parent+.
+	def self::new_from_entry( entry, directory )
+		dn = entry['dn']
+		rdn, base = dn.first.split( /,/, 2 )
+		attribute, value = rdn.split( /=/, 2 )
+		
+		return self.new( directory, attribute, value, base, entry )
 	end
 	
 

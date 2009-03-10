@@ -45,6 +45,8 @@ module Treequel
 	# Load the logformatters and some other stuff first
 	require 'treequel/constants'
 	require 'treequel/utils'
+	require 'treequel/directory'
+	require 'treequel/branch'
 
 	include Treequel::Constants
 

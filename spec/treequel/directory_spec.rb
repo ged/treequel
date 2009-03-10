@@ -164,7 +164,7 @@ describe Treequel::Directory do
 			@dir.conn.should == @conn
 		end
 		
-		it "can look up a Branch's corresponding LDAP::Entry" do
+		it "can look up a Branch's corresponding LDAP::Entry hash" do
 			branch = mock( "branch" )
 			
 			branch.should_receive( :base ).and_return( TEST_PEOPLE_DN )
@@ -186,13 +186,17 @@ describe Treequel::Directory do
 			found_branch2 = stub( "entry2 branch" )
 
 			# Do the search
-			@conn.should_receive( :search ).with( base, LDAP::LDAP_SCOPE_BASE, filter ).
-				and_return([ :entry1, :entry2 ])
+			entries = [
+				{ 'dn' => ["uid=jonlong,#{TEST_PEOPLE_DN}"] },
+				{ 'dn' => ["uid=margento,#{TEST_PEOPLE_DN}"] },
+			]
+			@conn.should_receive( :search2 ).with( base, LDAP::LDAP_SCOPE_BASE, filter ).
+				and_return( entries )
 
 			# Turn found entries into Branch objects
-			Treequel::Branch.should_receive( :new_from_entry ).with( @dir, :entry1, TEST_PEOPLE_DN ).
+			Treequel::Branch.should_receive( :new_from_entry ).with( entries[0], @dir ).
 				and_return( found_branch1 )
-			Treequel::Branch.should_receive( :new_from_entry ).with( @dir, :entry2, TEST_PEOPLE_DN ).
+			Treequel::Branch.should_receive( :new_from_entry ).with( entries[1], @dir ).
 				and_return( found_branch2 )
 
 			@dir.search( base, :base, filter ).should == [ found_branch1, found_branch2 ]
@@ -202,6 +206,18 @@ describe Treequel::Directory do
 		it "can turn a DN string into an RDN string from its base" do
 			@dir.rdn_to( TEST_PERSON_DN ).should == TEST_PERSON_DN.sub( /#{TEST_BASE_DN}$/, '' )
 		end
+		
+		it "implements a proxy method that allow for creation of branches" do
+			rval = @dir.ou( :people )
+			rval.dn.downcase.should == TEST_PEOPLE_DN.downcase
+		end
+
+		it "don't try to create sub-branches for method calls with more than one parameter" do
+			lambda {
+				@dir.dc( 'sbc', 'glar' )
+			}.should raise_error( ArgumentError, /wrong number of arguments/ )
+		end
+		
 		
 	end
 end
