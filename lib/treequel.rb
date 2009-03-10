@@ -1,6 +1,17 @@
 #!/usr/bin/env ruby
 
 require 'logger' 
+require 'uri'
+require 'uri/ldap'
+
+
+### Add an LDAPS URI type
+module URI
+	class LDAPS < LDAP
+		DEFAULT_PORT = 636
+	end
+	@@schemes['LDAPS'] = LDAPS
+end
 
 
 # A Sequel-like DSL for hierarchical datasets.
@@ -84,6 +95,35 @@ module Treequel
 		return vstring
 	end
 
+	### Create a Treequel::Directory object by URI and return it.
+	def self::directory( ldapurl )
+		uri = URI.parse( ldapurl )
+		raise ArgumentError, "malformed LDAP URL %p" % [ uri ] unless
+			uri.scheme =~ /ldaps?/
+		
+		options = self.make_options_from_uri( uri )
+		return Treequel::Directory.new( options )
+	end
+
+	
+	### Make an options hash suitable for passing to Treequel::Directory.new from the
+	### given +uri+.
+	def self::make_options_from_uri( uri )
+		uri = URI( uri ) unless uri.is_a?( URI )
+		options = {}
+
+		if uri.port
+			options[:port] = uri.port
+		elsif uri.scheme == 'ldaps'
+			options[:port] = LDAP::LDAPS_PORT
+		end
+
+		options[:host] = uri.host if uri.host
+		options[:base] = uri.dn if uri.dn
+
+		return options
+	end
+	
 end # module Treequel
 
 

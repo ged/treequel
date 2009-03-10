@@ -42,8 +42,14 @@ class Treequel::Branch
 
 	### Create a new Treequel::Branch for the specified +dn+ starting from the
 	### given +directory+.
-	def self::new_from_dn( dn, directory )
-		
+	def self::new_from_dn( dn, directory, entry=nil )
+		rdn = directory.rdn_to( dn )
+
+		return rdn.split(/,/).reverse.inject( dir ) do |prev, pair|
+			attribute, value = pair.split( /=/, 2 )
+			self.debug "new_from_dn: fetching %s=%s from %p" % [ attribute, value, prev ]
+			prev.send( attribute, value )
+		end
 	end
 	
 
@@ -79,7 +85,53 @@ class Treequel::Branch
 	
 	# The DN of the base of the branch
 	attr_reader :base
+
+
+	### Return the LDAP::Entry associated with the receiver, fetching it from the
+	### directory if necessary.
+	def entry
+		return @entry ||= self.directory.get_entry( self )
+	end
 	
+
+	### Return the receiver's DN attribute and value as a attr=value String.
+	def attr_pair
+		return [ self.attribute, self.value ].join('=')
+	end
+	
+	
+	### Return the receiver's DN as a String.
+	def dn
+		return [ self.attr_pair, self.base ].join(',')
+	end
+	alias_method :to_s, :dn
+
+
+	### Returns a human-readable representation of the object suitable for
+	### debugging.
+	def inspect
+		return "#<%s:0x%0x %s @ %s %p>" % [
+			self.class.name,
+			self.object_id * 2,
+			self.dn,
+			self.directory,
+			self.entry,
+		  ]
+	end
+
+
+	#########
+	protected
+	#########
+
+	### Proxy method: return a new Branch with the new +attribute+ and +value+ as
+	### its base.
+	def method_missing( attribute, value, *extra_args )
+		raise ArgumentError,
+			"wrong number of arguments (%d for 1)" % [ extra_args.length + 1 ] unless
+			extra_args.empty?
+		return self.class.new( self.directory, attribute, value, self )
+	end
 	
 	
 end # class Treequel::Branch

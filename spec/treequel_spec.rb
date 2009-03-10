@@ -15,6 +15,7 @@ begin
 	require 'spec/lib/helpers'
 
 	require 'treequel'
+	require 'treequel/directory'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
@@ -54,7 +55,42 @@ describe Treequel do
 	it "returns a version string with a build number if asked" do
 		Treequel.version_string(true).should =~ /\w+ [\d.]+ \(build \d+\)/
 	end
+
+
+	it "provides a convenience function for creating directory objects" do
+		Treequel::Directory.should_receive( :new ).
+			with({ :host => 'ldap.example.com', :base => 'dc=example,dc=com', :port => 389 }).
+			and_return( :a_directory )
+		Treequel.directory( 'ldap://ldap.example.com/dc=example,dc=com' ).should == :a_directory
+	end
 	
+	it "raises an exception if #directory is called with a non-ldap URL" do
+		lambda {
+			Treequel.directory( 'http://example.com/' )
+		}.should raise_error( ArgumentError, /malformed/ )
+	end
+
+	it "can build an options hash from an LDAP URL" do
+		Treequel.make_options_from_uri( 'ldap://ldap.example.com/dc=example,dc=com' ).should ==
+			{ :host => 'ldap.example.com', :base => 'dc=example,dc=com', :port => 389 }
+	end
+	
+	it "can build an options hash from an LDAPS URL" do
+		Treequel.make_options_from_uri( 'ldaps://ldap.example.com/dc=example,dc=com' ).should ==
+			{ :host => 'ldap.example.com', :base => 'dc=example,dc=com', :port => 636 }
+	end
+	
+	it "can build an options hash from an LDAP URL without a host" do
+		Treequel.make_options_from_uri( 'ldap:///dc=example,dc=com' ).should ==
+			{ :base => 'dc=example,dc=com', :port => 389 }
+	end
+
+	# [?<attrs>[?<scope>[?<filter>[?<extensions>]]]]
+	it "can build an options hash from an LDAP URL with attributes"
+	it "can build an options hash from an LDAP URL with scope"
+	it "can build an options hash from an LDAP URL with a filter"
+	it "can build an options hash from an LDAP URL with extensions"
+
 
 	describe " logging subsystem" do
 		before(:each) do

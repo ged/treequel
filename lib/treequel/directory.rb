@@ -147,6 +147,13 @@ class Treequel::Directory
 	end
 
 
+	### Return the RDN string to the given +dn+ from the base of the directory.
+	def rdn_to( dn )
+		base_re = Regexp.new( Regexp.quote(self.base) + '$' )
+		return dn.sub( base_re, '' )
+	end
+	
+
 	### Given a Treequel::Branch object, find its corresponding LDAP::Entry and return
 	### it.
 	def get_entry( branch )
@@ -160,7 +167,12 @@ class Treequel::Directory
 	### Perform a +scope+ search at +base+ using the specified +filter+. The +scope+ argument
 	### can be one of +:onelevel+, +:base+, or +:subtree+.
 	def search( base, scope, filter )
-		
+		base_dn = base.respond_to?( :dn ) ? base.dn : base
+		scope = SCOPE[scope] if scope.is_a?( Symbol )
+
+		return self.conn.search( base_dn, scope, filter ).collect do |entry|
+			Treequel::Branch.new_from_entry( self, entry, base )
+		end
 	end
 	
 	

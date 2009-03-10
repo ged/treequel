@@ -165,51 +165,43 @@ describe Treequel::Directory do
 		end
 		
 		it "can look up a Branch's corresponding LDAP::Entry" do
-			base = 'ou=People,o=Sales,o=Acme'
-			attr_pair = 'uid=jonlong'
 			branch = mock( "branch" )
 			
-			branch.should_receive( :base ).and_return( base )
-			branch.should_receive( :attr_pair ).and_return( attr_pair )
+			branch.should_receive( :base ).and_return( TEST_PEOPLE_DN )
+			branch.should_receive( :attr_pair ).and_return( TEST_PERSON_DN_PAIR )
 			
-			@conn.should_receive( :search2 ).with( base, LDAP::LDAP_SCOPE_ONELEVEL, attr_pair ).
+			@conn.should_receive( :search2 ).
+				with( TEST_PEOPLE_DN, LDAP::LDAP_SCOPE_ONELEVEL, TEST_PERSON_DN_PAIR ).
 				and_return([ :the_entry ])
 			
 			@dir.get_entry( branch ).should == :the_entry
 		end
 
-		it "can search for entries and return them as Sequel::Branch objects" # do
-		# 			base = 'ou=People,o=Sales,o=Acme'
-		# 			filter = '(|(uid=jonlong)(uid=margento))'
-		# 			branch = mock( "branch" )
-		# 
-		# 			entries = [
-		# 				stub( "entry1", :dn => 'uid=jonlong,' + base ),
-		# 				stub( "entry2", :dn => 'uid=margento,' + base ),
-		# 			]
-		# 			found_branch1 = stub( "entry1 branch" )
-		# 			found_branch2 = stub( "entry2 branch" )
-		# 
-		# 
-		# 			# Convert the string base to a Branch
-		# 			Treequel::Branch.should_receive( :new_from_dn ).with( @dir, base ).
-		# 				and_return( :base_branch )
-		# 
-		# 			# Do the search
-		# 			@conn.should_receive( :search2 ).with( base, LDAP::LDAP_SCOPE_BASE, filter ).
-		# 				and_return( entries )
-		# 
-		# 			# Turn found entries into Branch objects
-		# 			Treequel::Branch.should_receive( :new_from_entry ).
-		# 				with( @dir, entries[0], :base_branch ).
-		# 				and_return( found_branch1 )
-		# 			Treequel::Branch.should_receive( :new_from_entry ).
-		# 				with( @dir, entries[1], :base_branch ).
-		# 				and_return( found_branch2 )
-		# 
-		# 			@dir.search( base, :base, filter ).should == [ found_branch1, found_branch2 ]
-		# 		end
-		
+		it "can search for entries and return them as Sequel::Branch objects" do
+			base = TEST_PEOPLE_DN
+			filter = '(|(uid=jonlong)(uid=margento))'
+			branch = mock( "branch" )
+
+			found_branch1 = stub( "entry1 branch" )
+			found_branch2 = stub( "entry2 branch" )
+
+			# Do the search
+			@conn.should_receive( :search ).with( base, LDAP::LDAP_SCOPE_BASE, filter ).
+				and_return([ :entry1, :entry2 ])
+
+			# Turn found entries into Branch objects
+			Treequel::Branch.should_receive( :new_from_entry ).with( @dir, :entry1, TEST_PEOPLE_DN ).
+				and_return( found_branch1 )
+			Treequel::Branch.should_receive( :new_from_entry ).with( @dir, :entry2, TEST_PEOPLE_DN ).
+				and_return( found_branch2 )
+
+			@dir.search( base, :base, filter ).should == [ found_branch1, found_branch2 ]
+		end
+
+
+		it "can turn a DN string into an RDN string from its base" do
+			@dir.rdn_to( TEST_PERSON_DN ).should == TEST_PERSON_DN.sub( /#{TEST_BASE_DN}$/, '' )
+		end
 		
 	end
 end
