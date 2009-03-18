@@ -86,11 +86,12 @@ describe Treequel do
 	end
 
 	# [?<attrs>[?<scope>[?<filter>[?<extensions>]]]]
-	it "can build an options hash from an LDAP URL with attributes"
-	it "can build an options hash from an LDAP URL with scope"
-	it "can build an options hash from an LDAP URL with a filter"
-	it "can build an options hash from an LDAP URL with extensions"
-
+	it "can build an options hash from an LDAP URL with extra stuff" do
+		uri = 'ldap:///dc=example,dc=com?uid=jrandom,ou=People?l?one?!bindname=cn=auth'
+		Treequel.make_options_from_uri( uri ).should ==
+			{ :base => 'dc=example,dc=com', :port => 389 }
+	end
+	
 
 	describe " logging subsystem" do
 		before(:each) do

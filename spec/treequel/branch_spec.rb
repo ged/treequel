@@ -47,11 +47,17 @@ describe Treequel::Branch do
 	end
 	
 		
-	it "can be constructed from a DN" 
-	# do
-	# 	branch = Treequel::Branch.new_from_dn( TEST_PEOPLE_DN, @directory )
-	# 	branch.dn.should == TEST_PEOPLE_DN
-	# end
+	it "can be constructed from a DN" do
+		@directory.should_receive( :rdn_to ).with( TEST_PEOPLE_DN ).
+			and_return( TEST_PEOPLE_DN_PAIR )
+		@directory.should_receive( TEST_PEOPLE_DN_ATTR ).with( TEST_PEOPLE_DN_VALUE ).and_return do 
+			args = [@directory, TEST_PEOPLE_DN_ATTR, TEST_PEOPLE_DN_VALUE, TEST_BASE_DN]
+			Treequel::Branch.new( *args ) 
+		end
+
+		branch = Treequel::Branch.new_from_dn( TEST_PEOPLE_DN, @directory )
+		branch.dn.should == TEST_PEOPLE_DN
+	end
 
 	it "can be constructed from an entry returned from LDAP::Conn.search2"  do
 		entry = {
@@ -65,10 +71,6 @@ describe Treequel::Branch do
 		branch.entry.should == entry
 	end
 	
-	# do
-	# 	branch = Treequel::Branch.new_from_dn( TEST_PEOPLE_DN, @directory )
-	# 	branch.dn.should == TEST_PEOPLE_DN
-	# end
 
 	describe "instances" do
 		

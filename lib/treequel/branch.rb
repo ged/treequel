@@ -45,9 +45,9 @@ class Treequel::Branch
 	def self::new_from_dn( dn, directory )
 		rdn = directory.rdn_to( dn )
 
-		return rdn.split(/,/).reverse.inject( dir ) do |prev, pair|
+		return rdn.split(/,/).reverse.inject( directory ) do |prev, pair|
 			attribute, value = pair.split( /=/, 2 )
-			self.debug "new_from_dn: fetching %s=%s from %p" % [ attribute, value, prev ]
+			Treequel.logger.debug "new_from_dn: fetching %s=%s from %p" % [ attribute, value, prev ]
 			prev.send( attribute, value )
 		end
 	end
