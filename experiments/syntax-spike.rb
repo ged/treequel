@@ -269,3 +269,7 @@ hosts.filter( "(|(ipHostNumber=10.111.222.66)(ipHostNumber=10.4.1.194))" )
 # => [#<Treequel::Branch:0x494a08 cn=leroy,ou=Hosts,dc=laika,dc=com @ gont.ljc.laika.com:389 (tls, bound_as=,dc=laika,dc=com) {"cn"=>["leroy"], "macAddress"=>["00:e0:18:90:9f:16"], "description"=>["Provides vinton.com e-mail forwarding"], "ipHostNumber"=>["10.111.222.66"], "objectClass"=>["top", "device", "ipHost", "laikaHost", "ieee802Device"], "owner"=>["cn=isg,ou=Lists,dc=laika,dc=com"], "dn"=>["cn=leroy,ou=Hosts,dc=laika,dc=com"]}>,
 #     #<Treequel::Branch:0x492ce4 cn=zelda,ou=Hosts,dc=pettygrove,dc=laika,dc=com @ gont.ljc.laika.com:389 (tls, bound_as=,dc=laika,dc=com) {"cn"=>["zelda"], "macAddress"=>["00:13:72:d1:a0:0f"], "description"=>["workstation"], "ipHostNumber"=>["10.4.1.194"], "objectClass"=>["top", "laikaHost", "ipHost", "ieee802Device", "device"], "owner"=>["cn=isg,ou=Lists,dc=laika,dc=com"], "dn"=>["cn=zelda,ou=Hosts,dc=pettygrove,dc=laika,dc=com"]}>]
 
+departments.filter( :and,
+	{:supervisor => nil},
+	{:uniqueMembers => } )
+

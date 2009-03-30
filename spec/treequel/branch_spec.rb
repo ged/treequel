@@ -15,6 +15,7 @@ begin
 	require 'spec/lib/helpers'
 
 	require 'treequel/branch'
+	require 'treequel/branchset'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
@@ -128,6 +129,13 @@ describe Treequel::Branch do
 			lambda {
 				@branch.dc( 'sbc', 'glar' )
 			}.should raise_error( ArgumentError, /wrong number of arguments/ )
+		end
+		
+		
+		it "can create a Treequel::BranchSet for a search that uses it as its base" do
+			branchset = @branch.filter( :cn => 'acme' )
+			
+			branchset.should be_an_instance_of( Treequel::BranchSet )
 		end
 		
 	end

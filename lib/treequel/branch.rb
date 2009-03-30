@@ -118,6 +118,12 @@ class Treequel::Branch
 	alias_method :to_s, :dn
 
 
+	### Return a Treequel::BranchSet which will be populated with the results of filtering
+	### a search from its receiver's base dn and scope with the given +filterspec+ applied.
+	def filter( filterspec )
+		return Treequel::BranchSet.new
+	end
+
 	### Returns a human-readable representation of the object suitable for
 	### debugging.
 	def inspect
