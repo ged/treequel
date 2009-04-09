@@ -14,7 +14,7 @@ include UtilityFunctions
 
 $DEBUG = true
 
-module Treequel
+module TreequelSpike
 	
 	class Branch
 		extend Forwardable
@@ -73,7 +73,7 @@ module Treequel
 		
 		def +( other )
 			debug_msg "%p + %p" % [ self, other ]
-			return Treequel::BranchCollection.new( self, other )
+			return TreequelSpike::BranchCollection.new( self, other )
 		end
 	end
 
@@ -192,12 +192,12 @@ module Treequel
 
 		def search( base_dn, scope, filter )
 			return self.conn.search2( base_dn, scope, filter ).collect do |row|
-				Treequel::Branch.new_from_dn( self.dup, row['dn'].first )
+				TreequelSpike::Branch.new_from_dn( self.dup, row['dn'].first )
 			end
 		end
 
 		def method_missing( sym, *args )
-			return Treequel::Branch.new( self.dup, sym, args.first, self.base )
+			return TreequelSpike::Branch.new( self.dup, sym, args.first, self.base )
 		end
 		
 	end # class Directory
@@ -208,10 +208,10 @@ module Treequel
 	###############
 
 	def directory( options )
-		return Treequel::Directory.new( options )
+		return TreequelSpike::Directory.new( options )
 	end
 	
-end # module Treequel
+end # module TreequelSpike
 
 
 directory_params = {
@@ -220,7 +220,7 @@ directory_params = {
 	:base => 'dc=laika,dc=com',
 }
 
-dir = Treequel.directory( directory_params )
+dir = TreequelSpike.directory( directory_params )
 # => #<Treequel::Directory:0x49f2dc
 #     @base="dc=laika,dc=com",
 #     @bound_as=nil,
@@ -270,6 +270,7 @@ hosts.filter( "(|(ipHostNumber=10.111.222.66)(ipHostNumber=10.4.1.194))" )
 #     #<Treequel::Branch:0x492ce4 cn=zelda,ou=Hosts,dc=pettygrove,dc=laika,dc=com @ gont.ljc.laika.com:389 (tls, bound_as=,dc=laika,dc=com) {"cn"=>["zelda"], "macAddress"=>["00:13:72:d1:a0:0f"], "description"=>["workstation"], "ipHostNumber"=>["10.4.1.194"], "objectClass"=>["top", "laikaHost", "ipHost", "ieee802Device", "device"], "owner"=>["cn=isg,ou=Lists,dc=laika,dc=com"], "dn"=>["cn=zelda,ou=Hosts,dc=pettygrove,dc=laika,dc=com"]}>]
 
 departments.filter( :and,
-	{:supervisor => nil},
-	{:uniqueMembers => } )
+	[:supervisor, nil],
+	[ :not, [:uniqueMembers, '']] )
+
 

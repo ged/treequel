@@ -159,7 +159,8 @@ class Treequel::Directory
 	def get_entry( branch )
 		base = branch.base
 		filter = branch.attr_pair
-		
+
+		self.log.debug "Looking up entry for %p from %s" % [ filter, base ]
 		return self.conn.search2( base, SCOPE[:onelevel], filter ).first
 	end
 	

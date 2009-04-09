@@ -44,7 +44,7 @@ describe Treequel::Branch do
 	end
 
 	before( :each ) do
-		@directory = mock( "treequel directory" )
+		@directory = mock( "treequel directory", :get_entry => :an_entry_hash )
 	end
 	
 		
@@ -130,12 +130,19 @@ describe Treequel::Branch do
 				@branch.dc( 'sbc', 'glar' )
 			}.should raise_error( ArgumentError, /wrong number of arguments/ )
 		end
-		
+
+
+		it "can return all of its immediate children as Branches"
+		it "can return its parent as a Branch"
 		
 		it "can create a Treequel::BranchSet for a search that uses it as its base" do
-			branchset = @branch.filter( :cn => 'acme' )
+			branchset = mock( "filter branchset" )
+			Treequel::BranchSet.should_receive( :new ).with( @branch ).
+				and_return( branchset )
+			branchset.should_receive( :filter ).with( {:cn => 'acme'} ).
+				and_return( :a_filtered_branchset )
 			
-			branchset.should be_an_instance_of( Treequel::BranchSet )
+			@branch.filter( :cn => 'acme' ).should == :a_filtered_branchset
 		end
 		
 	end

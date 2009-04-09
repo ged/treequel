@@ -5,6 +5,7 @@ require 'forwardable'
 require 'treequel' 
 require 'treequel/mixins'
 require 'treequel/constants'
+require 'treequel/branchset'
 
 
 # The object in Treequel that wraps an entry. It knows how to construct other branches 
@@ -27,7 +28,7 @@ require 'treequel/constants'
 class Treequel::Branch
 	include Treequel::Loggable,
 	        Treequel::Constants
-
+	                                 
 
 	# SVN Revision
 	SVNRev = %q$Rev$
@@ -121,8 +122,9 @@ class Treequel::Branch
 	### Return a Treequel::BranchSet which will be populated with the results of filtering
 	### a search from its receiver's base dn and scope with the given +filterspec+ applied.
 	def filter( filterspec )
-		return Treequel::BranchSet.new
+		return Treequel::BranchSet.new( self ).filter( filterspec )
 	end
+
 
 	### Returns a human-readable representation of the object suitable for
 	### debugging.

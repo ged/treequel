@@ -43,9 +43,35 @@ describe Treequel::BranchSet do
 	end
 
 	before( :each ) do
-		@branch = mock( "treequel branch" )
+		@directory = mock( "treequel directory ")
+		@branch = mock( "treequel branchset" )
+	end
+
+
+	it "can be created with an initial 'filter' option" do
+		branchset = Treequel::BranchSet.new( @branch, :filter => [:uid, 'redhouse'] )
+		branchset.options[:filter].should == [:uid, 'redhouse']
 	end
 	
+
+	describe "an instance with no options set" do
+
+		before( :each ) do
+			@branchset = Treequel::BranchSet.new( @branch )
+		end
+		
+
+		it "returns an Array of all Branches immediately beneath itself with if no other criteria are specified" do
+			@branch.should_receive( :directory ).and_return( @directory )
+			@directory.should_receive( :search ).
+				with( @branch, Treequel::BranchSet::DEFAULT_SCOPE, /(objectClass=*)/ ).
+				and_return( :matching_branches )
+			
+			@branchset.all.should == :matching_branches
+		end
+
+	end
+
 end
 
 
