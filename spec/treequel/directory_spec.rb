@@ -204,7 +204,7 @@ describe Treequel::Directory do
 
 
 		it "can turn a DN string into an RDN string from its base" do
-			@dir.rdn_to( TEST_PERSON_DN ).should == TEST_PERSON_DN.sub( /#{TEST_BASE_DN}$/, '' )
+			@dir.rdn_to( TEST_PERSON_DN ).should == TEST_PERSON_DN.sub( /,#{TEST_BASE_DN}$/, '' )
 		end
 		
 		it "implements a proxy method that allow for creation of branches" do
@@ -216,6 +216,11 @@ describe Treequel::Directory do
 			lambda {
 				@dir.dc( 'sbc', 'glar' )
 			}.should raise_error( ArgumentError, /wrong number of arguments/ )
+		end
+
+		it "can fetch the server's schema" do
+			@conn.should_receive( :schema ).and_return( :the_schema )
+			@dir.schema.should == :the_schema
 		end
 		
 		

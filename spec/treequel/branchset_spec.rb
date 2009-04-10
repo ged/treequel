@@ -35,7 +35,7 @@ describe Treequel::BranchSet do
 	include Treequel::SpecHelpers
 	
 	before( :all ) do
-		setup_logging( :fatal )
+		setup_logging( :debug )
 	end
 	
 	after( :all ) do
@@ -48,23 +48,55 @@ describe Treequel::BranchSet do
 	end
 
 
-	it "can be created with an initial 'filter' option" do
-		branchset = Treequel::BranchSet.new( @branch, :filter => [:uid, 'redhouse'] )
-		branchset.options[:filter].should == [:uid, 'redhouse']
-	end
-	
-
-	describe "an instance with no options set" do
+	describe "an instance with no filter, options, or scope set" do
 
 		before( :each ) do
 			@branchset = Treequel::BranchSet.new( @branch )
 		end
 		
 
-		it "returns an Array of all Branches immediately beneath itself with if no other criteria are specified" do
+		it "generates a valid filter string" do
+			@branchset.filter_string.should == '(objectClass=*)'
+		end
+	
+
+		it "performs a search using the default filter and scope when all records are requested" do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
 				with( @branch, Treequel::BranchSet::DEFAULT_SCOPE, /(objectClass=*)/ ).
+				and_return( :matching_branches )
+			
+			@branchset.all.should == :matching_branches
+		end
+
+		it "creates a new branchset with the specified filter" do
+			pending do
+				newset = @branchset.filter( :clothing => 'pants' )
+				newset.should_not equal( @branchset )
+				newset.options.should_not equal( @branchset.options )
+				newset.filter_string.should == '(clothing=pants)'
+			end
+		end
+		
+
+	end
+
+	describe "an instance with no filter, and scope set to 'onelevel'" do
+
+		before( :each ) do
+			@branchset = Treequel::BranchSet.new( @branch, :scope => :onelevel )
+		end
+		
+
+		it "generates a valid filter string" do
+			@branchset.filter_string.should == '(objectClass=*)'
+		end
+	
+
+		it "performs a search using the default filter and scope when all records are requested" do
+			@branch.should_receive( :directory ).and_return( @directory )
+			@directory.should_receive( :search ).
+				with( @branch, :onelevel, /(objectClass=*)/ ).
 				and_return( :matching_branches )
 			
 			@branchset.all.should == :matching_branches

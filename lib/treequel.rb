@@ -28,7 +28,7 @@ end
 #
 #---
 #
-# Please see the file LICENSE in the BASE directory for licensing details.
+# Please see the file LICENSE in the base directory for licensing details.
 #
 module Treequel
 

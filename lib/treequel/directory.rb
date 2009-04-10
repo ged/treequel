@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'ldap'
+require 'ldap/schema'
 
 require 'treequel' 
 require 'treequel/mixins'
@@ -22,7 +23,7 @@ require 'treequel/constants'
 #
 #---
 #
-# Please see the file LICENSE in the BASE directory for licensing details.
+# Please see the file LICENSE in the base directory for licensing details.
 #
 class Treequel::Directory
 	include Treequel::Loggable,
@@ -149,7 +150,7 @@ class Treequel::Directory
 
 	### Return the RDN string to the given +dn+ from the base of the directory.
 	def rdn_to( dn )
-		base_re = Regexp.new( Regexp.quote(self.base) + '$' )
+		base_re = Regexp.new( ',' + Regexp.quote(self.base) + '$' )
 		return dn.sub( base_re, '' )
 	end
 	
@@ -161,7 +162,13 @@ class Treequel::Directory
 		filter = branch.attr_pair
 
 		self.log.debug "Looking up entry for %p from %s" % [ filter, base ]
-		return self.conn.search2( base, SCOPE[:onelevel], filter ).first
+		return self.conn.search2( base.to_s, SCOPE[:onelevel], filter ).first
+	end
+	
+	
+	### Fetch the schema from the server.
+	def schema
+		return self.conn.schema
 	end
 	
 	

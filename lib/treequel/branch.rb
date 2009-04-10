@@ -23,12 +23,15 @@ require 'treequel/branchset'
 #
 #---
 #
-# Please see the file LICENSE in the BASE directory for licensing details.
+# Please see the file LICENSE in the base directory for licensing details.
 #
 class Treequel::Branch
 	include Treequel::Loggable,
 	        Treequel::Constants
 	                                 
+
+	extend Treequel::Delegation
+
 
 	# SVN Revision
 	SVNRev = %q$Rev$
@@ -85,6 +88,10 @@ class Treequel::Branch
 	######
 	public
 	######
+
+	# Delegate some methods to the entry hash via the #entry method
+	def_method_delegators :entry, :[], :[]=
+	
 
 	# The directory the branch's entry lives in
 	attr_reader :directory
