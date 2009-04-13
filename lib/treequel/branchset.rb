@@ -7,6 +7,7 @@ require 'treequel'
 require 'treequel/mixins'
 require 'treequel/constants'
 require 'treequel/branch'
+require 'treequel/filter'
 
 
 # A branchset represents an abstract set of LDAP records returned by
@@ -57,8 +58,6 @@ class Treequel::BranchSet
 	include Treequel::Loggable,
 	        Treequel::Constants
 
-	require 'treequel/branchset/clauses'
-
 	# SVN Revision
 	SVNRev = %q$Rev$
 
@@ -69,13 +68,9 @@ class Treequel::BranchSet
 	DEFAULT_SCOPE = :subtree
 	DEFAULT_SCOPE.freeze
 	
-	# The default filter to use when searching if none is specified
-	DEFAULT_FILTER = [ :objectClass, '*' ]
-	DEFAULT_FILTER.freeze
-	
 	# The default options hash for new BranchSets
 	DEFAULT_OPTIONS = {
-		:filter  => DEFAULT_FILTER,
+		:filter  => nil,
 		:scope   => DEFAULT_SCOPE,
 		:timeout => nil,                 # Floating-point timeout -> sec, usec
 		:select  => nil,                 # Attributes to return -> attrs
@@ -92,11 +87,11 @@ class Treequel::BranchSet
 	def initialize( base, options={} )
 		options = DEFAULT_OPTIONS.merge( options )
 		
-		@base           = base
-		@filter_clauses = [ options.delete(:filter) ]
-		@scope          = options.delete( :scope )
+		@base    = base
+		@filter  = Treequel::Filter.new( options.delete(:filter) )
+		@scope   = options.delete( :scope )
 
-		@options        = options
+		@options = options
 	end
 
 	
@@ -110,9 +105,6 @@ class Treequel::BranchSet
 	# The filterset's search options
 	attr_reader :options
 
-	# The Array of filter clauses
-	attr_reader :filter_clauses
-
 
 	### Return a human-readable string representation of the object suitable for debugging.
 	def inspect
@@ -121,7 +113,7 @@ class Treequel::BranchSet
 			self.object_id * 2,
 			self.filter_string,
 			@scope,
-			self.options
+			self.options,
 		]
 	end
 	
@@ -142,26 +134,24 @@ class Treequel::BranchSet
 	### Returns a clone of the receiving +branchset+ with the given +filterspec+ added
 	### to it.
 	def filter( filterspec )
-		if self.filter_clauses == [ DEFAULT_FILTER ]
+		if self.filter_components == [ DEFAULT_FILTER ]
 			self.log.debug "replacing default filter with %p" % [ filterspec ]
-			clauses = filterspec.to_a
+			components = filterspec.to_a
 		else
 			self.log.debug "adding filterspec: %p" % [ filterspec ]
-			clauses = self.filter_clauses + [ filterspec.to_a ]
+			components = self.filter_components + [ filterspec.to_a ]
 		end
 
-		options = self.options.merge( :filter => clauses )
+		options = self.options.merge( :filter => components )
 
-		self.log.debug "cloning %p with options: %p" % [ self, options ]
+		self.log.debug "cloning %p(%p) with options: %p" % [ self, self.base, options ]
 		return self.class.new( self.base, options )
 	end
 
 
-	### Return an LDAP filter string made up of the current filter clauses.
+	### Return an LDAP filter string made up of the current filter components.
 	def filter_string
-		return self.filter_clauses.
-			collect {|attribute,value| "(#{attribute}=#{value})" }.
-			join
+		return @filter.to_s
 	end
 	
 	

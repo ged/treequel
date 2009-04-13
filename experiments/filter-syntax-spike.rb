@@ -12,9 +12,10 @@ last_name_f_people = people.filter( :lastName => 'f*' )
 last_name_f_people.all
 # => 
 
-appperms = dir.ou( :AppPerms )
-appperms.scope( :subtree ).filter( :or => [[:cn, 'facet'], [:cn, 'structure'], [:cn, 'envision']] )
-appperms.scope( :subtree ).filter( :| => [[:cn, 'facet'], [:cn, 'structure'], [:cn, 'envision']] )
+appperms.filter( :cn = 'plorp ')
 
-appperms.scope( :subtree ).filter( :or => [:cn, 'facet']).filter( :or => [:cn, 'structure'] )
+appperms = dir.ou( :AppPerms )
+appperms.filter( [:or, 'cn~=facet', 'cn=structure', 'cn=envision'] )
+appperms.filter( [:| => [:cn, 'facet'], [ :cn, 'structure' ], [:cn, 'envision']] )
+
 
