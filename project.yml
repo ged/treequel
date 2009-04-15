@@ -11,13 +11,12 @@ author_name: Michael Granger
 project_pubhost: deveiate
 project_homepage: http://deveiate.org/projects/Treequel
 project_dependencies: 
-  redleaf: ">=0"
+  ldap: ">=0"
 project_summary: A Sequel-like DSL library for interacting with hierarchical datasets
 project_name: Treequel
 version_file: treequel.rb
 additional_pkgfiles: []
 
-dev_dependencies: 
-  ldap: ">=0"
+dev_dependencies: {}
 author_email: ged@FaerieMUD.org
 post_install_message: ""

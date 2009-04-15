@@ -112,6 +112,7 @@ class Treequel::Filter
 
 	### An 'and' filter component
 	class AndComponent < Treequel::Filter::Component
+		include Treequel::Loggable
 		
 		### Create a new 'and' filter component with the given +filterlist+.
 		def initialize( *filterlist )
@@ -124,7 +125,7 @@ class Treequel::Filter
 		
 		### Stringify the item
 		def to_s
-			return '&' + @filterlist.to_s
+			return '&' + @filterlist.collect {|c| c.to_s }.join
 		end
 		
 	end # AndComponent
@@ -144,7 +145,7 @@ class Treequel::Filter
 		
 		### Stringify the item
 		def to_s
-			return '|' + @filterlist.to_s
+			return '|' + @filterlist.collect {|c| c.to_s }.join
 		end
 		
 	end # class OrComponent
@@ -193,8 +194,11 @@ class Treequel::Filter
 	### A presence (attribute=*) component
 	class PresenceItemComponent < Treequel::Filter::ItemComponent
 		
+		# The default attribute to test for presence if none is specified
+		DEFAULT_ATTRIBUTE = 'objectClass'
+		
 		### Create a new 'presence' item filter component for the given +attribute+.
-		def initialize( attribute )
+		def initialize( attribute=DEFAULT_ATTRIBUTE )
 			@attribute = attribute
 		end
 		
@@ -220,6 +224,8 @@ class Treequel::Filter
 	### Turn the specified filter +expression+ into a Treequel::Filter::Component
 	### object and return it.
 	def self::parse_expression( expression )
+		expression = expression[0] if expression.is_a?( Array ) && expression.length == 1
+
 		case expression
 			
 		# String-literal filters
@@ -241,21 +247,40 @@ class Treequel::Filter
 	end
 
 
+	LOGICAL_COMPONENTS = {
+		:or  => OrComponent,
+		:|   => OrComponent,
+		:and => AndComponent,
+		:&   => AndComponent,
+		:not => NotComponent,
+		:"!" => NotComponent,
+	}
+	
+
 	### Turn the specified expression Array into a Treequel::Filter::Component object
 	### and return it.
 	def self::parse_array_expression( expression )
+		Treequel.logger.debug "Parsing Array expression %p" % [ expression ]
+		
 		case
+		# [ ] := '(objectClass=*)'
+		when expression.empty?
+			return PresenceItemComponent.new
+			
 		# [ :attribute ] := '(attribute=*)'
-		when expression.length == 1 && expression[0].is_a?( Symbol )
+		when expression.length == 1
 			return PresenceItemComponent.new( *expression )
 
-		# [ :attribute, 'value' ]  := '(attribute=value)'
 		# [ :and/:or/:not, [] ]    := (&/|/!())
-		when expression[0]
+		when expression[1].is_a?( Array )
+			compclass = LOGICAL_COMPONENTS[ expression[0] ] or
+				raise "don't know how to parse the tuple expression %p" % [ expression ]
+			filterlist = expression[1..-1].collect {|exp| Treequel::Filter.new(exp) }
+			return compclass.new( *filterlist )
 			
+		# [ :attribute, 'value' ]  := '(attribute=value)'
+		when expression.length == 2
 			return SimpleItemComponent.new( *expression )
-
-		when 3
 
 		else
 			raise Treequel::Filter::ExpressionError, 
@@ -271,10 +296,6 @@ class Treequel::Filter
 
 	### Create a new Treequel::BranchSet::Filter with the specified +expression+.
 	def initialize( *expression_parts )
-		expression_parts = expression_parts[0] if
-			expression_parts.length == 1 && expression_parts[0].is_a?( Array )
-		expression_parts = [ DEFAULT_EXPRESSION ] if expression_parts.empty?
-
 		@component = self.class.parse_expression( expression_parts )
 
 		super()
