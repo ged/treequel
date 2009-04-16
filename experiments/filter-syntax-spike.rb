@@ -15,7 +15,8 @@ last_name_f_people.all
 appperms.filter( :cn = 'plorp ')
 
 appperms = dir.ou( :AppPerms )
-appperms.filter( [:or, 'cn~=facet', 'cn=structure', 'cn=envision'] )
-appperms.filter( [:| => [:cn, 'facet'], [ :cn, 'structure' ], [:cn, 'envision']] )
+appperms.filter( :or, 'cn~=facet', 'cn=structure', 'cn=envision' )
+appperms.filter( :| => [:cn, 'facet*'], [ :cn, 'structure' ], [:cn, 'envision'] )
+appperms.filter( :or, {:uid => %w[mahlon mgranger jjordan]} )
 
-
+appperms.filter( :uid,  )
