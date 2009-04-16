@@ -35,7 +35,7 @@ describe Treequel::BranchSet do
 	include Treequel::SpecHelpers
 	
 	before( :all ) do
-		setup_logging( :debug )
+		setup_logging( :fatal )
 	end
 	
 	after( :all ) do
@@ -43,7 +43,6 @@ describe Treequel::BranchSet do
 	end
 
 	before( :each ) do
-		pending "finishing filter work"
 		@directory = mock( "treequel directory ")
 		@branch = mock( "treequel branchset" )
 	end
@@ -57,30 +56,24 @@ describe Treequel::BranchSet do
 		
 
 		it "generates a valid filter string" do
-			pending do
-				@branchset.filter_string.should == '(objectClass=*)'
-			end
+			@branchset.filter_string.should == '(objectClass=*)'
 		end
 	
 
 		it "performs a search using the default filter and scope when all records are requested" do
-			pending do
-				@branch.should_receive( :directory ).and_return( @directory )
-				@directory.should_receive( :search ).
-					with( @branch, Treequel::BranchSet::DEFAULT_SCOPE, /(objectClass=*)/ ).
-					and_return( :matching_branches )
-			
-				@branchset.all.should == :matching_branches
-			end
+			@branch.should_receive( :directory ).and_return( @directory )
+			@directory.should_receive( :search ).
+				with( @branch, Treequel::BranchSet::DEFAULT_SCOPE, /(objectClass=*)/ ).
+				and_return( :matching_branches )
+		
+			@branchset.all.should == :matching_branches
 		end
 
 		it "creates a new branchset with the specified filter" do
-			pending do
-				newset = @branchset.filter( :clothing => 'pants' )
-				newset.should_not equal( @branchset )
-				newset.options.should_not equal( @branchset.options )
-				newset.filter_string.should == '(clothing=pants)'
-			end
+			newset = @branchset.filter( :clothing, 'pants' )
+			newset.should_not equal( @branchset )
+			newset.options.should_not equal( @branchset.options )
+			newset.filter_string.should == '(clothing=pants)'
 		end
 		
 
@@ -94,21 +87,17 @@ describe Treequel::BranchSet do
 		
 
 		it "generates a valid filter string" do
-			pending do
-				@branchset.filter_string.should == '(objectClass=*)'
-			end
+			@branchset.filter_string.should == '(objectClass=*)'
 		end
 	
 
 		it "performs a search using the default filter and scope when all records are requested" do
-			pending do
-				@branch.should_receive( :directory ).and_return( @directory )
-				@directory.should_receive( :search ).
-					with( @branch, :onelevel, /(objectClass=*)/ ).
-					and_return( :matching_branches )
-			
-				@branchset.all.should == :matching_branches
-			end
+			@branch.should_receive( :directory ).and_return( @directory )
+			@directory.should_receive( :search ).
+				with( @branch, :onelevel, /(objectClass=*)/ ).
+				and_return( :matching_branches )
+		
+			@branchset.all.should == :matching_branches
 		end
 
 	end

@@ -70,7 +70,7 @@ class Treequel::BranchSet
 	
 	# The default options hash for new BranchSets
 	DEFAULT_OPTIONS = {
-		:filter  => nil,
+		:filter  => [],
 		:scope   => DEFAULT_SCOPE,
 		:timeout => nil,                 # Floating-point timeout -> sec, usec
 		:select  => nil,                 # Attributes to return -> attrs
@@ -86,9 +86,12 @@ class Treequel::BranchSet
 	### the given +options+.
 	def initialize( base, options={} )
 		options = DEFAULT_OPTIONS.merge( options )
+		filterspec = options.delete( :filter )
 		
 		@base    = base
-		@filter  = Treequel::Filter.new( options.delete(:filter) )
+		@filter  = filterspec.is_a?( Treequel::Filter ) ? 
+			filterspec : 
+			Treequel::Filter.new( filterspec )
 		@scope   = options.delete( :scope )
 
 		@options = options
@@ -133,16 +136,10 @@ class Treequel::BranchSet
 	
 	### Returns a clone of the receiving +branchset+ with the given +filterspec+ added
 	### to it.
-	def filter( filterspec )
-		if self.filter_components == [ DEFAULT_FILTER ]
-			self.log.debug "replacing default filter with %p" % [ filterspec ]
-			components = filterspec.to_a
-		else
-			self.log.debug "adding filterspec: %p" % [ filterspec ]
-			components = self.filter_components + [ filterspec.to_a ]
-		end
-
-		options = self.options.merge( :filter => components )
+	def filter( *filterspec )
+		self.log.debug "cloning %p with filterspec: %p" % [ self, filterspec ]
+		newfilter = Treequel::Filter.new( *filterspec )
+		options = self.options.merge( :filter => @filter + newfilter )
 
 		self.log.debug "cloning %p(%p) with options: %p" % [ self, self.base, options ]
 		return self.class.new( self.base, options )
