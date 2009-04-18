@@ -291,12 +291,31 @@ class Treequel::Filter
 
 	### A 'substring' (attribute=foo*) component
 	class SubstringItemComponent < Treequel::Filter::ItemComponent
+		include Treequel::Constants::Patterns
 
-		# substring  = attr "=" [initial] any [final]
+
 		# initial    = value
+		INITIAL = LDAP_ATTRIBUTE_VALUE
+
 		# any        = "*" *(value "*")
+		ANY = %r{
+			\*
+			(?:#{LDAP_ATTRIBUTE_VALUE}\*)*
+		}x
+
 		# final      = value
-		SUBSTRING_PAT = /todo later/ # #{ATTR_REGEXP} = #{INITIAL}? #{ANY} #{FINAL}*/x
+		FINAL = LDAP_ATTRIBUTE_VALUE
+		
+		# substring  = attr "=" [initial] any [final]
+		SUBSTRING_PAT = %r{
+			(#{LDAP_ATTRIBUTE_DESCRIPTION})
+			=
+			(
+				#{INITIAL}?
+				#{ANY}
+				#{FINAL}*
+			)
+		}x
 
 		### Parse the substring item from the given +literal+.
 		def self::parse_from_string( literal )
