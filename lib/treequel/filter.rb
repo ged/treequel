@@ -51,7 +51,8 @@ require 'treequel/branchset'
 # Please see the file LICENSE in the base directory for licensing details.
 #
 class Treequel::Filter
-	include Treequel::Loggable
+	include Treequel::Loggable,
+	        Treequel::Constants::Patterns
 
 	### Exception type raised when an expression cannot be parsed from the
 	### arguments given to Treequel::Filter.new
@@ -294,36 +295,14 @@ class Treequel::Filter
 		include Treequel::Constants::Patterns
 
 
-		# initial    = value
-		INITIAL = LDAP_ATTRIBUTE_VALUE
-
-		# any        = "*" *(value "*")
-		ANY = %r{
-			\*
-			(?:#{LDAP_ATTRIBUTE_VALUE}\*)*
-		}x
-
-		# final      = value
-		FINAL = LDAP_ATTRIBUTE_VALUE
-		
-		# substring  = attr "=" [initial] any [final]
-		SUBSTRING_PAT = %r{
-			(#{LDAP_ATTRIBUTE_DESCRIPTION})
-			=
-			(
-				#{INITIAL}?
-				#{ANY}
-				#{FINAL}*
-			)
-		}x
-
 		### Parse the substring item from the given +literal+.
 		def self::parse_from_string( literal )
-			match = SUBSTRING_PAT.match( literal ) or
+			match = LDAP_SUBSTRING_FILTER.match( literal ) or
 				raise Treequel::Filter::ExpressionError,
 					"unable to parse %p as a substring literal" % [ literal ]
 
-			return self.new( *(match.matches) )
+			Treequel.logger.debug "  parsed substring literal as: %p" % [ match.captures ]
+			return self.new( *(match.captures.values_at(1,3,2)) )
 		end
 		
 
@@ -332,9 +311,12 @@ class Treequel::Filter
 		#############################################################
 		
 		### Create a new 'presence' item filter component for the given +attribute+.
-		def initialize( attribute, pattern )
+		def initialize( attribute, pattern, options=nil )
 			@attribute = attribute
 			@pattern   = pattern
+			@options   = options
+			
+			super()
 		end
 
 		
@@ -348,10 +330,13 @@ class Treequel::Filter
 		# The pattern to match (if the index exists in the directory)
 		attr_accessor :pattern
 		
+		# The attribute options
+		attr_accessor :options
+		
 
 		### Stringify the component
 		def to_s
-			return self.attribute.to_s + '=' + self.pattern
+			return self.attribute.to_s + self.options.to_s + '=' + self.pattern
 		end
 
 	end # class SubstringItemComponent
@@ -438,8 +423,7 @@ class Treequel::Filter
 
 		# [ :attribute, 'value' ]  := '(attribute=value)'
 		when expression.length == 2
-			Treequel.logger.debug "  tuple expression -> simple item component"
-			return Treequel::Filter::SimpleItemComponent.new( *expression )
+			return self.parse_item_component( *expression )
 
 		# Literal filters [ 'uid~=gung', 'l=bangkok' ]  := '(uid~=gung)(l=bangkok)'
 		when expression.all? {|item| item.is_a?(String) }
@@ -479,6 +463,42 @@ class Treequel::Filter
 		return compclass.new( *filterlist )
 	end
 
+
+	### Parse an item component from the specified +attribute+ and +value+
+	def self::parse_item_component( attribute, value )
+		Treequel.logger.debug "  tuple expression -> item component"
+
+		#   item       = simple / present / substring / extensible
+		#   simple     = attr filtertype value
+		#   filtertype = equal / approx / greater / less
+		#   equal      = "="
+		#   approx     = "~="
+		#   greater    = ">="
+		#   less       = "<="
+		#   extensible = attr [":dn"] [":" matchingrule] ":=" value
+		#                / [":dn"] ":" matchingrule ":=" value
+		#   present    = attr "=*"
+		#   substring  = attr "=" [initial] any [final]
+		#   initial    = value
+		#   any        = "*" *(value "*")
+		#   final      = value
+		#   attr       = AttributeDescription from Section 4.1.5 of [1]
+		#   matchingrule = MatchingRuleId from Section 4.1.9 of [1]
+		#   value      = AttributeValue from Section 4.1.6 of [1]
+		case
+			
+		when attribute.to_s.index( ':' )
+			raise NotImplementedError, "extensible filters are not yet supported"
+
+		when value == '*'
+			return Treequel::Filter::PresentItemComponent.new( attribute )
+		when value =~ LDAP_SUBSTRING_VALUE
+			return Treequel::Filter::SubstringItemComponent.new( attribute, value )
+		else
+			return Treequel::Filter::SimpleItemComponent.new( attribute, value )
+		end
+	end
+	
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S

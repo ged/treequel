@@ -15,6 +15,7 @@ module Treequel::Constants # :nodoc:
 	}.freeze
 	
 
+	### A collection of Regexps to match various LDAP values
 	module Patterns
 
 		# 
@@ -26,13 +27,13 @@ module Treequel::Constants # :nodoc:
 
 			# ldap-oid                 = 1*DIGIT 0*1("." 1*DIGIT)
 			#                            ; An LDAPOID, as defined in [4]
-			ldap_oid        = %r{ [[:digit:]]+ (\.[[:digit:]]+)* }x
+			ldap_oid        = %r{ [[:digit:]]+ (?:\.[[:digit:]]+)* }x
 
 			# AttributeType            = ldap-oid / (ALPHA *(attr-type-chars))
 			LDAP_ATTRIBUTE_TYPE = %r{
 				#{ldap_oid}
 				|
-				[[:alpha:]] #{attr_type_chars}
+				[[:alpha:]] #{attr_type_chars}*
 			}x
 			
 			# opt-char                 = attr-type-chars
@@ -41,23 +42,56 @@ module Treequel::Constants # :nodoc:
 			# option                   = 1*opt-char
 			option = %r{ #{opt_char}+ }x
 			
-			# options                  = option / (option ";" options)
-			options = %r{
-				#{option}(;#{option})*
-			}x
-			
             # 
 			# AttributeDescription     = AttributeType [";" options]
 			LDAP_ATTRIBUTE_DESCRIPTION = %r{
 				(#{LDAP_ATTRIBUTE_TYPE})		# $1: attribute oid or name
-				(?:
+				((?:
 					;
-					(#{options})				# $2: attribute options
-				)
-			}
+					#{option}					# $2: attribute options
+				)*)
+			}x
 			
-			# An LDAP attribute value
-			LDAP_ATTRIBUTE_VALUE = %r{.+?}
+			# If a value should contain any of the following characters
+			# 
+			#            Character       ASCII value
+			#            ---------------------------
+			#            *               0x2a
+			#            (               0x28
+			#            )               0x29
+			#            \               0x5c
+			#            NUL             0x00
+			# 
+			# the character must be encoded as the backslash '\' character (ASCII
+			# 0x5c) followed by the two hexadecimal digits representing the ASCII
+			# value of the encoded character. The case of the two hexadecimal
+			# digits is not significant.
+			LDAP_ATTRIBUTE_VALUE = %r{[^\*\(\)\\\0]+|\\(?i:[0-9a-z]{2})}
+			
+			
+			# initial    = value
+			initial = LDAP_ATTRIBUTE_VALUE
+
+			# any        = "*" *(value "*")
+			any = %r{
+				\*
+				(?:#{LDAP_ATTRIBUTE_VALUE}+\*)*
+			}x
+
+			# final      = value
+			final = LDAP_ATTRIBUTE_VALUE
+
+			# The value part of a substring filter
+			LDAP_SUBSTRING_VALUE = %r{ #{initial}* #{any} #{final}* }x
+
+			# substring  = attr "=" [initial] any [final]
+			LDAP_SUBSTRING_FILTER = %r{
+				(#{LDAP_ATTRIBUTE_DESCRIPTION})
+				=
+				(#{LDAP_SUBSTRING_VALUE})
+			}x
+
+			
 		end
 	
 	end # module Patterns

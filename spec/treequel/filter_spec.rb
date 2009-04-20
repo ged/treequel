@@ -120,15 +120,27 @@ describe Treequel::Filter do
 	end
 
 
+	it "parses a Substring item from a filter that includes an asterisk" do
+		filter = Treequel::Filter.new( :portrait, "\xff\xd8\xff\xe0*" )
+		filter.component.class.should == Treequel::Filter::SubstringItemComponent
+	end
+
+	it "parses a Present item from a filter that is only an asterisk" do
+		filter = Treequel::Filter.new( :disabled, "*" )
+		filter.component.class.should == Treequel::Filter::PresentItemComponent
+	end
+
+
 	it "parses a complex nested expression" do
 		Treequel::Filter.new(
 			[:and,
 				[:or,
 					[:and, [:chungability,'fantagulous'], [:l, 'the moon']],
-					[:chungability, 'gruntworthy']],
+					[:chungability, '*grunt*'],
+					[:hunker]],
 				[:not, [:description, 'mediocre']] ]
 		).to_s.should == '(&(|(&(chungability=fantagulous)(l=the moon))' +
-			'(chungability=gruntworthy))(!(description=mediocre)))'
+			'(chungability=*grunt*)(hunker=*))(!(description=mediocre)))'
 	end
 
 
@@ -257,17 +269,25 @@ describe Treequel::Filter do
 
 
 		describe Treequel::Filter::SubstringItemComponent do
+			
 			before( :each ) do
 				@component = Treequel::Filter::SubstringItemComponent.new( :description, '*basecamp*' )
 			end
 
 			
 			it "can parse a component object from a string literal" do
-				pending "completion of the SubstringItemComponent class" do
-					comp = Treequel::Filter::SubstringItemComponent.parse_from_string( 'description=*basecamp*' )
-					comp.attribute.should == 'description'
-					comp.pattern.should   == '*basecamp*'
-				end
+				comp = Treequel::Filter::SubstringItemComponent.parse_from_string( 'description=*basecamp*' )
+				comp.attribute.should == 'description'
+				comp.options.should   == ''
+				comp.pattern.should   == '*basecamp*'
+			end
+
+			it "can parse a component object from a string literal with attribute options" do
+				jpeg_portraits = Treequel::Filter::SubstringItemComponent.
+					parse_from_string( "portrait;binary=\xff\xd8\xff\xe0*" )
+				jpeg_portraits.attribute.should == 'portrait'
+				jpeg_portraits.options.should   == ';binary'
+				jpeg_portraits.pattern.should   == "\xff\xd8\xff\xe0*"
 			end
 
 			it "raises an ExpressionError if it can't parse a string literal" do
