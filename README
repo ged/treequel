@@ -1,6 +1,7 @@
 = Treequel
 
-Treequel is a Sequel-like DSL library for interacting with hierarchical datasets. It's mostly experimental still. 
+Treequel is a Sequel-like DSL library for interacting with hierarchical datasets such as those
+contained in an LDAP directory. It's mostly experimental still.
 
 You can check out the current development source with Subversion from the
 following URL:
@@ -14,3 +15,4 @@ The project page is also likely to have more details:
 == License
 
 See the LICENSE file in the same directory for licensing details.
+

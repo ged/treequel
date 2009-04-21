@@ -6,7 +6,7 @@ require 'treequel'
 require 'treequel/branchset'
 
 
-# This is an object that is used to build an LDAP filter for Treequel::BranchSets.
+# This is an object that is used to build an LDAP filter for Treequel::Branchsets.
 #
 # == Grammar (from RFC 2254) ==
 #
@@ -466,30 +466,12 @@ class Treequel::Filter
 
 	### Parse an item component from the specified +attribute+ and +value+
 	def self::parse_item_component( attribute, value )
-		Treequel.logger.debug "  tuple expression -> item component"
+		Treequel.logger.debug "  tuple expression (%p=%p)-> item component" %
+			[ attribute, value ]
 
-		#   item       = simple / present / substring / extensible
-		#   simple     = attr filtertype value
-		#   filtertype = equal / approx / greater / less
-		#   equal      = "="
-		#   approx     = "~="
-		#   greater    = ">="
-		#   less       = "<="
-		#   extensible = attr [":dn"] [":" matchingrule] ":=" value
-		#                / [":dn"] ":" matchingrule ":=" value
-		#   present    = attr "=*"
-		#   substring  = attr "=" [initial] any [final]
-		#   initial    = value
-		#   any        = "*" *(value "*")
-		#   final      = value
-		#   attr       = AttributeDescription from Section 4.1.5 of [1]
-		#   matchingrule = MatchingRuleId from Section 4.1.9 of [1]
-		#   value      = AttributeValue from Section 4.1.6 of [1]
 		case
-			
 		when attribute.to_s.index( ':' )
 			raise NotImplementedError, "extensible filters are not yet supported"
-
 		when value == '*'
 			return Treequel::Filter::PresentItemComponent.new( attribute )
 		when value =~ LDAP_SUBSTRING_VALUE
@@ -504,7 +486,7 @@ class Treequel::Filter
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new Treequel::BranchSet::Filter with the specified +expression+.
+	### Create a new Treequel::Branchset::Filter with the specified +expression+.
 	def initialize( *expression_parts )
 		@component = self.class.parse_expression( expression_parts )
 		self.log.debug "created a filter with component: %p" % [ @component ]
@@ -521,7 +503,7 @@ class Treequel::Filter
 	attr_accessor :component
 
 
-	### Return the Treequel::BranchSet::Filter as a String.
+	### Return the Treequel::Branchset::Filter as a String.
 	def to_s
 		self.log.debug "stringifying filter %p" % [ self ]
 		filtercomp = self.component.to_s

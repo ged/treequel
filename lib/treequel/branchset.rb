@@ -54,7 +54,7 @@ require 'treequel/filter'
 #
 # Please see the file LICENSE in the base directory for licensing details.
 #
-class Treequel::BranchSet
+class Treequel::Branchset
 	include Treequel::Loggable,
 	        Treequel::Constants
 
@@ -68,9 +68,15 @@ class Treequel::BranchSet
 	DEFAULT_SCOPE = :subtree
 	DEFAULT_SCOPE.freeze
 	
-	# The default options hash for new BranchSets
+	# The default filter to use when searching if non is specified
+	DEFAULT_FILTER = :objectClass
+	DEFAULT_FILTER.freeze
+	
+	
+	# The default options hash for new Branchsets
 	DEFAULT_OPTIONS = {
-		:filter  => [],
+		:base    => nil,
+		:filter  => DEFAULT_FILTER,
 		:scope   => DEFAULT_SCOPE,
 		:timeout => nil,                 # Floating-point timeout -> sec, usec
 		:select  => nil,                 # Attributes to return -> attrs
@@ -82,19 +88,12 @@ class Treequel::BranchSet
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new BranchSet for a search from the specified +base+ (a Treequel::Branch), with 
+	### Create a new Branchset for a search from the specified +base+ (a Treequel::Branch), with 
 	### the given +options+.
 	def initialize( base, options={} )
-		options = DEFAULT_OPTIONS.merge( options )
-		filterspec = options.delete( :filter )
-		
-		@base    = base
-		@filter  = filterspec.is_a?( Treequel::Filter ) ? 
-			filterspec : 
-			Treequel::Filter.new( filterspec )
-		@scope   = options.delete( :scope )
-
-		@options = options
+		super()
+		@base = base
+		@options = DEFAULT_OPTIONS.merge( options )
 	end
 
 	
@@ -102,13 +101,22 @@ class Treequel::BranchSet
 	public
 	######
 
-	# The base branchset
-	attr_reader :base
+	# The filterset's search options hash
+	attr_accessor :options
 
-	# The filterset's search options
-	attr_reader :options
+	# The filterset's base branchset that will be used when searching as the basedn
+	attr_accessor :base
 
 
+	### Override the default clone method to support cloning with different options.
+	def clone( options={} )
+		self.log.debug "cloning %p with options = %p" % [ self, options ]
+		newset = super()
+		newset.options = @options.merge( options )
+		return newset
+	end
+	
+	
 	### Return a human-readable string representation of the object suitable for debugging.
 	def inspect
 		"#<%s:0x%0x filter=%s, scope=%s, options=%p>" % [
@@ -121,37 +129,106 @@ class Treequel::BranchSet
 	end
 	
 
+	### Return an LDAP filter string made up of the current filter components.
+	def filter_string
+		return self.filter.to_s
+	end
+	
+	
 	### Fetch the entries which match the current criteria and return them as Treequel::Branch 
 	### objects.
 	def all
-		directory = @base.directory
+		directory = self.base.directory
+		# timeout_s = self.timeout.truncate
+		# timeout_us = self.timeout.
 
 		# base_dn, scope, filter,
 		#   attrs=nil, attrsonly=false,
 		#   sec=0, usec=0,
 		#   s_attr=nil, s_proc=nil
-		return directory.search( @base, @scope, self.filter_string )
+		return directory.search( self.base, self.scope, self.filter_string,
+			self.select, false,
+			0, 0,
+			nil, nil )
 	end
 
 	
-	### Returns a clone of the receiving +branchset+ with the given +filterspec+ added
+	### Returns a clone of the receiving Branchset with the given +filterspec+ added
 	### to it.
 	def filter( *filterspec )
-		self.log.debug "cloning %p with filterspec: %p" % [ self, filterspec ]
-		newfilter = Treequel::Filter.new( *filterspec )
-		options = self.options.merge( :filter => @filter + newfilter )
-
-		self.log.debug "cloning %p(%p) with options: %p" % [ self, self.base, options ]
-		return self.class.new( self.base, options )
+		if filterspec.empty?
+			opts = self.options
+			opts[:filter] = Treequel::Filter.new(opts[:filter]) unless 
+				opts[:filter].is_a?( Treequel::Filter )
+			return opts[:filter]
+		else
+			self.log.debug "cloning %p with filterspec: %p" % [ self, filterspec ]
+			newfilter = Treequel::Filter.new( *filterspec )
+			return self.clone( :filter => self.filter + newfilter )
+		end
 	end
 
 
-	### Return an LDAP filter string made up of the current filter components.
-	def filter_string
-		return @filter.to_s
+	### If called with no argument, returns the current scope of the Branchset. If 
+	### called with an argument (which should be one of the keys of 
+	### Treequel::Constants::SCOPE), returns a clone of the receiving Branchset
+	### with the +new_scope+.
+	def scope( new_scope=nil )
+		if new_scope
+			self.log.debug "cloning %p with new scope: %p" % [ self, new_scope ]
+			return self.clone( :scope => new_scope.to_sym )
+		else
+			return @options[:scope]
+		end
+	end
+
+
+	### If called with one or more +attributes+, returns a clone of the receiving
+	### Branchset that will only fetch the +attributes+ specified. If no +attributes+
+	### are specified, return the list of attributes that will be fetched by the
+	### receiving Branchset. An empty Array means that it should fetch all
+	### attributes, which is the default.
+	def select( *attributes )
+		if attributes.empty?
+			return self.options[:select]
+		else
+			self.log.debug "cloning %p with new selection: %p" % [ self, attributes ]
+			return self.clone( :select => attributes )
+		end
 	end
 	
 	
-end # class Treequel::BranchSet
+	### Returns a clone of the receiving Branchset that will fetch all attributes.
+	def select_all
+		return self.clone( :select => nil )
+	end
+	
+	
+	### Return a clone of the receiving Branchset that will fetch the specified
+	### +attributes+ in addition to its own.
+	def select_more( *attributes )
+		return self.select( *(Array(@options[:select]) | attributes) )
+	end
+
+
+	### Return a clone of the receiving Branchset that will search with its timeout
+	### set to +seconds+, which is in floating-point seconds.
+	def timeout( seconds=nil )
+		if seconds
+			return self.clone( :timeout => seconds )
+		else
+			return @options[:timeout]
+		end
+	end
+
+
+	### Return a clone of the receiving Branchset that will not use a timeout when
+	### searching.
+	def no_timeout
+		return self.clone( :timeout => nil )
+	end
+
+	
+end # class Treequel::Branchset
 
 

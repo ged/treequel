@@ -130,6 +130,12 @@ describe Treequel::Filter do
 		filter.component.class.should == Treequel::Filter::PresentItemComponent
 	end
 
+	it "raises an error when an extensible item filter is given" do
+		lambda {
+			Treequel::Filter.new( 'cn:1.2.3.4.5:', 'Fred Flintstone' )
+		 }.should raise_error( NotImplementedError, /extensible.*supported/i )
+	end
+
 
 	it "parses a complex nested expression" do
 		Treequel::Filter.new(

@@ -29,7 +29,6 @@ class Treequel::Branch
 	include Treequel::Loggable,
 	        Treequel::Constants
 	                                 
-
 	extend Treequel::Delegation
 
 
@@ -92,6 +91,9 @@ class Treequel::Branch
 	# Delegate some methods to the entry hash via the #entry method
 	def_method_delegators :entry, :[], :[]=
 	
+	# Delegate some other methods to a new Branchset via the #branchset method
+	def_method_delegators :branchset, :filter, :scope, :select
+
 
 	# The directory the branch's entry lives in
 	attr_reader :directory
@@ -126,12 +128,11 @@ class Treequel::Branch
 	alias_method :to_s, :dn
 
 
-	### Return a Treequel::BranchSet which will be populated with the results of filtering
-	### a search from its receiver's base dn and scope with the given +filterspec+ applied.
-	def filter( filterspec )
-		return Treequel::BranchSet.new( self ).filter( filterspec )
+	### Return a Treequel::Branchset that will use the receiver as its base.
+	def branchset
+		return Treequel::Branchset.new( self )
 	end
-
+	
 
 	### Returns a human-readable representation of the object suitable for
 	### debugging.

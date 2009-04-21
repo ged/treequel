@@ -135,14 +135,53 @@ describe Treequel::Branch do
 		it "can return all of its immediate children as Branches"
 		it "can return its parent as a Branch"
 		
-		it "can create a Treequel::BranchSet for a search that uses it as its base" do
-			branchset = mock( "filter branchset" )
-			Treequel::BranchSet.should_receive( :new ).with( @branch ).
+		
+		it "can construct a Treequel::Branchset that uses it as its base" do
+			branchset = stub( "branchset" )
+			Treequel::Branchset.should_receive( :new ).with( @branch ).
+				and_return( branchset )
+
+			@branch.branchset.should == branchset
+		end
+		
+		it "can create a filtered Treequel::Branchset for itself" do
+			branchset = mock( "filtered branchset" )
+			Treequel::Branchset.should_receive( :new ).with( @branch ).
 				and_return( branchset )
 			branchset.should_receive( :filter ).with( {:cn => 'acme'} ).
 				and_return( :a_filtered_branchset )
 			
 			@branch.filter( :cn => 'acme' ).should == :a_filtered_branchset
+		end
+
+		it "doesn't restrict the number of arguments passed to #filter (bugfix)" do
+			branchset = mock( "filtered branchset" )
+			Treequel::Branchset.should_receive( :new ).with( @branch ).
+				and_return( branchset )
+			branchset.should_receive( :filter ).with( :uid, [:glumpy, :grumpy, :glee] ).
+				and_return( :a_filtered_branchset )
+			
+			@branch.filter( :uid, [:glumpy, :grumpy, :glee] ).should == :a_filtered_branchset
+		end
+
+		it "can create a scoped Treequel::Branchset for itself" do
+			branchset = mock( "scoped branchset" )
+			Treequel::Branchset.should_receive( :new ).with( @branch ).
+				and_return( branchset )
+			branchset.should_receive( :scope ).with( :onelevel ).
+				and_return( :a_scoped_branchset )
+			
+			@branch.scope( :onelevel ).should == :a_scoped_branchset
+		end
+
+		it "can create a selective Treequel::Branchset for itself" do
+			branchset = mock( "selective branchset" )
+			Treequel::Branchset.should_receive( :new ).with( @branch ).
+				and_return( branchset )
+			branchset.should_receive( :select ).with( :uid, :l, :familyName, :givenName ).
+				and_return( :a_selective_branchset )
+			
+			@branch.select( :uid, :l, :familyName, :givenName ).should == :a_selective_branchset
 		end
 		
 	end

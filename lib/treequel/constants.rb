@@ -7,11 +7,17 @@ require 'treequel'
 ### A collection of constants that are shared across the library
 module Treequel::Constants # :nodoc:
 
-	### Scope constants that map symbolic names to LDAP integer values
+	### Scope constants that map symbolic names to LDAP integer values. Valid
+	### values are:
+	###
+	###   :onelevel, :one, :base, :subtree, :sub
+	### 
 	SCOPE = {
 		:onelevel => LDAP::LDAP_SCOPE_ONELEVEL,
+		:one      => LDAP::LDAP_SCOPE_ONELEVEL,
 		:base     => LDAP::LDAP_SCOPE_BASE,
 		:subtree  => LDAP::LDAP_SCOPE_SUBTREE,
+		:sub      => LDAP::LDAP_SCOPE_SUBTREE,
 	}.freeze
 	
 
