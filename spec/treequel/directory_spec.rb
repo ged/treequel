@@ -77,6 +77,7 @@ describe Treequel::Directory do
 		
 		before( :each ) do
 			@dir = Treequel::Directory.new( @options )
+			@conn = mock( "ldap connection", :set_option => true )
 		end
 
 
@@ -89,22 +90,22 @@ describe Treequel::Directory do
 		
 		it "connects on demand to the configured directory server" do
 			LDAP::Conn.should_receive( :new ).with( TEST_HOST, TEST_PORT ).
-				and_return( :ldap_conn )
-			@dir.conn.should == :ldap_conn
+				and_return( @conn )
+			@dir.conn.should == @conn
 		end
 		
 		it "connects with TLS on demand to the configured directory server if configured to do so" do
 			@dir.connect_type = :tls
 			LDAP::SSLConn.should_receive( :new ).with( TEST_HOST, TEST_PORT, true ).
-				and_return( :ldap_conn )
-			@dir.conn.should == :ldap_conn
+				and_return( @conn )
+			@dir.conn.should == @conn
 		end
 		
 		it "connects over SSL on demand to the configured directory server if configured to do so" do
 			@dir.connect_type = :ssl
 			LDAP::SSLConn.should_receive( :new ).with( TEST_HOST, TEST_PORT ).
-				and_return( :ldap_conn )
-			@dir.conn.should == :ldap_conn
+				and_return( @conn )
+			@dir.conn.should == @conn
 		end
 	end
 
@@ -190,7 +191,8 @@ describe Treequel::Directory do
 				{ 'dn' => ["uid=jonlong,#{TEST_PEOPLE_DN}"] },
 				{ 'dn' => ["uid=margento,#{TEST_PEOPLE_DN}"] },
 			]
-			@conn.should_receive( :search2 ).with( base, LDAP::LDAP_SCOPE_BASE, filter ).
+			@conn.should_receive( :search2 ).
+				with( base, LDAP::LDAP_SCOPE_BASE, filter, nil, false, 0, 0, nil, nil ).
 				and_return( entries )
 
 			# Turn found entries into Branch objects

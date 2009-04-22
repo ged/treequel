@@ -174,11 +174,32 @@ class Treequel::Directory
 	
 	### Perform a +scope+ search at +base+ using the specified +filter+. The +scope+ argument
 	### can be one of +:onelevel+, +:base+, or +:subtree+.
-	def search( base, scope, filter )
+	def search( base, scope, filter, selectattrs=nil, timeout=0, sortby=nil )
+		timeout_s = timeout_us = 0
+		sortattr = sortfunc = nil
+
+		# Normalize the arguments into what LDAP::Conn#search2 expects
 		base_dn = base.respond_to?( :dn ) ? base.dn : base
 		scope = SCOPE[scope] if scope.is_a?( Symbol )
 
-		return self.conn.search2( base_dn, scope, filter ).collect do |entry|
+		if !timeout.nil? && !timeout.zero?
+			timeout_s = self.timeout.truncate
+			timeout_us = Integer((self.timeout - timeout_s) * 1_000_000) # convert to µsec
+		end
+
+		if sortby.respond_to?( :call )
+			sortfunc = sortby
+		elsif !sortby.nil?
+			sortattr = sortby
+		end
+		
+		# conn.search2(base_dn, scope, filter, attrs, attrsonly, sec, usec, s_attr, s_proc
+		results = self.conn.search2( base_dn, scope, filter.to_s, 
+			selectattrs, false, 
+			timeout_s, timeout_us,
+			sortattr, sortfunc )
+			
+		return results.collect do |entry|
 			Treequel::Branch.new_from_entry( entry, self )
 		end
 	end
@@ -202,17 +223,22 @@ class Treequel::Directory
 	### Create a new LDAP::Conn object with the current host, port, and connect_type
 	### and return it.
 	def connect
+		conn = nil
+		
 		case @connect_type
 		when :tls
 			self.log.debug "Connecting using TLS to %s:%d" % [ @host, @port ]
-			return LDAP::SSLConn.new( @host, @port, true )
+			conn = LDAP::SSLConn.new( @host, @port, true )
 		when :ssl
 			self.log.debug "Connecting using SSL to %s:%d" % [ @host, @port ]
-			return LDAP::SSLConn.new( host, port )
+			conn = LDAP::SSLConn.new( host, port )
 		else
 			self.log.debug "Connecting using an unencrypted connection to %s:%d" % [ @host, @port ]
-			return LDAP::Conn.new( host, port )
+			conn = LDAP::Conn.new( host, port )
 		end
+		
+		conn.set_option( LDAP::LDAP_OPT_PROTOCOL_VERSION, 3 )
+		return conn
 	end
 
 

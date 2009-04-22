@@ -41,12 +41,9 @@ module Treequel
 	# Library version
 	VERSION = '0.0.1'
 
-
 	# Load the logformatters and some other stuff first
 	require 'treequel/constants'
 	require 'treequel/utils'
-	require 'treequel/directory'
-	require 'treequel/branch'
 
 	include Treequel::Constants
 
@@ -125,6 +122,12 @@ module Treequel
 
 		return options
 	end
+
+	# Now load the rest of the library
+	require 'treequel/directory'
+	require 'treequel/branch'
+	require 'treequel/branchset'
+	require 'treequel/filter'
 	
 end # module Treequel
 

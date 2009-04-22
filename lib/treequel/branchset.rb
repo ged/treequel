@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# coding: utf-8
 
 require 'forwardable'
 require 'ldap'
@@ -8,6 +9,7 @@ require 'treequel/mixins'
 require 'treequel/constants'
 require 'treequel/branch'
 require 'treequel/filter'
+require 'treequel/sequel_integration'
 
 
 # A branchset represents an abstract set of LDAP records returned by
@@ -78,7 +80,7 @@ class Treequel::Branchset
 		:base    => nil,
 		:filter  => DEFAULT_FILTER,
 		:scope   => DEFAULT_SCOPE,
-		:timeout => nil,                 # Floating-point timeout -> sec, usec
+		:timeout => 0,                   # Floating-point timeout -> sec, usec
 		:select  => nil,                 # Attributes to return -> attrs
 		:order   => nil,                 # Sorting criteria -> s_attr/s_proc
 	}.freeze
@@ -139,17 +141,8 @@ class Treequel::Branchset
 	### objects.
 	def all
 		directory = self.base.directory
-		# timeout_s = self.timeout.truncate
-		# timeout_us = self.timeout.
-
-		# base_dn, scope, filter,
-		#   attrs=nil, attrsonly=false,
-		#   sec=0, usec=0,
-		#   s_attr=nil, s_proc=nil
-		return directory.search( self.base, self.scope, self.filter_string,
-			self.select, false,
-			0, 0,
-			nil, nil )
+		return directory.search( self.base, self.scope, self.filter, self.select, 
+			self.timeout, self.order )
 	end
 
 	
@@ -224,10 +217,30 @@ class Treequel::Branchset
 
 	### Return a clone of the receiving Branchset that will not use a timeout when
 	### searching.
-	def no_timeout
-		return self.clone( :timeout => nil )
+	def without_timeout
+		return self.clone( :timeout => 0 )
 	end
 
+
+	### Return a clone of the receiving Branchsest that will order its results by the
+	### +attributes+ specified.
+	def order( attribute=:__default__ )
+		if attribute == :__default__
+			if block_given?
+				sort_func = Proc.new
+				return self.clone( :order => sort_func )
+			else
+				return self.options[:order]
+			end
+		elsif attribute.nil?
+			self.log.debug "cloning %p with no order" % [ self ]
+			return self.clone( :order => nil )
+		else
+			self.log.debug "cloning %p with new order: %p" % [ self, attribute ]
+			return self.clone( :order => attribute.to_sym )
+		end
+	end
+	
 	
 end # class Treequel::Branchset
 

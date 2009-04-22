@@ -75,8 +75,7 @@ describe Treequel::Branchset do
 		it "performs a search using the default filter and scope when all records are requested" do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
-				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, /\(objectClass=\*\)/, 
-				      nil, false, 0, 0, nil, nil ).
+				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, nil, 0, nil ).
 				and_return( :matching_branches )
 		
 			@branchset.all.should == :matching_branches
@@ -112,8 +111,7 @@ describe Treequel::Branchset do
 			@branchset.options[:scope] = :onelevel
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
-				with( @branch, :onelevel, /\(objectClass=\*\)/, 
-				      nil, false, 0, 0, nil, nil ).
+				with( @branch, :onelevel, @branchset.filter, nil, 0, nil ).
 				and_return( :matching_branches )
 		
 			@branchset.all.should == :matching_branches
@@ -142,8 +140,8 @@ describe Treequel::Branchset do
 			@branchset.options[:select] = [ :l, :cn, :uid ]
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
-				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, /\(objectClass=\*\)/, 
-				      [:l, :cn, :uid], false, 0, 0, nil, nil ).
+				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, 
+				      [:l, :cn, :uid], 0, nil ).
 				and_return( :matching_branches )
 		
 			@branchset.all.should == :matching_branches
@@ -158,19 +156,58 @@ describe Treequel::Branchset do
 			newset.timeout.should == 30.0
 		end
 
+		it "can create a new branchset cloned from itself without a timeout" do
+			@branchset.options[:timeout] = 5.375
+			newset = @branchset.without_timeout
+			newset.timeout.should == 0
+		end
+
 		it "uses its timeout as the timeout values when searching" do
-			pending "completion of the timeout code in #search" do
-				@branchset.options[:timeout] = 5.375
-				@branch.should_receive( :directory ).and_return( @directory )
-				@directory.should_receive( :search ).
-					with( @branch, Treequel::Branchset::DEFAULT_SCOPE, /\(objectClass=\*\)/, 
-					      [:l, :cn, :uid], false, 5, 375_000, nil, nil ).
-					and_return( :matching_branches )
-		
-				@branchset.all.should == :matching_branches
-			end
+			@branchset.options[:timeout] = 5.375
+			@branch.should_receive( :directory ).and_return( @directory )
+			@directory.should_receive( :search ).
+				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, 
+				      nil, 5.375, nil ).
+				and_return( :matching_branches )
+	
+			@branchset.all.should == :matching_branches
 		end
 		
+		# 
+		# #order
+		# 
+	
+		it "can create a new branchset cloned from itself with a sort-order attribute" do
+			newset = @branchset.order( :uid )
+			newset.order.should == :uid
+		end
+
+		it "converts a string sort-order attribute to a Symbol" do
+			newset = @branchset.order( 'uid' )
+			newset.order.should == :uid
+		end
+
+		it "can set a sorting function instead of an attribute" do
+			newset = @branchset.order {|branch| branch.uid }
+			newset.order.should be_a( Proc )
+		end
+
+		it "can create a new branchset cloned from itself without a sort-order attribute" do
+			@branchset.options[:order] = :uid
+			newset = @branchset.order( nil )
+			newset.order.should == nil
+		end
+
+		it "uses its timeout as the timeout values when searching" do
+			@branchset.options[:timeout] = 5.375
+			@branch.should_receive( :directory ).and_return( @directory )
+			@directory.should_receive( :search ).
+				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, 
+				      nil, 5.375, nil ).
+				and_return( :matching_branches )
+	
+			@branchset.all.should == :matching_branches
+		end
 		
 	end
 
@@ -189,8 +226,7 @@ describe Treequel::Branchset do
 		it "performs a search using the default filter and scope when all records are requested" do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
-				with( @branch, :onelevel, /\(objectClass=\*\)/, 
-				      nil, false, 0, 0, nil, nil ).
+				with( @branch, :onelevel, @branchset.filter, nil, 0, nil ).
 				and_return( :matching_branches )
 		
 			@branchset.all.should == :matching_branches

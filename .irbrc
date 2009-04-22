@@ -1,7 +1,5 @@
 #!/usr/bin/ruby -*- ruby -*-
 
-require 'irb/ext/save-history'
-
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname.expand_path
@@ -20,8 +18,4 @@ rescue => e
 	$stderr.puts "Ack! Treequel library failed to load: #{e.message}\n\t" +
 		e.backtrace.join( "\n\t" )
 end
-
-$deferr.puts "Turning on history..."
-IRB.conf[:SAVE_HISTORY] = 100_000
-IRB.conf[:HISTORY_FILE] = "~/.irb.hist"
 

@@ -223,7 +223,7 @@ describe Treequel::Filter do
 
 		describe Treequel::Filter::SimpleItemComponent do
 			before( :each ) do
-				@component = Treequel::Filter::SimpleItemComponent.new( :uid, 'slange' )
+				@component = Treequel::Filter::SimpleItemComponent.new( :uid, 'schlange' )
 			end
 
 			it "can parse a component object from a string literal" do
@@ -253,7 +253,7 @@ describe Treequel::Filter do
 			end
 
 			it "stringifies as <attribute><operator><value>" do
-				@component.to_s.should == 'uid=slange'
+				@component.to_s.should == 'uid=schlange'
 			end
 
 			it "uses the '~=' operator if its filtertype is 'approx'" do
@@ -271,6 +271,13 @@ describe Treequel::Filter do
 				@component.filtertype_op.should == '<='
 			end
 
+			it "raises an error if it's created with an unknown filtertype" do
+				lambda { 
+					Treequel::Filter::SimpleItemComponent.new( :uid, 'schlange', :fork )
+				}.should raise_error( Treequel::Filter::ExpressionError, /invalid/i )
+				
+			end
+			
 		end
 
 
@@ -341,6 +348,18 @@ describe Treequel::Filter do
 				}.should raise_error( ArgumentError, /2 for 1/i )
 			end
 		end
+	end
+
+	describe "support for Sequel expressions" do
+		
+		before( :each ) do
+			pending "requires the 'sequel' library" unless Sequel.const_defined?( :Model )
+		end
+		
+		it "supports the boolean expression syntax" do
+			Treequel::Filter.new( :uid >= 2000 ).should be_a( Treequel::Filter )
+		end
+		
 	end
 end
 

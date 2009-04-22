@@ -4,6 +4,7 @@ require 'ldap'
 
 require 'treequel' 
 require 'treequel/branchset'
+require 'treequel/sequel_integration'
 
 
 # This is an object that is used to build an LDAP filter for Treequel::Branchsets.
@@ -229,6 +230,15 @@ class Treequel::Filter
 			self.log.debug "creating a new %s %s for %p and %p" %
 				[ filtertype, self.class.name, attribute, value ]
 
+			if FILTERTYPE_OP.key?( filtertype )
+				# no-op
+			elsif FILTEROP_NAMES.key?( filtertype.to_s )
+				filtertype = FILTEROP_NAMES[ filtertype.to_s ]
+			else
+				raise Treequel::Filter::ExpressionError,
+					"invalid simple item operator %p" % [ filtertype ]
+			end
+
 			@attribute  = attribute
 			@value      = value
 			@filtertype = filtertype
@@ -379,9 +389,16 @@ class Treequel::Filter
 		when Array
 			return self.parse_array_expression( expression )
 
+		when Hash
+			return self.parse_array_expression( expression.to_a )
+
 		# Unwrapped presence item filter
 		when Symbol
 			return Treequel::Filter::PresentItemComponent.new( expression )
+
+		# Support Sequel expressions
+		when Sequel::SQL::Expression
+			return self.parse_sequel_expression( expression )
 
 		else
 			raise Treequel::Filter::ExpressionError, 
@@ -478,6 +495,22 @@ class Treequel::Filter
 			return Treequel::Filter::SubstringItemComponent.new( attribute, value )
 		else
 			return Treequel::Filter::SimpleItemComponent.new( attribute, value )
+		end
+	end
+	
+	
+	### Parse a Sequel::SQL::Expression as a Treequel::Filter::Component and return it.
+	def self::parse_sequel_expression( expression )
+		case expression
+			
+		when Sequel::SQL::BooleanExpression
+			attribute, value = *expression.args
+			op = expression.op
+			return Treequel::Filter::SimpleItemComponent.new( attribute, value, op )
+			
+		else
+			raise Treequel::Filter::ExpressionError,
+				"don't know how to turn %p into a component" % [ expression.class ]
 		end
 	end
 	
