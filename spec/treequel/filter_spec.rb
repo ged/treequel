@@ -113,6 +113,19 @@ describe Treequel::Filter do
 		Treequel::Filter.new( [:'!', [:uid, 'kunglung']] ).to_s.should == '(!(uid=kunglung))'
 	end
 
+	it "parses a Range item as a boolean ANDed expression" do
+		filter = Treequel::Filter.new( :uid, 200..1000 ).to_s.should == '(&(uid>=200)(uid<=1000))'
+	end
+	
+	it "parses a exclusive Range correctly" do
+		filter = Treequel::Filter.new( :uid, 200...1000 ).to_s.should == '(&(uid>=200)(uid<=999))'
+	end
+	
+	it "parses a Range item with non-numeric components" do
+		filter = Treequel::Filter.new( :lastName => 'Dale'..'Darby' ).to_s.
+			should == '(&(lastName>=Dale)(lastName<=Darby))'
+	end
+	
 	it "raises an exception with a NOT expression that contains more than one clause" do
 		lambda {
 			Treequel::Filter.new( [:not, [:uid, 'kunglung'], [:name, 'chunger']] )
@@ -132,7 +145,7 @@ describe Treequel::Filter do
 
 	it "raises an error when an extensible item filter is given" do
 		lambda {
-			Treequel::Filter.new( 'cn:1.2.3.4.5:', 'Fred Flintstone' )
+			Treequel::Filter.new( :'cn:1.2.3.4.5:', 'Fred Flintstone' )
 		 }.should raise_error( NotImplementedError, /extensible.*supported/i )
 	end
 
