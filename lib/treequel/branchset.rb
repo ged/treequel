@@ -81,8 +81,8 @@ class Treequel::Branchset
 		:filter  => DEFAULT_FILTER,
 		:scope   => DEFAULT_SCOPE,
 		:timeout => 0,                   # Floating-point timeout -> sec, usec
-		:select  => nil,                 # Attributes to return -> attrs
-		:order   => nil,                 # Sorting criteria -> s_attr/s_proc
+		:select  => [],                 # Attributes to return -> attrs
+		:order   => '',                 # Sorting criteria -> s_attr/s_proc
 	}.freeze
 
 
@@ -183,7 +183,7 @@ class Treequel::Branchset
 	### attributes, which is the default.
 	def select( *attributes )
 		if attributes.empty?
-			return self.options[:select]
+			return self.options[:select].collect {|attribute| attribute.to_s }
 		else
 			self.log.debug "cloning %p with new selection: %p" % [ self, attributes ]
 			return self.clone( :select => attributes )
@@ -193,7 +193,7 @@ class Treequel::Branchset
 	
 	### Returns a clone of the receiving Branchset that will fetch all attributes.
 	def select_all
-		return self.clone( :select => nil )
+		return self.clone( :select => [] )
 	end
 	
 	

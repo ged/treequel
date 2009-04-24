@@ -33,11 +33,11 @@ module Treequel::Constants # :nodoc:
 
 			# ldap-oid                 = 1*DIGIT 0*1("." 1*DIGIT)
 			#                            ; An LDAPOID, as defined in [4]
-			ldap_oid        = %r{ [[:digit:]]+ (?:\.[[:digit:]]+)* }x
+			LDAP_OID        = %r{ [[:digit:]]+ (?:\.[[:digit:]]+)* }x
 
 			# AttributeType            = ldap-oid / (ALPHA *(attr-type-chars))
 			LDAP_ATTRIBUTE_TYPE = %r{
-				#{ldap_oid}
+				#{LDAP_OID}
 				|
 				[[:alpha:]] #{attr_type_chars}*
 			}x
@@ -98,7 +98,89 @@ module Treequel::Constants # :nodoc:
 			}x
 
 			
-		end
+		end # terminals
+		
+		# 
+		# objectClass schema entry
+		# 
+		begin
+			
+			# a     = "a" / "b" / "c" / "d" / "e" / "f" / "g" / "h" / "i" /
+			#         "j" / "k" / "l" / "m" / "n" / "o" / "p" / "q" / "r" /
+			#         "s" / "t" / "u" / "v" / "w" / "x" / "y" / "z" / "A" /
+			#         "B" / "C" / "D" / "E" / "F" / "G" / "H" / "I" / "J" /
+			#         "K" / "L" / "M" / "N" / "O" / "P" / "Q" / "R" / "S" /
+			#         "T" / "U" / "V" / "W" / "X" / "Y" / "Z"
+            a = '[[:alpha:]]'
+
+			# d               = "0" / "1" / "2" / "3" / "4" /
+			#                   "5" / "6" / "7" / "8" / "9"
+			d = '[[:digit:]]'
+            
+			# hex-digit       =  d / "a" / "b" / "c" / "d" / "e" / "f" /
+			#                        "A" / "B" / "C" / "D" / "E" / "F"
+			hexdigit = '[[:xdigit:]]'
+
+			# k               = a / d / "-" / ";"
+			k = '[[:alpha:][:digit:];\-]'
+
+			# p               = a / d / """ / "(" / ")" / "+" / "," /
+			#                   "-" / "." / "/" / ":" / "?" / " "
+			p = '[[:alpha:][:digit:]"\(\)\+,\-\./:\? ]'
+
+			# anhstring       = 1*k
+            anhstring = /#{k}+/
+
+			# keystring       = a [ anhstring ]
+            keystring = /#{a}#{anhstring}/
+
+			# printablestring = 1*p
+            #
+			# space           = 1*" "
+            # 
+			# whsp            = [ space ]
+            # 
+			# utf8            = <any sequence of octets formed from the UTF-8 [9]
+			#                    transformation of a character from ISO10646 [10]>
+            # 
+			# dstring         = 1*utf8
+            # 
+			# qdstring        = whsp "'" dstring "'" whsp
+            # 
+			# qdstringlist    = [ qdstring *( qdstring ) ]
+            # 
+			# qdstrings       = qdstring / ( whsp "(" qdstringlist ")" whsp )
+
+			# ObjectClassDescription = "(" whsp
+			#     numericoid whsp      ; ObjectClass identifier
+			#     [ "NAME" qdescrs ]
+			#     [ "DESC" qdstring ]
+			#     [ "OBSOLETE" whsp ]
+			#     [ "SUP" oids ]       ; Superior ObjectClasses
+			#     [ ( "ABSTRACT" / "STRUCTURAL" / "AUXILIARY" ) whsp ]
+			#                          ; default structural
+			#     [ "MUST" oids ]      ; AttributeTypes
+			#     [ "MAY" oids ]       ; AttributeTypes
+			# whsp ")"
+			whsp = /[ ]+/
+			
+			# object descriptors used as schema element names
+			#     qdescrs         = qdescr / ( whsp "(" qdescrlist ")" whsp )
+			#     qdescrlist      = [ qdescr *( qdescr ) ]
+			#     qdescr          = whsp "'" descr "'" whsp
+			qdescr  = %r{ #{whsp} ' '}
+			qdescrs = 
+			
+			
+			LDAP_OBJECTCLASS_DESCRIPTION = %r{
+				\( #{whsp}
+					(#{LDAP_OID})
+					#{whsp}
+					(NAME )
+				#{whsp} \)
+			}x
+			
+		end # objectClass
 	
 	end # module Patterns
 

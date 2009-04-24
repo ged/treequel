@@ -192,7 +192,7 @@ describe Treequel::Directory do
 				{ 'dn' => ["uid=margento,#{TEST_PEOPLE_DN}"] },
 			]
 			@conn.should_receive( :search2 ).
-				with( base, LDAP::LDAP_SCOPE_BASE, filter, nil, false, 0, 0, nil, nil ).
+				with( base, LDAP::LDAP_SCOPE_BASE, filter, [], false, 0, 0, nil, nil ).
 				and_return( entries )
 
 			# Turn found entries into Branch objects

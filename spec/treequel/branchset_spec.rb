@@ -75,7 +75,7 @@ describe Treequel::Branchset do
 		it "performs a search using the default filter and scope when all records are requested" do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
-				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, nil, 0, nil ).
+				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, [], 0, '' ).
 				and_return( :matching_branches )
 		
 			@branchset.all.should == :matching_branches
@@ -111,7 +111,7 @@ describe Treequel::Branchset do
 			@branchset.options[:scope] = :onelevel
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
-				with( @branch, :onelevel, @branchset.filter, nil, 0, nil ).
+				with( @branch, :onelevel, @branchset.filter, [], 0, '' ).
 				and_return( :matching_branches )
 		
 			@branchset.all.should == :matching_branches
@@ -122,18 +122,18 @@ describe Treequel::Branchset do
 		# 
 		it "can create a new branchset cloned from itself with an attribute selection" do
 			newset = @branchset.select( :l, :lastName, :disabled )
-			newset.select.should == [ :l, :lastName, :disabled ]
+			newset.select.should == [ 'l', 'lastName', 'disabled' ]
 		end
 		
 		it "can create a new branchset cloned from itself with all attributes selected" do
 			newset = @branchset.select_all
-			newset.select.should == nil
+			newset.select.should == []
 		end
 		
 		it "can create a new branchset cloned from itself with additional attributes selected" do
 			@branchset.options[:select] = [ :l, :cn, :uid ]
 			newset = @branchset.select_more( :firstName, :uid, :lastName )
-			newset.select.should == [ :l, :cn, :uid, :firstName, :lastName ]
+			newset.select.should == [ 'l', 'cn', 'uid', 'firstName', 'lastName' ]
 		end
 
 		it "uses its selection as the list of attributes to fetch when searching" do
@@ -141,7 +141,7 @@ describe Treequel::Branchset do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
 				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, 
-				      [:l, :cn, :uid], 0, nil ).
+				      ['l', 'cn', 'uid'], 0, '' ).
 				and_return( :matching_branches )
 		
 			@branchset.all.should == :matching_branches
@@ -167,7 +167,7 @@ describe Treequel::Branchset do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
 				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, 
-				      nil, 5.375, nil ).
+				      [], 5.375, '' ).
 				and_return( :matching_branches )
 	
 			@branchset.all.should == :matching_branches
@@ -203,7 +203,7 @@ describe Treequel::Branchset do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
 				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, 
-				      nil, 5.375, nil ).
+				      [], 5.375, '' ).
 				and_return( :matching_branches )
 	
 			@branchset.all.should == :matching_branches
@@ -226,7 +226,7 @@ describe Treequel::Branchset do
 		it "performs a search using the default filter and scope when all records are requested" do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
-				with( @branch, :onelevel, @branchset.filter, nil, 0, nil ).
+				with( @branch, :onelevel, @branchset.filter, [], 0, '' ).
 				and_return( :matching_branches )
 		
 			@branchset.all.should == :matching_branches

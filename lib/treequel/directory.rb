@@ -174,7 +174,7 @@ class Treequel::Directory
 	
 	### Perform a +scope+ search at +base+ using the specified +filter+. The +scope+ argument
 	### can be one of +:onelevel+, +:base+, or +:subtree+.
-	def search( base, scope, filter, selectattrs=nil, timeout=0, sortby=nil )
+	def search( base, scope, filter, selectattrs=[], timeout=0, sortby=nil )
 		timeout_s = timeout_us = 0
 		sortattr = sortfunc = nil
 
@@ -190,10 +190,25 @@ class Treequel::Directory
 		if sortby.respond_to?( :call )
 			sortfunc = sortby
 		elsif !sortby.nil?
-			sortattr = sortby
+			sortattr = sortby.to_s
 		end
 		
-		# conn.search2(base_dn, scope, filter, attrs, attrsonly, sec, usec, s_attr, s_proc
+		# conn.search2(base_dn, scope, filter, attrs=nil, attrsonly=false,
+		# 	sec=0, usec=0, s_attr=nil, s_proc=nil)
+		self.log.debug {
+			fmt = "Searching with: base_dn=%p, scope=%p, filter=%p, attrs=%p, " +
+			      "attrsonly=false, sec=%p, usec=%p, s_attr=%p, s_proc=%p"
+			fmt % [
+				base_dn,
+				scope,
+				filter.to_s,
+				selectattrs,
+				timeout_s,
+				timeout_us,
+				sortattr,
+				sortfunc
+			]
+		}
 		results = self.conn.search2( base_dn, scope, filter.to_s, 
 			selectattrs, false, 
 			timeout_s, timeout_us,
