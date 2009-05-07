@@ -1,4 +1,5 @@
 #!/usr/bin/ruby
+# coding: utf-8
 
 BEGIN {
 	require 'pathname'
@@ -12,7 +13,7 @@ BEGIN {
 begin
 	require 'yaml'
 	require 'treequel'
-	
+
 	require 'spec/lib/constants'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
@@ -32,15 +33,15 @@ module Treequel::SpecHelpers
 		def initialize( array )
 			@array = array
 		end
-		
+
 		### Write the specified +message+ to the array.
 		def write( message )
 			@array << message
 		end
-		
+
 		### No-op -- this is here just so Logger doesn't complain
 		def close; end
-		
+
 	end # class ArrayLogger
 
 
@@ -62,8 +63,8 @@ module Treequel::SpecHelpers
 	def reset_logging
 		Treequel.reset_logger
 	end
-	
-	
+
+
 	### Alter the output of the default log formatter to be pretty in SpecMate output
 	def setup_logging( level=Logger::FATAL )
 
@@ -71,7 +72,7 @@ module Treequel::SpecHelpers
 		if Treequel::Loggable::LEVEL.key?( level )
 			level = Treequel::Loggable::LEVEL[ level ]
 		end
-		
+
 		logger = Logger.new( $stderr )
 		Treequel.logger = logger
 		Treequel.logger.level = level
@@ -94,7 +95,7 @@ module Treequel::SpecHelpers
 		return {} unless TESTING_CONFIG_FILE.exist?
 
 		Treequel.logger.debug "Trying to load test config: %s" % [ TESTING_CONFIG_FILE ]
-	
+
 		begin
 			config = YAML.load_file( TESTING_CONFIG_FILE )
 			if config[ section ]
@@ -111,8 +112,8 @@ module Treequel::SpecHelpers
 			return {}
 		end
 	end
-	
-	
+
+
 end
 
 
