@@ -24,95 +24,7 @@ module Treequel::Constants # :nodoc:
 	### A collection of Regexps to match various LDAP values
 	module Patterns
 
-		# Schema-parsing patterns based on the BNF in 
-		# RFC 4512 (http://tools.ietf.org/html/rfc4512#section-4.1.1)
-		# 
 		begin
-
-			#	ALPHA   = %x41-5A / %x61-7A   ; "A"-"Z" / "a"-"z"
-			ALPHA = '[:alpha:]'
-
-			#	LDIGIT  = %x31-39             ; "1"-"9"
-			LDIGIT = '1-9'
-
-			#	DIGIT   = %x30 / LDIGIT       ; "0"-"9"
-			DIGIT  = '[:digit:]'
-
-			#	HEX     = DIGIT / %x41-46 / %x61-66 ; "0"-"9" / "A"-"F" / "a"-"f"
-			HEX = '[:xdigit:]'
-
-			#	
-			#	SP      = 1*SPACE  ; one or more " "
-			#	WSP     = 0*SPACE  ; zero or more " "
-			SP = '[ ]+'
-			WSP = '[ ]*'
-
-			### These are inlined for simplicity
-			#	NULL    = %x00 ; null (0)
-			#	SPACE   = %x20 ; space (" ")
-			#	DQUOTE  = %x22 ; quote (""")
-			#	SHARP   = %x23 ; octothorpe (or sharp sign) ("#")
-			#	DOLLAR  = %x24 ; dollar sign ("$")
-			#	SQUOTE  = %x27 ; single quote ("'")
-			#	LPAREN  = %x28 ; left paren ("(")
-			#	RPAREN  = %x29 ; right paren (")")
-			#	PLUS    = %x2B ; plus sign ("+")
-			#	COMMA   = %x2C ; comma (",")
-			#	HYPHEN  = %x2D ; hyphen ("-")
-			#	DOT     = %x2E ; period (".")
-			DOT = '\x2e'
-
-			#	SEMI    = %x3B ; semicolon (";")
-			#	LANGLE  = %x3C ; left angle bracket ("<")
-			#	EQUALS  = %x3D ; equals sign ("=")
-			#	RANGLE  = %x3E ; right angle bracket (">")
-			#	ESC     = %x5C ; backslash ("\")
-			#	USCORE  = %x5F ; underscore ("_")
-			#	LCURLY  = %x7B ; left curly brace "{"
-			#	RCURLY  = %x7D ; right curly brace "}"
-			#	
-			#	; Any UTF-8 [RFC3629] encoded Unicode [Unicode] character
-			#	UTF8    = UTF1 / UTFMB
-			#	UTFMB   = UTF2 / UTF3 / UTF4
-			#	UTF0    = %x80-BF
-			#	UTF1    = %x00-7F
-			#	UTF2    = %xC2-DF UTF0
-			#	UTF3    = %xE0 %xA0-BF UTF0 / %xE1-EC 2(UTF0) / %xED %x80-9F UTF0 / %xEE-EF 2(UTF0)
-			#	UTF4    = %xF0 %x90-BF 2(UTF0) / %xF1-F3 3(UTF0) / %xF4 %x80-8F 2(UTF0)
-			#	OCTET   = %x00-FF ; Any octet (8-bit data unit)
-			# 
-			#	leadkeychar = ALPHA
-			leadkeychar = /[#{ALPHA}]/
-
-			#	keychar = ALPHA / DIGIT / HYPHEN
-			keychar = /[#{ALPHA}#{DIGIT}\-]/
-
-			#	number  = DIGIT / ( LDIGIT 1*DIGIT )
-			number = /[#{DIGIT}]|[#{LDIGIT}][#{DIGIT}]+/
-
-			#	keystring = leadkeychar *keychar
-			keystring = /#{leadkeychar}#{keychar}*/
-
-			# Object identifiers (OIDs) [X.680] are represented in LDAP using a
-			# dot-decimal format conforming to the ABNF:
-			# 
-			#	numericoid = number 1*( DOT number )
-			numericoid = /#{number}( #{DOT} #{number} )+/x
-
-			# 
-			# Short names, also known as descriptors, are used as more readable
-			# aliases for object identifiers.  Short names are case insensitive and
-			# conform to the ABNF:
-			# 
-			#	descr = keystring
-			# 
-			# Where either an object identifier or a short name may be specified,
-			# the following production is used:
-			# 
-			#    oid = descr / numericoid
-
-
-		### -- ^^ new stuff / old stuff vv -- 
 
 			# attr-type-chars		   = ALPHA / DIGIT / "-"
 			attr_type_chars = %r{ [[:alpha:][:digit:]\-] }x
@@ -184,123 +96,219 @@ module Treequel::Constants # :nodoc:
 			}x
 
 
+		end
 
-			# a				  = "a" / "b" / "c" / "d" / "e" / "f" / "g" / "h" / "i" /
-			#					"j" / "k" / "l" / "m" / "n" / "o" / "p" / "q" / "r" /
-			#					"s" / "t" / "u" / "v" / "w" / "x" / "y" / "z" / "A" /
-			#					"B" / "C" / "D" / "E" / "F" / "G" / "H" / "I" / "J" /
-			#					"K" / "L" / "M" / "N" / "O" / "P" / "Q" / "R" / "S" /
-			#					"T" / "U" / "V" / "W" / "X" / "Y" / "Z"
-			a = '[[:alpha:]]'
+		# Schema-parsing patterns based on the BNF in 
+		# RFC 4512 (http://tools.ietf.org/html/rfc4512#section-4.1.1)
+		# 
+		begin
 
-			# d				  = "0" / "1" / "2" / "3" / "4" /
-			#					"5" / "6" / "7" / "8" / "9"
-			d = '[[:digit:]]'
+			#	ALPHA   = %x41-5A / %x61-7A   ; "A"-"Z" / "a"-"z"
+			ALPHA = '[:alpha:]'
 
-			# hex-digit		  =	 d / "a" / "b" / "c" / "d" / "e" / "f" /
-			#						 "A" / "B" / "C" / "D" / "E" / "F"
-			hexdigit = '[[:xdigit:]]'
+			#	LDIGIT  = %x31-39             ; "1"-"9"
+			LDIGIT = '1-9'
 
-			# k				  = a / d / "-" / ";"
-			k = '[[:alpha:][:digit:];\-]'
+			#	DIGIT   = %x30 / LDIGIT       ; "0"-"9"
+			DIGIT  = '\d'
 
-			# p				  = a / d / """ / "(" / ")" / "+" / "," /
-			#					"-" / "." / "/" / ":" / "?" / " "
-			p = '[[:alpha:][:digit:]"\(\)\+,\-\./:\? ]'
+			#	HEX     = DIGIT / %x41-46 / %x61-66 ; "0"-"9" / "A"-"F" / "a"-"f"
+			HEX = '[:xdigit:]'
 
-		 	# letterstring    = 1*a
-		 	letterstring = "#{a}+"
+			#	
+			#	SP      = 1*SPACE  ; one or more " "
+			#	WSP     = 0*SPACE  ; zero or more " "
+			SP = '[ ]+'
+			WSP = '[ ]*'
 
-		 	# numericstring   = 1*d
-			numericstring = "#{d}+"
+			### These are inlined for simplicity
+			#	NULL    = %x00 ; null (0)
+			#	SPACE   = %x20 ; space (" ")
+			#	DQUOTE  = %x22 ; quote (""")
+			#	SHARP   = %x23 ; octothorpe (or sharp sign) ("#")
+			#	DOLLAR  = %x24 ; dollar sign ("$")
+			DOLLAR = '\x24'
 
-			# anhstring		  = 1*k
-			ANHSTRING = /#{k}+/
+			#	SQUOTE  = %x27 ; single quote ("'")
+			SQUOTE = '\x27'
 
-			# keystring		  = a [ anhstring ]
-			KEYSTRING = /#{a}#{ANHSTRING}?/
+			#	LPAREN  = %x28 ; left paren ("(")
+			#	RPAREN  = %x29 ; right paren (")")
+			LPAREN = '\x28'
+			RPAREN = '\x29'
 
-			# space			  = 1*" "
-			# whsp			  = [ space ]
-			WHSP = /[ ]*/
+			#	PLUS    = %x2B ; plus sign ("+")
+			#	COMMA   = %x2C ; comma (",")
+			#	HYPHEN  = %x2D ; hyphen ("-")
+			HYPHEN = '\x2d'
 
-			# descr           = keystring
+			#	DOT     = %x2E ; period (".")
+			DOT = '\x2e'
+
+			#	SEMI    = %x3B ; semicolon (";")
+			#	LANGLE  = %x3C ; left angle bracket ("<")
+			#	EQUALS  = %x3D ; equals sign ("=")
+			#	RANGLE  = %x3E ; right angle bracket (">")
+			#	ESC     = %x5C ; backslash ("\")
+			ESC = '\x5c'
+
+			#	USCORE  = %x5F ; underscore ("_")
+			USCORE = '\x5f'
+
+			#	LCURLY  = %x7B ; left curly brace "{"
+			#	RCURLY  = %x7D ; right curly brace "}"
+			LCURLY = '\x7b'
+			RCURLY = '\x7d'
+
+			#	; Any UTF-8 [RFC3629] encoded Unicode [Unicode] character
+			#	UTF0    = %x80-BF
+			#	UTF1    = %x00-7F
+			#	UTF2    = %xC2-DF UTF0
+			UTF0 = '\x80-\xbf'
+			UTF1 = '\x00-\x7f'
+			UTF2 = '\xc2-\xdf' + UTF0
+
+			#	UTF3    = %xE0 %xA0-BF UTF0 / %xE1-EC 2(UTF0) / %xED %x80-9F UTF0 / %xEE-EF 2(UTF0)
+			UTF3 = /
+				\xe0 [\xa0-\xbf] [#{UTF0}]
+				|
+				[\xe1-\xec] [#{UTF0}]{2} 
+				|
+				\xed [\x80-\x9f] [#{UTF0}]
+				|
+				[\xee-\xef] [#{UTF0}]{2}
+			/x
+
+			#	UTF4    = %xF0 %x90-BF 2(UTF0) / %xF1-F3 3(UTF0) / %xF4 %x80-8F 2(UTF0)
+			UTF4 = /
+				\xf0 [\x90-\xbf] [#{UTF0}]{2}
+				|
+				[\xf1-\xf3] [#{UTF0}]{3}
+				|
+				\xf4 [\x80-\x8f] [#{UTF0}]{2}
+			/x
+
+			#	UTFMB   = UTF2 / UTF3 / UTF4
+			UTFMB = Regexp.union( UTF2, UTF3, UTF4 )
+
+			#	UTF8    = UTF1 / UTFMB
+			UTF8 = Regexp.union( UTF1, UTFMB )
+
+			#	OCTET   = %x00-FF ; Any octet (8-bit data unit)
+			OCTET = '.'
+
+			#	leadkeychar = ALPHA
+			LEADKEYCHAR = /[#{ALPHA}]/
+
+			#	keychar = ALPHA / DIGIT / HYPHEN
+			KEYCHAR = /[#{ALPHA}#{DIGIT}\-]/
+
+			#	number  = DIGIT / ( LDIGIT 1*DIGIT )
+			NUMBER = /[#{LDIGIT}]#{DIGIT}+|#{DIGIT}/ # Reversed for greediness
+
+			#	keystring = leadkeychar *keychar
+			KEYSTRING = /#{LEADKEYCHAR}#{KEYCHAR}*/
+
+			# Object identifiers (OIDs) [X.680] are represented in LDAP using a
+			# dot-decimal format conforming to the ABNF:
+			# 
+			#	numericoid = number 1*( DOT number )
+			NUMERICOID = /#{NUMBER}(?: #{DOT} #{NUMBER} )+/x
+
+			# 
+			# Short names, also known as ¨iptors, are used as more readable
+			# aliases for object identifiers.  Short names are case insensitive and
+			# conform to the ABNF:
+			# 
+			#	descr = keystring
 			DESCR = KEYSTRING
 
-			# numericoid      = numericstring *( "." numericstring )
-			NUMERICOID = /#{numericstring} (?: \. #{numericstring} )*/x
-
-			# oid             = descr / numericoid
-			OID = /#{DESCR}|#{NUMERICOID}/
-
-			# woid            = WHSP oid whsp
-			WOID = /#{WHSP}#{OID}#{WHSP}/
-
-			# oidlist         = woid *( "$" woid )
-			OIDLIST = /#{WOID} (?:\$ #{WOID})*/x
-
-			# ; set of oids of either form
-			# oids            = woid / ( "(" oidlist ")" )
-			OIDS = /#{WOID} | #{WHSP} \( #{OIDLIST} \) #{WHSP} /x
-
-			# ; object descriptors used as schema element names
-			# qdescr		  = whsp "'" descr "'" whsp
-			QDESCR	= %r{ #{WHSP} ' #{DESCR} ' #{WHSP} }x
-
-			# qdescrlist      = [ qdescr *( qdescr ) ]
-			QDESCRLIST = /#{QDESCR}+/x
-
-			# qdescrs         = qdescr / ( whsp "(" qdescrlist ")" whsp )
-			QDESCRS = /#{QDESCR} | #{WHSP} \( #{QDESCRLIST} \) #{WHSP}/x
-
-			# utf8			  = <any sequence of octets formed from the UTF-8 [9]
-			#					 transformation of a character from ISO10646 [10]>
+			# Where either an object identifier or a short name may be specified,
+			# the following production is used:
 			# 
-			# dstring		  = 1*utf8
-			# 
-			# qdstring		  = whsp "'" dstring "'" whsp
-			# 
-			# qdstringlist	  = [ qdstring *( qdstring ) ]
-			# 
-			# qdstrings		  = qdstring / ( whsp "(" qdstringlist ")" whsp )
-			QDSTRING = /#{WHSP} ' (?:[^']+|\\')+ ' #{WHSP} /x
-			QDSTRINGLIST = /#{QDSTRING}+/
-			QDSTRINGS = /#{QDSTRING} | #{WHSP} \( #{QDSTRINGLIST} \) #{WHSP} /x
+			#    oid = descr / numericoid
+			OID = / #{DESCR} | #{NUMERICOID} /x
 
-			# ObjectClassDescription = "(" whsp
-			#	  numericoid whsp	   ; ObjectClass identifier
-			#	  [ "NAME" qdescrs ]
-			#	  [ "DESC" qdstring ]
-			#	  [ "OBSOLETE" whsp ]
-			#	  [ "SUP" oids ]	   ; Superior ObjectClasses
-			#	  [ ( "ABSTRACT" / "STRUCTURAL" / "AUXILIARY" ) whsp ]
-			#						   ; default structural
-			#	  [ "MUST" oids ]	   ; AttributeTypes
-			#	  [ "MAY" oids ]	   ; AttributeTypes
-			# whsp ")"
+
+			# len = number
+			LEN = NUMBER
+
+			# noidlen = numericoid [ LCURLY len RCURLY ]
+			NOIDLEN = /#{NUMERICOID} (?:#{LCURLY} #{LEN} #{RCURLY})?/x
+
+			# oidlist = oid *( WSP DOLLAR WSP oid )
+			OIDLIST = /#{OID} (?: #{WSP} #{DOLLAR} #{WSP} #{OID} )*/x
+
+			# oids = oid / ( LPAREN WSP oidlist WSP RPAREN )
+			OIDS = / #{OID} | #{LPAREN} #{WSP} #{OIDLIST} #{WSP} #{RPAREN} /x
+
+			# xstring = "X" HYPHEN 1*( ALPHA / HYPHEN / USCORE )
+			XSTRING = / X #{HYPHEN} [#{ALPHA}#{HYPHEN}#{USCORE}]+ /x
+
+			# qdescr = SQUOTE descr SQUOTE
+			# qdescrlist = [ qdescr *( SP qdescr ) ]
+			# qdescrs = qdescr / ( LPAREN WSP qdescrlist WSP RPAREN )
+			QDESCR = / #{SQUOTE} #{DESCR} #{SQUOTE} /x
+			QDESCRLIST = /(?: #{QDESCR} (?: #{SP} #{QDESCR} )* )?/x
+			QDESCRS = / #{QDESCR} | #{LPAREN} #{WSP} #{QDESCRLIST} #{WSP} #{RPAREN} /x
+
+			# ; Any ASCII character except %x27 ("\'") and %x5C ("\")
+			# QUTF1    = %x00-26 / %x28-5B / %x5D-7F
+			QUTF1 = /[\x00-\x26\x28-\x5b\x5d-\x7f]/
+
+			# ; Any UTF-8 encoded Unicode character
+			# ; except %x27 ("\'") and %x5C ("\")
+			# QUTF8    = QUTF1 / UTFMB
+			QUTF8 = Regexp.union( QUTF1, UTFMB )
+
+			# QQ =  ESC %x32 %x37 ; "\27"
+			# QS =  ESC %x35 ( %x43 / %x63 ) ; "\5C" / "\5c"
+			QQ = / #{ESC} 27 /x
+			QS = / #{ESC} 5c /xi
+
+			# dstring = 1*( QS / QQ / QUTF8 )   ; escaped UTF-8 string
+			# qdstring = SQUOTE dstring SQUOTE
+			# qdstringlist = [ qdstring *( SP qdstring ) ]
+			# qdstrings = qdstring / ( LPAREN WSP qdstringlist WSP RPAREN )
+			DSTRING = / (?: #{QS} | #{QQ} | #{QUTF8} )+ /x
+			QDSTRING = / #{SQUOTE} #{DSTRING} #{SQUOTE} /x
+			QDSTRINGLIST = /(?: #{QDSTRING} (?: #{SP} #{QDSTRING} )* )?/
+			QDSTRINGS = / #{QDSTRING} | #{LPAREN} #{WSP} #{QDSTRINGLIST} #{WSP} #{RPAREN} /x
+
+			# extensions = *( SP xstring SP qdstrings )
+			EXTENSIONS = /(?: #{SP} #{XSTRING} #{SP} #{QDSTRINGS} )*/x
+
+			#   kind = "ABSTRACT" / "STRUCTURAL" / "AUXILIARY"
+			KIND = Regexp.union( 'ABSTRACT', 'STRUCTURAL', 'AUXILIARY' )
+
+			# Object Class definitions are written according to the ABNF:
+			# 
+			#   ObjectClassDescription = LPAREN WSP
+			#       numericoid                 ; object identifier
+			#       [ SP "NAME" SP qdescrs ]   ; short names (descriptors)
+			#       [ SP "DESC" SP qdstring ]  ; description
+			#       [ SP "OBSOLETE" ]          ; not active
+			#       [ SP "SUP" SP oids ]       ; superior object classes
+			#       [ SP kind ]                ; kind of class
+			#       [ SP "MUST" SP oids ]      ; attribute types
+			#       [ SP "MAY" SP oids ]       ; attribute types
+			#       extensions WSP RPAREN
+			# 
 			LDAP_OBJECTCLASS_DESCRIPTION = %r{
-				\( #{WHSP}
-					(#{NUMERICOID})				# $1
-					#{WHSP}                 	
-					(?:NAME (#{QDESCRS}))?		# $2
-					#{WHSP}						# missing from the rfc's bnf, but necessary
-					(?:DESC (#{QDSTRING}))? 	# $3
-					#{WHSP}                 	
-					(?:(OBSOLETE) )?			# $4
-					#{WHSP}                 	
-					(?:SUP (#{OIDS}))?			# $5
-					(							# $6
-						ABSTRACT
-						|
-						STRUCTURAL
-						|
-						AUXILIARY
-					)?
-					#{WHSP}
-					(?:MUST (#{OIDS}))?			# $7
-					(?:MAY (#{OIDS}))?			# $8
-				#{WHSP} \)
-			}ix
+				#{LPAREN} #{WSP}
+					(#{NUMERICOID})							# $1 = oid
+					(?:#{SP} NAME #{SP} (#{QDESCRS}) )?		# $2 = name
+					(?:#{SP} DESC #{SP} (#{QDSTRING}))? 	# $3 = desc
+					(?:#{SP} (OBSOLETE) )?					# $4 = obsolete
+					(?:#{SP} SUP #{SP} (#{OIDS}) )?			# $5 = sup
+					( #{SP}	#{KIND}	)?						# $6 = kind
+					(?:#{SP} MUST #{SP} (#{OIDS}) )?		# $7 = must attrs
+					(?:#{SP} MAY #{SP} (#{OIDS}) )?			# $8 = may attrs
+					(#{EXTENSIONS})							# $9 = extensions
+				#{WSP} #{RPAREN}
+			}x
+			%{
+			}
 		end
 
 	end # module Patterns

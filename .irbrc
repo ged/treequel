@@ -14,6 +14,9 @@ BEGIN {
 begin
 	$stderr.puts "Loading Treequel..."
 	require 'treequel'
+	require 'treequel/constants'
+
+	include Treequel::Constants::Patterns
 rescue => e
 	$stderr.puts "Ack! Treequel library failed to load: #{e.message}\n\t" +
 		e.backtrace.join( "\n\t" )
