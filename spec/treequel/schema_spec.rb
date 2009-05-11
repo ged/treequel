@@ -46,9 +46,10 @@ describe Treequel::Schema do
 
 
 	it "can parse LAIKA's objectclasses" do
-		pending "completion of the objectClass parser"
-		objectClass = Treequel::Schema.parse_objectclass( SIMPLE_OBJECTCLASS )
-		objectClass.should be_a( Struct )
+		pending "completion of the objectClass parser" do
+			objectClass = Treequel::Schema.parse_objectclass( SIMPLE_OBJECTCLASS )
+			objectClass.should be_a( Struct )
+		end
 	end
 
 	it "can parse the schema structure returned from LDAP::Conn#schema"

@@ -27,30 +27,16 @@ class Treequel::Schema
 	include Treequel::Loggable,
 	        Treequel::Constants::Patterns
 
-
-			# 		(#{NUMERICOID})				# $1
-			# 		#{WHSP}                 	
-			# 		(?:NAME (#{QDESCRS}))?		# $2
-			# 		#{WHSP}						# missing from the rfc's bnf, but necessary
-			# 		(?:DESC (#{QDSTRING}))? 	# $3
-			# 		#{WHSP}                 	
-			# 		(?:(OBSOLETE) )?			# $4
-			# 		#{WHSP}                 	
-			# 		(?:SUP (#{OIDS}))?			# $5
-			# 		(							# $6
-			# 			ABSTRACT
-			# 			|
-			# 			STRUCTURAL
-			# 			|
-			# 			AUXILIARY
-			# 		)?
-			# 		#{WHSP}
-			# 		(?:MUST (#{OIDS}))?			# $7
-			# }ix
-			# %{
-			# 		(?:MAY (#{OIDS}))?			# $8
-
-	ObjectClass = Struct.new( 'ObjectClass', :oid, :name, :desc, :obsolete?, :sup, :type, :must, :may )
+	# (#{NUMERICOID})                           # $1 = oid
+	# (?:#{SP} NAME #{SP} (#{QDESCRS}) )?       # $2 = name
+	# (?:#{SP} DESC #{SP} (#{QDSTRING}))?       # $3 = desc
+	# (?:#{SP} (OBSOLETE) )?                    # $4 = obsolete
+	# (?:#{SP} SUP #{SP} (#{OIDS}) )?           # $5 = sup
+	# (?:#{SP} (#{KIND}) )?                     # $6 = kind
+	# (?:#{SP} MUST #{SP} (#{OIDS}) )?          # $7 = must attrs
+	# (?:#{SP} MAY #{SP} (#{OIDS}) )?           # $8 = may attrs
+	# (#{EXTENSIONS})                           # $9 = extensions
+	ObjectClass = Struct.new( 'ObjectClass', :oid, :name, :desc, :obsolete?, :sup, :type, :must, :may, :extensions )
 
 	### Parse the objectClass +description+ specified and return an equivalent 
 	### Treequel::Schema::ObjectClass instance.

@@ -272,7 +272,7 @@ module Treequel::Constants # :nodoc:
 			# qdstrings = qdstring / ( LPAREN WSP qdstringlist WSP RPAREN )
 			DSTRING = / (?: #{QS} | #{QQ} | #{QUTF8} )+ /x
 			QDSTRING = / #{SQUOTE} #{DSTRING} #{SQUOTE} /x
-			QDSTRINGLIST = /(?: #{QDSTRING} (?: #{SP} #{QDSTRING} )* )?/
+			QDSTRINGLIST = /(?: #{QDSTRING} (?: #{SP} #{QDSTRING} )* )?/x
 			QDSTRINGS = / #{QDSTRING} | #{LPAREN} #{WSP} #{QDSTRINGLIST} #{WSP} #{RPAREN} /x
 
 			# extensions = *( SP xstring SP qdstrings )
@@ -296,15 +296,15 @@ module Treequel::Constants # :nodoc:
 			# 
 			LDAP_OBJECTCLASS_DESCRIPTION = %r{
 				#{LPAREN} #{WSP}
-					(#{NUMERICOID})							# $1 = oid
-					(?:#{SP} NAME #{SP} (#{QDESCRS}) )?		# $2 = name
-					(?:#{SP} DESC #{SP} (#{QDSTRING}))? 	# $3 = desc
-					(?:#{SP} (OBSOLETE) )?					# $4 = obsolete
-					(?:#{SP} SUP #{SP} (#{OIDS}) )?			# $5 = sup
-					( #{SP}	#{KIND}	)?						# $6 = kind
-					(?:#{SP} MUST #{SP} (#{OIDS}) )?		# $7 = must attrs
-					(?:#{SP} MAY #{SP} (#{OIDS}) )?			# $8 = may attrs
-					(#{EXTENSIONS})							# $9 = extensions
+					(#{NUMERICOID})                         # $1 = oid
+					(?:#{SP} NAME #{SP} (#{QDESCRS}) )?     # $2 = name
+					(?:#{SP} DESC #{SP} (#{QDSTRING}))?     # $3 = desc
+					(?:#{SP} (OBSOLETE) )?                  # $4 = obsolete
+					(?:#{SP} SUP #{SP} (#{OIDS}) )?         # $5 = sup
+					(?:#{SP} (#{KIND}) )?                   # $6 = kind
+					(?:#{SP} MUST #{SP} (#{OIDS}) )?        # $7 = must attrs
+					(?:#{SP} MAY #{SP} (#{OIDS}) )?         # $8 = may attrs
+					(#{EXTENSIONS})                         # $9 = extensions
 				#{WSP} #{RPAREN}
 			}x
 			%{
