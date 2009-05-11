@@ -1,7 +1,10 @@
 #!/usr/bin/env ruby
 
+require 'English'
+
 require 'treequel'
 require 'treequel/schema'
+require 'treequel/exceptions'
 
 
 # This is a collection of classes for representing objectClasses in a Treequel::Schema.
@@ -35,6 +38,10 @@ class Treequel::Schema
 
 		private_class_method :new
 
+		# The 'kind' of objectClasses which don't specify a 'kind' explicitly
+		DEFAULT_OBJECTCLASS_KIND = 'STRUCTURAL'
+
+
 		### Inheritance callback: Make the constructor method of all inheriting classes
 		### public.
 		def self::inherited( subclass )
@@ -46,7 +53,12 @@ class Treequel::Schema
 		### Symbols for aliases.
 		def self::parse_oids( oidstring )
 			return [] unless oidstring
-			return oidstring.split( /#{WSP} #{DOLLAR} #{WSP}/x ).collect do |oid|
+
+			unless match = OIDLIST.match( oidstring )
+				raise Treequel::ParseError, "couldn't find an OIDLIST in %p" % [ oidstring ]
+			end
+
+			return $MATCH.split( /#{WSP} #{DOLLAR} #{WSP}/x ).collect do |oid|
 				if oid =~ NUMERICOID
 					oid
 				else
@@ -56,29 +68,64 @@ class Treequel::Schema
 		end
 
 
+		### Parse the given short +names+ string (a 'qdescrs' in the BNF) into an Array of zero or
+		### more Strings.
+		def self::parse_names( names )
+
+			# Unspecified
+			if names.nil?
+				return []
+
+			# Multi-value
+			elsif names =~ /#{LPAREN} #{WSP} (#{QDESCRLIST}) #{WSP} #{RPAREN}/x
+				return $1.scan( QDESCR ).collect {|qd| qd[1..-2].to_sym }
+
+			# Single-value
+			else
+				# Return the name without the quotes
+				return [ names[1..-2].to_sym ]
+			end
+		end
+
+
+		### Return a new string which is +desc+ with quotes stripped and any escaped characters 
+		### un-escaped.
+		def self::unquote_desc( desc )
+			return nil if desc.nil?
+			return desc.gsub( QQ, "'" ).gsub( QS, '\\' )[ 1..-2 ]
+		end
+
+
 		### Parse an ObjectClass entry from a objectClass description from a schema.
 		def self::parse( description )
 			unless match = ( LDAP_OBJECTCLASS_DESCRIPTION.match(description) )
 				raise Treequel::ParseError, "failed to parse objectClass from %p" % [ description ]
 			end
 
-			oid, name, desc, obsolete, sup, kind, must, may, extensions = match.captures
+			oid, names, desc, obsolete, sup, kind, must, may, extensions = match.captures
+
+			# Normalize the attributes
 			mustoids = self.parse_oids( must )
-			mayoids = self.parse_oids( may )
+			mayoids  = self.parse_oids( may )
+			names    = self.parse_names( names )
+			desc     = self.unquote_desc( desc )
+
+			# Default the 'kind' attribute
+			kind ||= DEFAULT_OBJECTCLASS_KIND
 
 			# Find the appropriate concrete class to instantiate 
 			concrete_class = Treequel::Schema::OBJECTCLASS_TYPES[ kind ] or
-				raise Treequel::Exception, "no such objectClass type %p: expected one of: %p" %
+				raise Treequel::Error, "no such objectClass type %p: expected one of: %p" %
 					[ kind, Treequel::Schema::OBJECTCLASS_TYPES.keys ]
 
-			return concrete_class.new( oid, name, desc, obsolete, sup, mustoids, mayoids, extensions )
+			return concrete_class.new( oid, names, desc, obsolete, sup, mustoids, mayoids, extensions )
 		end
 
 
 		### Create a new ObjectClass 
-		def initialize( oid, name=nil, desc=nil, obsolete=false, sup=nil, mustoids=[], mayoids=[], extensions=nil )
+		def initialize( oid, names=nil, desc=nil, obsolete=false, sup=nil, mustoids=[], mayoids=[], extensions=nil )
 			@oid        = oid
-			@name       = name
+			@names      = names
 			@desc       = desc
 			@obsolete   = obsolete
 			@sup        = sup
@@ -97,8 +144,8 @@ class Treequel::Schema
 		# The objectClass's oid
 		attr_reader :oid
 
-		# The objectClass's name
-		attr_accessor :name
+		# The Array of the objectClass's names
+		attr_reader :names
 
 		# The objectClass's description
 		attr_accessor :desc
@@ -106,11 +153,18 @@ class Treequel::Schema
 		# The objectClass's superior class
 		attr_accessor :sup
 
-		# The objectClass's MUST OIDs
+		# The Array of the objectClass's MUST OIDs
 		attr_reader :must
 
-		# The objectClass's MAY OIDs
+		# The Array of the objectClass's MAY OIDs
 		attr_reader :may
+
+
+		### Return the first of the objectClass's names, if it has any, or +nil+.
+		def name
+			return self.names.first
+		end
+
 
 	end # class ObjectClass
 

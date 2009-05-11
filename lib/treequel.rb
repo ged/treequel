@@ -124,6 +124,7 @@ module Treequel
 	end
 
 	# Now load the rest of the library
+	require 'treequel/exceptions'
 	require 'treequel/directory'
 	require 'treequel/branch'
 	require 'treequel/branchset'

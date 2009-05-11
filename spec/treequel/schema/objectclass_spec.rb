@@ -37,15 +37,10 @@ include Treequel::Constants
 describe Treequel::Schema::ObjectClass do
 	include Treequel::SpecHelpers
 
-	TOP_OBJECTCLASS = %{( 2.5.6.0 NAME 'top' DESC 'top of the superclass chain' ABSTRACT MUST objectClass )}
 
 	before( :all ) do
 		setup_logging( :debug )
 		@datadir = Pathname( __FILE__ ).dirname.parent.parent + 'data'
-	end
-
-	before( :each ) do
-		@oc = Treequel::Schema::ObjectClass.parse( TOP_OBJECTCLASS )
 	end
 
 	after( :all ) do
@@ -54,8 +49,28 @@ describe Treequel::Schema::ObjectClass do
 
 
 	describe "parsed from the 'top' objectClass" do
+
+		TOP_OBJECTCLASS = %{( 2.5.6.0 NAME 'top' DESC 'top of the superclass chain' ABSTRACT } +
+			%{MUST objectClass )}
+
+		before( :each ) do
+			@oc = Treequel::Schema::ObjectClass.parse( TOP_OBJECTCLASS )
+		end
+
+		it "is an AbstractObjectClass because its 'kind' is 'ABSTRACT'" do
+			@oc.should be_an_instance_of( Treequel::Schema::AbstractObjectClass )
+		end
+
 		it "knows what OID corresponds to the class" do
 			@oc.oid.should == '2.5.6.0'
+		end
+
+		it "knows what its NAME attribute is" do
+			@oc.name.should == :top
+		end
+
+		it "knows what its DESC attribute is" do
+			@oc.desc.should == 'top of the superclass chain'
 		end
 
 		it "knows that it has one MUST attribute" do
@@ -65,6 +80,103 @@ describe Treequel::Schema::ObjectClass do
 
 		it "knows that it doesn't have any MAY attributes" do
 			@oc.may.should be_empty()
+		end
+
+	end
+
+
+	describe "parsed from the 'organizationalUnit' objectClass" do
+
+		OU_OBJECTCLASS = %{( 2.5.6.5 NAME 'organizationalUnit' } +
+			%{DESC 'RFC2256: an organizational unit' SUP top STRUCTURAL } +
+			%{MUST ou MAY ( userPassword $ searchGuide $ seeAlso $ } +
+			%{businessCategory $ x121Address $ registeredAddress $ } +
+			%{destinationIndicator $ preferredDeliveryMethod $ telexNumber $ } +
+			%{teletexTerminalIdentifier $ telephoneNumber $ internationaliSDNNumber $ } +
+			%{facsimileTelephoneNumber $ street $ postOfficeBox $ postalCode $ postalAddress $ } +
+			%{physicalDeliveryOfficeName $ st $ l $ description ) )}
+
+		before( :each ) do
+			@oc = Treequel::Schema::ObjectClass.parse( OU_OBJECTCLASS )
+		end
+
+		it "is a StructuralObjectClass because its kind is 'STRUCTURAL'" do
+			@oc.should be_an_instance_of( Treequel::Schema::StructuralObjectClass )
+		end
+
+		it "knows what OID corresponds to the class" do
+			@oc.oid.should == '2.5.6.5'
+		end
+
+		it "knows what its NAME attribute is" do
+			@oc.name.should == :organizationalUnit
+		end
+
+		it "knows what its DESC attribute is" do
+			@oc.desc.should == 'RFC2256: an organizational unit'
+		end
+
+		it "knows that it has one MUST attribute" do
+			@oc.must.should have( 1 ).member
+			@oc.must.should == [ :ou ]
+		end
+
+		it "knows what its MAY attributes are" do
+			@oc.may.should have( 21 ).members
+        	@oc.may.should include( :userPassword, :searchGuide, :seeAlso, :businessCategory,
+	        	:x121Address, :registeredAddress, :destinationIndicator, :preferredDeliveryMethod,
+	        	:telexNumber, :teletexTerminalIdentifier, :telephoneNumber, :internationaliSDNNumber,
+	        	:facsimileTelephoneNumber, :street, :postOfficeBox, :postalCode, :postalAddress,
+	        	:physicalDeliveryOfficeName, :st, :l, :description )
+		end
+
+	end
+
+
+	describe "parsed from an objectClass that doesn't specify an explicit KIND attribute" do
+
+		KINDLESS_OBJECTCLASS = %{( 1.1.1.1 )}
+
+		before( :each ) do
+			@oc = Treequel::Schema::ObjectClass.parse( KINDLESS_OBJECTCLASS )
+		end
+
+		it "is the default kind (STRUCTURAL)" do
+			@oc.should be_an_instance_of( Treequel::Schema::StructuralObjectClass )
+		end
+
+	end
+
+	describe "parsed from an objectClass that has a list as the value of its NAME attribute" do
+
+		MULTINAME_OBJECTCLASS = %{( 1.1.1.1 NAME ('firstname' 'secondname') )}
+
+		before( :each ) do
+			@oc = Treequel::Schema::ObjectClass.parse( MULTINAME_OBJECTCLASS )
+		end
+
+		it "knows what both names are" do
+			@oc.names.should have(2).members
+			@oc.names.should include( :firstname, :secondname )
+		end
+
+		it "returns the first of its names for the #name method" do
+			@oc.name.should == :firstname
+		end
+
+	end
+
+	describe "parsed from an objectClass that has escaped characters in its DESC attribute" do
+
+		ESCAPED_DESC_OBJECTCLASS = %{( 1.1.1.1 DESC } +
+			%{'This spec\\27s example, which includes a \\5c character.' )}
+
+		before( :each ) do
+			@oc = Treequel::Schema::ObjectClass.parse( ESCAPED_DESC_OBJECTCLASS )
+		end
+
+		it "unscapes the escaped characters" do
+			@oc.desc.should == %{This spec's example, which includes a \\ character.}
 		end
 
 	end
