@@ -61,10 +61,10 @@ module Treequel
 	class << self
 		# The log formatter that will be used when the logging subsystem is reset
 		attr_accessor :default_log_formatter
-		
+
 		# The logger that will be used when the logging subsystem is reset
 		attr_accessor :default_logger
-		
+
 		# The logger that's currently in effect
 		attr_accessor :logger
 		alias_method :log, :logger
@@ -78,7 +78,7 @@ module Treequel
 		self.logger.level = Logger::WARN
 		self.logger.formatter = self.default_log_formatter
 	end
-	
+
 
 	### Returns +true+ if the global logger has not been set to something other than
 	### the default one.
@@ -99,12 +99,12 @@ module Treequel
 		uri = URI.parse( ldapurl )
 		raise ArgumentError, "malformed LDAP URL %p" % [ uri ] unless
 			uri.scheme =~ /ldaps?/
-		
+
 		options = self.make_options_from_uri( uri )
 		return Treequel::Directory.new( options )
 	end
 
-	
+
 	### Make an options hash suitable for passing to Treequel::Directory.new from the
 	### given +uri+.
 	def self::make_options_from_uri( uri )
@@ -128,7 +128,7 @@ module Treequel
 	require 'treequel/branch'
 	require 'treequel/branchset'
 	require 'treequel/filter'
-	
+
 end # module Treequel
 
 

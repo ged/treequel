@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -17,7 +17,7 @@ begin
 	require 'yaml'
 	require 'ldap'
 	require 'ldap/schema'
-	require 'treequel/schema'
+	require 'treequel/schema/objectclass'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
@@ -34,12 +34,18 @@ include Treequel::Constants
 ###	C O N T E X T S
 #####################################################################
 
-describe Treequel::Schema do
+describe Treequel::Schema::ObjectClass do
 	include Treequel::SpecHelpers
+
+	TOP_OBJECTCLASS = %{( 2.5.6.0 NAME 'top' DESC 'top of the superclass chain' ABSTRACT MUST objectClass )}
 
 	before( :all ) do
 		setup_logging( :debug )
-		@datadir = Pathname( __FILE__ ).dirname.parent + 'data'
+		@datadir = Pathname( __FILE__ ).dirname.parent.parent + 'data'
+	end
+
+	before( :each ) do
+		@oc = Treequel::Schema::ObjectClass.parse( TOP_OBJECTCLASS )
 	end
 
 	after( :all ) do
@@ -47,17 +53,21 @@ describe Treequel::Schema do
 	end
 
 
-	it "can parse the schema structure returned from LDAP::Conn#schema" do
-		pending "completion of the Schema class" do
-			schema_dumpfile = @datadir + 'schema.yml'
-			hash = YAML.load_file( schema_dumpfile )
-			schema = LDAP::Schema.new( hash )
-
-			Treequel::Schema.new_from_schema( schema )
+	describe "parsed from the 'top' objectClass" do
+		it "knows what OID corresponds to the class" do
+			@oc.oid.should == '2.5.6.0'
 		end
+
+		it "knows that it has one MUST attribute" do
+			@oc.must.should have( 1 ).member
+			@oc.must.should == [ :objectClass ]
+		end
+
+		it "knows that it doesn't have any MAY attributes" do
+			@oc.may.should be_empty()
+		end
+
 	end
-
-
 
 end
 

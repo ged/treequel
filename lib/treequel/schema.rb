@@ -27,23 +27,6 @@ class Treequel::Schema
 	include Treequel::Loggable,
 	        Treequel::Constants::Patterns
 
-	# (#{NUMERICOID})                           # $1 = oid
-	# (?:#{SP} NAME #{SP} (#{QDESCRS}) )?       # $2 = name
-	# (?:#{SP} DESC #{SP} (#{QDSTRING}))?       # $3 = desc
-	# (?:#{SP} (OBSOLETE) )?                    # $4 = obsolete
-	# (?:#{SP} SUP #{SP} (#{OIDS}) )?           # $5 = sup
-	# (?:#{SP} (#{KIND}) )?                     # $6 = kind
-	# (?:#{SP} MUST #{SP} (#{OIDS}) )?          # $7 = must attrs
-	# (?:#{SP} MAY #{SP} (#{OIDS}) )?           # $8 = may attrs
-	# (#{EXTENSIONS})                           # $9 = extensions
-	ObjectClass = Struct.new( 'ObjectClass', :oid, :name, :desc, :obsolete?, :sup, :type, :must, :may, :extensions )
 
-	### Parse the objectClass +description+ specified and return an equivalent 
-	### Treequel::Schema::ObjectClass instance.
-	def self::parse_objectclass( description )
-
-	end
-
-
-end # class Treequel::Filter
+end # class Treequel::Schema
 

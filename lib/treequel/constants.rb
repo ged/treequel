@@ -307,8 +307,6 @@ module Treequel::Constants # :nodoc:
 					(#{EXTENSIONS})                         # $9 = extensions
 				#{WSP} #{RPAREN}
 			}x
-			%{
-			}
 		end
 
 	end # module Patterns
