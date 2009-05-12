@@ -74,13 +74,26 @@ describe Treequel::Schema::ObjectClass do
 		end
 
 		it "knows that it has one MUST attribute" do
-			@oc.must.should have( 1 ).member
-			@oc.must.should == [ :objectClass ]
+			@oc.must_oids.should have( 1 ).member
+			@oc.must_oids.should == [ :objectClass ]
 		end
+		
+		it "returns attribute objects for its MUST OIDs" do
+			pending "implementation of Treequel::Schema::Attribute" do
+				@oc.must.should have( 1 ).member
+				@oc.must.first.should be_an_instance_of( Treequel::Schema::Attribute )
+			end
+		end
+		
 
 		it "knows that it doesn't have any MAY attributes" do
-			@oc.may.should be_empty()
+			@oc.may_oids.should be_empty()
 		end
+
+		it "knows that it is not obsolete" do
+			@oc.should_not be_obsolete()
+		end
+		
 
 	end
 
@@ -117,13 +130,13 @@ describe Treequel::Schema::ObjectClass do
 		end
 
 		it "knows that it has one MUST attribute" do
-			@oc.must.should have( 1 ).member
-			@oc.must.should == [ :ou ]
+			@oc.must_oids.should have( 1 ).member
+			@oc.must_oids.should == [ :ou ]
 		end
 
 		it "knows what its MAY attributes are" do
-			@oc.may.should have( 21 ).members
-        	@oc.may.should include( :userPassword, :searchGuide, :seeAlso, :businessCategory,
+			@oc.may_oids.should have( 21 ).members
+        	@oc.may_oids.should include( :userPassword, :searchGuide, :seeAlso, :businessCategory,
 	        	:x121Address, :registeredAddress, :destinationIndicator, :preferredDeliveryMethod,
 	        	:telexNumber, :teletexTerminalIdentifier, :telephoneNumber, :internationaliSDNNumber,
 	        	:facsimileTelephoneNumber, :street, :postOfficeBox, :postalCode, :postalAddress,
@@ -177,6 +190,20 @@ describe Treequel::Schema::ObjectClass do
 
 		it "unscapes the escaped characters" do
 			@oc.desc.should == %{This spec's example, which includes a \\ character.}
+		end
+
+	end
+
+	describe "parsed from an objectClass that has the OBSOLETE attribute" do
+
+		OBSOLETE_OBJECTCLASS = %{( 1.1.1.1 OBSOLETE )}
+
+		before( :each ) do
+			@oc = Treequel::Schema::ObjectClass.parse( OBSOLETE_OBJECTCLASS )
+		end
+
+		it "knows that it's obsolete" do
+			@oc.should be_obsolete()
 		end
 
 	end

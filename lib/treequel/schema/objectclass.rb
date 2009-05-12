@@ -105,8 +105,8 @@ class Treequel::Schema
 			oid, names, desc, obsolete, sup, kind, must, may, extensions = match.captures
 
 			# Normalize the attributes
-			mustoids = self.parse_oids( must )
-			mayoids  = self.parse_oids( may )
+			must_oids = self.parse_oids( must )
+			may_oids  = self.parse_oids( may )
 			names    = self.parse_names( names )
 			desc     = self.unquote_desc( desc )
 
@@ -118,19 +118,19 @@ class Treequel::Schema
 				raise Treequel::Error, "no such objectClass type %p: expected one of: %p" %
 					[ kind, Treequel::Schema::OBJECTCLASS_TYPES.keys ]
 
-			return concrete_class.new( oid, names, desc, obsolete, sup, mustoids, mayoids, extensions )
+			return concrete_class.new( oid, names, desc, obsolete, sup, must_oids, may_oids, extensions )
 		end
 
 
 		### Create a new ObjectClass 
-		def initialize( oid, names=nil, desc=nil, obsolete=false, sup=nil, mustoids=[], mayoids=[], extensions=nil )
+		def initialize( oid, names=nil, desc=nil, obsolete=false, sup=nil, must_oids=[], may_oids=[], extensions=nil )
 			@oid        = oid
 			@names      = names
 			@desc       = desc
 			@obsolete   = obsolete
 			@sup        = sup
-			@must       = mustoids
-			@may        = mayoids
+			@must_oids  = must_oids
+			@may_oids   = may_oids
 			@extensions = extensions
 
 			super()
@@ -154,16 +154,26 @@ class Treequel::Schema
 		attr_accessor :sup
 
 		# The Array of the objectClass's MUST OIDs
-		attr_reader :must
+		attr_reader :must_oids
 
 		# The Array of the objectClass's MAY OIDs
-		attr_reader :may
+		attr_reader :may_oids
 
+		# The objectClass's extensions (as a String)
+		attr_accessor :extensions
+		
 
 		### Return the first of the objectClass's names, if it has any, or +nil+.
 		def name
 			return self.names.first
 		end
+
+
+		### Returns true if the objectClass is obsolete (has the 'OBSOLETE' attribute)
+		def obsolete?
+			return @obsolete ? true : false
+		end
+		alias_method :is_obsolete?, :obsolete?
 
 
 	end # class ObjectClass
@@ -215,42 +225,40 @@ class Treequel::Schema
 
 	### An LDAP objectClass of type 'STRUCTURAL'. From RFC4512:
 	### 
-	###   As stated in [X.501]:
+	###   An object class defined for use in the structural specification of
+	###   the DIT is termed a structural object class.  Structural object
+	###   classes are used in the definition of the structure of the names
+	###   of the objects for compliant entries.
     ###   
-	###         An object class defined for use in the structural specification of
-	###         the DIT is termed a structural object class.  Structural object
-	###         classes are used in the definition of the structure of the names
-	###         of the objects for compliant entries.
+	###   An object or alias entry is characterized by precisely one
+	###   structural object class superclass chain which has a single
+	###   structural object class as the most subordinate object class.
+	###   This structural object class is referred to as the structural
+	###   object class of the entry.
     ###   
-	###         An object or alias entry is characterized by precisely one
-	###         structural object class superclass chain which has a single
-	###         structural object class as the most subordinate object class.
-	###         This structural object class is referred to as the structural
-	###         object class of the entry.
+	###   Structural object classes are related to associated entries:
     ###   
-	###         Structural object classes are related to associated entries:
+	###     - an entry conforming to a structural object class shall
+	###       represent the real-world object constrained by the object
+	###       class;
     ###   
-	###           - an entry conforming to a structural object class shall
-	###             represent the real-world object constrained by the object
-	###             class;
+	###     - DIT structure rules only refer to structural object classes;
+	###       the structural object class of an entry is used to specify the
+	###       position of the entry in the DIT;
     ###   
-	###           - DIT structure rules only refer to structural object classes;
-	###             the structural object class of an entry is used to specify the
-	###             position of the entry in the DIT;
+	###     - the structural object class of an entry is used, along with an
+	###       associated DIT content rule, to control the content of an
+	###       entry.
     ###   
-	###           - the structural object class of an entry is used, along with an
-	###             associated DIT content rule, to control the content of an
-	###             entry.
-    ###   
-	###         The structural object class of an entry shall not be changed.
-    ###   
-	###      Each structural object class is a (direct or indirect) subclass of
-	###      the 'top' abstract object class.
-    ###   
-	###      Structural object classes cannot subclass auxiliary object classes.
-    ###   
-	###      Each entry is said to belong to its structural object class as well
-	###      as all classes in its structural object class's superclass chain.
+	###   The structural object class of an entry shall not be changed.
+    ### 
+	###   Each structural object class is a (direct or indirect) subclass of
+	###   the 'top' abstract object class.
+    ### 
+	###   Structural object classes cannot subclass auxiliary object classes.
+    ### 
+	###   Each entry is said to belong to its structural object class as well
+	###   as all classes in its structural object class's superclass chain.
 	### 
 	class StructuralObjectClass < Treequel::Schema::ObjectClass
 		Treequel::Schema::OBJECTCLASS_TYPES[ 'STRUCTURAL' ] = self
