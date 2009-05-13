@@ -3,7 +3,8 @@
 require 'ldap'
 require 'ldap/schema'
 
-require 'treequel' 
+require 'treequel'
+require 'treequel/schema'
 require 'treequel/mixins'
 require 'treequel/constants'
 
@@ -58,7 +59,7 @@ class Treequel::Directory
 	###   The base DN of the directory.
 	def initialize( options={} )
 		options = DEFAULT_OPTIONS.merge( options )
-		
+
 		@host         = options[:host]
 		@port         = options[:port]
 		@connect_type = options[:connect_type]
@@ -68,20 +69,20 @@ class Treequel::Directory
 		@bound_as = nil
 	end
 
-	
+
 	######
 	public
 	######
 
 	# The host to connect to.
 	attr_accessor :host
-	
+
 	# The port to connect to.
 	attr_accessor :port
-	
+
 	# The type of connection to establish
 	attr_accessor :connect_type
-	
+
 	# The base DN of the directory.
 	attr_accessor :base
 
@@ -90,7 +91,7 @@ class Treequel::Directory
 	def to_s
 		# bindname = self.bound? ? self.bound_as : "unbound"
 		bindname ||= 'anonymous'
-		
+
 		return "%s:%d (%s, %s, %s)" % [
 			self.host,
 			self.port,
@@ -153,7 +154,7 @@ class Treequel::Directory
 		base_re = Regexp.new( ',' + Regexp.quote(self.base) + '$' )
 		return dn.sub( base_re, '' )
 	end
-	
+
 
 	### Given a Treequel::Branch object, find its corresponding LDAP::Entry and return
 	### it.
@@ -164,14 +165,15 @@ class Treequel::Directory
 		self.log.debug "Looking up entry for %p from %s" % [ filter, base ]
 		return self.conn.search2( base.to_s, SCOPE[:onelevel], filter ).first
 	end
-	
-	
+
+
 	### Fetch the schema from the server.
 	def schema
-		return self.conn.schema
+		schemahash = self.conn.schema
+		return Treequel::Schema.new( schemahash )
 	end
-	
-	
+
+
 	### Perform a +scope+ search at +base+ using the specified +filter+. The +scope+ argument
 	### can be one of +:onelevel+, +:base+, or +:subtree+.
 	def search( base, scope, filter, selectattrs=[], timeout=0, sortby=nil )
@@ -192,7 +194,7 @@ class Treequel::Directory
 		elsif !sortby.nil?
 			sortattr = sortby.to_s
 		end
-		
+
 		# conn.search2(base_dn, scope, filter, attrs=nil, attrsonly=false,
 		# 	sec=0, usec=0, s_attr=nil, s_proc=nil)
 		self.log.debug {
@@ -213,13 +215,13 @@ class Treequel::Directory
 			selectattrs, false, 
 			timeout_s, timeout_us,
 			sortattr, sortfunc )
-			
+
 		return results.collect do |entry|
 			Treequel::Branch.new_from_entry( entry, self )
 		end
 	end
-	
-	
+
+
 
 	#########
 	protected
@@ -233,13 +235,13 @@ class Treequel::Directory
 			extra_args.empty?
 		return Treequel::Branch.new( self, attribute, value, self.base )
 	end
-	
-	
+
+
 	### Create a new LDAP::Conn object with the current host, port, and connect_type
 	### and return it.
 	def connect
 		conn = nil
-		
+
 		case @connect_type
 		when :tls
 			self.log.debug "Connecting using TLS to %s:%d" % [ @host, @port ]
@@ -251,7 +253,7 @@ class Treequel::Directory
 			self.log.debug "Connecting using an unencrypted connection to %s:%d" % [ @host, @port ]
 			conn = LDAP::Conn.new( host, port )
 		end
-		
+
 		conn.set_option( LDAP::LDAP_OPT_PROTOCOL_VERSION, 3 )
 		return conn
 	end

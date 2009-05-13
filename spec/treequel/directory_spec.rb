@@ -3,9 +3,9 @@
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-	
+
 	libdir = basedir + "lib"
-	
+
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
@@ -34,11 +34,11 @@ include Treequel::Constants
 
 describe Treequel::Directory do
 	include Treequel::SpecHelpers
-	
+
 	before( :all ) do
 		setup_logging( :fatal )
 	end
-	
+
 	after( :all ) do
 		reset_logging()
 	end
@@ -52,7 +52,7 @@ describe Treequel::Directory do
 			:connect_type => :plain,
 		}
 	end
-	
+
 
 	it "is created with reasonable default options if none are specified" do
 		dir = Treequel::Directory.new
@@ -65,7 +65,7 @@ describe Treequel::Directory do
 
 	it "is created with the specified options if options are specified" do
 		dir = Treequel::Directory.new( @options )
-		
+
 		dir.host.should == TEST_HOST
 		dir.port.should == TEST_PORT
 		dir.connect_type.should == @options[:connect_type]
@@ -74,7 +74,7 @@ describe Treequel::Directory do
 
 
 	describe "instances without existing connections" do
-		
+
 		before( :each ) do
 			@dir = Treequel::Directory.new( @options )
 			@conn = mock( "ldap connection", :set_option => true )
@@ -87,20 +87,20 @@ describe Treequel::Directory do
 			@dir.to_s.should =~ /\b#{@dir.connect_type}\b/
 			@dir.to_s.should =~ /#{TEST_BASE_DN}/i
 		end
-		
+
 		it "connects on demand to the configured directory server" do
 			LDAP::Conn.should_receive( :new ).with( TEST_HOST, TEST_PORT ).
 				and_return( @conn )
 			@dir.conn.should == @conn
 		end
-		
+
 		it "connects with TLS on demand to the configured directory server if configured to do so" do
 			@dir.connect_type = :tls
 			LDAP::SSLConn.should_receive( :new ).with( TEST_HOST, TEST_PORT, true ).
 				and_return( @conn )
 			@dir.conn.should == @conn
 		end
-		
+
 		it "connects over SSL on demand to the configured directory server if configured to do so" do
 			@dir.connect_type = :ssl
 			LDAP::SSLConn.should_receive( :new ).with( TEST_HOST, TEST_PORT ).
@@ -110,7 +110,7 @@ describe Treequel::Directory do
 	end
 
 	describe "instances with a connection" do
-		
+
 		before( :each ) do
 			@conn = mock( "ldap connection" )
 			@dir = Treequel::Directory.new( @options )
@@ -122,17 +122,17 @@ describe Treequel::Directory do
 			@conn.should_receive( :bind ).with( TEST_BIND_DN, TEST_BIND_PASS )
 			@dir.bind( TEST_BIND_DN, TEST_BIND_PASS )
 		end
-		
+
 		it "can temporarily bind as another user for the duration of a block" do
 			dupconn = mock( "duplicate connection" )
 			@conn.should_receive( :dup ).and_return( dupconn )
 			dupconn.should_receive( :bind ).with( TEST_BIND_DN, TEST_BIND_PASS )
 			@conn.should_not_receive( :bind )
-			
+
 			@dir.bound_as( TEST_BIND_DN, TEST_BIND_PASS ) do
 				@dir.conn.should == dupconn
 			end
-			
+
 			@dir.conn.should == @conn
 		end
 
@@ -142,7 +142,7 @@ describe Treequel::Directory do
 			@dir.should be_bound()
 		end
 
-		
+
 		it "can be unbound, which replaces the bound connection with a duplicate that is unbound" do
 			dupconn = mock( "duplicate connection" )
 			@conn.should_receive( :bound? ).and_return( true )
@@ -150,7 +150,7 @@ describe Treequel::Directory do
 			@conn.should_receive( :unbind )
 
 			@dir.unbind
-			
+
 			@dir.conn.should == dupconn
 		end
 
@@ -161,20 +161,20 @@ describe Treequel::Directory do
 			@conn.should_not_receive( :unbind )
 
 			@dir.unbind
-			
+
 			@dir.conn.should == @conn
 		end
-		
+
 		it "can look up a Branch's corresponding LDAP::Entry hash" do
 			branch = mock( "branch" )
-			
+
 			branch.should_receive( :base ).and_return( TEST_PEOPLE_DN )
 			branch.should_receive( :attr_pair ).and_return( TEST_PERSON_RDN     )
-			
+
 			@conn.should_receive( :search2 ).
 				with( TEST_PEOPLE_DN, LDAP::LDAP_SCOPE_ONELEVEL, TEST_PERSON_RDN     ).
 				and_return([ :the_entry ])
-			
+
 			@dir.get_entry( branch ).should == :the_entry
 		end
 
@@ -208,7 +208,7 @@ describe Treequel::Directory do
 		it "can turn a DN string into an RDN string from its base" do
 			@dir.rdn_to( TEST_PERSON_DN ).should == TEST_PERSON_DN.sub( /,#{TEST_BASE_DN}$/, '' )
 		end
-		
+
 		it "implements a proxy method that allow for creation of branches" do
 			rval = @dir.ou( :people )
 			rval.dn.downcase.should == TEST_PEOPLE_DN.downcase
@@ -222,10 +222,12 @@ describe Treequel::Directory do
 
 		it "can fetch the server's schema" do
 			@conn.should_receive( :schema ).and_return( :the_schema )
-			@dir.schema.should == :the_schema
+			Treequel::Schema.should_receive( :new ).with( :the_schema ).
+				and_return( :the_parsed_schema )
+			@dir.schema.should == :the_parsed_schema
 		end
-		
-		
+
+
 	end
 end
 

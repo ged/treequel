@@ -307,6 +307,32 @@ module Treequel::Constants # :nodoc:
 					(#{EXTENSIONS})                         # $9 = extensions
 				#{WSP} #{RPAREN}
 			}x
+
+			# Attribute Type definitions are written according to the ABNF:
+			#  
+			#   AttributeTypeDescription = LPAREN WSP
+			#            numericoid                    ; object identifier
+			#            [ SP "NAME" SP qdescrs ]      ; short names (descriptors)
+			#            [ SP "DESC" SP qdstring ]     ; description
+			#            [ SP "OBSOLETE" ]             ; not active
+			#            [ SP "SUP" SP oid ]           ; supertype
+			#            [ SP "EQUALITY" SP oid ]      ; equality matching rule
+			#            [ SP "ORDERING" SP oid ]      ; ordering matching rule
+			#            [ SP "SUBSTR" SP oid ]        ; substrings matching rule
+			#            [ SP "SYNTAX" SP noidlen ]    ; value syntax
+			#            [ SP "SINGLE-VALUE" ]         ; single-value
+			#            [ SP "COLLECTIVE" ]           ; collective
+			#            [ SP "NO-USER-MODIFICATION" ] ; not user modifiable
+			#            [ SP "USAGE" SP usage ]       ; usage
+			#            extensions WSP RPAREN         ; extensions
+            #   
+			#        usage = "userApplications"     /  ; user
+			#                "directoryOperation"   /  ; directory operational
+			#                "distributedOperation" /  ; DSA-shared operational
+			#                "dSAOperation"            ; DSA-specific operational
+			LDAP_ATTRIBUTE_TYPE_DESCRIPTION = %r{
+				
+			}x
 		end
 
 	end # module Patterns

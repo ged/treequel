@@ -42,10 +42,40 @@ class Treequel::Schema
 		DEFAULT_OBJECTCLASS_KIND = 'STRUCTURAL'
 
 
+		#############################################################
+		###	C L A S S   M E T H O D S
+		#############################################################
+
 		### Inheritance callback: Make the constructor method of all inheriting classes
 		### public.
 		def self::inherited( subclass )
 			subclass.instance_eval { public_class_method :new }
+		end
+
+
+		### Parse an ObjectClass entry from a objectClass description from a schema.
+		def self::parse( description )
+			unless match = ( LDAP_OBJECTCLASS_DESCRIPTION.match(description) )
+				raise Treequel::ParseError, "failed to parse objectClass from %p" % [ description ]
+			end
+
+			oid, names, desc, obsolete, sup, kind, must, may, extensions = match.captures
+
+			# Normalize the attributes
+			must_oids = self.parse_oids( must )
+			may_oids  = self.parse_oids( may )
+			names     = self.parse_names( names )
+			desc      = self.unquote_desc( desc )
+
+			# Default the 'kind' attribute
+			kind ||= DEFAULT_OBJECTCLASS_KIND
+
+			# Find the appropriate concrete class to instantiate 
+			concrete_class = Treequel::Schema::OBJECTCLASS_TYPES[ kind ] or
+				raise Treequel::Error, "no such objectClass type %p: expected one of: %p" %
+					[ kind, Treequel::Schema::OBJECTCLASS_TYPES.keys ]
+
+			return concrete_class.new( oid, names, desc, obsolete, sup, must_oids, may_oids, extensions )
 		end
 
 
@@ -96,31 +126,9 @@ class Treequel::Schema
 		end
 
 
-		### Parse an ObjectClass entry from a objectClass description from a schema.
-		def self::parse( description )
-			unless match = ( LDAP_OBJECTCLASS_DESCRIPTION.match(description) )
-				raise Treequel::ParseError, "failed to parse objectClass from %p" % [ description ]
-			end
-
-			oid, names, desc, obsolete, sup, kind, must, may, extensions = match.captures
-
-			# Normalize the attributes
-			must_oids = self.parse_oids( must )
-			may_oids  = self.parse_oids( may )
-			names    = self.parse_names( names )
-			desc     = self.unquote_desc( desc )
-
-			# Default the 'kind' attribute
-			kind ||= DEFAULT_OBJECTCLASS_KIND
-
-			# Find the appropriate concrete class to instantiate 
-			concrete_class = Treequel::Schema::OBJECTCLASS_TYPES[ kind ] or
-				raise Treequel::Error, "no such objectClass type %p: expected one of: %p" %
-					[ kind, Treequel::Schema::OBJECTCLASS_TYPES.keys ]
-
-			return concrete_class.new( oid, names, desc, obsolete, sup, must_oids, may_oids, extensions )
-		end
-
+		#############################################################
+		###	I N S T A N C E   M E T H O D S
+		#############################################################
 
 		### Create a new ObjectClass 
 		def initialize( oid, names=nil, desc=nil, obsolete=false, sup=nil, must_oids=[], may_oids=[], extensions=nil )
@@ -161,7 +169,7 @@ class Treequel::Schema
 
 		# The objectClass's extensions (as a String)
 		attr_accessor :extensions
-		
+
 
 		### Return the first of the objectClass's names, if it has any, or +nil+.
 		def name

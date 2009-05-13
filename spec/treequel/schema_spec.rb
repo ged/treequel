@@ -48,16 +48,20 @@ describe Treequel::Schema do
 
 
 	it "can parse the schema structure returned from LDAP::Conn#schema" do
-		pending "completion of the Schema class" do
-			schema_dumpfile = @datadir + 'schema.yml'
-			hash = YAML.load_file( schema_dumpfile )
-			schema = LDAP::Schema.new( hash )
+		schema_dumpfile = @datadir + 'schema.yml'
+		hash = YAML.load_file( schema_dumpfile )
+		schemahash = LDAP::Schema.new( hash )
 
-			Treequel::Schema.new_from_schema( schema )
+		schema = Treequel::Schema.new( schemahash )
+
+		schema.objectClasses.should have( 298 ).members
+		pending "implementation of the rest of the schema-object classes" do
+			schema.ldapSyntaxes.should have( 11 ).members
+			schema.matchingRuleUse.should have( 11 ).members
+			schema.attributeTypes.should have( 11 ).members
+			schema.matchingRules.should have( 11 ).members
 		end
 	end
-
-
 
 end
 
