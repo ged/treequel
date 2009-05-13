@@ -77,14 +77,14 @@ describe Treequel::Schema::ObjectClass do
 			@oc.must_oids.should have( 1 ).member
 			@oc.must_oids.should == [ :objectClass ]
 		end
-		
+
 		it "returns attribute objects for its MUST OIDs" do
 			pending "implementation of Treequel::Schema::Attribute" do
 				@oc.must.should have( 1 ).member
 				@oc.must.first.should be_an_instance_of( Treequel::Schema::Attribute )
 			end
 		end
-		
+
 
 		it "knows that it doesn't have any MAY attributes" do
 			@oc.may_oids.should be_empty()
@@ -93,7 +93,7 @@ describe Treequel::Schema::ObjectClass do
 		it "knows that it is not obsolete" do
 			@oc.should_not be_obsolete()
 		end
-		
+
 
 	end
 

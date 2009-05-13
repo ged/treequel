@@ -169,10 +169,10 @@ describe Treequel::Directory do
 			branch = mock( "branch" )
 			
 			branch.should_receive( :base ).and_return( TEST_PEOPLE_DN )
-			branch.should_receive( :attr_pair ).and_return( TEST_PERSON_DN_PAIR )
+			branch.should_receive( :attr_pair ).and_return( TEST_PERSON_RDN     )
 			
 			@conn.should_receive( :search2 ).
-				with( TEST_PEOPLE_DN, LDAP::LDAP_SCOPE_ONELEVEL, TEST_PERSON_DN_PAIR ).
+				with( TEST_PEOPLE_DN, LDAP::LDAP_SCOPE_ONELEVEL, TEST_PERSON_RDN     ).
 				and_return([ :the_entry ])
 			
 			@dir.get_entry( branch ).should == :the_entry

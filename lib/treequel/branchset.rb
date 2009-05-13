@@ -69,12 +69,12 @@ class Treequel::Branchset
 	# The default scope to use when searching if none is specified
 	DEFAULT_SCOPE = :subtree
 	DEFAULT_SCOPE.freeze
-	
+
 	# The default filter to use when searching if non is specified
 	DEFAULT_FILTER = :objectClass
 	DEFAULT_FILTER.freeze
-	
-	
+
+
 	# The default options hash for new Branchsets
 	DEFAULT_OPTIONS = {
 		:base    => nil,
@@ -98,7 +98,7 @@ class Treequel::Branchset
 		@options = DEFAULT_OPTIONS.merge( options )
 	end
 
-	
+
 	######
 	public
 	######
@@ -117,8 +117,8 @@ class Treequel::Branchset
 		newset.options = @options.merge( options )
 		return newset
 	end
-	
-	
+
+
 	### Return a human-readable string representation of the object suitable for debugging.
 	def inspect
 		"#<%s:0x%0x filter=%s, scope=%s, options=%p>" % [
@@ -129,14 +129,14 @@ class Treequel::Branchset
 			self.options,
 		]
 	end
-	
+
 
 	### Return an LDAP filter string made up of the current filter components.
 	def filter_string
 		return self.filter.to_s
 	end
-	
-	
+
+
 	### Fetch the entries which match the current criteria and return them as Treequel::Branch 
 	### objects.
 	def all
@@ -145,7 +145,7 @@ class Treequel::Branchset
 			self.timeout, self.order )
 	end
 
-	
+
 	### Returns a clone of the receiving Branchset with the given +filterspec+ added
 	### to it.
 	def filter( *filterspec )
@@ -189,14 +189,14 @@ class Treequel::Branchset
 			return self.clone( :select => attributes )
 		end
 	end
-	
-	
+
+
 	### Returns a clone of the receiving Branchset that will fetch all attributes.
 	def select_all
 		return self.clone( :select => [] )
 	end
-	
-	
+
+
 	### Return a clone of the receiving Branchset that will fetch the specified
 	### +attributes+ in addition to its own.
 	def select_more( *attributes )
@@ -240,8 +240,8 @@ class Treequel::Branchset
 			return self.clone( :order => attribute.to_sym )
 		end
 	end
-	
-	
+
+
 end # class Treequel::Branchset
 
 

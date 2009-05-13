@@ -3,9 +3,9 @@
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-	
+
 	libdir = basedir + "lib"
-	
+
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
@@ -33,11 +33,11 @@ include Treequel::Constants
 
 describe Treequel::Branchset do
 	include Treequel::SpecHelpers
-	
+
 	before( :all ) do
 		setup_logging( :fatal )
 	end
-	
+
 	after( :all ) do
 		reset_logging()
 	end
@@ -53,7 +53,7 @@ describe Treequel::Branchset do
 		before( :each ) do
 			@branchset = Treequel::Branchset.new( @branch )
 		end
-		
+
 		it "can clone itself with merged options" do
 			newset = @branchset.clone( :scope => :one )
 			newset.should be_a( Treequel::Branchset )
@@ -61,8 +61,8 @@ describe Treequel::Branchset do
 			newset.options.should_not equal( @branchset.options )
 			newset.scope.should == :one
 		end
-		
-		
+
+
 		# 
 		# #filter
 		# 
@@ -70,14 +70,14 @@ describe Treequel::Branchset do
 		it "generates a valid filter string" do
 			@branchset.filter_string.should == '(objectClass=*)'
 		end
-	
+
 
 		it "performs a search using the default filter and scope when all records are requested" do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
 				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, [], 0, '' ).
 				and_return( :matching_branches )
-		
+
 			@branchset.all.should == :matching_branches
 		end
 
@@ -85,15 +85,15 @@ describe Treequel::Branchset do
 			newset = @branchset.filter( :clothing, 'pants' )
 			newset.filter_string.should == '(clothing=pants)'
 		end
-		
+
 		# 
 		# #scope
 		# 
-		
+
 		it "provides a reader for its scope" do
 			@branchset.scope.should == :subtree
 		end
-		
+
 		it "can create a new branchset cloned from itself with a different scope" do
 			newset = @branchset.scope( :onelevel )
 			newset.should be_a( Treequel::Branchset )
@@ -101,7 +101,7 @@ describe Treequel::Branchset do
 			newset.options.should_not equal( @branchset.options )
 			newset.scope.should == :onelevel
 		end
-		
+
 		it "can create a new branchset cloned from itself with a different string scope" do
 			newset = @branchset.scope( 'sub' )
 			newset.scope.should == :sub
@@ -113,10 +113,10 @@ describe Treequel::Branchset do
 			@directory.should_receive( :search ).
 				with( @branch, :onelevel, @branchset.filter, [], 0, '' ).
 				and_return( :matching_branches )
-		
+
 			@branchset.all.should == :matching_branches
 		end
-		
+
 		# 
 		# #select
 		# 
@@ -124,12 +124,12 @@ describe Treequel::Branchset do
 			newset = @branchset.select( :l, :lastName, :disabled )
 			newset.select.should == [ 'l', 'lastName', 'disabled' ]
 		end
-		
+
 		it "can create a new branchset cloned from itself with all attributes selected" do
 			newset = @branchset.select_all
 			newset.select.should == []
 		end
-		
+
 		it "can create a new branchset cloned from itself with additional attributes selected" do
 			@branchset.options[:select] = [ :l, :cn, :uid ]
 			newset = @branchset.select_more( :firstName, :uid, :lastName )
@@ -143,14 +143,14 @@ describe Treequel::Branchset do
 				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, 
 				      ['l', 'cn', 'uid'], 0, '' ).
 				and_return( :matching_branches )
-		
+
 			@branchset.all.should == :matching_branches
 		end
-		
+
 		# 
 		# #timeout
 		# 
-	
+
 		it "can create a new branchset cloned from itself with a timeout" do
 			newset = @branchset.timeout( 30 )
 			newset.timeout.should == 30.0
@@ -169,14 +169,14 @@ describe Treequel::Branchset do
 				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, 
 				      [], 5.375, '' ).
 				and_return( :matching_branches )
-	
+
 			@branchset.all.should == :matching_branches
 		end
-		
+
 		# 
 		# #order
 		# 
-	
+
 		it "can create a new branchset cloned from itself with a sort-order attribute" do
 			newset = @branchset.order( :uid )
 			newset.order.should == :uid
@@ -205,10 +205,10 @@ describe Treequel::Branchset do
 				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, 
 				      [], 5.375, '' ).
 				and_return( :matching_branches )
-	
+
 			@branchset.all.should == :matching_branches
 		end
-		
+
 	end
 
 	describe "an instance with no filter, and scope set to 'onelevel'" do
@@ -216,19 +216,19 @@ describe Treequel::Branchset do
 		before( :each ) do
 			@branchset = Treequel::Branchset.new( @branch, :scope => :onelevel )
 		end
-		
+
 
 		it "generates a valid filter string" do
 			@branchset.filter_string.should == '(objectClass=*)'
 		end
-	
+
 
 		it "performs a search using the default filter and scope when all records are requested" do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
 				with( @branch, :onelevel, @branchset.filter, [], 0, '' ).
 				and_return( :matching_branches )
-		
+
 			@branchset.all.should == :matching_branches
 		end
 

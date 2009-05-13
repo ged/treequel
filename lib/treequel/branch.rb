@@ -28,7 +28,7 @@ require 'treequel/branchset'
 class Treequel::Branch
 	include Treequel::Loggable,
 	        Treequel::Constants
-	                                 
+
 	extend Treequel::Delegation
 
 
@@ -54,18 +54,18 @@ class Treequel::Branch
 			prev.send( attribute, value )
 		end
 	end
-	
-	
+
+
 	### Create a new Treequel::Branch from the given +entry+ hash from the specified +directory+
 	### and +parent+.
 	def self::new_from_entry( entry, directory )
 		dn = entry['dn']
 		rdn, base = dn.first.split( /,/, 2 )
 		attribute, value = rdn.split( /=/, 2 )
-		
+
 		return self.new( directory, attribute, value, base, entry )
 	end
-	
+
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -90,20 +90,20 @@ class Treequel::Branch
 
 	# Delegate some methods to the entry hash via the #entry method
 	def_method_delegators :entry, :[], :[]=
-	
+
 	# Delegate some other methods to a new Branchset via the #branchset method
 	def_method_delegators :branchset, :filter, :scope, :select
 
 
 	# The directory the branch's entry lives in
 	attr_reader :directory
-	
+
 	# The DN attribute of the branch
 	attr_reader :attribute
-	
+
 	# The value of the DN attribute of the branch
 	attr_reader :value
-	
+
 	# The DN of the base of the branch
 	attr_reader :base
 
@@ -113,17 +113,17 @@ class Treequel::Branch
 	def entry
 		return @entry ||= self.directory.get_entry( self )
 	end
-	
 
-	### Return the receiver's DN attribute and value as a attr=value String.
-	def attr_pair
+
+	### Return the receiver's Relative Distinguished Name as a String.
+	def rdn
 		return [ self.attribute, self.value ].join('=')
 	end
-	
-	
+
+
 	### Return the receiver's DN as a String.
 	def dn
-		return [ self.attr_pair, self.base ].join(',')
+		return [ self.rdn, self.base ].join(',')
 	end
 	alias_method :to_s, :dn
 
@@ -132,7 +132,7 @@ class Treequel::Branch
 	def branchset
 		return Treequel::Branchset.new( self )
 	end
-	
+
 
 	### Returns a human-readable representation of the object suitable for
 	### debugging.
@@ -159,8 +159,8 @@ class Treequel::Branch
 			extra_args.empty?
 		return self.class.new( self.directory, attribute, value, self )
 	end
-	
-	
+
+
 end # class Treequel::Branch
 
 

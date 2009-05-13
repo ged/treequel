@@ -3,9 +3,9 @@
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-	
+
 	libdir = basedir + "lib"
-	
+
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
@@ -34,11 +34,11 @@ include Treequel::Constants
 
 describe Treequel::Branch do
 	include Treequel::SpecHelpers
-	
+
 	before( :all ) do
 		setup_logging( :fatal )
 	end
-	
+
 	after( :all ) do
 		reset_logging()
 	end
@@ -46,11 +46,11 @@ describe Treequel::Branch do
 	before( :each ) do
 		@directory = mock( "treequel directory", :get_entry => :an_entry_hash )
 	end
-	
-		
+
+
 	it "can be constructed from a DN" do
 		@directory.should_receive( :rdn_to ).with( TEST_PEOPLE_DN ).
-			and_return( TEST_PEOPLE_DN_PAIR )
+			and_return( TEST_PEOPLE_RDN     )
 		@directory.should_receive( TEST_PEOPLE_DN_ATTR ).with( TEST_PEOPLE_DN_VALUE ).and_return do 
 			args = [@directory, TEST_PEOPLE_DN_ATTR, TEST_PEOPLE_DN_VALUE, TEST_BASE_DN]
 			Treequel::Branch.new( *args ) 
@@ -66,15 +66,15 @@ describe Treequel::Branch do
 			TEST_PERSON_DN_ATTR => TEST_PERSON_DN_VALUE,
 		}
 		branch = Treequel::Branch.new_from_entry( entry, @directory )
-		
+
 		branch.attribute.should == TEST_PERSON_DN_ATTR
 		branch.value.should == TEST_PERSON_DN_VALUE
 		branch.entry.should == entry
 	end
-	
+
 
 	describe "instances" do
-		
+
 		before( :each ) do
 			@branch = Treequel::Branch.new(
 				@directory, 
@@ -83,10 +83,10 @@ describe Treequel::Branch do
 				TEST_BASE_DN
 			  )
 		end
-		
+
 
 		it "knows what the attribute and value pair part of its DN are" do
-			@branch.attr_pair.should == TEST_HOSTS_DN_PAIR
+			@branch.rdn.should == TEST_HOSTS_RDN    
 		end
 
 		it "knows what its DN is" do
@@ -120,7 +120,7 @@ describe Treequel::Branch do
 		it "implement a proxy method that allow for creation of sub-branches" do
 			rval = @branch.cn( 'rondori' )
 			rval.dn.should == "cn=rondori,#{TEST_HOSTS_DN}"
-			
+
 			rval2 = rval.ou( 'Config' )
 			rval2.dn.should == "ou=Config,cn=rondori,#{TEST_HOSTS_DN}"
 		end
@@ -134,8 +134,8 @@ describe Treequel::Branch do
 
 		it "can return all of its immediate children as Branches"
 		it "can return its parent as a Branch"
-		
-		
+
+
 		it "can construct a Treequel::Branchset that uses it as its base" do
 			branchset = stub( "branchset" )
 			Treequel::Branchset.should_receive( :new ).with( @branch ).
@@ -143,14 +143,14 @@ describe Treequel::Branch do
 
 			@branch.branchset.should == branchset
 		end
-		
+
 		it "can create a filtered Treequel::Branchset for itself" do
 			branchset = mock( "filtered branchset" )
 			Treequel::Branchset.should_receive( :new ).with( @branch ).
 				and_return( branchset )
 			branchset.should_receive( :filter ).with( {:cn => 'acme'} ).
 				and_return( :a_filtered_branchset )
-			
+
 			@branch.filter( :cn => 'acme' ).should == :a_filtered_branchset
 		end
 
@@ -160,7 +160,7 @@ describe Treequel::Branch do
 				and_return( branchset )
 			branchset.should_receive( :filter ).with( :uid, [:glumpy, :grumpy, :glee] ).
 				and_return( :a_filtered_branchset )
-			
+
 			@branch.filter( :uid, [:glumpy, :grumpy, :glee] ).should == :a_filtered_branchset
 		end
 
@@ -170,7 +170,7 @@ describe Treequel::Branch do
 				and_return( branchset )
 			branchset.should_receive( :scope ).with( :onelevel ).
 				and_return( :a_scoped_branchset )
-			
+
 			@branch.scope( :onelevel ).should == :a_scoped_branchset
 		end
 
@@ -180,12 +180,12 @@ describe Treequel::Branch do
 				and_return( branchset )
 			branchset.should_receive( :select ).with( :uid, :l, :familyName, :givenName ).
 				and_return( :a_selective_branchset )
-			
+
 			@branch.select( :uid, :l, :familyName, :givenName ).should == :a_selective_branchset
 		end
-		
+
 	end
-	
+
 end
 
 
