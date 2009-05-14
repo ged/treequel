@@ -308,8 +308,20 @@ module Treequel::Constants # :nodoc:
 				#{WSP} #{RPAREN}
 			}x
 
+
+			# usage = "userApplications"     /  ; user
+			#         "directoryOperation"   /  ; directory operational
+			#         "distributedOperation" /  ; DSA-shared operational
+			#         "dSAOperation"            ; DSA-specific operational
+			USAGE = Regexp.union(
+				'userApplications',
+				'directoryOperation',
+				'distributedOperation',
+				'dSAOperation'
+			  )
+
 			# Attribute Type definitions are written according to the ABNF:
-			#  
+			#
 			#   AttributeTypeDescription = LPAREN WSP
 			#            numericoid                    ; object identifier
 			#            [ SP "NAME" SP qdescrs ]      ; short names (descriptors)
@@ -325,13 +337,23 @@ module Treequel::Constants # :nodoc:
 			#            [ SP "NO-USER-MODIFICATION" ] ; not user modifiable
 			#            [ SP "USAGE" SP usage ]       ; usage
 			#            extensions WSP RPAREN         ; extensions
-            #   
-			#        usage = "userApplications"     /  ; user
-			#                "directoryOperation"   /  ; directory operational
-			#                "distributedOperation" /  ; DSA-shared operational
-			#                "dSAOperation"            ; DSA-specific operational
 			LDAP_ATTRIBUTE_TYPE_DESCRIPTION = %r{
-				
+				#{LPAREN} #{WSP}
+					(#{NUMERICOID})                         # $1  = oid
+					(?:#{SP} NAME #{SP} (#{QDESCRS}) )?     # $2  = name
+					(?:#{SP} DESC #{SP} (#{QDSTRING}) )?    # $3  = description
+					(?:#{SP} (OBSOLETE) )?                  # $4  = obsolete flag
+					(?:#{SP} SUP #{SP} (#{OID}) )?          # $5  = superior type oid
+					(?:#{SP} EQUALITY #{SP} (#{OID}) )?     # $6  = equality matching rule oid
+					(?:#{SP} ORDERING #{SP} (#{OID}) )?     # $7  = ordering matching rule oid
+					(?:#{SP} SUBSTR #{SP} (#{OID}) )?       # $8  = substring matching rule oid
+					(?:#{SP} SYNTAX #{SP} (#{NOIDLEN}) )?   # $9  = value syntax matching oid
+					(?:#{SP} (SINGLE-VALUE) )?              # $10 = single value flag
+					(?:#{SP} (COLLECTIVE) )?                # $11 = collective flag
+					(?:#{SP} (NO-USER-MODIFICATION) )?      # $12 = no user modification flag
+					(?:#{SP} USAGE #{SP} (#{USAGE}) )?      # $13 = usage type
+					(#{EXTENSIONS})                         # $14 = extensions
+				#{WSP} #{RPAREN}
 			}x
 		end
 

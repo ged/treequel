@@ -36,6 +36,9 @@ class Treequel::Schema
 		include Treequel::Loggable,
 		        Treequel::Constants::Patterns
 
+		extend Treequel::AttributeDeclarations
+
+
 		private_class_method :new
 
 		# The 'kind' of objectClasses which don't specify a 'kind' explicitly
@@ -62,10 +65,10 @@ class Treequel::Schema
 			oid, names, desc, obsolete, sup, kind, must, may, extensions = match.captures
 
 			# Normalize the attributes
-			must_oids = self.parse_oids( must )
-			may_oids  = self.parse_oids( may )
-			names     = self.parse_names( names )
-			desc      = self.unquote_desc( desc )
+			must_oids = Treequel::Schema.parse_oids( must )
+			may_oids  = Treequel::Schema.parse_oids( may )
+			names     = Treequel::Schema.parse_names( names )
+			desc      = Treequel::Schema.unquote_desc( desc )
 
 			# Default the 'kind' attribute
 			kind ||= DEFAULT_OBJECTCLASS_KIND
@@ -79,63 +82,17 @@ class Treequel::Schema
 		end
 
 
-		### Parse the given +oidstring+ into an Array of OIDs, with Strings for numeric OIDs and
-		### Symbols for aliases.
-		def self::parse_oids( oidstring )
-			return [] unless oidstring
-
-			unless match = OIDLIST.match( oidstring )
-				raise Treequel::ParseError, "couldn't find an OIDLIST in %p" % [ oidstring ]
-			end
-
-			return $MATCH.split( /#{WSP} #{DOLLAR} #{WSP}/x ).collect do |oid|
-				if oid =~ NUMERICOID
-					oid
-				else
-					oid.to_sym
-				end
-			end
-		end
-
-
-		### Parse the given short +names+ string (a 'qdescrs' in the BNF) into an Array of zero or
-		### more Strings.
-		def self::parse_names( names )
-
-			# Unspecified
-			if names.nil?
-				return []
-
-			# Multi-value
-			elsif names =~ /#{LPAREN} #{WSP} (#{QDESCRLIST}) #{WSP} #{RPAREN}/x
-				return $1.scan( QDESCR ).collect {|qd| qd[1..-2].to_sym }
-
-			# Single-value
-			else
-				# Return the name without the quotes
-				return [ names[1..-2].to_sym ]
-			end
-		end
-
-
-		### Return a new string which is +desc+ with quotes stripped and any escaped characters 
-		### un-escaped.
-		def self::unquote_desc( desc )
-			return nil if desc.nil?
-			return desc.gsub( QQ, "'" ).gsub( QS, '\\' )[ 1..-2 ]
-		end
-
-
 		#############################################################
 		###	I N S T A N C E   M E T H O D S
 		#############################################################
 
 		### Create a new ObjectClass 
-		def initialize( oid, names=nil, desc=nil, obsolete=false, sup=nil, must_oids=[], may_oids=[], extensions=nil )
+		def initialize( oid, names=nil, desc=nil, obsolete=false, sup=nil, must_oids=[], 
+		                may_oids=[], extensions=nil )
 			@oid        = oid
 			@names      = names
 			@desc       = desc
-			@obsolete   = obsolete
+			@obsolete   = obsolete ? true : false
 			@sup        = sup
 			@must_oids  = must_oids
 			@may_oids   = may_oids
@@ -158,6 +115,9 @@ class Treequel::Schema
 		# The objectClass's description
 		attr_accessor :desc
 
+		# Is the objectClass obsolete?
+		predicate_attr :obsolete
+
 		# The objectClass's superior class
 		attr_accessor :sup
 
@@ -175,13 +135,6 @@ class Treequel::Schema
 		def name
 			return self.names.first
 		end
-
-
-		### Returns true if the objectClass is obsolete (has the 'OBSOLETE' attribute)
-		def obsolete?
-			return @obsolete ? true : false
-		end
-		alias_method :is_obsolete?, :obsolete?
 
 
 	end # class ObjectClass

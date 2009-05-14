@@ -33,8 +33,8 @@ module Treequel # :nodoc:
 
 			return eval( code, nil, file, line.to_i )
 		end
-		
-		
+
+
 		### Make the body of a delegator method that will delegate calls to the +name+
 		### method to the given +ivar+.
 		def make_ivar_delegator( ivar, name )
@@ -47,7 +47,7 @@ module Treequel # :nodoc:
 
 			return eval( code, nil, file, line.to_i )
 		end
-		
+
 
 		###############
 		module_function
@@ -75,8 +75,8 @@ module Treequel # :nodoc:
 				define_method( name, &body )
 			end
 		end
-		
-		
+
+
 		### Define the given +delegated_methods as delegators to the like-named method
 		### of the specified +ivar+. This is pretty much identical with how 'Forwardable'
 		### from the stdlib does delegation, but it's reimplemented here for consistency.
@@ -95,10 +95,10 @@ module Treequel # :nodoc:
 				define_method( name, &body )
 			end
 		end
-		
-		
+
+
 	end # module Delegation
-	
+
 
 	# 
 	# Add logging to a Treequel class. Including classes get #log and #log_debug methods.
@@ -136,7 +136,7 @@ module Treequel # :nodoc:
 				@classname   = klass.name
 				@force_debug = force_debug
 			end
-			
+
 			### Delegate calls the global logger with the class name as the 'progname' 
 			### argument.
 			def method_missing( sym, msg=nil, &block )
@@ -230,7 +230,7 @@ module Treequel # :nodoc:
 		alias_method :internify_keys, :symbolify_keys
 
 	end
-	
+
 
 	### A collection of utilities for working with Arrays.
 	module ArrayUtilities
@@ -270,8 +270,33 @@ module Treequel # :nodoc:
 			end
 		end
 
+	end # module ArrayUtilities
+
+
+	### A collection of attribute declaration functions
+	module AttributeDeclarations
+
+		###############
+		module_function
+		###############
+
+		### Declare predicate accessors for the attributes associated with the specified
+		### +symbols+.
+		def predicate_attr( *symbols )
+			symbols.each do |attrname|
+				define_method( "#{attrname}?" ) do
+					instance_variable_get( "@#{attrname}" ) ? true : false
+				end
+				define_method( "#{attrname}=" ) do |newval|
+					instance_variable_set( "@#{attrname}", newval ? true : false )
+				end
+				alias_method "is_#{attrname}?", "#{attrname}?"
+			end
+		end
+
 	end
-	
+
+
 
 end # module Treequel
 

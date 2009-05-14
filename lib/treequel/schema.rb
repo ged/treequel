@@ -4,6 +4,7 @@ require 'ldap'
 require 'ldap/schema'
 
 require 'treequel'
+require 'treequel/constants'
 require 'treequel/mixins'
 
 
@@ -29,7 +30,67 @@ class Treequel::Schema
 	        Treequel::Constants::Patterns
 
 	require 'treequel/schema/objectclass'
+	require 'treequel/schema/attributetype'
 
+	#################################################################
+	###	C L A S S   M E T H O D S
+	#################################################################
+
+	### Parse the given +oidstring+ into an Array of OIDs, with Strings for numeric OIDs and
+	### Symbols for aliases.
+	def self::parse_oids( oidstring )
+		return [] unless oidstring
+
+		unless match = OIDLIST.match( oidstring )
+			raise Treequel::ParseError, "couldn't find an OIDLIST in %p" % [ oidstring ]
+		end
+
+		parse_oid = self.method( :parse_oid )
+		return $MATCH.split( /#{WSP} #{DOLLAR} #{WSP}/x ).collect( &parse_oid )
+	end
+
+
+	### Parse a single OID into either a numeric OID string or a Symbol.
+	def self::parse_oid( oidstring )
+		if oidstring =~ NUMERICOID
+			return oid
+		else
+			return oidstring.to_sym
+		end
+	end
+
+
+	### Parse the given short +names+ string (a 'qdescrs' in the BNF) into an Array of zero or
+	### more Strings.
+	def self::parse_names( names )
+
+		# Unspecified
+		if names.nil?
+			return []
+
+		# Multi-value
+		elsif names =~ /#{LPAREN} #{WSP} (#{QDESCRLIST}) #{WSP} #{RPAREN}/x
+			return $1.scan( QDESCR ).collect {|qd| qd[1..-2].to_sym }
+
+		# Single-value
+		else
+			# Return the name without the quotes
+			return [ names[1..-2].to_sym ]
+		end
+	end
+
+
+	### Return a new string which is +desc+ with quotes stripped and any escaped characters 
+	### un-escaped.
+	def self::unquote_desc( desc )
+		return nil if desc.nil?
+		return desc.gsub( QQ, "'" ).gsub( QS, '\\' )[ 1..-2 ]
+	end
+
+
+	#################################################################
+	###	I N S T A N C E   M E T H O D S
+	#################################################################
 
 	### Create a new Treequel::Schema from the specified +hash+. The +hash+ should be of the same
 	### form as the one returned by LDAP::Conn.schema, i.e., a Hash of Arrays associated with the
@@ -79,8 +140,19 @@ class Treequel::Schema
 	end
 
 
+	### Parse the given attributeType +descriptions+ into Treequel::Schema::AttributeType objects
+	### and return them as a Hash keyed both by numeric OID and by each of its NAME attributes 
+	### (if it has any).
 	def parse_attribute_types( descriptions )
-		{}
+		return descriptions.inject( {} ) do |hash, desc|
+			attrtype = Treequel::Schema::AttributeType.parse( desc ) or
+				raise Treequel::Error, "couldn't create an attributeType from %p" % [ desc ]
+
+			hash[ attrtype.oid ] = attrtype
+			attrtype.names.inject( hash ) {|h, name| h[name] = attrtype; h }
+
+			hash
+		end
 	end
 
 
