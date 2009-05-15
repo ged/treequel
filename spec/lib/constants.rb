@@ -19,17 +19,17 @@ module Treequel::TestConstants # :nodoc:all
 		TEST_HOSTS_DN_ATTR   = 'ou'
 		TEST_HOSTS_DN_VALUE  = 'Hosts'
 		TEST_HOSTS_RDN       = "#{TEST_HOSTS_DN_ATTR}=#{TEST_HOSTS_DN_VALUE}"
-		TEST_HOSTS_DN        = "#{TEST_HOSTS_RDN    },#{TEST_BASE_DN}"
+		TEST_HOSTS_DN        = "#{TEST_HOSTS_RDN},#{TEST_BASE_DN}"
 
 		TEST_PEOPLE_DN_ATTR  = 'ou'
 		TEST_PEOPLE_DN_VALUE = 'People'
 		TEST_PEOPLE_RDN      = "#{TEST_PEOPLE_DN_ATTR}=#{TEST_PEOPLE_DN_VALUE}"
-		TEST_PEOPLE_DN       = "#{TEST_PEOPLE_RDN    },#{TEST_BASE_DN}"
+		TEST_PEOPLE_DN       = "#{TEST_PEOPLE_RDN},#{TEST_BASE_DN}"
 
 		TEST_PERSON_DN_ATTR  = 'uid'
 		TEST_PERSON_DN_VALUE = 'arogers'
 		TEST_PERSON_RDN      = "#{TEST_PERSON_DN_ATTR}=#{TEST_PERSON_DN_VALUE}"
-		TEST_PERSON_DN       = "#{TEST_PERSON_RDN    },#{TEST_PEOPLE_DN}"
+		TEST_PERSON_DN       = "#{TEST_PERSON_RDN},#{TEST_PEOPLE_DN}"
 
 		constants.each do |cname|
 			const_get(cname).freeze

@@ -43,6 +43,10 @@ describe Treequel::Schema::AttributeType do
 		@datadir = Pathname( __FILE__ ).dirname.parent.parent + 'data'
 	end
 
+	before( :each ) do
+		@schema = mock( "treequel schema object" )
+	end
+
 	after( :all ) do
 		reset_logging()
 	end
@@ -55,7 +59,7 @@ describe Treequel::Schema::AttributeType do
 			%{EQUALITY objectIdentifierMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.38 )}
 
 		before( :each ) do
-			@attrtype = Treequel::Schema::AttributeType.parse( OBJECTCLASS_ATTRTYPE )
+			@attrtype = Treequel::Schema::AttributeType.parse( @schema, OBJECTCLASS_ATTRTYPE )
 		end
 
 		it "knows what OID corresponds to the type" do
@@ -100,7 +104,7 @@ describe Treequel::Schema::AttributeType do
 		MULTINAME_ATTRIBUTETYPE = %{( 1.1.1.1 NAME ('firstname' 'secondname') )}
 
 		before( :each ) do
-			@attrtype = Treequel::Schema::AttributeType.parse( MULTINAME_ATTRIBUTETYPE )
+			@attrtype = Treequel::Schema::AttributeType.parse( @schema, MULTINAME_ATTRIBUTETYPE )
 		end
 
 		it "knows what both names are" do
@@ -120,7 +124,7 @@ describe Treequel::Schema::AttributeType do
 			%{'This spec\\27s example, which includes a \\5c character.' )}
 
 		before( :each ) do
-			@attrtype = Treequel::Schema::AttributeType.parse( ESCAPED_DESC_ATTRIBUTETYPE )
+			@attrtype = Treequel::Schema::AttributeType.parse( @schema, ESCAPED_DESC_ATTRIBUTETYPE )
 		end
 
 		it "unscapes the escaped characters" do
@@ -134,7 +138,7 @@ describe Treequel::Schema::AttributeType do
 		OBSOLETE_ATTRIBUTETYPE = %{( 1.1.1.1 OBSOLETE )}
 
 		before( :each ) do
-			@attrtype = Treequel::Schema::AttributeType.parse( OBSOLETE_ATTRIBUTETYPE )
+			@attrtype = Treequel::Schema::AttributeType.parse( @schema, OBSOLETE_ATTRIBUTETYPE )
 		end
 
 		it "knows that it's obsolete" do

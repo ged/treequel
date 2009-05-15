@@ -160,7 +160,7 @@ class Treequel::Directory
 	### it.
 	def get_entry( branch )
 		base = branch.base
-		filter = branch.attr_pair
+		filter = branch.rdn
 
 		self.log.debug "Looking up entry for %p from %s" % [ filter, base ]
 		return self.conn.search2( base.to_s, SCOPE[:onelevel], filter ).first
@@ -169,8 +169,12 @@ class Treequel::Directory
 
 	### Fetch the schema from the server.
 	def schema
-		schemahash = self.conn.schema
-		return Treequel::Schema.new( schemahash )
+		unless @schema
+			schemahash = self.conn.schema
+			@schema = Treequel::Schema.new( schemahash )
+		end
+
+		return @schema
 	end
 
 

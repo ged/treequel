@@ -97,11 +97,11 @@ class Treequel::Schema
 	### keys "objectClasses", "ldapSyntaxes", "matchingRuleUse", "attributeTypes", and 
 	### "matchingRules".
 	def initialize( hash )
-		@objectClasses   = self.parse_objectclasses( hash['objectClasses'] )
-		@attributeTypes  = self.parse_attribute_types( hash['attributeTypes'] )
-		@ldapSyntaxes    = self.parse_ldap_syntaxes( hash['ldapSyntaxes'] )
-		@matchingRules   = self.parse_matching_rules( hash['matchingRules'] )
-		@matchingRuleUse = self.parse_matching_rule_use( hash['matchingRuleUse'] )
+		@object_classes    = self.parse_objectclasses( hash['objectClasses'] )
+		@attribute_types   = self.parse_attribute_types( hash['attributeTypes'] )
+		@ldap_syntaxes     = self.parse_ldap_syntaxes( hash['ldapSyntaxes'] )
+		@matching_rules    = self.parse_matching_rules( hash['matchingRules'] )
+		@matching_rule_use = self.parse_matching_rule_use( hash['matchingRuleUse'] )
 	end
 
 
@@ -110,14 +110,16 @@ class Treequel::Schema
 	######
 
 	# The Hash of Treequel::Schema::ObjectClass objects, keyed by OID and any associated NAME 
-	# attributes, that describes the objectClasses in the directory's schema.
-	attr_reader :objectClasses
+	# attributes (as Symbols), that describes the objectClasses in the directory's schema.
+	attr_reader :object_classes
 
-	attr_reader :attributeTypes
+	# The hash of Treequel::Schema::AttributeType objects, keyed by OID and any associated NAME
+	# attributes (as Symbols), that describe the attributeTypes in the directory's schema.
+	attr_reader :attribute_types
 
-	attr_reader :ldapSyntaxes
-	attr_reader :matchingRules
-	attr_reader :matchingRuleUse
+	attr_reader :ldap_syntaxes
+	attr_reader :matching_rules
+	attr_reader :matching_rule_use
 
 
 	#########
@@ -129,7 +131,7 @@ class Treequel::Schema
 	### has any).
 	def parse_objectclasses( descriptions )
 		return descriptions.inject( {} ) do |hash, desc|
-			oc = Treequel::Schema::ObjectClass.parse( desc ) or
+			oc = Treequel::Schema::ObjectClass.parse( self, desc ) or
 				raise Treequel::Error, "couldn't create an objectClass from %p" % [ desc ]
 
 			hash[ oc.oid ] = oc
@@ -145,7 +147,7 @@ class Treequel::Schema
 	### (if it has any).
 	def parse_attribute_types( descriptions )
 		return descriptions.inject( {} ) do |hash, desc|
-			attrtype = Treequel::Schema::AttributeType.parse( desc ) or
+			attrtype = Treequel::Schema::AttributeType.parse( self, desc ) or
 				raise Treequel::Error, "couldn't create an attributeType from %p" % [ desc ]
 
 			hash[ attrtype.oid ] = attrtype

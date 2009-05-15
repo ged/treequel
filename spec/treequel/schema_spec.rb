@@ -54,12 +54,13 @@ describe Treequel::Schema do
 
 		schema = Treequel::Schema.new( schemahash )
 
-		schema.objectClasses.should have( 298 ).members
+		schema.object_classes.should have( 298 ).members
+		schema.attribute_types.should have( 1085 ).members
+
 		pending "implementation of the rest of the schema-object classes" do
-			schema.ldapSyntaxes.should have( 11 ).members
-			schema.matchingRuleUse.should have( 11 ).members
-			schema.attributeTypes.should have( 11 ).members
-			schema.matchingRules.should have( 11 ).members
+			schema.ldap_syntaxes.should have( 11 ).members
+			schema.matching_rule_use.should have( 11 ).members
+			schema.matching_rules.should have( 11 ).members
 		end
 	end
 

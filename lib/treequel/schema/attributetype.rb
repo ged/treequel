@@ -37,7 +37,7 @@ class Treequel::Schema::AttributeType
 	#############################################################
 
 	### Parse an AttributeType entry from a attributeType description from a schema.
-	def self::parse( description )
+	def self::parse( schema, description )
 		unless match = ( LDAP_ATTRIBUTE_TYPE_DESCRIPTION.match(description) )
 			raise Treequel::ParseError, "failed to parse attributeType from %p" % [ description ]
 		end
@@ -56,8 +56,9 @@ class Treequel::Schema::AttributeType
 		# Invert the 'no-user-modification' attribute
 		usermodifiable = nousermod ? false : true
 
-		return self.new( oid, names, desc, obsolete, sup, eqmatch_oid, ordmatch_oid, submatch_oid,
-			valsynoid, single, collective, usermodifiable, usagetype, extensions )
+		return self.new( schema, oid, names, desc, obsolete, sup, eqmatch_oid, ordmatch_oid,
+						 submatch_oid, valsynoid, single, collective,
+						 usermodifiable, usagetype, extensions )
 	end
 
 
@@ -66,9 +67,11 @@ class Treequel::Schema::AttributeType
 	#############################################################
 
 	### Create a new AttributeType
-	def initialize( oid, names=nil, desc=nil, obsolete=false, sup=nil, eqmatch_oid=nil,
+	def initialize( schema, oid, names=nil, desc=nil, obsolete=false, sup=nil, eqmatch_oid=nil,
 	                ordmatch_oid=nil, submatch_oid=nil, valsynoid=nil, single=false,
 	                collective=false, user_modifiable=true, usagetype=nil, extensions=nil )
+
+		@schema          = schema
 
 		@oid             = oid
 		@names           = names
@@ -92,6 +95,9 @@ class Treequel::Schema::AttributeType
 	######
 	public
 	######
+
+	# The schema the attributeType belongs to
+	attr_reader :schema
 
 	# The attributeType's oid
 	attr_reader :oid
@@ -139,6 +145,20 @@ class Treequel::Schema::AttributeType
 	### Return the first of the attributeType's names, if it has any, or +nil+.
 	def name
 		return self.names.first
+	end
+
+
+	### Return a human-readable representation of the object suitable for debugging
+	def inspect
+		return "#<%s:0x%0x %s(%s) %p %sSYNTAX: %p>" % [
+			self.class.name,
+			self.object_id / 2,
+			self.name,
+			self.oid,
+			self.desc,
+			self.is_single? ? '(SINGLE) ' : '',
+			self.valsynoid,
+		]
 	end
 
 

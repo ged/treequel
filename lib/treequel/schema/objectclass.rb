@@ -57,7 +57,7 @@ class Treequel::Schema
 
 
 		### Parse an ObjectClass entry from a objectClass description from a schema.
-		def self::parse( description )
+		def self::parse( schema, description )
 			unless match = ( LDAP_OBJECTCLASS_DESCRIPTION.match(description) )
 				raise Treequel::ParseError, "failed to parse objectClass from %p" % [ description ]
 			end
@@ -78,7 +78,8 @@ class Treequel::Schema
 				raise Treequel::Error, "no such objectClass type %p: expected one of: %p" %
 					[ kind, Treequel::Schema::OBJECTCLASS_TYPES.keys ]
 
-			return concrete_class.new( oid, names, desc, obsolete, sup, must_oids, may_oids, extensions )
+			return concrete_class.new( schema, oid, names, desc, obsolete, sup,
+			                           must_oids, may_oids, extensions )
 		end
 
 
@@ -87,8 +88,10 @@ class Treequel::Schema
 		#############################################################
 
 		### Create a new ObjectClass 
-		def initialize( oid, names=nil, desc=nil, obsolete=false, sup=nil, must_oids=[], 
+		def initialize( schema, oid, names=nil, desc=nil, obsolete=false, sup=nil, must_oids=[],
 		                may_oids=[], extensions=nil )
+			@schema     = schema
+
 			@oid        = oid
 			@names      = names
 			@desc       = desc
@@ -105,6 +108,9 @@ class Treequel::Schema
 		######
 		public
 		######
+
+		# The schema the objectClass belongs to
+		attr_reader :schema
 
 		# The objectClass's oid
 		attr_reader :oid
@@ -134,6 +140,27 @@ class Treequel::Schema
 		### Return the first of the objectClass's names, if it has any, or +nil+.
 		def name
 			return self.names.first
+		end
+
+
+		### Return Treequel::Schema::AttributeType objects for each of the objectClass's
+		### MUST attributes.
+		def must
+			self.must_oids.collect {|oid| self.schema.attribute_types[oid] }
+		end
+
+
+		### Return a human-readable representation of the object suitable for debugging
+		def inspect
+			return "#<%s:0x%0x %s(%s) %s MUST: %p, MAY: %p>" % [
+				self.class.name,
+				self.object_id / 2,
+				self.name,
+				self.oid,
+				self.desc,
+				self.must_oids,
+				self.may_oids,
+			]
 		end
 
 

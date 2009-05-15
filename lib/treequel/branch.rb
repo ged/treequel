@@ -2,7 +2,7 @@
 
 require 'forwardable'
 
-require 'treequel' 
+require 'treequel'
 require 'treequel/mixins'
 require 'treequel/constants'
 require 'treequel/branchset'
@@ -111,7 +111,12 @@ class Treequel::Branch
 	### Return the LDAP::Entry associated with the receiver, fetching it from the
 	### directory if necessary.
 	def entry
-		return @entry ||= self.directory.get_entry( self )
+		unless @entry
+			@entry = self.directory.get_entry( self ) or
+				raise "couldn't fetch entry for %p" % [ self ]
+		end
+
+		return @entry
 	end
 
 
@@ -144,6 +149,21 @@ class Treequel::Branch
 			self.directory,
 			self.entry,
 		  ]
+	end
+
+
+	### Fetch the value/s associated with the given +attrname+ from the underlying entry.
+	def []( attrname )
+		attrsym   = attrname.to_sym
+		attribute = self.directory.schema.attribute_types[ attrsym ] or return nil
+
+		return nil unless self.entry[ attrsym.to_s ]
+
+		if attribute.single?
+			return self.entry[ attrsym.to_s ].first
+		else
+			return self.entry[ attrsym.to_s ]
+		end
 	end
 
 

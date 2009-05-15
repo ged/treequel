@@ -86,7 +86,7 @@ describe Treequel::Branch do
 
 
 		it "knows what the attribute and value pair part of its DN are" do
-			@branch.rdn.should == TEST_HOSTS_RDN    
+			@branch.rdn.should == TEST_HOSTS_RDN
 		end
 
 		it "knows what its DN is" do
@@ -164,7 +164,7 @@ describe Treequel::Branch do
 			@branch.filter( :uid, [:glumpy, :grumpy, :glee] ).should == :a_filtered_branchset
 		end
 
-		it "can create a scoped Treequel::Branchset for itself" do
+		it "creates a scoped Treequel::Branchset for itself" do
 			branchset = mock( "scoped branchset" )
 			Treequel::Branchset.should_receive( :new ).with( @branch ).
 				and_return( branchset )
@@ -174,7 +174,7 @@ describe Treequel::Branch do
 			@branch.scope( :onelevel ).should == :a_scoped_branchset
 		end
 
-		it "can create a selective Treequel::Branchset for itself" do
+		it "creates a selective Treequel::Branchset for itself" do
 			branchset = mock( "selective branchset" )
 			Treequel::Branchset.should_receive( :new ).with( @branch ).
 				and_return( branchset )
@@ -184,6 +184,49 @@ describe Treequel::Branch do
 			@branch.select( :uid, :l, :familyName, :givenName ).should == :a_selective_branchset
 		end
 
+
+		### Attribute reader
+		describe "index fetch operator" do
+
+			before( :each ) do
+				@schema = mock( "treequel schema" )
+				@entry = mock( "entry object" )
+				@directory.stub!( :schema ).and_return( @schema )
+				@directory.stub!( :get_entry ).and_return( @entry )
+			end
+
+
+			it "fetches a multi-value attribute as an Array" do
+				@attribute_type = mock( "schema attribute type object" )
+				@schema.should_receive( :attribute_types ).and_return({ :glumpy => @attribute_type })
+				@attribute_type.should_receive( :single? ).and_return( false )
+				@entry.should_receive( :[] ).with( 'glumpy' ).at_least( :once ).
+					and_return([ 'glumpa1', 'glumpa2' ])
+
+				@branch[ :glumpy ].should == [ 'glumpa1', 'glumpa2' ]
+			end
+
+			it "fetches a single-value attribute as a scalar" do
+				@attribute_type = mock( "schema attribute type object" )
+				@schema.should_receive( :attribute_types ).and_return({ :glumpy => @attribute_type })
+				@attribute_type.should_receive( :single? ).and_return( true )
+				@entry.should_receive( :[] ).with( 'glumpy' ).at_least( :once ).
+					and_return([ 'glumpa1' ])
+
+				@branch[ :glumpy ].should == 'glumpa1'
+			end
+
+			it "returns nil if there is no such attribute in the schema" do
+				@schema.should_receive( :attribute_types ).and_return({})
+				@branch[ :glumpy ].should == nil
+			end
+
+			it "returns nil if record doesn't have the attribute set" do
+				@schema.should_receive( :attribute_types ).and_return({ :glumpy => @attribute_type })
+				@branch[ :glumpy ].should == nil
+			end
+
+		end
 	end
 
 end

@@ -18,6 +18,7 @@ begin
 	require 'ldap'
 	require 'ldap/schema'
 	require 'treequel/schema/objectclass'
+	require 'treequel/schema/attributetype'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
@@ -43,6 +44,10 @@ describe Treequel::Schema::ObjectClass do
 		@datadir = Pathname( __FILE__ ).dirname.parent.parent + 'data'
 	end
 
+	before( :each ) do
+		@schema = mock( "Treequel schema" )
+	end
+
 	after( :all ) do
 		reset_logging()
 	end
@@ -54,7 +59,7 @@ describe Treequel::Schema::ObjectClass do
 			%{MUST objectClass )}
 
 		before( :each ) do
-			@oc = Treequel::Schema::ObjectClass.parse( TOP_OBJECTCLASS )
+			@oc = Treequel::Schema::ObjectClass.parse( @schema, TOP_OBJECTCLASS )
 		end
 
 		it "is an AbstractObjectClass because its 'kind' is 'ABSTRACT'" do
@@ -79,12 +84,12 @@ describe Treequel::Schema::ObjectClass do
 		end
 
 		it "returns attribute objects for its MUST OIDs" do
-			pending "implementation of Treequel::Schema::Attribute" do
-				@oc.must.should have( 1 ).member
-				@oc.must.first.should be_an_instance_of( Treequel::Schema::Attribute )
-			end
-		end
+			@schema.should_receive( :attribute_types ).at_least( :once ).
+				and_return({ :objectClass => :attribute_type })
 
+			@oc.must.should have( 1 ).member
+			@oc.must.should == [ :attribute_type ]
+		end
 
 		it "knows that it doesn't have any MAY attributes" do
 			@oc.may_oids.should be_empty()
@@ -110,7 +115,7 @@ describe Treequel::Schema::ObjectClass do
 			%{physicalDeliveryOfficeName $ st $ l $ description ) )}
 
 		before( :each ) do
-			@oc = Treequel::Schema::ObjectClass.parse( OU_OBJECTCLASS )
+			@oc = Treequel::Schema::ObjectClass.parse( @schema, OU_OBJECTCLASS )
 		end
 
 		it "is a StructuralObjectClass because its kind is 'STRUCTURAL'" do
@@ -151,7 +156,7 @@ describe Treequel::Schema::ObjectClass do
 		KINDLESS_OBJECTCLASS = %{( 1.1.1.1 )}
 
 		before( :each ) do
-			@oc = Treequel::Schema::ObjectClass.parse( KINDLESS_OBJECTCLASS )
+			@oc = Treequel::Schema::ObjectClass.parse( @schema, KINDLESS_OBJECTCLASS )
 		end
 
 		it "is the default kind (STRUCTURAL)" do
@@ -165,7 +170,7 @@ describe Treequel::Schema::ObjectClass do
 		MULTINAME_OBJECTCLASS = %{( 1.1.1.1 NAME ('firstname' 'secondname') )}
 
 		before( :each ) do
-			@oc = Treequel::Schema::ObjectClass.parse( MULTINAME_OBJECTCLASS )
+			@oc = Treequel::Schema::ObjectClass.parse( @schema, MULTINAME_OBJECTCLASS )
 		end
 
 		it "knows what both names are" do
@@ -185,7 +190,7 @@ describe Treequel::Schema::ObjectClass do
 			%{'This spec\\27s example, which includes a \\5c character.' )}
 
 		before( :each ) do
-			@oc = Treequel::Schema::ObjectClass.parse( ESCAPED_DESC_OBJECTCLASS )
+			@oc = Treequel::Schema::ObjectClass.parse( @schema, ESCAPED_DESC_OBJECTCLASS )
 		end
 
 		it "unscapes the escaped characters" do
@@ -199,7 +204,7 @@ describe Treequel::Schema::ObjectClass do
 		OBSOLETE_OBJECTCLASS = %{( 1.1.1.1 OBSOLETE )}
 
 		before( :each ) do
-			@oc = Treequel::Schema::ObjectClass.parse( OBSOLETE_OBJECTCLASS )
+			@oc = Treequel::Schema::ObjectClass.parse( @schema, OBSOLETE_OBJECTCLASS )
 		end
 
 		it "knows that it's obsolete" do
