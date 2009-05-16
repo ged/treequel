@@ -266,11 +266,16 @@ module Treequel::Constants # :nodoc:
 			QQ = / #{ESC} 27 /x
 			QS = / #{ESC} 5c /xi
 
+
+			### NOTE: QDSTRING is zero-or-more despite the RFC's specifying it as 1 or more 
+			### to support empty DESC attributes in the wild (e.g., the ones in the 
+			### attributeTypes from the 'retcode' overlay in OpenLDAP)
+
 			# dstring = 1*( QS / QQ / QUTF8 )   ; escaped UTF-8 string
 			# qdstring = SQUOTE dstring SQUOTE
 			# qdstringlist = [ qdstring *( SP qdstring ) ]
 			# qdstrings = qdstring / ( LPAREN WSP qdstringlist WSP RPAREN )
-			DSTRING = / (?: #{QS} | #{QQ} | #{QUTF8} )+ /x
+			DSTRING = / (?: #{QS} | #{QQ} | #{QUTF8} )* /x
 			QDSTRING = / #{SQUOTE} #{DSTRING} #{SQUOTE} /x
 			QDSTRINGLIST = /(?: #{QDSTRING} (?: #{SP} #{QDSTRING} )* )?/x
 			QDSTRINGS = / #{QDSTRING} | #{LPAREN} #{WSP} #{QDSTRINGLIST} #{WSP} #{RPAREN} /x

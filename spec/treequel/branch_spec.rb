@@ -82,10 +82,15 @@ describe Treequel::Branch do
 				TEST_HOSTS_DN_VALUE,
 				TEST_BASE_DN
 			  )
+
+			@schema = mock( "treequel schema" )
+			@entry = mock( "entry object" )
+			@directory.stub!( :schema ).and_return( @schema )
+			@directory.stub!( :get_entry ).and_return( @entry )
 		end
 
 
-		it "knows what the attribute and value pair part of its DN are" do
+		it "knows what its RDN is" do
 			@branch.rdn.should == TEST_HOSTS_RDN
 		end
 
@@ -164,7 +169,7 @@ describe Treequel::Branch do
 			@branch.filter( :uid, [:glumpy, :grumpy, :glee] ).should == :a_filtered_branchset
 		end
 
-		it "creates a scoped Treequel::Branchset for itself" do
+		it "can create a scoped Treequel::Branchset for itself" do
 			branchset = mock( "scoped branchset" )
 			Treequel::Branchset.should_receive( :new ).with( @branch ).
 				and_return( branchset )
@@ -174,7 +179,7 @@ describe Treequel::Branch do
 			@branch.scope( :onelevel ).should == :a_scoped_branchset
 		end
 
-		it "creates a selective Treequel::Branchset for itself" do
+		it "can create a selective Treequel::Branchset for itself" do
 			branchset = mock( "selective branchset" )
 			Treequel::Branchset.should_receive( :new ).with( @branch ).
 				and_return( branchset )
@@ -184,17 +189,62 @@ describe Treequel::Branch do
 			@branch.select( :uid, :l, :familyName, :givenName ).should == :a_selective_branchset
 		end
 
+		it "knows which objectClasses it has" do
+			oc_attr = mock( "objectClass attributeType object" )
+			@schema.should_receive( :attribute_types ).and_return({ :objectClass => oc_attr })
+			oc_attr.should_receive( :single? ).and_return( false )
+			@entry.should_receive( :[] ).with( 'objectClass' ).at_least( :once ).
+				and_return([ 'ou', 'cn' ])
+
+			@schema.should_receive( :object_classes ).twice.and_return({
+				:ou => :ou_objectclass,
+				:cn => :cn_objectclass,
+			})
+
+			@branch.object_classes.should == [ :ou_objectclass, :cn_objectclass ]
+		end
+
+		it "can return the set of all its MUST attributeTypes based on which objectClasses it has" do
+			oc1 = mock( "first objectclass" )
+			oc2 = mock( "second objectclass" )
+
+			@branch.should_receive( :object_classes ).and_return([ oc1, oc2 ])
+			oc1.should_receive( :must ).and_return([ :cn, :uid ])
+			oc2.should_receive( :must ).and_return([ :cn, :l ])
+
+			must_attrs = @branch.must_attribute_types
+			must_attrs.should have( 3 ).members
+			must_attrs.should include( :cn, :uid, :l )
+		end
+
+		it "can return the set of all its MAY attributeTypes based on which objectClasses it has" do
+			oc1 = mock( "first objectclass" )
+			oc2 = mock( "second objectclass" )
+
+			@branch.should_receive( :object_classes ).and_return([ oc1, oc2 ])
+			oc1.should_receive( :may ).and_return([ :description, :mobilePhone ])
+			oc2.should_receive( :may ).and_return([ :chunktype ])
+
+			must_attrs = @branch.may_attribute_types
+			must_attrs.should have( 3 ).members
+			must_attrs.should include( :description, :mobilePhone, :chunktype )
+		end
+
+		it "can return the set of all of its valid attributeTypes, which is a union of its " +
+		   "MUST and MAY attributes" do
+			@branch.should_receive( :must_attribute_types ).
+				and_return([ :cn, :l, :uid ])
+			@branch.should_receive( :may_attribute_types ).
+				and_return([ :description, :mobilePhone, :chunktype ])
+
+			all_attrs = @branch.valid_attribute_types
+
+			all_attrs.should have( 6 ).members
+			all_attrs.should include( :cn, :uid, :l, :description, :mobilePhone, :chunktype )
+		end
 
 		### Attribute reader
 		describe "index fetch operator" do
-
-			before( :each ) do
-				@schema = mock( "treequel schema" )
-				@entry = mock( "entry object" )
-				@directory.stub!( :schema ).and_return( @schema )
-				@directory.stub!( :get_entry ).and_return( @entry )
-			end
-
 
 			it "fetches a multi-value attribute as an Array" do
 				@attribute_type = mock( "schema attribute type object" )
@@ -226,6 +276,10 @@ describe Treequel::Branch do
 				@branch[ :glumpy ].should == nil
 			end
 
+		end
+
+
+		describe "index set operator" do
 		end
 	end
 

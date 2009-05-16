@@ -150,6 +150,13 @@ class Treequel::Schema
 		end
 
 
+		### Return Treequel::Schema::AttributeType objects for each of the objectClass's
+		### MAY attributes.
+		def may
+			self.may_oids.collect {|oid| self.schema.attribute_types[oid] }
+		end
+
+
 		### Return a human-readable representation of the object suitable for debugging
 		def inspect
 			return "#<%s:0x%0x %s(%s) %s MUST: %p, MAY: %p>" % [

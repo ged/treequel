@@ -91,6 +91,14 @@ describe Treequel::Schema::ObjectClass do
 			@oc.must.should == [ :attribute_type ]
 		end
 
+		it "returns attribute objects for its MAY OIDs" do
+			@schema.should_receive( :attribute_types ).at_least( :once ).
+				and_return({ :objectClass => :attribute_type })
+
+			@oc.must.should have( 1 ).member
+			@oc.must.should == [ :attribute_type ]
+		end
+
 		it "knows that it doesn't have any MAY attributes" do
 			@oc.may_oids.should be_empty()
 		end

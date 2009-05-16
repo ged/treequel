@@ -8,17 +8,18 @@ require 'treequel/constants'
 require 'treequel/branchset'
 
 
-# The object in Treequel that wraps an entry. It knows how to construct other branches 
+# The object in Treequel that wraps an entry. It knows how to construct other branches
 # for the entries below itself, and how to search for those entries.
-# 
+#
 # == Subversion Id
 #
 #  $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <ged@FaerieMUD.org>
-# 
+# * Mahlon E. Smith <mahlon@martini.nu>
+#
 # :include: LICENSE
 #
 #---
@@ -81,15 +82,14 @@ class Treequel::Branch
 		@value     = value
 		@base      = base
 		@entry     = entry
+
+		@values = {}
 	end
 
 
 	######
 	public
 	######
-
-	# Delegate some methods to the entry hash via the #entry method
-	def_method_delegators :entry, :[], :[]=
 
 	# Delegate some other methods to a new Branchset via the #branchset method
 	def_method_delegators :branchset, :filter, :scope, :select
@@ -139,6 +139,35 @@ class Treequel::Branch
 	end
 
 
+	### Return Treequel::Schema::ObjectClass instances for each of the receiver's
+	### objectClass attributes.
+	def object_classes
+		schema = self.directory.schema
+		return self[:objectClass].collect {|oid| schema.object_classes[oid.to_sym] }
+	end
+
+
+	### Return Treequel::Schema::AttributeType instances for each of the receiver's
+	### objectClass's MUST attributeTypes.
+	def must_attribute_types
+		return self.object_classes.collect {|oc| oc.must }.flatten.uniq
+	end
+
+
+	### Return Treequel::Schema::AttributeType instances for each of the receiver's
+	### objectClass's MAY attributeTypes.
+	def may_attribute_types
+		return self.object_classes.collect {|oc| oc.may }.flatten.uniq
+	end
+
+
+	### Return Treequel::Schema::AttributeType instances for the set of all of the receiver's
+	### MUST and MAY attributeTypes.
+	def valid_attribute_types
+		return self.must_attribute_types | self.may_attribute_types
+	end
+
+
 	### Returns a human-readable representation of the object suitable for
 	### debugging.
 	def inspect
@@ -154,16 +183,22 @@ class Treequel::Branch
 
 	### Fetch the value/s associated with the given +attrname+ from the underlying entry.
 	def []( attrname )
-		attrsym   = attrname.to_sym
-		attribute = self.directory.schema.attribute_types[ attrsym ] or return nil
+		attrsym = attrname.to_sym
 
-		return nil unless self.entry[ attrsym.to_s ]
+		unless @values.key?( attrsym )
+			attribute = self.directory.schema.attribute_types[ attrsym ] or return nil
+			return nil unless self.entry[ attrsym.to_s ]
 
-		if attribute.single?
-			return self.entry[ attrsym.to_s ].first
-		else
-			return self.entry[ attrsym.to_s ]
+			if attribute.single?
+				@values[ attrsym ] = self.entry[ attrsym.to_s ].first
+			else
+				@values[ attrsym ] = self.entry[ attrsym.to_s ]
+			end
+
+			@values[ attrsym ].freeze
 		end
+
+		return @values[ attrsym ]
 	end
 
 
