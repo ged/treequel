@@ -237,6 +237,14 @@ describe Treequel::Directory do
 			@dir.schema.should == :the_parsed_schema
 		end
 
+		it "can modify the record corresponding to a Branch in the directory" do
+			branch = mock( "branch" )
+			branch.should_receive( :dn ).at_least( :once ).and_return( :the_branches_dn )
+
+			@conn.should_receive( :modify ).with( :the_branches_dn, 'cn' => ['nomblywob'] )
+
+			@dir.modify( branch, 'cn' => ['nomblywob'] )
+		end
 
 	end
 end

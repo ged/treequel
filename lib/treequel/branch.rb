@@ -154,6 +154,13 @@ class Treequel::Branch
 	end
 
 
+	### Return OIDs (numeric OIDs as Strings, named OIDs as Symbols) for each of the receiver's
+	### objectClass's MUST attributeTypes.
+	def must_oids
+		return self.object_classes.collect {|oc| oc.must_oids }.flatten.uniq
+	end
+
+
 	### Return Treequel::Schema::AttributeType instances for each of the receiver's
 	### objectClass's MAY attributeTypes.
 	def may_attribute_types
@@ -161,10 +168,33 @@ class Treequel::Branch
 	end
 
 
+	### Return OIDs (numeric OIDs as Strings, named OIDs as Symbols) for each of the receiver's
+	### objectClass's MAY attributeTypes.
+	def may_oids
+		return self.object_classes.collect {|oc| oc.may_oids }.flatten.uniq
+	end
+
+
 	### Return Treequel::Schema::AttributeType instances for the set of all of the receiver's
 	### MUST and MAY attributeTypes.
 	def valid_attribute_types
 		return self.must_attribute_types | self.may_attribute_types
+	end
+
+
+	### Return a uniqified Array of OIDs (numeric OIDs as Strings, named OIDs as Symbols) for
+	### the set of all of the receiver's MUST and MAY attributeTypes.
+	def valid_attribute_oids
+		return self.must_oids | self.may_oids
+	end
+
+
+	### Return +true+ if the specified +attrname+ is a valid attributeType given the
+	### receiver's current objectClasses.
+	def valid_attribute?( attroid )
+		attroid = attroid.to_sym if attroid.is_a?( String ) && 
+			attroid !~ NUMERICOID
+		return self.valid_attribute_oids.include?( attroid )
 	end
 
 
@@ -185,21 +215,47 @@ class Treequel::Branch
 	def []( attrname )
 		attrsym = attrname.to_sym
 
+		self.log.debug "Fetching value for %p" % [ attrsym ]
 		unless @values.key?( attrsym )
-			attribute = self.directory.schema.attribute_types[ attrsym ] or return nil
-			return nil unless self.entry[ attrsym.to_s ]
-
-			if attribute.single?
-				@values[ attrsym ] = self.entry[ attrsym.to_s ].first
-			else
-				@values[ attrsym ] = self.entry[ attrsym.to_s ]
+			self.log.debug "  value is not cached; checking its attributeType"
+			unless attribute = self.directory.schema.attribute_types[ attrsym ]
+				self.log.info "no attributeType for %p" % [ attrsym ]
+				return nil
 			end
 
+			self.log.debug "  attribute exists; checking the entry for a value"
+			return nil unless (( value = self.entry[attrsym.to_s] ))
+
+			self.log.debug "  entry has a value; checking it for scalar/array"
+			if attribute.single?
+				self.log.debug "    attributeType is SINGLE; unwrapping the Array"
+				@values[ attrsym ] = value.first
+			else
+				self.log.debug "    attributeType is not SINGLE; keeping the Array"
+				@values[ attrsym ] = value
+			end
+
+			self.log.debug "  caching value %p" % [ @values[attrsym] ]
 			@values[ attrsym ].freeze
+		else
+			self.log.debug "  value is cached."
 		end
 
 		return @values[ attrsym ]
 	end
+
+
+	### Set attribute +attrname+ to a new +value+.
+	def []=( attrname, value )
+		value = [ value ] unless value.is_a?( Array )
+		self.log.debug "Modifying %s to %p" % [ attrname, value ]
+		self.directory.modify( self, attrname.to_s => value )
+		@values.delete( attrname.to_sym )
+		self.entry[ attrname.to_s ] = value
+	end
+
+# conn.modrdn(dn, new_rdn, delete_old_rdn)
+# conn.delete( dn )
 
 
 	#########
@@ -213,6 +269,13 @@ class Treequel::Branch
 			"wrong number of arguments (%d for 1)" % [ extra_args.length + 1 ] unless
 			extra_args.empty?
 		return self.class.new( self.directory, attribute, value, self )
+	end
+
+
+	### Clear any cached values when the structural state of the object changes.
+	def clear_caches
+		@entry = nil
+		@values.clear
 	end
 
 

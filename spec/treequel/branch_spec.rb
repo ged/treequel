@@ -87,6 +87,7 @@ describe Treequel::Branch do
 			@entry = mock( "entry object" )
 			@directory.stub!( :schema ).and_return( @schema )
 			@directory.stub!( :get_entry ).and_return( @entry )
+			@attribute_type = mock( "schema attribute type object" )
 		end
 
 
@@ -247,7 +248,6 @@ describe Treequel::Branch do
 		describe "index fetch operator" do
 
 			it "fetches a multi-value attribute as an Array" do
-				@attribute_type = mock( "schema attribute type object" )
 				@schema.should_receive( :attribute_types ).and_return({ :glumpy => @attribute_type })
 				@attribute_type.should_receive( :single? ).and_return( false )
 				@entry.should_receive( :[] ).with( 'glumpy' ).at_least( :once ).
@@ -257,7 +257,6 @@ describe Treequel::Branch do
 			end
 
 			it "fetches a single-value attribute as a scalar" do
-				@attribute_type = mock( "schema attribute type object" )
 				@schema.should_receive( :attribute_types ).and_return({ :glumpy => @attribute_type })
 				@attribute_type.should_receive( :single? ).and_return( true )
 				@entry.should_receive( :[] ).with( 'glumpy' ).at_least( :once ).
@@ -273,13 +272,46 @@ describe Treequel::Branch do
 
 			it "returns nil if record doesn't have the attribute set" do
 				@schema.should_receive( :attribute_types ).and_return({ :glumpy => @attribute_type })
+				@entry.should_receive( :[] ).with( 'glumpy' ).and_return( nil )
 				@branch[ :glumpy ].should == nil
+			end
+
+			it "caches the value fetched from its entry" do
+				@schema.stub!( :attribute_types ).and_return({ :glump => @attribute_type })
+				@attribute_type.stub!( :single? ).and_return( true )
+				@entry.should_receive( :[] ).with( 'glump' ).once.and_return( [:a_value] )
+				2.times { @branch[ :glump ] }
 			end
 
 		end
 
-
+		### Attribute writer
 		describe "index set operator" do
+
+			it "writes a single value attribute via its directory" do
+				@directory.should_receive( :modify ).with( @branch, { 'glumpy' => ['gits'] } )
+				@entry.should_receive( :[]= ).with( 'glumpy', ['gits'] )
+				@branch[ :glumpy ] = 'gits'
+			end
+
+			it "writes multiple attribute values via its directory" do
+				@directory.should_receive( :modify ).with( @branch, { 'glumpy' => ['gits', 'crumps'] } )
+				@entry.should_receive( :[]= ).with( 'glumpy', ['gits', 'crumps'] )
+				@branch[ :glumpy ] = [ 'gits', 'crumps' ]
+			end
+
+			it "clears the cache after a successful write" do
+				@schema.stub!( :attribute_types ).and_return({ :glorpy => @attribute_type })
+				@attribute_type.stub!( :single? ).and_return( true )
+				@entry.should_receive( :[] ).with( 'glorpy' ).and_return( [:firstval], [:secondval] )
+
+				@directory.should_receive( :modify ).with( @branch, {'glorpy' => ['chunks']} )
+				@entry.should_receive( :[]= ).with( 'glorpy', ['chunks'] )
+
+				@branch[ :glorpy ].should == :firstval
+				@branch[ :glorpy ] = 'chunks'
+				@branch[ :glorpy ].should == :secondval
+			end
 		end
 	end
 

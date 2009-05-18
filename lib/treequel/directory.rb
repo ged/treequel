@@ -235,6 +235,13 @@ class Treequel::Directory
 	end
 
 
+	### Modify the entry specified by the given +branch+ with the specified +mods+, which can be
+	### either an Array of LDAP::Mod objects or a Hash of attribute/value pairs.
+	def modify( branch, mods )
+		self.log.debug "About to make modifications: %p to %s" % [ mods, branch.dn ]
+		self.conn.modify( branch.dn, mods )
+	end
+
 
 	#########
 	protected
