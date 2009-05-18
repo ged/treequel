@@ -11,7 +11,7 @@ module Treequel::Constants # :nodoc:
 	### values are:
 	###
 	###   :onelevel, :one, :base, :subtree, :sub
-	### 
+	###
 	SCOPE = {
 		:onelevel => LDAP::LDAP_SCOPE_ONELEVEL,
 		:one      => LDAP::LDAP_SCOPE_ONELEVEL,
@@ -46,7 +46,7 @@ module Treequel::Constants # :nodoc:
 			# option				   = 1*opt-char
 			option = %r{ #{opt_char}+ }x
 
-			# 
+			#
 			# AttributeDescription	   = AttributeType [";" options]
 			LDAP_ATTRIBUTE_DESCRIPTION = %r{
 				(#{LDAP_ATTRIBUTE_TYPE})		# $1: attribute oid or name
@@ -57,7 +57,7 @@ module Treequel::Constants # :nodoc:
 			}x
 
 			# If a value should contain any of the following characters
-			# 
+			#
 			#			 Character		 ASCII value
 			#			 ---------------------------
 			#			 *				 0x2a
@@ -65,7 +65,7 @@ module Treequel::Constants # :nodoc:
 			#			 )				 0x29
 			#			 \				 0x5c
 			#			 NUL			 0x00
-			# 
+			#
 			# the character must be encoded as the backslash '\' character (ASCII
 			# 0x5c) followed by the two hexadecimal digits representing the ASCII
 			# value of the encoded character. The case of the two hexadecimal
@@ -100,7 +100,7 @@ module Treequel::Constants # :nodoc:
 
 		# Schema-parsing patterns based on the BNF in 
 		# RFC 4512 (http://tools.ietf.org/html/rfc4512#section-4.1.1)
-		# 
+		
 		begin
 
 			#	ALPHA   = %x41-5A / %x61-7A   ; "A"-"Z" / "a"-"z"
@@ -211,21 +211,21 @@ module Treequel::Constants # :nodoc:
 
 			# Object identifiers (OIDs) [X.680] are represented in LDAP using a
 			# dot-decimal format conforming to the ABNF:
-			# 
+			
 			#	numericoid = number 1*( DOT number )
 			NUMERICOID = /#{NUMBER}(?: #{DOT} #{NUMBER} )+/x
 
-			# 
+			
 			# Short names, also known as ¨iptors, are used as more readable
 			# aliases for object identifiers.  Short names are case insensitive and
 			# conform to the ABNF:
-			# 
+			
 			#	descr = keystring
 			DESCR = KEYSTRING
 
 			# Where either an object identifier or a short name may be specified,
 			# the following production is used:
-			# 
+			
 			#    oid = descr / numericoid
 			OID = / #{DESCR} | #{NUMERICOID} /x
 
@@ -287,7 +287,7 @@ module Treequel::Constants # :nodoc:
 			KIND = Regexp.union( 'ABSTRACT', 'STRUCTURAL', 'AUXILIARY' )
 
 			# Object Class definitions are written according to the ABNF:
-			# 
+
 			#   ObjectClassDescription = LPAREN WSP
 			#       numericoid                 ; object identifier
 			#       [ SP "NAME" SP qdescrs ]   ; short names (descriptors)
@@ -298,7 +298,7 @@ module Treequel::Constants # :nodoc:
 			#       [ SP "MUST" SP oids ]      ; attribute types
 			#       [ SP "MAY" SP oids ]       ; attribute types
 			#       extensions WSP RPAREN
-			# 
+
 			LDAP_OBJECTCLASS_DESCRIPTION = %r{
 				#{LPAREN} #{WSP}
 					(#{NUMERICOID})                         # $1 = oid

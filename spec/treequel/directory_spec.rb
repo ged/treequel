@@ -72,6 +72,17 @@ describe Treequel::Directory do
 		dir.base.should == TEST_BASE_DN
 	end
 
+	it "binds immediately if user/pass is included in the ldap URI" do
+		conn = mock( "LDAP connection", :set_option => true )
+
+		LDAP::Conn.should_receive( :new ).with( TEST_HOST, TEST_PORT ).
+			and_return( conn )
+		conn.should_receive( :bind ).with( TEST_BIND_DN, TEST_BIND_PASS )
+
+		dir = Treequel::Directory.new( @options.merge( :binddn => TEST_BIND_DN, :pass => TEST_BIND_PASS ))
+		dir.instance_variable_get( :@bound_as ).should == TEST_BIND_DN
+	end
+
 
 	describe "instances without existing connections" do
 
@@ -116,7 +127,6 @@ describe Treequel::Directory do
 			@dir = Treequel::Directory.new( @options )
 			@dir.instance_variable_set( :@conn, @conn )
 		end
-
 
 		it "can bind with the given user DN and password" do
 			@conn.should_receive( :bind ).with( TEST_BIND_DN, TEST_BIND_PASS )

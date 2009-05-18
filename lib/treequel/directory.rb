@@ -11,15 +11,16 @@ require 'treequel/constants'
 
 # The object in Treequel that represents a connection to a directory, the
 # binding to that directory, and the base from which all DNs start.
-# 
+#
 # == Subversion Id
 #
 #  $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <ged@FaerieMUD.org>
-# 
+# * Mahlon E. Smith <mahlon@martini.nu>
+#
 # :include: LICENSE
 #
 #---
@@ -43,12 +44,14 @@ class Treequel::Directory
 		:port          => LDAP::LDAP_PORT,
 		:connect_type  => :tls,
 		:base          => '',
+		:binddn        => nil,
+		:pass          => nil
 	}
 
 
-	### Create a new Treequel::Directory with the given +options+. Options is a hash with one 
+	### Create a new Treequel::Directory with the given +options+. Options is a hash with one
 	### or more of the following key-value pairs:
-	### 
+	###
 	### [host]::
 	###   The LDAP host to connect to.
 	### [port]::
@@ -56,6 +59,10 @@ class Treequel::Directory
 	### [connect_type]::
 	###   The type of connection to establish. Must be one of +:plain+, +:tls+, or +:ssl+.
 	### [base]::
+	###   The base DN of the directory.
+	### [user]::
+	###   The base DN of the directory.
+	### [pass]::
 	###   The base DN of the directory.
 	def initialize( options={} )
 		options = DEFAULT_OPTIONS.merge( options )
@@ -67,6 +74,11 @@ class Treequel::Directory
 
 		@conn     = nil
 		@bound_as = nil
+
+		# Immediately bind if credentials are passed to the initializer.
+		if ( options[:binddn] && options[:pass] )
+			self.bind( options[:binddn], options[:pass] )
+		end
 	end
 
 
@@ -89,15 +101,12 @@ class Treequel::Directory
 
 	### Returns a string that describes the directory
 	def to_s
-		# bindname = self.bound? ? self.bound_as : "unbound"
-		bindname ||= 'anonymous'
-
 		return "%s:%d (%s, %s, %s)" % [
 			self.host,
 			self.port,
 			self.base,
 			self.connect_type,
-			bindname
+			self.bound? ? @bound_as : 'anonymous'
 		  ]
 	end
 
@@ -200,7 +209,7 @@ class Treequel::Directory
 		end
 
 		# conn.search2(base_dn, scope, filter, attrs=nil, attrsonly=false,
-		# 	sec=0, usec=0, s_attr=nil, s_proc=nil)
+		#	sec=0, usec=0, s_attr=nil, s_proc=nil)
 		self.log.debug {
 			fmt = "Searching with: base_dn=%p, scope=%p, filter=%p, attrs=%p, " +
 			      "attrsonly=false, sec=%p, usec=%p, s_attr=%p, s_proc=%p"
@@ -215,8 +224,8 @@ class Treequel::Directory
 				sortfunc
 			]
 		}
-		results = self.conn.search2( base_dn, scope, filter.to_s, 
-			selectattrs, false, 
+		results = self.conn.search2( base_dn, scope, filter.to_s,
+			selectattrs, false,
 			timeout_s, timeout_us,
 			sortattr, sortfunc )
 

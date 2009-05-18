@@ -1,29 +1,32 @@
 #!/usr/bin/env ruby
 
-require 'logger' 
+require 'logger'
 require 'uri'
 require 'uri/ldap'
 
 
-### Add an LDAPS URI type
-module URI
-	class LDAPS < LDAP
-		DEFAULT_PORT = 636
+### Add an LDAPS URI type if none exists (ruby pre 1.8.7)
+unless URI.const_defined?( :LDAPS )
+	module URI
+		class LDAPS < LDAP
+			DEFAULT_PORT = 636
+		end
+		@@schemes['LDAPS'] = LDAPS
 	end
-	@@schemes['LDAPS'] = LDAPS
 end
 
 
 # A Sequel-like DSL for hierarchical datasets.
-# 
+#
 # == Subversion Id
 #
 #  $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <ged@FaerieMUD.org>
-# 
+# * Mahlon E. Smith <mahlon@martini.nu>
+#
 # :include: LICENSE
 #
 #---
@@ -48,7 +51,7 @@ module Treequel
 	include Treequel::Constants
 
 
-	### Logging 
+	### Logging
 	@default_logger = Logger.new( $stderr )
 	@default_logger.level = $DEBUG ? Logger::DEBUG : Logger::WARN
 
@@ -117,8 +120,12 @@ module Treequel
 			options[:port] = LDAP::LDAPS_PORT
 		end
 
-		options[:host] = uri.host if uri.host
-		options[:base] = uri.dn if uri.dn
+		options[:connect_type] = :ssl if uri.scheme == 'ldaps'
+
+		options[:host]   = uri.host if uri.host
+		options[:base]   = uri.dn if uri.dn
+		options[:binddn] = uri.user if uri.user
+		options[:pass]   = uri.password if uri.password
 
 		return options
 	end

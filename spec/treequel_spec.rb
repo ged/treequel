@@ -3,9 +3,9 @@
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname.parent
-	
+
 	libdir = basedir + "lib"
-	
+
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
@@ -63,7 +63,7 @@ describe Treequel do
 			and_return( :a_directory )
 		Treequel.directory( 'ldap://ldap.example.com/dc=example,dc=com' ).should == :a_directory
 	end
-	
+
 	it "raises an exception if #directory is called with a non-ldap URL" do
 		lambda {
 			Treequel.directory( 'http://example.com/' )
@@ -74,12 +74,12 @@ describe Treequel do
 		Treequel.make_options_from_uri( 'ldap://ldap.example.com/dc=example,dc=com' ).should ==
 			{ :host => 'ldap.example.com', :base => 'dc=example,dc=com', :port => 389 }
 	end
-	
+
 	it "can build an options hash from an LDAPS URL" do
 		Treequel.make_options_from_uri( 'ldaps://ldap.example.com/dc=example,dc=com' ).should ==
-			{ :host => 'ldap.example.com', :base => 'dc=example,dc=com', :port => 636 }
+			{ :host => 'ldap.example.com', :base => 'dc=example,dc=com', :port => 636, :connect_type => :ssl }
 	end
-	
+
 	it "can build an options hash from an LDAP URL without a host" do
 		Treequel.make_options_from_uri( 'ldap:///dc=example,dc=com' ).should ==
 			{ :base => 'dc=example,dc=com', :port => 389 }
@@ -91,7 +91,7 @@ describe Treequel do
 		Treequel.make_options_from_uri( uri ).should ==
 			{ :base => 'dc=example,dc=com', :port => 389 }
 	end
-	
+
 
 	describe " logging subsystem" do
 		before(:each) do
@@ -101,8 +101,8 @@ describe Treequel do
 		after(:each) do
 			Treequel.reset_logger
 		end
-	
-	
+
+
 		it "has the default logger instance after being reset" do
 			Treequel.logger.should equal( Treequel.default_logger )
 		end
@@ -110,7 +110,7 @@ describe Treequel do
 		it "has the default log formatter instance after being reset" do
 			Treequel.logger.formatter.should equal( Treequel.default_log_formatter )
 		end
-	
+
 	end
 
 
@@ -129,7 +129,7 @@ describe Treequel do
 		it "uses the new defaults when the logging subsystem is reset" do
 			logger = mock( "dummy logger", :null_object => true )
 			formatter = mock( "dummy logger" )
-			
+
 			Treequel.default_logger = logger
 			Treequel.default_log_formatter = formatter
 
@@ -138,7 +138,7 @@ describe Treequel do
 			Treequel.reset_logger
 			Treequel.logger.should equal( logger )
 		end
-		
+
 	end
 
 end
