@@ -159,11 +159,12 @@ class Treequel::Schema
 
 		### Return a human-readable representation of the object suitable for debugging
 		def inspect
-			return "#<%s:0x%0x %s(%s) %s MUST: %p, MAY: %p>" % [
+			return %{#<%s:0x%0x %s(%s) < %p "%s" MUST: %p, MAY: %p>} % [
 				self.class.name,
 				self.object_id / 2,
 				self.name,
 				self.oid,
+				self.sup,
 				self.desc,
 				self.must_oids,
 				self.may_oids,
