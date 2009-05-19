@@ -243,6 +243,29 @@ class Treequel::Directory
 	end
 
 
+	### Delete the entry specified by the given +branch+.
+	def delete( branch )
+		self.log.info "Deleting %s from the directory." % [ branch ]
+		self.conn.delete( branch.dn )
+	end
+
+
+	### Create a new Branch relative to the specified +branch+ with the given +rdn+ and 
+	### +newattrs+ hash.
+	def create( branch, rdn, newattrs={} )
+		rdnattr, rdnval = rdn.split( /=/, 2 )
+		newdn = rdn + ',' + branch.dn
+
+		newattrs[rdnattr] ||= []
+		newattrs[rdnattr] << rdnval
+		normattrs = self.normalize_attributes( newattrs )
+
+		self.conn.add( newdn, normattrs )
+
+		return branch.class.new( self, rdnattr, rdnval, branch )
+	end
+
+
 	#########
 	protected
 	#########
@@ -289,6 +312,19 @@ class Treequel::Directory
 	ensure
 		self.log.debug "  restoring original connection %p." % [ original_conn ]
 		@conn = original_conn
+	end
+
+
+	### Normalize the attributes in +hash+ to be of the form expected by the
+	### LDAP library (i.e., keys as Strings, values as Arrays)
+	def normalize_attributes( hash )
+		normhash = {}
+		hash.each do |key,val|
+			val = [ val ] unless val.is_a?( Array )
+			normhash[ key.to_s ] = val
+		end
+
+		return normhash
 	end
 
 end # class Treequel::Directory

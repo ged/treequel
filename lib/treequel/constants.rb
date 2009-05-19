@@ -100,7 +100,7 @@ module Treequel::Constants # :nodoc:
 
 		# Schema-parsing patterns based on the BNF in 
 		# RFC 4512 (http://tools.ietf.org/html/rfc4512#section-4.1.1)
-		
+
 		begin
 
 			#	ALPHA   = %x41-5A / %x61-7A   ; "A"-"Z" / "a"-"z"
@@ -211,21 +211,21 @@ module Treequel::Constants # :nodoc:
 
 			# Object identifiers (OIDs) [X.680] are represented in LDAP using a
 			# dot-decimal format conforming to the ABNF:
-			
+
 			#	numericoid = number 1*( DOT number )
 			NUMERICOID = /#{NUMBER}(?: #{DOT} #{NUMBER} )+/x
 
-			
+
 			# Short names, also known as ¨iptors, are used as more readable
 			# aliases for object identifiers.  Short names are case insensitive and
 			# conform to the ABNF:
-			
+
 			#	descr = keystring
 			DESCR = KEYSTRING
 
 			# Where either an object identifier or a short name may be specified,
 			# the following production is used:
-			
+
 			#    oid = descr / numericoid
 			OID = / #{DESCR} | #{NUMERICOID} /x
 

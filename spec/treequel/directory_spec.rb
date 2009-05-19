@@ -246,6 +246,37 @@ describe Treequel::Directory do
 			@dir.modify( branch, 'cn' => ['nomblywob'] )
 		end
 
+		it "can delete the record corresponding to a Branch from the directory" do
+			branch = mock( "branch" )
+			branch.should_receive( :dn ).at_least( :once ).and_return( :the_branches_dn )
+
+			@conn.should_receive( :delete ).once.with( :the_branches_dn )
+
+			@dir.delete( branch )
+		end
+
+		it "can create a record under a Branch" do
+			newattrs = {
+				:cn => 'Chilly T',
+				:desc => 'Audi like Jetta',
+			}
+			addattrs = {
+				'cn' => ['Chilly T'],
+				'desc' => ['Audi like Jetta'],
+				TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE],
+			}
+
+			branch = mock( "parent branch obj" )
+			branch.should_receive( :dn ).and_return( TEST_PEOPLE_DN )
+			branch.should_receive( :class ).and_return( Treequel::Branch )
+			Treequel::Branch.should_receive( :new ).
+				with( @dir, TEST_PERSON_DN_ATTR, TEST_PERSON_DN_VALUE, branch ).
+				and_return( :the_new_branch )
+
+			@conn.should_receive( :add ).with( TEST_PERSON_DN, addattrs )
+
+			@dir.create( branch, TEST_PERSON_RDN, newattrs ).should == :the_new_branch
+		end
 	end
 end
 

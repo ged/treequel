@@ -215,7 +215,6 @@ class Treequel::Branch
 	def []( attrname )
 		attrsym = attrname.to_sym
 
-		self.log.debug "Fetching value for %p" % [ attrsym ]
 		unless @values.key?( attrsym )
 			self.log.debug "  value is not cached; checking its attributeType"
 			unless attribute = self.directory.schema.attribute_types[ attrsym ]
@@ -226,7 +225,6 @@ class Treequel::Branch
 			self.log.debug "  attribute exists; checking the entry for a value"
 			return nil unless (( value = self.entry[attrsym.to_s] ))
 
-			self.log.debug "  entry has a value; checking it for scalar/array"
 			if attribute.single?
 				self.log.debug "    attributeType is SINGLE; unwrapping the Array"
 				@values[ attrsym ] = value.first
@@ -235,7 +233,6 @@ class Treequel::Branch
 				@values[ attrsym ] = value
 			end
 
-			self.log.debug "  caching value %p" % [ @values[attrsym] ]
 			@values[ attrsym ].freeze
 		else
 			self.log.debug "  value is cached."
@@ -255,7 +252,19 @@ class Treequel::Branch
 	end
 
 # conn.modrdn(dn, new_rdn, delete_old_rdn)
-# conn.delete( dn )
+
+	### Delete the entry associated with the branch from the directory.
+	def delete
+		self.directory.delete( self )
+		return true
+	end
+
+
+	### Create a new child entry under this Branch with the specified +rdn+ and 
+	### +attributes+ and return it.
+	def create( rdn, attributes={} )
+		return self.directory.create( self, rdn, attributes )
+	end
 
 
 	#########

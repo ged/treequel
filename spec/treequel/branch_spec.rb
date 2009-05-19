@@ -50,7 +50,7 @@ describe Treequel::Branch do
 
 	it "can be constructed from a DN" do
 		@directory.should_receive( :rdn_to ).with( TEST_PEOPLE_DN ).
-			and_return( TEST_PEOPLE_RDN     )
+			and_return( TEST_PEOPLE_RDN )
 		@directory.should_receive( TEST_PEOPLE_DN_ATTR ).with( TEST_PEOPLE_DN_VALUE ).and_return do 
 			args = [@directory, TEST_PEOPLE_DN_ATTR, TEST_PEOPLE_DN_VALUE, TEST_BASE_DN]
 			Treequel::Branch.new( *args ) 
@@ -244,6 +244,26 @@ describe Treequel::Branch do
 			all_attrs.should include( :cn, :uid, :l, :description, :mobilePhone, :chunktype )
 		end
 
+		it "can be moved to a new location within the directory"
+		# do
+		#	@branch.move( '' )
+		# end
+
+		it "can be deleted from the directory" do
+			@directory.should_receive( :delete ).with( @branch )
+			@branch.delete
+		end
+
+
+		it "can create children under itself" do
+			newattrs = { :cn => 'Chilly T' }
+			newbranch = stub( "child branch object" )
+			@directory.should_receive( :create ).with( @branch, TEST_PERSON_RDN, newattrs ).
+				and_return( newbranch )
+			@branch.create( TEST_PERSON_RDN, newattrs ).should == newbranch
+		end
+
+
 		### Attribute reader
 		describe "index fetch operator" do
 
@@ -314,6 +334,7 @@ describe Treequel::Branch do
 			end
 		end
 	end
+
 
 end
 
