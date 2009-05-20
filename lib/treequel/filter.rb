@@ -314,22 +314,22 @@ class Treequel::Filter
 			Treequel.logger.debug "  parsed substring literal as: %p" % [ match.captures ]
 			return self.new( *(match.captures.values_at(1,3,2)) )
 		end
-		
+
 
 		#############################################################
 		###	I N S T A N C E   M E T H O D S
 		#############################################################
-		
+
 		### Create a new 'presence' item filter component for the given +attribute+.
 		def initialize( attribute, pattern, options=nil )
 			@attribute = attribute
 			@pattern   = pattern
 			@options   = options
-			
+
 			super()
 		end
 
-		
+
 		######
 		public
 		######
@@ -339,10 +339,10 @@ class Treequel::Filter
 
 		# The pattern to match (if the index exists in the directory)
 		attr_accessor :pattern
-		
+
 		# The attribute options
 		attr_accessor :options
-		
+
 
 		### Stringify the component
 		def to_s
@@ -413,7 +413,7 @@ class Treequel::Filter
 		Treequel.logger.debug "Parsing Array expression %p" % [ expression ]
 
 		case
-			
+
 		# [ ] := '(objectClass=*)'
 		when expression.empty?
 			Treequel.logger.debug "  empty expression -> objectClass presence item component"
@@ -440,7 +440,7 @@ class Treequel::Filter
 					vals.collect {|exp| Treequel::Filter.new(attribute, exp) }
 				end.flatten
 				return compclass.new( *filterlist )
-			
+
 			# [ :attribute, 'value' ]  := '(attribute=value)'
 			when String, Symbol
 				Treequel.logger.debug "  item expression from a %p" % [ expression[1].class ]
@@ -453,7 +453,7 @@ class Treequel::Filter
 				left = "#{attribute}>=#{range.begin}"
 				right = "#{attribute}<=#{range.exclude_end? ? range.max : range.end}"
 				return self.parse_logical_array_expression( :and, [left, right] )
-			
+
 			else
 				raise Treequel::Filter::ExpressionError,
 					"don't know how to parse the expression tuple %p" % [ expression ]
@@ -520,23 +520,23 @@ class Treequel::Filter
 			return Treequel::Filter::SimpleItemComponent.new( attribute, value )
 		end
 	end
-	
-	
+
+
 	### Parse a Sequel::SQL::Expression as a Treequel::Filter::Component and return it.
 	def self::parse_sequel_expression( expression )
 		case expression
-			
+
 		when Sequel::SQL::BooleanExpression
 			attribute, value = *expression.args
 			op = expression.op
 			return Treequel::Filter::SimpleItemComponent.new( attribute, value, op )
-			
+
 		else
 			raise Treequel::Filter::ExpressionError,
 				"don't know how to turn %p into a component" % [ expression.class ]
 		end
 	end
-	
+
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S

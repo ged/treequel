@@ -108,18 +108,14 @@ describe Treequel::Branch do
 		end
 
 		it "returns a human-readable representation of itself for #inspect" do
-			entry = mock( "entry object" )
-			@directory.should_receive( :get_entry ).with( @branch ).exactly( :once ).
-				and_return( entry )
-			entry.should_receive( :inspect ).
-				and_return( 'inspected_entry' )
+			@directory.should_not_receive( :get_entry ) # shouldn't try to load the entry for #inspect
 
 			rval = @branch.inspect
 
 			rval.should =~ /#{TEST_HOSTS_DN_ATTR}/i
 			rval.should =~ /#{TEST_HOSTS_DN_VALUE}/
 			rval.should =~ /#{TEST_BASE_DN}/
-			rval.should =~ /\binspected_entry\b/
+			rval.should =~ /\bnil\b/
 		end
 
 
@@ -138,8 +134,20 @@ describe Treequel::Branch do
 		end
 
 
-		it "can return all of its immediate children as Branches"
-		it "can return its parent as a Branch"
+		it "can return all of its immediate children as Branches" do
+			@directory.should_receive( :search ).
+				with( @branch, :one, '(objectClass=*)' ).
+				and_return([ :the_children ])
+			@branch.children.should == [ :the_children ]
+		end
+
+		it "can return its parent as a Branch" do
+			parent_branch = stub( "parent branch object" )
+			@branch.should_receive( :class ).and_return( Treequel::Branch )
+			Treequel::Branch.should_receive( :new_from_dn ).with( TEST_BASE_DN, @directory ).
+				and_return( parent_branch )
+			@branch.parent.should == parent_branch
+		end
 
 
 		it "can construct a Treequel::Branchset that uses it as its base" do
@@ -261,6 +269,35 @@ describe Treequel::Branch do
 			@directory.should_receive( :create ).with( @branch, TEST_PERSON_RDN, newattrs ).
 				and_return( newbranch )
 			@branch.create( TEST_PERSON_RDN, newattrs ).should == newbranch
+		end
+
+
+		it "can copy itself to a sibling entry" do
+			newbranch = stub( "copied sibling branch" )
+			@directory.should_receive( :copy ).with( @branch, TEST_PERSON2_RDN, {} ).
+				and_return( newbranch )
+			@branch.copy( TEST_PERSON2_RDN ).should == newbranch
+		end
+
+
+		it "can copy itself to a sibling entry with attribute changes" do
+			newattrs = { :sn => "Michaels", :firstName => 'George' }
+			newbranch = stub( "copied sibling branch" )
+			@directory.should_receive( :copy ).with( @branch, TEST_PERSON2_RDN, newattrs ).
+				and_return( newbranch )
+			@branch.copy( TEST_PERSON2_RDN, newattrs ).should == newbranch
+		end
+
+
+		it "can modify its entry's attributes" do
+			attributes = {
+				:displayName => 'Chilly T. Penguin',
+				:description => "A chilly little penguin.",
+			}
+
+			@directory.should_receive( :modify ).with( @branch, attributes )
+
+			@branch.modify( attributes )
 		end
 
 

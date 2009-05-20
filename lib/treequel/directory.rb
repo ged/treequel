@@ -161,7 +161,7 @@ class Treequel::Directory
 	### Return the RDN string to the given +dn+ from the base of the directory.
 	def rdn_to( dn )
 		base_re = Regexp.new( ',' + Regexp.quote(self.base) + '$' )
-		return dn.sub( base_re, '' )
+		return dn.to_s.sub( base_re, '' )
 	end
 
 
@@ -191,7 +191,8 @@ class Treequel::Directory
 	### can be one of +:onelevel+, +:base+, or +:subtree+.
 	def search( base, scope, filter, selectattrs=[], timeout=0, sortby=nil )
 		timeout_s = timeout_us = 0
-		sortattr = sortfunc = nil
+		sortattr = ''
+		sortfunc = nil
 
 		# Normalize the arguments into what LDAP::Conn#search2 expects
 		base_dn = base.respond_to?( :dn ) ? base.dn : base
@@ -264,6 +265,20 @@ class Treequel::Directory
 
 		return branch.class.new( self, rdnattr, rdnval, branch )
 	end
+
+
+	### Copy the entry from the specified +branch+ to a new entry specified by +rdn+ with the
+	### given +attributes+. Returns a new branch object for the new entry.
+	def copy( branch, rdn, attributes={} )
+		rdn_attr, rdn_val = rdn.split( /=/, 2 )
+		self.conn.modrdn( branch.dn, rdn, false )
+		newbranch = branch.class.new( self, rdn_attr, rdn_val, branch.parent )
+		self.modify( newbranch, attributes ) unless attributes.empty?
+
+		return newbranch
+	end
+
+
 
 
 	#########

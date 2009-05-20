@@ -113,7 +113,7 @@ class Treequel::Branch
 	def entry
 		unless @entry
 			@entry = self.directory.get_entry( self ) or
-				raise "couldn't fetch entry for %p" % [ self ]
+				raise "couldn't fetch entry for %p" % [ self.dn ]
 		end
 
 		return @entry
@@ -131,6 +131,18 @@ class Treequel::Branch
 		return [ self.rdn, self.base ].join(',')
 	end
 	alias_method :to_s, :dn
+
+
+	### Return the Branch's immediate parent node.
+	def parent
+		self.class.new_from_dn( self.base, self.directory )
+	end
+
+
+	### Return the Branch's immediate children as Treeque::Branch objects.
+	def children
+		return self.directory.search( self, :one, '(objectClass=*)' )
+	end
 
 
 	### Return a Treequel::Branchset that will use the receiver as its base.
@@ -201,12 +213,12 @@ class Treequel::Branch
 	### Returns a human-readable representation of the object suitable for
 	### debugging.
 	def inspect
-		return "#<%s:0x%0x %s @ %s %p>" % [
+		return "#<%s:0x%0x %s @ %s entry=%p>" % [
 			self.class.name,
 			self.object_id * 2,
 			self.dn,
 			self.directory,
-			self.entry,
+			@entry,
 		  ]
 	end
 
@@ -251,7 +263,15 @@ class Treequel::Branch
 		self.entry[ attrname.to_s ] = value
 	end
 
-# conn.modrdn(dn, new_rdn, delete_old_rdn)
+
+	### Make the changes to the entry specified by the given +attributes+.
+	def modify( attributes )
+		self.directory.modify( self, attributes )
+		self.clear_caches
+
+		return true
+	end
+
 
 	### Delete the entry associated with the branch from the directory.
 	def delete
@@ -264,6 +284,13 @@ class Treequel::Branch
 	### +attributes+ and return it.
 	def create( rdn, attributes={} )
 		return self.directory.create( self, rdn, attributes )
+	end
+
+
+	### Copy the entry under this branch to a new entry indicated by +rdn+ and
+	### with the given +attributes+, returning a new Branch object for it on success.
+	def copy( rdn, attributes={} )
+		return self.directory.copy( self, rdn, attributes )
 	end
 
 

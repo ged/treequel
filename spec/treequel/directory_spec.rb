@@ -202,7 +202,7 @@ describe Treequel::Directory do
 				{ 'dn' => ["uid=margento,#{TEST_PEOPLE_DN}"] },
 			]
 			@conn.should_receive( :search2 ).
-				with( base, LDAP::LDAP_SCOPE_BASE, filter, [], false, 0, 0, nil, nil ).
+				with( base, LDAP::LDAP_SCOPE_BASE, filter, [], false, 0, 0, '', nil ).
 				and_return( entries )
 
 			# Turn found entries into Branch objects
@@ -277,6 +277,42 @@ describe Treequel::Directory do
 
 			@dir.create( branch, TEST_PERSON_RDN, newattrs ).should == :the_new_branch
 		end
+
+		it "can copy a record to a new rdn within the same branch" do
+			branch = mock( "sibling branch obj" )
+			branch.should_receive( :dn ).and_return( TEST_PERSON_DN )
+
+			@conn.should_receive( :modrdn ).with( TEST_PERSON_DN, TEST_PERSON2_RDN, false )
+			branch.should_receive( :class ).and_return( Treequel::Branch )
+			branch.should_receive( :parent ).and_return( :the_parent_branch )
+
+			newbranch = stub( "new branch", :dn => TEST_PERSON2_DN )
+			Treequel::Branch.should_receive( :new ).
+				with( @dir, TEST_PERSON2_DN_ATTR, TEST_PERSON2_DN_VALUE, :the_parent_branch ).
+				and_return( newbranch )
+
+			@dir.copy( branch, TEST_PERSON2_RDN ).should == newbranch
+		end
+
+		it "can copy a record and also change its attributes" do
+			newattrs = { :sn => 'Hunin', :givenName => 'Marty', :displayName => "Chumpy Lumpkins" }
+			branch = mock( "sibling branch obj" )
+			branch.should_receive( :dn ).and_return( TEST_PERSON_DN )
+
+			@conn.should_receive( :modrdn ).with( TEST_PERSON_DN, TEST_PERSON2_RDN, false )
+			branch.should_receive( :class ).and_return( Treequel::Branch )
+			branch.should_receive( :parent ).and_return( :the_parent_branch )
+
+			newbranch = stub( "new branch", :dn => TEST_PERSON2_DN )
+			Treequel::Branch.should_receive( :new ).
+				with( @dir, TEST_PERSON2_DN_ATTR, TEST_PERSON2_DN_VALUE, :the_parent_branch ).
+				and_return( newbranch )
+
+			@dir.should_receive( :modify ).with( newbranch, newattrs )
+
+			@dir.copy( branch, TEST_PERSON2_RDN, newattrs ).should == newbranch
+		end
+
 	end
 end
 
