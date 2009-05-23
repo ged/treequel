@@ -280,7 +280,7 @@ describe Treequel::Directory do
 
 		it "can copy a record to a new rdn within the same branch" do
 			branch = mock( "sibling branch obj" )
-			branch.should_receive( :dn ).and_return( TEST_PERSON_DN )
+			branch.should_receive( :dn ).at_least( :once ).and_return( TEST_PERSON_DN )
 
 			@conn.should_receive( :modrdn ).with( TEST_PERSON_DN, TEST_PERSON2_RDN, false )
 			branch.should_receive( :class ).and_return( Treequel::Branch )
@@ -297,7 +297,7 @@ describe Treequel::Directory do
 		it "can copy a record and also change its attributes" do
 			newattrs = { :sn => 'Hunin', :givenName => 'Marty', :displayName => "Chumpy Lumpkins" }
 			branch = mock( "sibling branch obj" )
-			branch.should_receive( :dn ).and_return( TEST_PERSON_DN )
+			branch.should_receive( :dn ).at_least( :once ).and_return( TEST_PERSON_DN )
 
 			@conn.should_receive( :modrdn ).with( TEST_PERSON_DN, TEST_PERSON2_RDN, false )
 			branch.should_receive( :class ).and_return( Treequel::Branch )

@@ -31,7 +31,6 @@ class Treequel::Directory
 	include Treequel::Loggable,
 	        Treequel::Constants
 
-
 	# SVN Revision
 	SVNRev = %q$Rev$
 
@@ -239,8 +238,9 @@ class Treequel::Directory
 	### Modify the entry specified by the given +branch+ with the specified +mods+, which can be
 	### either an Array of LDAP::Mod objects or a Hash of attribute/value pairs.
 	def modify( branch, mods )
-		self.log.debug "About to make modifications: %p to %s" % [ mods, branch.dn ]
-		self.conn.modify( branch.dn, mods )
+		normattrs = self.normalize_attributes( mods )
+		self.log.debug "Modifying %s with attributes: %p" % [ branch.dn, normattrs ]
+		self.conn.modify( branch.dn, normattrs )
 	end
 
 
@@ -261,6 +261,7 @@ class Treequel::Directory
 		newattrs[rdnattr] << rdnval
 		normattrs = self.normalize_attributes( newattrs )
 
+		self.log.debug "Creating an entry at %s with the attributes: %p" % [ newdn, normattrs ]
 		self.conn.add( newdn, normattrs )
 
 		return branch.class.new( self, rdnattr, rdnval, branch )
@@ -271,13 +272,16 @@ class Treequel::Directory
 	### given +attributes+. Returns a new branch object for the new entry.
 	def copy( branch, rdn, attributes={} )
 		rdn_attr, rdn_val = rdn.split( /=/, 2 )
+		self.log.debug "Modrdn %s -> %s" % [ branch.dn, rdn ]
 		self.conn.modrdn( branch.dn, rdn, false )
 		newbranch = branch.class.new( self, rdn_attr, rdn_val, branch.parent )
-		self.modify( newbranch, attributes ) unless attributes.empty?
+		unless attributes.empty?
+			self.log.debug "  changing attributes of the new entry: %p" % [ attributes ]
+			self.modify( newbranch, attributes )
+		end
 
 		return newbranch
 	end
-
 
 
 

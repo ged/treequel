@@ -290,6 +290,7 @@ class Treequel::Branch
 	### Copy the entry under this branch to a new entry indicated by +rdn+ and
 	### with the given +attributes+, returning a new Branch object for it on success.
 	def copy( rdn, attributes={} )
+		self.log.debug "Asking the directory for a copy of myself called %p" % [ rdn ]
 		return self.directory.copy( self, rdn, attributes )
 	end
 

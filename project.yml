@@ -1,6 +1,7 @@
 --- 
 rubyforge_project: treequel
-project_requirements: {}
+project_requirements:
+  ldap: ">=0"
 
 project_pubdir: /usr/local/www/public/code
 project_description: |-
@@ -11,7 +12,6 @@ author_name: Michael Granger
 project_pubhost: deveiate
 project_homepage: http://deveiate.org/projects/Treequel
 project_dependencies: 
-  ldap: ">=0"
 project_summary: A Sequel-like DSL library for interacting with hierarchical datasets
 project_name: Treequel
 version_file: treequel.rb
