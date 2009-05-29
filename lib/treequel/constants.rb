@@ -360,6 +360,27 @@ module Treequel::Constants # :nodoc:
 					(#{EXTENSIONS})                         # $14 = extensions
 				#{WSP} #{RPAREN}
 			}x
+
+
+			# MatchingRuleDescription = LPAREN WSP
+			# 	         numericoid                 ; object identifier
+			# 	         [ SP "NAME" SP qdescrs ]   ; short names (descriptors)
+			# 	         [ SP "DESC" SP qdstring ]  ; description
+			# 	         [ SP "OBSOLETE" ]          ; not active
+			# 	         SP "SYNTAX" SP numericoid  ; assertion syntax
+			# 	         extensions WSP RPAREN      ; extensions
+			LDAP_MATCHING_RULE_DESCRIPTION = %r{
+				#{LPAREN} #{WSP}
+					(#{NUMERICOID})                        # $1  = oid
+					(?:#{SP} NAME #{SP} (#{QDESCRS}) )?    # $2  = name
+					(?:#{SP} DESC #{SP} (#{QDSTRING}) )?   # $3  = description
+					(?:#{SP} (OBSOLETE) )?                 # $4  = obsolete flag
+					#{SP} SYNTAX #{SP} (#{NUMERICOID})     # $5  = syntax numeric OID
+					(#{EXTENSIONS})                        # $6 = extensions
+				#{WSP} #{RPAREN}
+			}x
+
+
 		end
 
 	end # module Patterns

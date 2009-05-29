@@ -42,23 +42,33 @@ class Treequel::Schema::AttributeType
 			raise Treequel::ParseError, "failed to parse attributeType from %p" % [ description ]
 		end
 
-		oid, names, desc, obsolete, sup, eqmatch_oid, ordmatch_oid, submatch_oid, valsynoid,
+		oid, names, desc, obsolete, sup_oid, eqmatch_oid, ordmatch_oid, submatch_oid, valsynoid,
 			single, collective, nousermod, usagetype, extensions = match.captures
 
 		# Normalize the attributes
 		names = Treequel::Schema.parse_names( names )
 		desc  = Treequel::Schema.unquote_desc( desc )
 
+		sup_oid = Treequel::Schema.parse_oid( sup_oid ) if sup_oid
 		eqmatch_oid = Treequel::Schema.parse_oid( eqmatch_oid ) if eqmatch_oid
 		ordmatch_oid = Treequel::Schema.parse_oid( ordmatch_oid ) if ordmatch_oid
 		submatch_oid = Treequel::Schema.parse_oid( submatch_oid ) if submatch_oid
 
-		# Invert the 'no-user-modification' attribute
-		usermodifiable = nousermod ? false : true
-
-		return self.new( schema, oid, names, desc, obsolete, sup, eqmatch_oid, ordmatch_oid,
-						 submatch_oid, valsynoid, single, collective,
-						 usermodifiable, usagetype, extensions )
+		return self.new( schema, oid,
+			:names => names,
+			:desc => desc,
+			:obsolete => obsolete,
+			:sup_oid => sup_oid,
+			:eqmatch_oid => eqmatch_oid,
+			:ordmatch_oid => ordmatch_oid,
+			:submatch_oid => submatch_oid,
+			:valsyn_oid => valsynoid,
+			:single => single,
+			:collective => collective,
+			:user_modifiable => nousermod ? false : true,
+			:usagetype => usagetype,
+			:extensions => extensions
+		  )
 	end
 
 
@@ -67,26 +77,24 @@ class Treequel::Schema::AttributeType
 	#############################################################
 
 	### Create a new AttributeType
-	def initialize( schema, oid, names=nil, desc=nil, obsolete=false, sup=nil, eqmatch_oid=nil,
-	                ordmatch_oid=nil, submatch_oid=nil, valsynoid=nil, single=false,
-	                collective=false, user_modifiable=true, usagetype=nil, extensions=nil )
+	def initialize( schema, oid, attributes )
 
 		@schema          = schema
 
 		@oid             = oid
-		@names           = names
-		@desc            = desc
-		@obsolete        = obsolete ? true : false
-		@sup             = sup
-		@eqmatch_oid     = eqmatch_oid
-		@ordmatch_oid    = ordmatch_oid
-		@submatch_oid    = submatch_oid
-		@valsynoid       = valsynoid
-		@single          = single ? true : false
-		@collective      = collective ? true : false
-		@user_modifiable = user_modifiable ? true : false
-		@usagetype       = usagetype
-		@extensions      = extensions
+		@names           = attributes[:names]
+		@desc            = attributes[:desc]
+		@obsolete        = attributes[:obsolete] ? true : false
+		@sup_oid         = attributes[:sup_oid]
+		@eqmatch_oid     = attributes[:eqmatch_oid]
+		@ordmatch_oid    = attributes[:ordmatch_oid]
+		@submatch_oid    = attributes[:submatch_oid]
+		@valsynoid       = attributes[:valsyn_oid]
+		@single          = attributes[:single] ? true : false
+		@collective      = attributes[:collective] ? true : false
+		@user_modifiable = attributes[:user_modifiable] ? true : false
+		@usagetype       = attributes[:usagetype]
+		@extensions      = attributes[:extensions]
 
 		super()
 	end
@@ -111,8 +119,8 @@ class Treequel::Schema::AttributeType
 	# Is the attributeType obsolete?
 	predicate_attr :obsolete
 
-	# The attributeType's superior class
-	attr_accessor :sup
+	# The attributeType's superior class's OID
+	attr_accessor :sup_oid
 
 	# The oid of the attributeType's equality matching rule
 	attr_accessor :eqmatch_oid
@@ -148,6 +156,15 @@ class Treequel::Schema::AttributeType
 	end
 
 
+	### Return the Treequel::Schema::AttributeType instance that corresponds to 
+	### the receiver's superior type. If the attributeType doesn't have a SUP
+	### attribute, this method returns +nil+.
+	def sup
+		return nil unless oid = self.sup_oid
+		return self.schema.attribute_types[ oid ]
+	end
+
+
 	### Return a human-readable representation of the object suitable for debugging
 	def inspect
 		return "#<%s:0x%0x %s(%s) %p %sSYNTAX: %p>" % [
@@ -159,6 +176,45 @@ class Treequel::Schema::AttributeType
 			self.is_single? ? '(SINGLE) ' : '',
 			self.valsynoid,
 		]
+	end
+
+
+	### Return the Treequel::Schema::MatchingRule that corresponds to the EQUALITY 
+	### matchingRule of the receiving attributeType.
+	def equality_matching_rule
+		if oid = self.eqmatch_oid
+			return self.schema.matching_rules[ oid ]
+		elsif self.sup
+			return self.sup.equality_matching_rule
+		else
+			return nil
+		end
+	end
+
+
+	### Return the Treequel::Schema::MatchingRule that corresponds to the ORDERING 
+	### matchingRule of the receiving attributeType.
+	def ordering_matching_rule
+		if oid = self.ordmatch_oid
+			return self.schema.matching_rules[ oid ]
+		elsif self.sup
+			return self.sup.ordering_matching_rule
+		else
+			return nil
+		end
+	end
+
+
+	### Return the Treequel::Schema::MatchingRule that corresponds to the SUBSTR
+	### matchingRule of the receiving attributeType.
+	def substr_matching_rule
+		if oid = self.submatch_oid
+			return self.schema.matching_rules[ oid ]
+		elsif self.sup
+			return self.sup.substr_matching_rule
+		else
+			return nil
+		end
 	end
 
 

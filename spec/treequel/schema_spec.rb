@@ -38,7 +38,7 @@ describe Treequel::Schema do
 	include Treequel::SpecHelpers
 
 	before( :all ) do
-		setup_logging( :debug )
+		setup_logging( :fatal )
 		@datadir = Pathname( __FILE__ ).dirname.parent + 'data'
 	end
 
@@ -46,6 +46,9 @@ describe Treequel::Schema do
 		reset_logging()
 	end
 
+	TEST_NUMERICOID = '1.12.3.8.16.1.1.5'
+	TEST_DESCR      = 'objectClass'
+	TEST_OIDLIST    = %:( #{TEST_DESCR} $ objectCaste $ #{TEST_NUMERICOID} )  :
 
 	it "can parse the schema structure returned from LDAP::Conn#schema" do
 		schema_dumpfile = @datadir + 'schema.yml'
@@ -56,12 +59,40 @@ describe Treequel::Schema do
 
 		schema.object_classes.should have( 298 ).members
 		schema.attribute_types.should have( 1085 ).members
+		schema.matching_rules.should have( 72 ).members
 
 		pending "implementation of the rest of the schema-object classes" do
 			schema.ldap_syntaxes.should have( 11 ).members
 			schema.matching_rule_use.should have( 11 ).members
-			schema.matching_rules.should have( 11 ).members
 		end
+	end
+
+
+	it "can parse a valid oidlist" do
+		oids = Treequel::Schema.parse_oids( TEST_OIDLIST )
+		oids.should have(3).members
+		oids.should == [ :objectClass, :objectCaste, TEST_NUMERICOID ]
+	end
+
+	it "returns an empty Array if oidlist it's asked to parse is nil" do
+		Treequel::Schema.parse_oids( nil ).should == []
+	end
+
+	it "raises an exception if it's asked to parse an invalid oidlist" do
+		expect do
+			Treequel::Schema.parse_oids( %Q{my name is Jorma, I'm the sensitive one} )
+		end.to raise_error( Treequel::ParseError, /oidlist/i )
+	end
+
+
+	it "keeps a numeric OID as a String when parsing it" do
+		Treequel::Schema.parse_oid( TEST_NUMERICOID ).should be_a( String )
+		Treequel::Schema.parse_oid( TEST_NUMERICOID ).should == TEST_NUMERICOID
+	end
+
+	it "transforms a named OID as a Symbol when parsing it" do
+		Treequel::Schema.parse_oid( TEST_DESCR ).should be_a( Symbol )
+		Treequel::Schema.parse_oid( TEST_DESCR ).should == TEST_DESCR.to_sym
 	end
 
 end

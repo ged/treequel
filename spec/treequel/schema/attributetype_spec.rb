@@ -39,7 +39,7 @@ describe Treequel::Schema::AttributeType do
 
 
 	before( :all ) do
-		setup_logging( :debug )
+		setup_logging( :fatal )
 		@datadir = Pathname( __FILE__ ).dirname.parent.parent + 'data'
 	end
 
@@ -74,15 +74,26 @@ describe Treequel::Schema::AttributeType do
 			@attrtype.desc.should == 'RFC2256: object classes of the entity'
 		end
 
+		it "knows it doesn't have a superior type" do
+			@attrtype.sup.should be_nil()
+		end
+
 		it "knows what the name of its equality matching rule is" do
 			@attrtype.eqmatch_oid.should == :objectIdentifierMatch
 		end
 
-		it "returns a matchingRule object for its equality matching rule" do
-			pending "implementation of Treequel::Schema::MatchingRule" do
-				@attrtype.equality_matching_rule.
-					should be_an_instance_of( Treequel::Schema::MatchingRule )
-			end
+		it "returns a matchingRule object from its schema for its equality matching rule" do
+			@schema.should_receive( :matching_rules ).
+				and_return({ :objectIdentifierMatch => :a_matching_rule })
+			@attrtype.equality_matching_rule.should == :a_matching_rule
+		end
+
+		it "doesn't have an order matchingRule" do
+			@attrtype.ordering_matching_rule.should be_nil()
+		end
+
+		it "returns a matchingRule object from its schema for its substring matching rule" do
+			@attrtype.substr_matching_rule.should be_nil()
 		end
 
 		it "knows that it is not obsolete" do
@@ -93,9 +104,49 @@ describe Treequel::Schema::AttributeType do
 
 
 	describe "parsed from an attributeType that has a SUP attribute" do
-		it "takes the value of the equality matching rule from its supertype"
-		it "takes the value of the order matching rule from its supertype"
-		it "takes the value of the substring matching rule from its supertype"
+		DERIVED_ATTRTYPE = %{( 1.11.2.11.1 SUP aSuperType } +
+			%{SYNTAX 1.3.6.1.4.1.1466.115.121.1.38 )}
+
+		before( :each ) do
+			@attrtype = Treequel::Schema::AttributeType.parse( @schema, DERIVED_ATTRTYPE )
+		end
+
+		it "can fetch its superior type from its schema" do
+			@schema.should_receive( :attribute_types ).
+				and_return({ :aSuperType => :the_superior_type })
+			@attrtype.sup.should == :the_superior_type
+		end
+
+		it "returns a matchingRule object from its supertype's equality matching rule if it " +
+		   "doesn't have one" do
+			supertype = mock( "superior attribute type object" )
+			@schema.should_receive( :attribute_types ).twice.
+				and_return({ :aSuperType => supertype })
+			supertype.should_receive( :equality_matching_rule ).and_return( :a_matching_rule )
+
+			@attrtype.equality_matching_rule.should == :a_matching_rule
+		end
+
+		it "returns a matchingRule object from its supertype's ordering matching rule if it " +
+		   "doesn't have one" do
+			supertype = mock( "superior attribute type object" )
+			@schema.should_receive( :attribute_types ).twice.
+				and_return({ :aSuperType => supertype })
+			supertype.should_receive( :ordering_matching_rule ).and_return( :a_matching_rule )
+
+			@attrtype.ordering_matching_rule.should == :a_matching_rule
+		end
+
+		it "returns a matchingRule object from its supertype's substr matching rule if it " +
+		   "doesn't have one" do
+			supertype = mock( "superior attribute type object" )
+			@schema.should_receive( :attribute_types ).twice.
+				and_return({ :aSuperType => supertype })
+			supertype.should_receive( :substr_matching_rule ).and_return( :a_matching_rule )
+
+			@attrtype.substr_matching_rule.should == :a_matching_rule
+		end
+
 	end
 
 

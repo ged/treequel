@@ -31,6 +31,7 @@ class Treequel::Schema
 
 	require 'treequel/schema/objectclass'
 	require 'treequel/schema/attributetype'
+	require 'treequel/schema/matchingrule'
 
 	#################################################################
 	###	C L A S S   M E T H O D S
@@ -41,19 +42,31 @@ class Treequel::Schema
 	def self::parse_oids( oidstring )
 		return [] unless oidstring
 
-		unless match = OIDLIST.match( oidstring )
+		unless /^ #{OIDS} $/x.match( oidstring.strip )
 			raise Treequel::ParseError, "couldn't find an OIDLIST in %p" % [ oidstring ]
 		end
 
-		parse_oid = self.method( :parse_oid )
-		return $MATCH.split( /#{WSP} #{DOLLAR} #{WSP}/x ).collect( &parse_oid )
+		oids = $MATCH
+		Treequel.logger.debug "  found OIDs: %p" % [ oids ]
+
+		# If it's an OIDLIST, strip off leading and trailing parens and whitespace, then split 
+		# on ' $ ' and parse each OID
+		if oids.include?( '$' )
+			parse_oid = self.method( :parse_oid )
+			return $MATCH[1..-2].strip.split( /#{WSP} #{DOLLAR} #{WSP}/x ).collect( &parse_oid )
+
+		else
+			return [ self.parse_oid(oids) ]
+
+		end
+
 	end
 
 
 	### Parse a single OID into either a numeric OID string or a Symbol.
 	def self::parse_oid( oidstring )
 		if oidstring =~ NUMERICOID
-			return oid
+			return oidstring
 		else
 			return oidstring.to_sym
 		end
@@ -63,18 +76,22 @@ class Treequel::Schema
 	### Parse the given short +names+ string (a 'qdescrs' in the BNF) into an Array of zero or
 	### more Strings.
 	def self::parse_names( names )
+		Treequel.logger.debug "  parsing NAME attribute from: %p" % [ names ]
 
 		# Unspecified
 		if names.nil?
+			Treequel.logger.debug "    no NAME attribute"
 			return []
 
 		# Multi-value
 		elsif names =~ /#{LPAREN} #{WSP} (#{QDESCRLIST}) #{WSP} #{RPAREN}/x
+			Treequel.logger.debug "    parsing a NAME list from %p" % [ $1 ]
 			return $1.scan( QDESCR ).collect {|qd| qd[1..-2].to_sym }
 
 		# Single-value
 		else
 			# Return the name without the quotes
+			Treequel.logger.debug "    dequoting a single NAME"
 			return [ names[1..-2].to_sym ]
 		end
 	end
@@ -177,8 +194,19 @@ class Treequel::Schema
 	end
 
 
+	### Parse the given matchingRule +descriptions+ into Treequel::Schema::MatchingRule objects
+	### and return them as a Hash keyed both by numeric OID and by each of its NAME attributes 
+	### (if it has any).
 	def parse_matching_rules( descriptions )
-		{}
+		return descriptions.inject( {} ) do |hash, desc|
+			rule = Treequel::Schema::MatchingRule.parse( self, desc ) or
+				raise Treequel::Error, "couldn't create an matchingRule from %p" % [ desc ]
+
+			hash[ rule.oid ] = rule
+			rule.names.inject( hash ) {|h, name| h[name] = rule; h }
+
+			hash
+		end
 	end
 
 
