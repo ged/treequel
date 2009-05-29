@@ -67,8 +67,8 @@ describe Treequel::Branch do
 		}
 		branch = Treequel::Branch.new_from_entry( entry, @directory )
 
-		branch.attribute.should == TEST_PERSON_DN_ATTR
-		branch.value.should == TEST_PERSON_DN_VALUE
+		branch.rdn_attribute.should == TEST_PERSON_DN_ATTR
+		branch.rdn_value.should == TEST_PERSON_DN_VALUE
 		branch.entry.should == entry
 	end
 

@@ -72,18 +72,18 @@ class Treequel::Branch
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new Treequel::Branch with the given +directory+, +attribute+, +value+, and
+	### Create a new Treequel::Branch with the given +directory+, +rdn_attribute+, +rdn_value+, and
 	### +base+. If the optional +entry+ object is given, it will be used to fetch values from
 	### the directory; if it isn't provided, it will be fetched from the +directory+ the first
 	### time it is needed.
-	def initialize( directory, attribute, value, base, entry=nil )
-		@directory = directory
-		@attribute = attribute
-		@value     = value
-		@base      = base
-		@entry     = entry
+	def initialize( directory, rdn_attribute, rdn_value, base, entry=nil )
+		@directory     = directory
+		@rdn_attribute = rdn_attribute
+		@rdn_value     = rdn_value
+		@base          = base
+		@entry         = entry
 
-		@values = {}
+		@values        = {}
 	end
 
 
@@ -98,11 +98,11 @@ class Treequel::Branch
 	# The directory the branch's entry lives in
 	attr_reader :directory
 
-	# The DN attribute of the branch
-	attr_reader :attribute
+	# The attribute of the branch's RDN
+	attr_reader :rdn_attribute
 
-	# The value of the DN attribute of the branch
-	attr_reader :value
+	# The value of the RDN attribute of the branch
+	attr_reader :rdn_value
 
 	# The DN of the base of the branch
 	attr_reader :base
@@ -122,7 +122,7 @@ class Treequel::Branch
 
 	### Return the receiver's Relative Distinguished Name as a String.
 	def rdn
-		return [ self.attribute, self.value ].join('=')
+		return [ self.rdn_attribute, self.rdn_value ].join('=')
 	end
 
 

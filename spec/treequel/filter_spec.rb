@@ -9,19 +9,14 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-begin
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
+require 'rubygems'
+gem 'rspec', '>= 1.2.6'
 
-	require 'treequel/filter'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
+
+require 'treequel/filter'
 
 
 include Treequel::TestConstants
@@ -127,9 +122,9 @@ describe Treequel::Filter do
 	end
 
 	it "raises an exception with a NOT expression that contains more than one clause" do
-		lambda {
+		expect {
 			Treequel::Filter.new( [:not, [:uid, 'kunglung'], [:name, 'chunger']] )
-		 }.should raise_error( ArgumentError )
+		 }.to raise_error( ArgumentError )
 	end
 
 
@@ -144,9 +139,9 @@ describe Treequel::Filter do
 	end
 
 	it "raises an error when an extensible item filter is given" do
-		lambda {
+		expect {
 			Treequel::Filter.new( :'cn:1.2.3.4.5:', 'Fred Flintstone' )
-		 }.should raise_error( NotImplementedError, /extensible.*supported/i )
+		 }.to raise_error( NotImplementedError, /extensible.*supported/i )
 	end
 
 
@@ -222,9 +217,9 @@ describe Treequel::Filter do
 
 		describe Treequel::Filter::Component do
 			it "is an abstract class" do
-				lambda {
+				expect {
 					Treequel::Filter::Component.new
-				 }.should raise_error( NoMethodError )
+				 }.to raise_error( NoMethodError )
 			end
 
 			it "is non-promiscuous by default" do
@@ -248,8 +243,8 @@ describe Treequel::Filter do
 			end
 
 			it "raises an ExpressionError if it can't parse a string literal" do
-				lambda { Treequel::Filter::SimpleItemComponent.parse_from_string( 'whatev!' ) }.
-					should raise_error( Treequel::ExpressionError, /unable to parse/i )
+				expect { Treequel::Filter::SimpleItemComponent.parse_from_string( 'whatev!' ) }.
+					to raise_error( Treequel::ExpressionError, /unable to parse/i )
 			end
 
 			it "uses the 'equal' operator if none is specified" do
@@ -285,9 +280,9 @@ describe Treequel::Filter do
 			end
 
 			it "raises an error if it's created with an unknown filtertype" do
-				lambda { 
+				expect { 
 					Treequel::Filter::SimpleItemComponent.new( :uid, 'schlange', :fork )
-				}.should raise_error( Treequel::ExpressionError, /invalid/i )
+				}.to raise_error( Treequel::ExpressionError, /invalid/i )
 
 			end
 
@@ -317,8 +312,8 @@ describe Treequel::Filter do
 			end
 
 			it "raises an ExpressionError if it can't parse a string literal" do
-				lambda { Treequel::Filter::SubstringItemComponent.parse_from_string( 'whatev>=1' ) }.
-					should raise_error( Treequel::ExpressionError, /unable to parse/i )
+				expect { Treequel::Filter::SubstringItemComponent.parse_from_string( 'whatev>=1' ) }.
+					to raise_error( Treequel::ExpressionError, /unable to parse/i )
 			end
 
 		end
@@ -356,9 +351,9 @@ describe Treequel::Filter do
 			end
 
 			it "can't be created with multiple filters" do
-				lambda {
+				expect {
 					Treequel::Filter::NotComponent.new( @filter1, @filter2 )
-				}.should raise_error( ArgumentError, /2 for 1/i )
+				}.to raise_error( ArgumentError, /2 for 1/i )
 			end
 		end
 	end

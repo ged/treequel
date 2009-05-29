@@ -291,10 +291,13 @@ class Treequel::Directory
 		self.log.debug "Modrdn %s -> %s" % [ branch.dn, rdn ]
 		self.conn.modrdn( branch.dn, rdn, false )
 		newbranch = branch.class.new( self, rdn_attr, rdn_val, branch.parent )
-		unless attributes.empty?
-			self.log.debug "  changing attributes of the new entry: %p" % [ attributes ]
-			self.modify( newbranch, attributes )
-		end
+
+		attributes = self.normalize_attributes( attributes )
+		attributes[ rdn_attr ] ||= []
+		attributes[ rdn_attr ] -= [ branch.rdn_value ]
+		attributes[ rdn_attr ] |= [ rdn_val ]
+		self.log.debug "  changing attributes of the new entry: %p" % [ attributes ]
+		self.modify( newbranch, attributes )
 
 		return newbranch
 	end
