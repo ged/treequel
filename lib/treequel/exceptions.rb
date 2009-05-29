@@ -27,6 +27,10 @@ module Treequel
 	### Schema parsing errors
 	class ParseError < Treequel::Error; end
 
+	### Exception type raised when an expression cannot be parsed from the
+	### arguments given to Treequel::Filter.new
+	class ExpressionError < Treequel::Error; end
+
 end # module Treequel
 
 

@@ -109,6 +109,22 @@ class Treequel::Directory
 		  ]
 	end
 
+
+	### Return a human-readable representation of the object suitable for debugging
+	def inspect
+		return %{#<%s:0x%0x %s:%d (%s) base=%p, bound as=%s, schema=%s>} % [
+			self.class.name,
+			self.object_id / 2,
+			self.host,
+			self.port,
+			@conn ? "connected" : "not connected",
+			self.base,
+			@bound_as ? @bound_as.dump : "anonymous",
+			@schema ? @schema.inspect : "(schema not loaded)",
+		]
+	end
+
+
 	### Return the LDAP::Conn object associated with this directory, creating it with the
 	### current options if necessary.
 	def conn

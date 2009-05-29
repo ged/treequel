@@ -122,6 +122,20 @@ class Treequel::Schema
 	attr_reader :matching_rule_use
 
 
+	### Return a human-readable representation of the object suitable for debugging.
+	def inspect
+		ivar_descs = self.instance_variables.sort.collect do |ivar|
+			len = self.instance_variable_get( ivar ).length
+			"%d %s" % [ len, ivar.gsub(/_/, ' ')[1..-1] ]
+		end
+		return %{#<%s:0x%0x %s>} % [
+			self.class.name,
+			self.object_id / 2,
+			ivar_descs.join(', '),
+		]
+	end
+
+
 	#########
 	protected
 	#########

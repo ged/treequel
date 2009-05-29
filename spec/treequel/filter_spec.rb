@@ -116,16 +116,16 @@ describe Treequel::Filter do
 	it "parses a Range item as a boolean ANDed expression" do
 		filter = Treequel::Filter.new( :uid, 200..1000 ).to_s.should == '(&(uid>=200)(uid<=1000))'
 	end
-	
+
 	it "parses a exclusive Range correctly" do
 		filter = Treequel::Filter.new( :uid, 200...1000 ).to_s.should == '(&(uid>=200)(uid<=999))'
 	end
-	
+
 	it "parses a Range item with non-numeric components" do
 		filter = Treequel::Filter.new( :lastName => 'Dale'..'Darby' ).to_s.
 			should == '(&(lastName>=Dale)(lastName<=Darby))'
 	end
-	
+
 	it "raises an exception with a NOT expression that contains more than one clause" do
 		lambda {
 			Treequel::Filter.new( [:not, [:uid, 'kunglung'], [:name, 'chunger']] )
@@ -249,7 +249,7 @@ describe Treequel::Filter do
 
 			it "raises an ExpressionError if it can't parse a string literal" do
 				lambda { Treequel::Filter::SimpleItemComponent.parse_from_string( 'whatev!' ) }.
-					should raise_error( Treequel::Filter::ExpressionError, /unable to parse/i )
+					should raise_error( Treequel::ExpressionError, /unable to parse/i )
 			end
 
 			it "uses the 'equal' operator if none is specified" do
@@ -287,20 +287,20 @@ describe Treequel::Filter do
 			it "raises an error if it's created with an unknown filtertype" do
 				lambda { 
 					Treequel::Filter::SimpleItemComponent.new( :uid, 'schlange', :fork )
-				}.should raise_error( Treequel::Filter::ExpressionError, /invalid/i )
-				
+				}.should raise_error( Treequel::ExpressionError, /invalid/i )
+
 			end
-			
+
 		end
 
 
 		describe Treequel::Filter::SubstringItemComponent do
-			
+
 			before( :each ) do
 				@component = Treequel::Filter::SubstringItemComponent.new( :description, '*basecamp*' )
 			end
 
-			
+
 			it "can parse a component object from a string literal" do
 				comp = Treequel::Filter::SubstringItemComponent.parse_from_string( 'description=*basecamp*' )
 				comp.attribute.should == 'description'
@@ -318,12 +318,12 @@ describe Treequel::Filter do
 
 			it "raises an ExpressionError if it can't parse a string literal" do
 				lambda { Treequel::Filter::SubstringItemComponent.parse_from_string( 'whatev>=1' ) }.
-					should raise_error( Treequel::Filter::ExpressionError, /unable to parse/i )
+					should raise_error( Treequel::ExpressionError, /unable to parse/i )
 			end
 
 		end
-		
-		
+
+
 		describe Treequel::Filter::AndComponent do
 			it "stringifies as its filters ANDed together" do
 				Treequel::Filter::AndComponent.new( @filter1, @filter2 ).to_s.
@@ -364,15 +364,54 @@ describe Treequel::Filter do
 	end
 
 	describe "support for Sequel expressions" do
-		
+
 		before( :each ) do
 			pending "requires the 'sequel' library" unless Sequel.const_defined?( :Model )
 		end
-		
+
 		it "supports the boolean expression syntax" do
-			Treequel::Filter.new( :uid >= 2000 ).should be_a( Treequel::Filter )
+			filter = Treequel::Filter.new( :uid >= 2000 )
+			filter.should be_a( Treequel::Filter )
+			filter.to_s.should == '(uid>=2000)'
 		end
-		
+
+		it "supports the 'LIKE' expression syntax with a single string argument" do
+			filter = Treequel::Filter.new( :cn.like('mar*n') )
+			filter.should be_a( Treequel::Filter )
+			filter.to_s.should == '(cn=mar*n)'
+		end
+
+		it "treats a LIKE expression with no asterisks as an 'approx' filter" do
+			filter = Treequel::Filter.new( :cn.like('maylin') )
+			filter.should be_a( Treequel::Filter )
+			filter.to_s.should == '(cn~=maylin)'
+		end
+
+		it "supports the 'LIKE' expression syntax with multiple string arguments" do
+			filter = Treequel::Filter.new( :cn.like('may*', 'mah*') )
+			filter.should be_a( Treequel::Filter )
+			filter.to_s.should == '(|(cn=may*)(cn=mah*))'
+		end
+
+		it "raises an exception when given a 'LIKE' expression with a regex argument" do
+			expect {
+				Treequel::Filter.new( :cn.like(/^ma.*/) )
+			}.to raise_error( Treequel::ExpressionError, /regex/i )
+		end
+
+		it "raises an exception when given a 'LIKE' expression with a regex argument with flags" do
+			expect {
+				Treequel::Filter.new( :cn.like(/^ma.*/i) )
+			}.to raise_error( Treequel::ExpressionError, /regex/i )
+		end
+
+		it "raises an exception when given a 'LIKE' expression with a mix of regex and string " +
+		   "arguments" do
+			expect {
+				Treequel::Filter.new( :cn.like('maylin', /^mi.*/i) )
+			}.to raise_error( Treequel::ExpressionError, /regex/i )
+		end
+
 	end
 end
 

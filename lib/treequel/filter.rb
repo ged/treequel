@@ -4,6 +4,7 @@ require 'ldap'
 
 require 'treequel' 
 require 'treequel/branchset'
+require 'treequel/exceptions'
 require 'treequel/sequel_integration'
 
 
@@ -54,11 +55,6 @@ require 'treequel/sequel_integration'
 class Treequel::Filter
 	include Treequel::Loggable,
 	        Treequel::Constants::Patterns
-
-	### Exception type raised when an expression cannot be parsed from the
-	### arguments given to Treequel::Filter.new
-	class ExpressionError < RuntimeError; end
-
 
 	### Filter list component of a Treequel::Filter.
 	class FilterList
@@ -203,16 +199,20 @@ class Treequel::Filter
 			:less    => '<=',
 		}
 		FILTERTYPE_OP.freeze
+
+		# Inverse of the FILTERTYPE_OP mapping (symbol -> name)
 		FILTEROP_NAMES = FILTERTYPE_OP.invert.freeze
 
+		# A regex that matches any of the 'simple' operators.
 		FILTER_SPLIT_REGEXP = Regexp.new( '(' + FILTERTYPE_OP.values.join('|') + ')' )
+		FILTER_SPLIT_REGEXP.freeze
 
 
 		### Parse a new SimpleItemComponent from the specified +literal+.
 		def self::parse_from_string( literal )
 			parts = literal.split( FILTER_SPLIT_REGEXP, 3 )
 			unless parts.length == 3
-				raise Treequel::Filter::ExpressionError,
+				raise Treequel::ExpressionError,
 					"unable to parse %p as a string literal" % [ literal ]
 			end
 
@@ -230,12 +230,14 @@ class Treequel::Filter
 			self.log.debug "creating a new %s %s for %p and %p" %
 				[ filtertype, self.class.name, attribute, value ]
 
+			filtertype = filtertype.to_s.downcase.to_sym
+
 			if FILTERTYPE_OP.key?( filtertype )
 				# no-op
 			elsif FILTEROP_NAMES.key?( filtertype.to_s )
 				filtertype = FILTEROP_NAMES[ filtertype.to_s ]
 			else
-				raise Treequel::Filter::ExpressionError,
+				raise Treequel::ExpressionError,
 					"invalid simple item operator %p" % [ filtertype ]
 			end
 
@@ -308,7 +310,7 @@ class Treequel::Filter
 		### Parse the substring item from the given +literal+.
 		def self::parse_from_string( literal )
 			match = LDAP_SUBSTRING_FILTER.match( literal ) or
-				raise Treequel::Filter::ExpressionError,
+				raise Treequel::ExpressionError,
 					"unable to parse %p as a substring literal" % [ literal ]
 
 			Treequel.logger.debug "  parsed substring literal as: %p" % [ match.captures ]
@@ -372,6 +374,23 @@ class Treequel::Filter
 		:"!" => NotComponent,
 	}
 
+	# An equivalence mapping of operation names from Sequel expressions into
+	# Treequel equivalents
+	SEQUEL_FILTERTYPE_EQUIVALENTS = {
+		:like => :equal,
+		:>=   => :greater,
+		:<=   => :less,
+	}
+	SEQUEL_FILTERTYPE_EQUIVALENTS.freeze
+
+	# A list of filtertypes that come in as Sequel::Expressions; these generated nicer
+	# exception messages that just 'unknown filtertype'
+	UNSUPPORTED_SEQUEL_FILTERTYPES = {
+		:'~*' => %{LDAP doesn't support Regex filters},
+		:'~'  => %{LDAP doesn't support Regex filters},
+	}
+
+
 
 	### Turn the specified filter +expression+ into a Treequel::Filter::Component
 	### object and return it.
@@ -401,7 +420,7 @@ class Treequel::Filter
 			return self.parse_sequel_expression( expression )
 
 		else
-			raise Treequel::Filter::ExpressionError, 
+			raise Treequel::ExpressionError, 
 				"don't know how to turn %p into an filter component" % [ expression ]
 		end
 	end
@@ -455,7 +474,7 @@ class Treequel::Filter
 				return self.parse_logical_array_expression( :and, [left, right] )
 
 			else
-				raise Treequel::Filter::ExpressionError,
+				raise Treequel::ExpressionError,
 					"don't know how to parse the expression tuple %p" % [ expression ]
 			end
 
@@ -471,7 +490,7 @@ class Treequel::Filter
 			return Treequel::Filter::FilterList.new( filters )
 
 		else
-			raise Treequel::Filter::ExpressionError,
+			raise Treequel::ExpressionError,
 				"don't know how to turn %p into a filter component" % [ expression ]
 		end
 
@@ -495,7 +514,7 @@ class Treequel::Filter
 			when Treequel::Filter
 				comp
 			else
-				raise Treequel::Filter::ExpressionError,
+				raise Treequel::ExpressionError,
 					"don't know how to turn %p into a %p component" % [ comp, op ]
 			end
 		end.flatten
@@ -524,15 +543,43 @@ class Treequel::Filter
 
 	### Parse a Sequel::SQL::Expression as a Treequel::Filter::Component and return it.
 	def self::parse_sequel_expression( expression )
+		Treequel.logger.debug "  parsing Sequel expression: %p" % [ expression ]
+
 		case expression
 
 		when Sequel::SQL::BooleanExpression
-			attribute, value = *expression.args
-			op = expression.op
-			return Treequel::Filter::SimpleItemComponent.new( attribute, value, op )
+			op = expression.op.to_s.downcase.to_sym
+
+			if equivalent = SEQUEL_FILTERTYPE_EQUIVALENTS[ op ]
+				attribute, value = *expression.args
+
+				# Turn :sn.like( 'bob' ) into (cn~=bob) 'cause it has no asterisks
+				if op == :like && value !~ /\*/
+					Treequel.logger.debug \
+						"    turning a LIKE expression with no wildcards into an 'approx' filter"
+					equivalent = :approx 
+				end
+
+				return Treequel::Filter::SimpleItemComponent.new( attribute, value, equivalent )
+
+			elsif LOGICAL_COMPONENTS.key?( op )
+				components = expression.args.collect do |comp|
+					Treequel::Filter.new( comp )
+				end
+
+				return self.parse_logical_array_expression( op, components )
+
+			elsif msg = UNSUPPORTED_SEQUEL_FILTERTYPES[ op ]
+				raise Treequel::ExpressionError,
+					"unsupported Sequel filter syntax %p: %s" %
+					[ expression, msg ]
+			else
+				raise ScriptError, 
+					"  unhandled Sequel BooleanExpression: add handling for %p" % [ op ]
+			end
 
 		else
-			raise Treequel::Filter::ExpressionError,
+			raise Treequel::ExpressionError,
 				"don't know how to turn %p into a component" % [ expression.class ]
 		end
 	end
