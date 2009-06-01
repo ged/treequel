@@ -8,7 +8,7 @@ require 'treequel/schema'
 require 'treequel/exceptions'
 
 
-# This is a class for representing matchingRule declarations in a Treequel::Schema.
+# This is a class for representing ldapSyntax declarations in a Treequel::Schema.
 # 
 # == Subversion Id
 #
@@ -24,7 +24,7 @@ require 'treequel/exceptions'
 #
 # Please see the file LICENSE in the base directory for licensing details.
 #
-class Treequel::Schema::MatchingRule
+class Treequel::Schema::LDAPSyntax
 	include Treequel::Loggable,
 	        Treequel::Constants::Patterns
 
@@ -35,7 +35,7 @@ class Treequel::Schema::MatchingRule
 	###	C L A S S   M E T H O D S
 	#############################################################
 
-	### Parse an MatchingRule entry from a matchingRule description from a schema.
+	### Parse an LDAPSyntax entry from an ldapSyntax description from a schema.
 	def self::parse( schema, description )
 		unless match = ( LDAP_MATCHING_RULE_DESCRIPTION.match(description) )
 			raise Treequel::ParseError, "failed to parse matchingRule from %p" % [ description ]
@@ -118,5 +118,5 @@ class Treequel::Schema::MatchingRule
 	end
 
 
-end # class Treequel::Schema::MatchingRule
+end # class Treequel::Schema::LDAPSyntax
 

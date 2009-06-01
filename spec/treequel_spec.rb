@@ -26,7 +26,7 @@ end
 
 
 include Treequel::TestConstants
-# include Treequel::Constants
+
 
 #####################################################################
 ###	C O N T E X T S

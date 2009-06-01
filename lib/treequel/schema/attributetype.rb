@@ -218,5 +218,5 @@ class Treequel::Schema::AttributeType
 	end
 
 
-end # class ObjectClass
+end # class Treequel::Schema::AttributeType
 

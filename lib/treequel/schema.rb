@@ -135,6 +135,9 @@ class Treequel::Schema
 	attr_reader :attribute_types
 
 	attr_reader :ldap_syntaxes
+
+	# The hash of Treequel::Schema::MatchingRule objects, keyed by OID and any associated NAME
+	# attributes (as Symbols), that describe the matchingRules int he directory's schema.
 	attr_reader :matching_rules
 	attr_reader :matching_rule_use
 

@@ -66,7 +66,8 @@ describe Treequel::Schema::MatchingRule do
 
 		it "knows what its syntax is" do
 			pending "implementation of Treequel::Schema::Syntax" do
-				@rule.syntax.should be_an_instance_of( Treequel::Schema::Syntax )
+				@schema.should_receive( :ldap_syntaxes )
+				@rule.syntax.should == :the_syntax
 			end
 		end
 
