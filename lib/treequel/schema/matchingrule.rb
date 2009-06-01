@@ -106,17 +106,23 @@ class Treequel::Schema::MatchingRule
 
 	### Return a human-readable representation of the object suitable for debugging
 	def inspect
-		return "#<%s:0x%0x %s(%s) %p %sSYNTAX: %p>" % [
+		return "#<%s:0x%0x %s(%s) %s %sSYNTAX: %p>" % [
 			self.class.name,
 			self.object_id / 2,
 			self.name,
 			self.oid,
 			self.desc,
-			self.is_single? ? '(SINGLE) ' : '',
-			self.valsynoid,
+			self.obsolete? ? "(OBSOLETE)" : '',
+			self.syntax,
 		]
 	end
 
+
+	### Return the Treequel::Schema::LDAPSyntax object that corresponds to the matchingRule's
+	### SYNTAX attribute.
+	def syntax
+		return self.schema.ldap_syntaxes[ self.syntax_oid ]
+	end
 
 end # class Treequel::Schema::MatchingRule
 

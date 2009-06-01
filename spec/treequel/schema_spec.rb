@@ -60,11 +60,8 @@ describe Treequel::Schema do
 		schema.object_classes.should have( 298 ).members
 		schema.attribute_types.should have( 1085 ).members
 		schema.matching_rules.should have( 72 ).members
-
-		pending "implementation of the rest of the schema-object classes" do
-			schema.ldap_syntaxes.should have( 11 ).members
-			schema.matching_rule_use.should have( 11 ).members
-		end
+		schema.matching_rule_uses.should have( 54 ).members
+		schema.ldap_syntaxes.should have( 31 ).members
 	end
 
 

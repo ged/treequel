@@ -32,6 +32,9 @@ class Treequel::Schema
 	require 'treequel/schema/objectclass'
 	require 'treequel/schema/attributetype'
 	require 'treequel/schema/matchingrule'
+	require 'treequel/schema/matchingruleuse'
+	require 'treequel/schema/ldapsyntax'
+
 
 	#################################################################
 	###	C L A S S   M E T H O D S
@@ -114,11 +117,11 @@ class Treequel::Schema
 	### keys "objectClasses", "ldapSyntaxes", "matchingRuleUse", "attributeTypes", and 
 	### "matchingRules".
 	def initialize( hash )
-		@object_classes    = self.parse_objectclasses( hash['objectClasses'] )
-		@attribute_types   = self.parse_attribute_types( hash['attributeTypes'] )
-		@ldap_syntaxes     = self.parse_ldap_syntaxes( hash['ldapSyntaxes'] )
-		@matching_rules    = self.parse_matching_rules( hash['matchingRules'] )
-		@matching_rule_use = self.parse_matching_rule_use( hash['matchingRuleUse'] )
+		@object_classes     = self.parse_objectclasses( hash['objectClasses'] )
+		@attribute_types    = self.parse_attribute_types( hash['attributeTypes'] )
+		@ldap_syntaxes      = self.parse_ldap_syntaxes( hash['ldapSyntaxes'] )
+		@matching_rules     = self.parse_matching_rules( hash['matchingRules'] )
+		@matching_rule_uses = self.parse_matching_rule_uses( hash['matchingRuleUse'] )
 	end
 
 
@@ -134,12 +137,17 @@ class Treequel::Schema
 	# attributes (as Symbols), that describe the attributeTypes in the directory's schema.
 	attr_reader :attribute_types
 
+	# The hash of Treequel::Schema::LDAPSyntax objects, keyed by OID, that describe the 
+	# syntaxes in the directory's schema.
 	attr_reader :ldap_syntaxes
 
 	# The hash of Treequel::Schema::MatchingRule objects, keyed by OID and any associated NAME
 	# attributes (as Symbols), that describe the matchingRules int he directory's schema.
 	attr_reader :matching_rules
-	attr_reader :matching_rule_use
+
+	# The hash of Treequel::Schema::MatchingRuleUse objects, keyed by OID and any associated NAME
+	# attributes (as Symbols), that describe the attributes to which a matchingRule can be applied.
+	attr_reader :matching_rule_uses
 
 
 	### Return a human-readable representation of the object suitable for debugging.
@@ -192,8 +200,16 @@ class Treequel::Schema
 	end
 
 
+	### Parse the given LDAP syntax +descriptions+ into Treequel::Schema::LDAPSyntax objects and
+	### return them as a Hash keyed by numeric OID.
 	def parse_ldap_syntaxes( descriptions )
-		{}
+		return descriptions.inject( {} ) do |hash, desc|
+			syntax = Treequel::Schema::LDAPSyntax.parse( self, desc ) or
+				raise Treequel::Error, "couldn't create an LDAPSyntax from %p" % [ desc ]
+
+			hash[ syntax.oid ] = syntax
+			hash
+		end
 	end
 
 
@@ -213,8 +229,19 @@ class Treequel::Schema
 	end
 
 
-	def parse_matching_rule_use( descriptions )
-		{}
+	### Parse the given matchingRuleUse +descriptions+ into Treequel::Schema::MatchingRuleUse objects
+	### and return them as a Hash keyed both by numeric OID and by each of its NAME attributes 
+	### (if it has any).
+	def parse_matching_rule_uses( descriptions )
+		return descriptions.inject( {} ) do |hash, desc|
+			ruleuse = Treequel::Schema::MatchingRuleUse.parse( self, desc ) or
+				raise Treequel::Error, "couldn't create an matchingRuleUse from %p" % [ desc ]
+
+			hash[ ruleuse.oid ] = ruleuse
+			ruleuse.names.inject( hash ) {|h, name| h[name] = ruleuse; h }
+
+			hash
+		end
 	end
 
 

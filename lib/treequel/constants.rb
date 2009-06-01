@@ -363,12 +363,12 @@ module Treequel::Constants # :nodoc:
 
 
 			# MatchingRuleDescription = LPAREN WSP
-			# 	         numericoid                 ; object identifier
-			# 	         [ SP "NAME" SP qdescrs ]   ; short names (descriptors)
-			# 	         [ SP "DESC" SP qdstring ]  ; description
-			# 	         [ SP "OBSOLETE" ]          ; not active
-			# 	         SP "SYNTAX" SP numericoid  ; assertion syntax
-			# 	         extensions WSP RPAREN      ; extensions
+			# 	numericoid                 ; object identifier
+			# 	[ SP "NAME" SP qdescrs ]   ; short names (descriptors)
+			# 	[ SP "DESC" SP qdstring ]  ; description
+			# 	[ SP "OBSOLETE" ]          ; not active
+			# 	SP "SYNTAX" SP numericoid  ; assertion syntax
+			# 	extensions WSP RPAREN      ; extensions
 			LDAP_MATCHING_RULE_DESCRIPTION = %r{
 				#{LPAREN} #{WSP}
 					(#{NUMERICOID})                        # $1  = oid
@@ -377,6 +377,44 @@ module Treequel::Constants # :nodoc:
 					(?:#{SP} (OBSOLETE) )?                 # $4  = obsolete flag
 					#{SP} SYNTAX #{SP} (#{NUMERICOID})     # $5  = syntax numeric OID
 					(#{EXTENSIONS})                        # $6 = extensions
+				#{WSP} #{RPAREN}
+			}x
+
+
+			# Matching rule use descriptions are written according to the following
+			# ABNF:
+			# 
+			#   MatchingRuleUseDescription = LPAREN WSP
+			#       numericoid                 ; object identifier
+			#       [ SP "NAME" SP qdescrs ]   ; short names (descriptors)
+			#       [ SP "DESC" SP qdstring ]  ; description
+			#       [ SP "OBSOLETE" ]          ; not active
+			#       SP "APPLIES" SP oids       ; attribute types
+			#       extensions WSP RPAREN      ; extensions
+			LDAP_MATCHING_RULE_USE_DESCRIPTION = %r{
+				#{LPAREN} #{WSP}
+					(#{NUMERICOID})                        # $1  = oid
+					(?:#{SP} NAME #{SP} (#{QDESCRS}) )?    # $2  = name
+					(?:#{SP} DESC #{SP} (#{QDSTRING}) )?   # $3  = description
+					(?:#{SP} (OBSOLETE) )?                 # $4  = obsolete flag
+					#{SP} APPLIES #{SP} (#{OIDS})          # $5  = attribute types
+					(#{EXTENSIONS})                        # $6 = extensions
+				#{WSP} #{RPAREN}
+			}x
+
+
+			# LDAP syntax definitions are written according to the ABNF:
+			# 
+			#   SyntaxDescription = LPAREN WSP
+			#       numericoid                 ; object identifier
+			#       [ SP "DESC" SP qdstring ]  ; description
+			#       extensions WSP RPAREN      ; extensions
+			#   
+			LDAP_SYNTAX_DESCRIPTION = %r{
+				#{LPAREN} #{WSP}
+					(#{NUMERICOID})                        # $1  = oid
+					(?:#{SP} DESC #{SP} (#{QDSTRING}) )?   # $2  = description
+					(#{EXTENSIONS})                        # $3 = extensions
 				#{WSP} #{RPAREN}
 			}x
 

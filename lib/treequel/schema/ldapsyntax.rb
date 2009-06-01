@@ -37,18 +37,17 @@ class Treequel::Schema::LDAPSyntax
 
 	### Parse an LDAPSyntax entry from an ldapSyntax description from a schema.
 	def self::parse( schema, description )
-		unless match = ( LDAP_MATCHING_RULE_DESCRIPTION.match(description) )
-			raise Treequel::ParseError, "failed to parse matchingRule from %p" % [ description ]
+		unless match = ( LDAP_SYNTAX_DESCRIPTION.match(description) )
+			raise Treequel::ParseError, "failed to parse syntax from %p" % [ description ]
 		end
 
-		oid, names, desc, obsolete, syntax_oid, extensions = match.captures
-		Treequel.logger.debug "  parsed matchingRule: %p" % [ match.captures ]
+		oid, desc, extensions = match.captures
+		Treequel.logger.debug "  parsed syntax: %p" % [ match.captures ]
 
 		# Normalize the attributes
-		names = Treequel::Schema.parse_names( names )
 		desc  = Treequel::Schema.unquote_desc( desc )
 
-		return self.new( schema, oid, syntax_oid, names, desc, obsolete, extensions )
+		return self.new( schema, oid, desc, extensions )
 	end
 
 
@@ -57,15 +56,12 @@ class Treequel::Schema::LDAPSyntax
 	#############################################################
 
 	### Create a new MatchingRule
-	def initialize( schema, oid, syntax_oid, names=nil, desc=nil, obsolete=false, extensions=nil )
+	def initialize( schema, oid, desc=nil, extensions=nil )
 
 		@schema     = schema
 
 		@oid        = oid
-		@syntax_oid = syntax_oid
-		@names      = names
 		@desc       = desc
-		@obsolete   = obsolete ? true : false
 		@extensions = extensions
 
 		super()
@@ -76,44 +72,26 @@ class Treequel::Schema::LDAPSyntax
 	public
 	######
 
-	# The schema the matchingRule belongs to
+	# The schema the syntax belongs to
 	attr_reader :schema
 
-	# The matchingRule's oid
+	# The syntax's oid
 	attr_reader :oid
 
-	# The oid of the matchingRule's SYNTAX
-	attr_accessor :syntax_oid
-
-	# The Array of the matchingRule's names
-	attr_reader :names
-
-	# The matchingRule's description
+	# The syntax's description
 	attr_accessor :desc
 
-	# Is the matchingRule obsolete?
-	predicate_attr :obsolete
-
-	# The matchingRule's extensions (as a String)
+	# The syntax's extensions (as a String)
 	attr_accessor :extensions
-
-
-	### Return the first of the matchingRule's names, if it has any, or +nil+.
-	def name
-		return self.names.first
-	end
 
 
 	### Return a human-readable representation of the object suitable for debugging
 	def inspect
-		return "#<%s:0x%0x %s(%s) %p %sSYNTAX: %p>" % [
+		return "#<%s:0x%0x %s(%s)>" % [
 			self.class.name,
 			self.object_id / 2,
-			self.name,
 			self.oid,
 			self.desc,
-			self.is_single? ? '(SINGLE) ' : '',
-			self.valsynoid,
 		]
 	end
 
