@@ -100,6 +100,21 @@ describe Treequel::Schema::AttributeType do
 			@attrtype.should_not be_obsolete()
 		end
 
+		it "knows what its syntax OID is" do
+			@attrtype.syntax_oid.should == '1.3.6.1.4.1.1466.115.121.1.38'
+		end
+
+		it "knows that its syntax length is not set" do
+			@attrtype.syntax_len.should be_nil()
+		end
+
+		it "returns an ldapSyntax object from its schema for its syntax" do
+			@schema.should_receive( :ldap_syntaxes ).
+				and_return({ '1.3.6.1.4.1.1466.115.121.1.38' => :the_syntax })
+			@attrtype.syntax.should == :the_syntax
+		end
+
+
 	end
 
 
@@ -149,6 +164,24 @@ describe Treequel::Schema::AttributeType do
 
 	end
 
+
+	describe "parsed from an attributeType that has a SUP attribute but no SYNTAX" do
+		DERIVED_NOSYN_ATTRTYPE = %{( 1.11.2.11.1 SUP aSuperType )}
+
+		before( :each ) do
+			@attrtype = Treequel::Schema::AttributeType.parse( @schema, DERIVED_NOSYN_ATTRTYPE )
+		end
+
+		it "fetches its SYNTAX from its supertype" do
+			supertype = mock( "supertype object" )
+			@schema.should_receive( :attribute_types ).at_least( :once ).
+				and_return({ :aSuperType => supertype })
+			supertype.should_receive( :syntax ).and_return( :the_syntax )
+
+			@attrtype.syntax.should == :the_syntax
+		end
+
+	end
 
 	describe "parsed from an attributeType that has a list as the value of its NAME attribute" do
 

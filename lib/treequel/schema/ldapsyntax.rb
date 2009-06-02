@@ -55,7 +55,7 @@ class Treequel::Schema::LDAPSyntax
 	###	I N S T A N C E   M E T H O D S
 	#############################################################
 
-	### Create a new MatchingRule
+	### Create a new LDAPSyntax
 	def initialize( schema, oid, desc=nil, extensions=nil )
 
 		@schema     = schema

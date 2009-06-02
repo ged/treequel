@@ -42,7 +42,7 @@ class Treequel::Schema::AttributeType
 			raise Treequel::ParseError, "failed to parse attributeType from %p" % [ description ]
 		end
 
-		oid, names, desc, obsolete, sup_oid, eqmatch_oid, ordmatch_oid, submatch_oid, valsynoid,
+		oid, names, desc, obsolete, sup_oid, eqmatch_oid, ordmatch_oid, submatch_oid, syntax_oid,
 			single, collective, nousermod, usagetype, extensions = match.captures
 
 		# Normalize the attributes
@@ -55,19 +55,19 @@ class Treequel::Schema::AttributeType
 		submatch_oid = Treequel::Schema.parse_oid( submatch_oid ) if submatch_oid
 
 		return self.new( schema, oid,
-			:names => names,
-			:desc => desc,
-			:obsolete => obsolete,
-			:sup_oid => sup_oid,
-			:eqmatch_oid => eqmatch_oid,
-			:ordmatch_oid => ordmatch_oid,
-			:submatch_oid => submatch_oid,
-			:valsyn_oid => valsynoid,
-			:single => single,
-			:collective => collective,
+			:names           => names,
+			:desc            => desc,
+			:obsolete        => obsolete,
+			:sup_oid         => sup_oid,
+			:eqmatch_oid     => eqmatch_oid,
+			:ordmatch_oid    => ordmatch_oid,
+			:submatch_oid    => submatch_oid,
+			:syntax_oid      => syntax_oid,
+			:single          => single,
+			:collective      => collective,
 			:user_modifiable => nousermod ? false : true,
-			:usagetype => usagetype,
-			:extensions => extensions
+			:usagetype       => usagetype,
+			:extensions      => extensions
 		  )
 	end
 
@@ -89,12 +89,14 @@ class Treequel::Schema::AttributeType
 		@eqmatch_oid     = attributes[:eqmatch_oid]
 		@ordmatch_oid    = attributes[:ordmatch_oid]
 		@submatch_oid    = attributes[:submatch_oid]
-		@valsynoid       = attributes[:valsyn_oid]
 		@single          = attributes[:single] ? true : false
 		@collective      = attributes[:collective] ? true : false
 		@user_modifiable = attributes[:user_modifiable] ? true : false
 		@usagetype       = attributes[:usagetype]
 		@extensions      = attributes[:extensions]
+
+		@syntax_oid, @syntax_len = self.split_syntax_oid( attributes[:syntax_oid] ) if
+			attributes[:syntax_oid]
 
 		super()
 	end
@@ -132,7 +134,10 @@ class Treequel::Schema::AttributeType
 	attr_accessor :submatch_oid
 
 	# The oid of the attributeType's value syntax
-	attr_accessor :valsynoid
+	attr_accessor :syntax_oid
+
+	# The (optional) syntax length qualifier (nil if not present)
+	attr_accessor :syntax_len
 
 	# Are attributes of this type restricted to a single value?
 	predicate_attr :single
@@ -167,14 +172,15 @@ class Treequel::Schema::AttributeType
 
 	### Return a human-readable representation of the object suitable for debugging
 	def inspect
-		return "#<%s:0x%0x %s(%s) %p %sSYNTAX: %p>" % [
+		return "#<%s:0x%0x %s(%s) %p %sSYNTAX: %p (length: %s)>" % [
 			self.class.name,
 			self.object_id / 2,
 			self.name,
 			self.oid,
 			self.desc,
 			self.is_single? ? '(SINGLE) ' : '',
-			self.valsynoid,
+			self.syntax_oid,
+			self.syntax_len ? self.syntax_len : 'unlimited',
 		]
 	end
 
@@ -217,6 +223,34 @@ class Treequel::Schema::AttributeType
 		end
 	end
 
+
+	### Return the Treequel::Schema::LDAPSyntax that corresponds to the receiver's SYNTAX attribute.
+	def syntax
+		if oid = self.syntax_oid
+			return self.schema.ldap_syntaxes[ oid ]
+		elsif self.sup
+			return self.sup.syntax
+		else
+			return nil
+		end
+	end
+
+
+	#########
+	protected
+	#########
+
+	### Split a numeric OID with an optional length qualifier into a numeric OID and length. If
+	### no length qualifier is present, it will be nil.
+	def split_syntax_oid( noidlen )
+		unless noidlen =~ /^(#{NUMERICOID}) (?:#{LCURLY} (#{LEN}) #{RCURLY})?$/x
+			raise Treequel::ParseError, "invalid numeric syntax OID with length: %p" % [ noidlen ]
+		end
+
+		oid, len = $1, $2
+
+		return oid, len ? Integer(len) : nil
+	end
 
 end # class Treequel::Schema::AttributeType
 

@@ -621,7 +621,7 @@ class Treequel::Filter
 	### Return a human-readable string representation of the filter suitable
 	### for debugging.
 	def inspect
-		return %{#<%s:0x%0x (%s)} % [
+		return %{#<%s:0x%0x (%s)>} % [
 			self.class.name,
 			self.object_id * 2,
 			self.component,

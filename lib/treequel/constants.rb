@@ -164,28 +164,28 @@ module Treequel::Constants # :nodoc:
 			#	UTF0    = %x80-BF
 			#	UTF1    = %x00-7F
 			#	UTF2    = %xC2-DF UTF0
-			UTF0 = '\x80-\xbf'
-			UTF1 = '\x00-\x7f'
-			UTF2 = '\xc2-\xdf' + UTF0
+			UTF0 = /[\x80-\xbf]/
+			UTF1 = /[\x00-\x7f]/
+			UTF2 = /[\xc2-\xdf] #{UTF0}/x
 
 			#	UTF3    = %xE0 %xA0-BF UTF0 / %xE1-EC 2(UTF0) / %xED %x80-9F UTF0 / %xEE-EF 2(UTF0)
 			UTF3 = /
-				\xe0 [\xa0-\xbf] [#{UTF0}]
+				\xe0 [\xa0-\xbf] #{UTF0}
 				|
-				[\xe1-\xec] [#{UTF0}]{2} 
+				[\xe1-\xec] #{UTF0}{2} 
 				|
-				\xed [\x80-\x9f] [#{UTF0}]
+				\xed [\x80-\x9f] #{UTF0}
 				|
-				[\xee-\xef] [#{UTF0}]{2}
+				[\xee-\xef] #{UTF0}{2}
 			/x
 
 			#	UTF4    = %xF0 %x90-BF 2(UTF0) / %xF1-F3 3(UTF0) / %xF4 %x80-8F 2(UTF0)
 			UTF4 = /
-				\xf0 [\x90-\xbf] [#{UTF0}]{2}
+				\xf0 [\x90-\xbf] #{UTF0}{2}
 				|
-				[\xf1-\xf3] [#{UTF0}]{3}
+				[\xf1-\xf3] #{UTF0}{3}
 				|
-				\xf4 [\x80-\x8f] [#{UTF0}]{2}
+				\xf4 [\x80-\x8f] #{UTF0}{2}
 			/x
 
 			#	UTFMB   = UTF2 / UTF3 / UTF4
