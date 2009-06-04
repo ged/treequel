@@ -252,10 +252,9 @@ describe Treequel::Branch do
 			all_attrs.should include( :cn, :uid, :l, :description, :mobilePhone, :chunktype )
 		end
 
+
 		it "can be moved to a new location within the directory"
-		# do
-		#	@branch.move( '' )
-		# end
+
 
 		it "can be deleted from the directory" do
 			@directory.should_receive( :delete ).with( @branch )
@@ -274,9 +273,9 @@ describe Treequel::Branch do
 
 		it "can copy itself to a sibling entry" do
 			newbranch = stub( "copied sibling branch" )
-			@directory.should_receive( :copy ).with( @branch, TEST_PERSON2_RDN, {} ).
+			@directory.should_receive( :copy ).with( @branch, TEST_PERSON2_DN, {} ).
 				and_return( newbranch )
-			@branch.copy( TEST_PERSON2_RDN ).should == newbranch
+			@branch.copy( TEST_PERSON2_DN ).should == newbranch
 		end
 
 

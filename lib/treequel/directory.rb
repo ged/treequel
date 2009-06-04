@@ -251,7 +251,7 @@ class Treequel::Directory
 	end
 
 
-	### Modify the entry specified by the given +branch+ with the specified +mods+, which can be
+	### Modify the entry specified by the given +dn+ with the specified +mods+, which can be
 	### either an Array of LDAP::Mod objects or a Hash of attribute/value pairs.
 	def modify( branch, mods )
 		normattrs = self.normalize_attributes( mods )
@@ -286,10 +286,23 @@ class Treequel::Directory
 
 	### Copy the entry from the specified +branch+ to a new entry specified by +rdn+ with the
 	### given +attributes+. Returns a new branch object for the new entry.
-	def copy( branch, rdn, attributes={} )
-		rdn_attr, rdn_val = rdn.split( /=/, 2 )
-		self.log.debug "Modrdn %s -> %s" % [ branch.dn, rdn ]
-		self.conn.modrdn( branch.dn, rdn, false )
+	def copy( branch, newdn, attributes={} )
+		source_rdn, source_parent_dn = branch.dn.split( /,/, 2 )
+		new_rdn, new_parent_dn = newdn.split( /,/, 2 )
+
+		if new_parent_dn.nil?
+			new_parent_dn = source_parent_dn
+		end
+
+		if new_parent_dn != source_parent_dn
+			raise Treequel::Error,
+				"can't (yet) copy an entry to a new parent"
+		end
+
+		self.log.debug "Modrdn: %p -> %p within %p" % [ source_rdn, new_rdn, source_parent_dn ]
+
+		self.conn.modrdn( branch.dn, new_rdn, false )
+		rdn_attr, rdn_val = new_rdn.split( /=/, 2 )
 		newbranch = branch.class.new( self, rdn_attr, rdn_val, branch.parent )
 
 		attributes = self.normalize_attributes( attributes )
@@ -301,7 +314,6 @@ class Treequel::Directory
 
 		return newbranch
 	end
-
 
 
 	#########

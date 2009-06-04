@@ -295,6 +295,15 @@ class Treequel::Branch
 	end
 
 
+	### Move the entry associated with this branch to a new entry indicated by +rdn+. If 
+	### any +attributes+ are given, also replace the corresponding attributes on the new
+	### entry with them.
+	def move( rdn, attributes={} )
+		self.log.debug "Asking the directory to move me to an entry called %p" % [ rdn ]
+		return self.directory.move( self, rdn, attributes )
+	end
+
+
 	#########
 	protected
 	#########

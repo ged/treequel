@@ -21,6 +21,11 @@ module Treequel::TestConstants # :nodoc:all
 		TEST_HOSTS_RDN        = "#{TEST_HOSTS_DN_ATTR}=#{TEST_HOSTS_DN_VALUE}"
 		TEST_HOSTS_DN         = "#{TEST_HOSTS_RDN},#{TEST_BASE_DN}"
 
+		TEST_HOST_DN_ATTR     = 'cn'
+		TEST_HOST_DN_VALUE    = 'splinky'
+		TEST_HOST_RDN         = "#{TEST_HOST_DN_ATTR}=#{TEST_HOST_DN_VALUE}"
+		TEST_HOST_DN          = "#{TEST_HOST_RDN},#{TEST_HOSTS_DN}"
+
 		TEST_PEOPLE_DN_ATTR   = 'ou'
 		TEST_PEOPLE_DN_VALUE  = 'People'
 		TEST_PEOPLE_RDN       = "#{TEST_PEOPLE_DN_ATTR}=#{TEST_PEOPLE_DN_VALUE}"

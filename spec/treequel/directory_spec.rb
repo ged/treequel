@@ -278,7 +278,7 @@ describe Treequel::Directory do
 			@dir.create( branch, TEST_PERSON_RDN, newattrs ).should == :the_new_branch
 		end
 
-		it "can copy a record to a new rdn within the same branch" do
+		it "can copy an entry with an rdn" do
 			@dir.stub!( :bound? ).and_return( false )
 			branch = mock( "sibling branch obj" )
 			branch.should_receive( :dn ).at_least( :once ).and_return( TEST_PERSON_DN )
@@ -296,6 +296,37 @@ describe Treequel::Directory do
 				with( newbranch, TEST_PERSON2_DN_ATTR => [TEST_PERSON2_DN_VALUE] )
 
 			@dir.copy( branch, TEST_PERSON2_RDN ).should == newbranch
+		end
+
+		it "can copy a record to a new dn within the same branch" do
+			@dir.stub!( :bound? ).and_return( false )
+			branch = mock( "sibling branch obj" )
+			branch.should_receive( :dn ).at_least( :once ).and_return( TEST_PERSON_DN )
+
+			@conn.should_receive( :modrdn ).with( TEST_PERSON_DN, TEST_PERSON2_RDN, false )
+			branch.should_receive( :class ).and_return( Treequel::Branch )
+			branch.should_receive( :parent ).and_return( :the_parent_branch )
+			branch.should_receive( :rdn_value ).and_return( 'lancelot' )
+
+			newbranch = stub( "new branch", :dn => TEST_PERSON2_DN )
+			Treequel::Branch.should_receive( :new ).
+				with( @dir, TEST_PERSON2_DN_ATTR, TEST_PERSON2_DN_VALUE, :the_parent_branch ).
+				and_return( newbranch )
+			@dir.should_receive( :modify ).
+				with( newbranch, TEST_PERSON2_DN_ATTR => [TEST_PERSON2_DN_VALUE] )
+
+			@dir.copy( branch, TEST_PERSON2_DN ).should == newbranch
+		end
+
+		it "raises an exception if asked to copy an entry to a different parent" do
+			branch = mock( "sibling branch obj" )
+			branch.should_receive( :dn ).at_least( :once ).and_return( TEST_PERSON_DN )
+
+			@dir.stub!( :bound? ).and_return( false )
+			@conn.should_not_receive( :modrdn )
+			expect {
+				@dir.copy( branch, TEST_HOST_DN )
+			}.to raise_error( Treequel::Error, /parent/i )
 		end
 
 		it "can copy a record and also change its attributes" do

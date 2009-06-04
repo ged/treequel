@@ -274,3 +274,11 @@ departments.filter( :and,
 	[ :not, [:uniqueMembers, '']] )
 
 
+mahlon = dir.ou( :people ).uid( :mahlon )
+mahlon.copy( 'othermahlon' )
+
+dir.ou( people ) << { :uid => 'othermahlon', :sn => 'Bonch' }
+
+
+
+
