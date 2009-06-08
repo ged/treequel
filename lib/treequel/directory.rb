@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'time'
+
 require 'ldap'
 require 'ldap/schema'
 
@@ -47,6 +49,16 @@ class Treequel::Directory
 		:pass          => nil
 	}
 
+	# Default mapping of SYNTAX OIDs to conversions. See #add_syntax_mapping for more
+	# information on what a valid conversion is.
+	DEFAULT_SYNTAX_MAPPING = {
+		OIDS::BIT_STRING_SYNTAX       => lambda { |bs| bs[0..-1].to_i(2) },
+		OIDS::BOOLEAN_SYNTAX          => { 'true' => true, 'false' => false },
+		OIDS::GENERALIZED_TIME_SYNTAX => lambda {|string| Time.parse(string) },
+		OIDS::UTC_TIME_SYNTAX         => lambda {|string| Time.parse(string) },
+		OIDS::INTEGER_SYNTAX          => lambda {|string| Integer(string) },
+	}
+
 
 	### Create a new Treequel::Directory with the given +options+. Options is a hash with one
 	### or more of the following key-value pairs:
@@ -73,6 +85,8 @@ class Treequel::Directory
 
 		@conn     = nil
 		@bound_as = nil
+
+		@syntax_mapping = DEFAULT_SYNTAX_MAPPING.dup
 
 		# Immediately bind if credentials are passed to the initializer.
 		if ( options[:binddn] && options[:pass] )
@@ -203,14 +217,24 @@ class Treequel::Directory
 
 
 	### Perform a +scope+ search at +base+ using the specified +filter+. The +scope+ argument
-	### can be one of +:onelevel+, +:base+, or +:subtree+.
+	### can be one of +:onelevel+, +:base+, or +:subtree+. Results will be returned as instances
+	### of the given +collectclass+.
 	def search( base, scope, filter, selectattrs=[], timeout=0, sortby=nil )
 		timeout_s = timeout_us = 0
 		sortattr = ''
 		sortfunc = nil
+		base_dn = nil
+		collectclass = nil
 
 		# Normalize the arguments into what LDAP::Conn#search2 expects
-		base_dn = base.respond_to?( :dn ) ? base.dn : base
+		if base.respond_to?( :dn )
+			base_dn = base.dn
+			collectclass = base.class
+		else
+			base_dn = base
+			collectclass = Treequel::Branch
+		end
+
 		scope = SCOPE[scope] if scope.is_a?( Symbol )
 
 		if !timeout.nil? && !timeout.zero?
@@ -246,7 +270,7 @@ class Treequel::Directory
 			sortattr, sortfunc )
 
 		return results.collect do |entry|
-			Treequel::Branch.new_from_entry( entry, self )
+			collectclass.new_from_entry( entry, self )
 		end
 	end
 
@@ -313,6 +337,24 @@ class Treequel::Directory
 		self.modify( newbranch, attributes )
 
 		return newbranch
+	end
+
+
+	### Add +conversion+ mapping for the specified +oid+. A conversion is any object that
+	### responds to #[] (e.g., Proc, Method, Hash, Array); the argument is the raw
+	### value String returned from the LDAP entry, and it should return the converted
+	### value. Adding a mapping with a nil +conversion+ effectively clears it.
+	def add_syntax_mapping( oid, conversion=nil )
+		conversion = Proc.new if block_given?
+		@syntax_mapping[ oid ] = conversion
+	end
+
+
+	### Map the specified +value+ to its Ruby datatype if one is registered for the given 
+	### syntax +oid+. If there is no conversion registered, just return the +value+ as-is.
+	def convert_syntax_value( oid, value )
+		return value unless conversion = @syntax_mapping[ oid ]
+		return conversion[ value ]
 	end
 
 

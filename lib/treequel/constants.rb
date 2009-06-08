@@ -21,6 +21,50 @@ module Treequel::Constants # :nodoc:
 	}.freeze
 
 
+	### OIDs of RFC values
+	module OIDS
+
+		### Syntaxes
+		RDN_SYNTAX                         = '1.2.36.79672281.1.5.0'
+		RFC2307_NIS_NETGROUP_TRIPLE_SYNTAX = '1.3.6.1.1.1.0.0'
+		RFC2307_BOOT_PARAMETER_SYNTAX      = '1.3.6.1.1.1.0.1'
+		UUID_SYNTAX                        = '1.3.6.1.1.16.1'
+		AUDIO_SYNTAX                       = '1.3.6.1.4.1.1466.115.121.1.4'
+		BINARY_SYNTAX                      = '1.3.6.1.4.1.1466.115.121.1.5'
+		BIT_STRING_SYNTAX                  = '1.3.6.1.4.1.1466.115.121.1.6'
+		BOOLEAN_SYNTAX                     = '1.3.6.1.4.1.1466.115.121.1.7'
+		CERTIFICATE_SYNTAX                 = '1.3.6.1.4.1.1466.115.121.1.8'
+		CERTIFICATE_LIST_SYNTAX            = '1.3.6.1.4.1.1466.115.121.1.9'
+		CERTIFICATE_PAIR_SYNTAX            = '1.3.6.1.4.1.1466.115.121.1.10'
+		COUNTRY_STRING_SYNTAX              = '1.3.6.1.4.1.1466.115.121.1.11'
+		DISTINGUISHED_NAME_SYNTAX          = '1.3.6.1.4.1.1466.115.121.1.12'
+		DELIVERY_METHOD_SYNTAX             = '1.3.6.1.4.1.1466.115.121.1.14'
+		DIRECTORY_STRING_SYNTAX            = '1.3.6.1.4.1.1466.115.121.1.15'
+		STRING_SYNTAX                      = DIRECTORY_STRING_SYNTAX  # Alias
+		FACSIMILE_TELEPHONE_NUMBER_SYNTAX  = '1.3.6.1.4.1.1466.115.121.1.22'
+		GENERALIZED_TIME_SYNTAX            = '1.3.6.1.4.1.1466.115.121.1.24'
+		IA5_STRING_SYNTAX                  = '1.3.6.1.4.1.1466.115.121.1.26'
+		INTEGER_SYNTAX                     = '1.3.6.1.4.1.1466.115.121.1.27'
+		JPEG_SYNTAX                        = '1.3.6.1.4.1.1466.115.121.1.28'
+		NAME_AND_OPTIONAL_UID_SYNTAX       = '1.3.6.1.4.1.1466.115.121.1.34'
+		NUMERIC_STRING_SYNTAX              = '1.3.6.1.4.1.1466.115.121.1.36'
+		OID_SYNTAX                         = '1.3.6.1.4.1.1466.115.121.1.38'
+		OTHER_MAILBOX_SYNTAX               = '1.3.6.1.4.1.1466.115.121.1.39'
+		OCTET_STRING_SYNTAX                = '1.3.6.1.4.1.1466.115.121.1.40'
+		POSTAL_ADDRESS_SYNTAX              = '1.3.6.1.4.1.1466.115.121.1.41'
+		PRINTABLE_STRING_SYNTAX            = '1.3.6.1.4.1.1466.115.121.1.44'
+		SUBTREESPECIFICATION_SYNTAX        = '1.3.6.1.4.1.1466.115.121.1.45'
+		SUPPORTED_ALGORITHM_SYNTAX         = '1.3.6.1.4.1.1466.115.121.1.49'
+		TELEPHONE_NUMBER_SYNTAX            = '1.3.6.1.4.1.1466.115.121.1.50'
+		TELEX_NUMBER_SYNTAX                = '1.3.6.1.4.1.1466.115.121.1.52'
+		UTC_TIME_SYNTAX                    = '1.3.6.1.4.1.1466.115.121.1.53'
+
+		constants.each do |constname|
+			const_get( constname ).freeze
+		end
+	end
+
+
 	### A collection of Regexps to match various LDAP values
 	module Patterns
 

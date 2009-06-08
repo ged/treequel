@@ -228,8 +228,10 @@ class Treequel::Branch
 		attrsym = attrname.to_sym
 
 		unless @values.key?( attrsym )
+			directory = self.directory
+
 			self.log.debug "  value is not cached; checking its attributeType"
-			unless attribute = self.directory.schema.attribute_types[ attrsym ]
+			unless attribute = directory.schema.attribute_types[ attrsym ]
 				self.log.info "no attributeType for %p" % [ attrsym ]
 				return nil
 			end
@@ -237,12 +239,16 @@ class Treequel::Branch
 			self.log.debug "  attribute exists; checking the entry for a value"
 			return nil unless (( value = self.entry[attrsym.to_s] ))
 
+			syntax_oid = attribute.syntax_oid
+
 			if attribute.single?
 				self.log.debug "    attributeType is SINGLE; unwrapping the Array"
-				@values[ attrsym ] = value.first
+				@values[ attrsym ] = directory.convert_syntax_value( syntax_oid, value.first )
 			else
 				self.log.debug "    attributeType is not SINGLE; keeping the Array"
-				@values[ attrsym ] = value
+				@values[ attrsym ] = value.collect do |raw|
+					directory.convert_syntax_value( syntax_oid, raw )
+				end
 			end
 
 			@values[ attrsym ].freeze

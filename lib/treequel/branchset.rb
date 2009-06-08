@@ -4,7 +4,7 @@
 require 'forwardable'
 require 'ldap'
 
-require 'treequel' 
+require 'treequel'
 require 'treequel/mixins'
 require 'treequel/constants'
 require 'treequel/branch'
@@ -103,10 +103,10 @@ class Treequel::Branchset
 	public
 	######
 
-	# The filterset's search options hash
+	# The branchset's search options hash
 	attr_accessor :options
 
-	# The filterset's base branchset that will be used when searching as the basedn
+	# The branchset's base branch that will be used when searching as the basedn
 	attr_accessor :base
 
 
@@ -141,8 +141,20 @@ class Treequel::Branchset
 	### objects.
 	def all
 		directory = self.base.directory
-		return directory.search( self.base, self.scope, self.filter, self.select, 
+		return directory.search( self.base, self.scope, self.filter, self.select,
 			self.timeout, self.order )
+	end
+
+
+	### Fetch the first entry which matches the current criteria and return it as an instance of
+	### the object that is set as the +base+ (e.g., Treequel::Branch).
+	def first
+		# :FIXME: This could eventually be implemented with the "paged results" control so
+		# it only actually fetches one row, but for now it just fetches everything and returns
+		# the first value
+		directory = self.base.directory
+		return directory.search( self.base, self.scope, self.filter, self.select,
+			self.timeout, self.order ).first
 	end
 
 
@@ -151,7 +163,7 @@ class Treequel::Branchset
 	def filter( *filterspec )
 		if filterspec.empty?
 			opts = self.options
-			opts[:filter] = Treequel::Filter.new(opts[:filter]) unless 
+			opts[:filter] = Treequel::Filter.new(opts[:filter]) unless
 				opts[:filter].is_a?( Treequel::Filter )
 			return opts[:filter]
 		else

@@ -7,6 +7,9 @@ require 'treequel'
 ### A collection of constants used in testing
 module Treequel::TestConstants # :nodoc:all
 
+	include Treequel::Constants,
+	        Treequel::Constants::OIDS
+
 	unless defined?( TEST_HOST )
 
 		TEST_HOST             = 'ldap.example.com'

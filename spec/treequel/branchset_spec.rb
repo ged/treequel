@@ -81,6 +81,15 @@ describe Treequel::Branchset do
 			@branchset.all.should == :matching_branches
 		end
 
+		it "performs a search using the default filter and scope when the first record is requested" do
+			@branch.should_receive( :directory ).and_return( @directory )
+			@directory.should_receive( :search ).
+				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, [], 0, '' ).
+				and_return( [:first_matching_branch, :other_branches] )
+
+			@branchset.first.should == :first_matching_branch
+		end
+
 		it "creates a new branchset cloned from itself with the specified filter" do
 			newset = @branchset.filter( :clothing, 'pants' )
 			newset.filter_string.should == '(clothing=pants)'
