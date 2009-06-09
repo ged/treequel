@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 
 require 'forwardable'
+require 'ldap'
+require 'ldap/ldif'
 
 require 'treequel'
 require 'treequel/mixins'
@@ -220,6 +222,23 @@ class Treequel::Branch
 			self.directory,
 			@entry,
 		  ]
+	end
+
+
+	### Return the entry underlying the Branch as a String containing its LDIF.
+	def to_ldif
+		ldif = "dn: %s\n" % [ self.dn ]
+
+		self.entry.keys.reject {|k| k == 'dn' }.each do |attribute|
+			self.entry[ attribute ].each do |val|
+				# self.log.debug "  creating LDIF fragment for %p=%p" % [ attribute, val ]
+				frag = LDAP::LDIF.to_ldif( attribute, [val] )
+				# self.log.debug "  LDIF fragment is: %p" % [ frag ]
+				ldif << frag
+			end
+		end
+
+		return LDAP::LDIF::Entry.new( ldif )
 	end
 
 

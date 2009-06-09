@@ -110,6 +110,7 @@ class Treequel::Directory
 
 	# The base DN of the directory.
 	attr_accessor :base
+	alias_method :dn, :base
 
 
 	### Returns a string that describes the directory

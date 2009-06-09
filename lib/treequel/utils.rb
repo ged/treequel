@@ -37,7 +37,7 @@ module Treequel # :nodoc:
 
 		# The format to output unless debugging is turned on
 		DEFAULT_FORMAT = "[%1$s.%2$06d %3$d/%4$s] %5$5s -- %7$s\n"
-		
+
 		# The format to output if debugging is turned on
 		DEFAULT_DEBUG_FORMAT = "[%1$s.%2$06d %3$d/%4$s] %5$5s {%6$s} -- %7$s\n"
 
@@ -57,13 +57,13 @@ module Treequel # :nodoc:
 
 		# The Logger object associated with the formatter
 		attr_accessor :logger
-		
+
 		# The logging format string
 		attr_accessor :format
-		
+
 		# The logging format string that's used when outputting in debug mode
 		attr_accessor :debug_format
-		
+
 
 		### Log using either the DEBUG_FORMAT if the associated logger is at ::DEBUG level or
 		### using FORMAT if it's anything less verbose.
@@ -85,8 +85,8 @@ module Treequel # :nodoc:
 			end
 		end
 	end # class LogFormatter
-	
-	
+
+
 	# 
 	# An alternate formatter for Logger instances that outputs +dd+ HTML
 	# fragments.
@@ -143,7 +143,7 @@ module Treequel # :nodoc:
 
 		# The HTML fragment that will be used as a format() string for the log
 		attr_accessor :format
-		
+
 
 		### Return a log message composed out of the arguments formatted using the
 		### formatter's format string
@@ -160,7 +160,7 @@ module Treequel # :nodoc:
 
 			return self.format % args
 		end
-		
+
 	end # class HtmlLogFormatter
 
 end # module Treequel

@@ -77,8 +77,8 @@ describe Treequel::Branch do
 
 		before( :each ) do
 			@branch = Treequel::Branch.new(
-				@directory, 
-				TEST_HOSTS_DN_ATTR, 
+				@directory,
+				TEST_HOSTS_DN_ATTR,
 				TEST_HOSTS_DN_VALUE,
 				TEST_BASE_DN
 			  )
@@ -305,6 +305,19 @@ describe Treequel::Branch do
 			@directory.should_receive( :modify ).with( @branch, attributes )
 
 			@branch.modify( attributes )
+		end
+
+
+		it "knows how to represent itself as LDIF" do
+			@entry.should_receive( :keys ).and_return([ 'description', 'l' ])
+			@entry.should_receive( :[] ).with( 'description' ).
+				and_return([ 'A chilly little penguin.' ])
+			@entry.should_receive( :[] ).with( 'l' ).
+				and_return([ 'Antartica', 'Galapagos' ])
+
+			ldif = @branch.to_ldif
+			ldif.should =~ /dn: #{TEST_HOSTS_DN_ATTR}=#{TEST_HOSTS_DN_VALUE},#{TEST_BASE_DN}/i
+			ldif.should =~ /description: A chilly little penguin./
 		end
 
 

@@ -65,10 +65,9 @@ describe Treequel::Schema::MatchingRule do
 		end
 
 		it "knows what its syntax is" do
-			pending "implementation of Treequel::Schema::Syntax" do
-				@schema.should_receive( :ldap_syntaxes )
-				@rule.syntax.should == :the_syntax
-			end
+			@schema.should_receive( :ldap_syntaxes ).
+				and_return({ '1.3.6.1.4.1.1466.115.121.1.40' => :the_syntax })
+			@rule.syntax.should == :the_syntax
 		end
 
 		it "knows that it is not obsolete" do

@@ -1,4 +1,157 @@
 #!/usr/bin/env ruby
 
+require 'logger'
 require 'readline'
+require 'rbreadline'
+require 'shellwords'
+require 'abbrev'
+require 'treequel'
+require 'treequel/mixins'
+
+
+class Shell
+	include Treequel::Loggable
+
+	### Create a new shell that will traverse the directory at the specified +uri+.
+	def initialize( uri )
+		Treequel.logger.level = Logger::DEBUG
+
+		@uri        = uri
+		@quit       = false
+		@dir        = Treequel.directory( @uri )
+		@currbranch = @dir
+
+		@commands = self.find_commands
+		@completions = @commands.abbrev
+		@command_table = make_command_table( @commands )
+	end
+
+
+	### The command loop: run the shell until the user wants to quit
+	def run
+		$stderr.puts "Connected to %s" % [ @uri ]
+
+		Readline.completion_proc = self.method( :completion_callback ).to_proc
+
+		until @quit
+			input = Readline.readline( @currbranch.dn + '> ', true )
+			self.log.debug "Input is: %p" % [ input ]
+
+			# EOL makes the shell quit
+			if input.nil?
+				@quit = true
+
+			# Parse everything else into command + everything else
+			else
+				command, *args = Shellwords.shellwords( input )
+
+				begin
+					if meth = @command_table[ command ]
+						meth.call( *args )
+					else
+						self.handle_missing_command( command )
+					end
+				rescue => err
+					$stderr.puts "Error: %s" % [ err.message ]
+					err.backtrace.each do |frame|
+						self.log.debug "  " + frame
+					end
+				end
+			end
+		end
+
+		$stderr.puts "done."
+	end
+
+
+	#########
+	protected
+	#########
+
+	### Handle completion requests from Readline.
+	def completion_callback( input )
+		return @completions[ input ]
+	end
+
+
+	### Quit the shell.
+	def quit_command( *args )
+		$stderr.puts "Okay, exiting."
+		@quit = true
+	end
+
+
+	### Display LDIF for the specified RDNs.
+	def cat_command( *args )
+		args.each do |rdn|
+			branch = rdn.split( /\s*,\s*/ ).inject( @currbranch ) do |branch, dnpair|
+				attribute, value = dnpair.split( /\s*=\s*/, 2 )
+				branch.send( attribute, value )
+			end
+
+			$stdout.puts( branch.to_ldif )
+		end
+	end
+
+
+	### List the children of the current branch.
+	def ls_command( *args )
+		$stdout.puts *@currbranch.children
+	end
+
+
+	### Change the current working DN.
+	def cd_command( *args )
+		rdn = args.shift
+		pairs = rdn.split( /\s*,\s*/ )
+		pairs.each do |dnpair|
+			self.log.debug "  cd to %p" % [ dnpair ]
+			attribute, value = dnpair.split( /=/, 2 )
+			self.log.debug "  changing to %s( %p )" % [ attribute, value ]
+			@currbranch = @currbranch.send( attribute, value )
+		end
+	end
+
+
+	### Handle a command from the user that doesn't exist.
+	def handle_missing_command( *args )
+		command = args.shift || '(testing?)'
+		$stderr.puts "Unknown command %p" % [ command ]
+		$stderr.puts "Known commands: ", '  ' + @commands.join(', ')
+	end
+
+
+	### Find methods that implement commands and return them in a sorted Array.
+	def find_commands
+		return self.methods.
+			grep( /^(\w+)_command$/ ).
+			collect {|mname| mname[/^(\w+)_command$/, 1] }.
+			sort
+	end
+
+
+	#######
+	private
+	#######
+
+	### Create a command table that maps command abbreviations to the Method object that
+	### implements it.
+	def make_command_table( commands )
+		table = commands.abbrev
+		table.keys.each do |abbrev|
+			mname = table.delete( abbrev )
+			table[ abbrev ] = self.method( mname + '_command' )
+		end
+
+		return table
+	end
+
+end
+
+
+if __FILE__ == $0
+	ldapuri = ARGV.shift or raise "usage: #$0 URI"
+
+	Shell.new( ldapuri ).run
+end
 
