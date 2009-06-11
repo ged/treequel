@@ -137,8 +137,16 @@ describe Treequel::Directory do
 
 		before( :each ) do
 			@conn = mock( "ldap connection" )
+
 			@dir = Treequel::Directory.new( @options )
 			@dir.instance_variable_set( :@conn, @conn )
+
+			@schema = mock( "Directory schema" )
+			@conn.stub!( :schema ).and_return( :the_schema )
+			Treequel::Schema.stub!( :new ).with( :the_schema ).
+				and_return( @schema )
+			@schema.stub!( :attribute_types ).
+				and_return({ :cn => :a_value, :ou => :a_value })
 		end
 
 		it "can bind with the given user DN and password" do
@@ -272,22 +280,27 @@ describe Treequel::Directory do
 			@dir.rdn_to( TEST_PERSON_DN ).should == TEST_PERSON_DN.sub( /,#{TEST_BASE_DN}$/, '' )
 		end
 
-		it "implements a proxy method that allow for creation of branches" do
-			rval = @dir.ou( :people )
-			rval.dn.downcase.should == TEST_PEOPLE_DN.downcase
-		end
-
-		it "don't try to create sub-branches for method calls with more than one parameter" do
-			lambda {
-				@dir.dc( 'sbc', 'glar' )
-			}.should raise_error( ArgumentError, /wrong number of arguments/ )
-		end
-
 		it "can fetch the server's schema" do
 			@conn.should_receive( :schema ).and_return( :the_schema )
 			Treequel::Schema.should_receive( :new ).with( :the_schema ).
 				and_return( :the_parsed_schema )
 			@dir.schema.should == :the_parsed_schema
+		end
+
+		it "creates branches for messages that match valid attributeType OIDs" do
+			@schema.should_receive( :attribute_types ).
+				and_return({ :cn => :a_value, :ou => :a_value })
+
+			@dir.stub!( :bound? ).and_return( false )
+			rval = @dir.ou( :people )
+			rval.dn.downcase.should == TEST_PEOPLE_DN.downcase
+		end
+
+		it "doesn't create branches for messages that don't match valid attributeType OIDs" do
+			@schema.should_receive( :attribute_types ).
+				and_return({ :cn => :a_value, :ou => :a_value })
+
+			expect { @dir.void('sbc') }.to raise_error( NoMethodError )
 		end
 
 		it "can modify the record corresponding to a Branch in the directory" do
@@ -334,7 +347,9 @@ describe Treequel::Directory do
 		it "can copy an entry with an rdn" do
 			@dir.stub!( :bound? ).and_return( false )
 			branch = mock( "sibling branch obj" )
-			branch.should_receive( :dn ).at_least( :once ).and_return( TEST_PERSON_DN )
+			branch.should_receive( :dn ).and_return( TEST_PERSON_DN )
+			branch.should_receive( :split_dn ).at_least( :once ).
+				and_return([ TEST_PERSON_RDN, TEST_PEOPLE_DN ])
 
 			@conn.should_receive( :modrdn ).with( TEST_PERSON_DN, TEST_PERSON2_RDN, false )
 			branch.should_receive( :class ).and_return( Treequel::Branch )
@@ -355,6 +370,8 @@ describe Treequel::Directory do
 			@dir.stub!( :bound? ).and_return( false )
 			branch = mock( "sibling branch obj" )
 			branch.should_receive( :dn ).at_least( :once ).and_return( TEST_PERSON_DN )
+			branch.should_receive( :split_dn ).at_least( :once ).
+				and_return([ TEST_PERSON_RDN, TEST_PEOPLE_DN ])
 
 			@conn.should_receive( :modrdn ).with( TEST_PERSON_DN, TEST_PERSON2_RDN, false )
 			branch.should_receive( :class ).and_return( Treequel::Branch )
@@ -371,9 +388,24 @@ describe Treequel::Directory do
 			@dir.copy( branch, TEST_PERSON2_DN ).should == newbranch
 		end
 
-		it "raises an exception if asked to copy an entry to a different parent" do
+		it "can move a record to a new dn within the same branch" do
+			@dir.stub!( :bound? ).and_return( false )
 			branch = mock( "sibling branch obj" )
 			branch.should_receive( :dn ).at_least( :once ).and_return( TEST_PERSON_DN )
+			branch.should_receive( :split_dn ).at_least( :once ).
+				and_return([ TEST_PERSON_RDN, TEST_PEOPLE_DN ])
+
+			@conn.should_receive( :modrdn ).with( TEST_PERSON_DN, TEST_PERSON2_RDN, true )
+			branch.should_receive( :rdn= ).with( TEST_PERSON2_RDN )
+
+			@dir.move( branch, TEST_PERSON2_DN )
+		end
+
+
+		it "raises an exception if asked to copy an entry to a different parent" do
+			branch = mock( "sibling branch obj" )
+			branch.should_receive( :split_dn ).at_least( :once ).
+				and_return([ TEST_PERSON_RDN, TEST_PEOPLE_DN ])
 
 			@dir.stub!( :bound? ).and_return( false )
 			@conn.should_not_receive( :modrdn )
@@ -392,7 +424,9 @@ describe Treequel::Directory do
 				'uid'         => ['hunker'],
 			  }
 			branch = mock( "sibling branch obj" )
-			branch.should_receive( :dn ).at_least( :once ).and_return( TEST_PERSON_DN )
+			branch.should_receive( :dn ).and_return( TEST_PERSON_DN )
+			branch.should_receive( :split_dn ).at_least( :once ).
+				and_return([ TEST_PERSON_RDN, TEST_PEOPLE_DN ])
 			branch.should_receive( :rdn_value ).and_return( TEST_PERSON_DN_VALUE )
 
 			@conn.should_receive( :modrdn ).with( TEST_PERSON_DN, TEST_PERSON2_RDN, false )

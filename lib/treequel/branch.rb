@@ -29,7 +29,8 @@ require 'treequel/branchset'
 # Please see the file LICENSE in the base directory for licensing details.
 #
 class Treequel::Branch
-	include Treequel::Loggable,
+	include Comparable,
+	        Treequel::Loggable,
 	        Treequel::Constants
 
 	extend Treequel::Delegation
@@ -128,11 +129,28 @@ class Treequel::Branch
 	end
 
 
+	### Set the Branch's RDN to +newrdn+. Note that this doesn't actually cause any change to
+	### happen in the directory, it just points the branch at a different entry. To move entries
+	### around, use #move or #copy.
+	def rdn=( newrdn )
+		self.clear_caches
+		@rdn_attribute, @rdn_value = newrdn.split( /=/, 2 )
+	end
+
+
 	### Return the receiver's DN as a String.
 	def dn
 		return [ self.rdn, self.base ].join(',')
 	end
 	alias_method :to_s, :dn
+
+
+	### Return the receiver's DN as an Array of attribute=value pairs. If +limit+ is non-zero, 
+	### only the <code>limit-1</code> first pairs are split from the DN, and the remainder 
+	### will be returned as the last element.
+	def split_dn( limit=0 )
+		return self.dn.split( /\s*,\s*/, limit )
+	end
 
 
 	### Return the Branch's immediate parent node.
@@ -329,16 +347,36 @@ class Treequel::Branch
 	end
 
 
+	### Comparable interface: Returns -1 if other_branch is less than, 0 if other_branch is 
+	### equal to, and +1 if other_branch is greater than the receiving Branch.
+	def <=>( other_branch )
+		# Try the easy cases first
+		return nil unless other_branch.is_a?( self.class )
+		return 0 if other_branch.dn == self.dn
+
+		# Try comparing reversed attribute pairs
+		rval = nil
+		pairseq = self.split_dn.reverse.zip( other_branch.split_dn.reverse )
+		pairseq.each do |a,b|
+			comparison = (a <=> b)
+			return comparison if !comparison.nil? && comparison.nonzero?
+		end
+
+		# The branches are related, so directly comparing DN strings will work
+		return self.dn <=> other_branch.dn
+	end
+
+
 	#########
 	protected
 	#########
 
-	### Proxy method: return a new Branch with the new +attribute+ and +value+ as
-	### its base.
-	def method_missing( attribute, value, *extra_args )
-		raise ArgumentError,
-			"wrong number of arguments (%d for 1)" % [ extra_args.length + 1 ] unless
-			extra_args.empty?
+	### Proxy method: if the first argument matches a valid attribute in the directory's
+	### schema, return a new Branch for the RDN made by using the first two arguments as
+	### attribute and value.
+	def method_missing( *args )
+		attribute, value, *extra = *args
+		return super unless attribute && self.directory.schema.attribute_types.key?( attribute )
 		return self.class.new( self.directory, attribute, value, self )
 	end
 

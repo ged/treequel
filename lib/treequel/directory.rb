@@ -309,11 +309,11 @@ class Treequel::Directory
 	end
 
 
-	### Copy the entry from the specified +branch+ to a new entry specified by +rdn+ with the
+	### Copy the entry from the specified +branch+ to a new entry specified by +newdn+ with the
 	### given +attributes+. Returns a new branch object for the new entry.
 	def copy( branch, newdn, attributes={} )
-		source_rdn, source_parent_dn = branch.dn.split( /,/, 2 )
-		new_rdn, new_parent_dn = newdn.split( /,/, 2 )
+		source_rdn, source_parent_dn = branch.split_dn( 2 )
+		new_rdn, new_parent_dn = newdn.split( /\s*,\s*/, 2 )
 
 		if new_parent_dn.nil?
 			new_parent_dn = source_parent_dn
@@ -324,7 +324,7 @@ class Treequel::Directory
 				"can't (yet) copy an entry to a new parent"
 		end
 
-		self.log.debug "Modrdn: %p -> %p within %p" % [ source_rdn, new_rdn, source_parent_dn ]
+		self.log.debug "Modrdn (copy): %p -> %p within %p" % [ source_rdn, new_rdn, source_parent_dn ]
 
 		self.conn.modrdn( branch.dn, new_rdn, false )
 		rdn_attr, rdn_val = new_rdn.split( /=/, 2 )
@@ -338,6 +338,28 @@ class Treequel::Directory
 		self.modify( newbranch, attributes )
 
 		return newbranch
+	end
+
+
+	### Move the entry from the specified +branch+ to the new entry specified by 
+	### +newdn+. Returns the (moved) branch object.
+	def move( branch, newdn )
+		source_rdn, source_parent_dn = branch.split_dn( 2 )
+		new_rdn, new_parent_dn = newdn.split( /\s*,\s*/, 2 )
+
+		if new_parent_dn.nil?
+			new_parent_dn = source_parent_dn
+		end
+
+		if new_parent_dn != source_parent_dn
+			raise Treequel::Error,
+				"can't (yet) move an entry to a new parent"
+		end
+
+		self.log.debug "Modrdn (move): %p -> %p within %p" % [ source_rdn, new_rdn, source_parent_dn ]
+
+		self.conn.modrdn( branch.dn, new_rdn, true )
+		branch.rdn = new_rdn
 	end
 
 
@@ -361,7 +383,7 @@ class Treequel::Directory
 
 	### Return all the top-level entries in the directory as Branches.
 	def children
-		return self.search( self, :one, [] )
+		return self.search( self.base, :one, '(objectClass=*)' )
 	end
 
 
@@ -369,12 +391,12 @@ class Treequel::Directory
 	protected
 	#########
 
-	### Proxy method: return a new Branch with the new +attribute+ and +value+ as
-	### its base.
-	def method_missing( attribute, value, *extra_args )
-		raise ArgumentError,
-			"wrong number of arguments (%d for 1)" % [ extra_args.length + 1 ] unless
-			extra_args.empty?
+	### Proxy method: if the first argument matches a valid attribute in the directory's
+	### schema, return a new Branch for the RDN made by using the first two arguments as
+	### attribute and value.
+	def method_missing( *args )
+		attribute, value, *extra = *args
+		return super unless attribute && self.schema.attribute_types.key?( attribute )
 		return Treequel::Branch.new( self, attribute, value, self.base )
 	end
 

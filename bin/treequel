@@ -1,15 +1,6 @@
 #!/usr/bin/env ruby
 
-begin
-	require 'readline'
-	require 'rbreadline'
-rescue LoadError => err
-	$stderr.puts "This utility requires the pure-Ruby readline library",
-	             "from http://github.com/luislavena/rb-readline:",
-	             err.class.name + ': ' + err.message
-	exit( 1 )
-end
-
+require 'readline'
 require 'logger'
 require 'shellwords'
 require 'abbrev'
@@ -39,7 +30,7 @@ class Shell
 	def run
 		$stderr.puts "Connected to %s" % [ @uri ]
 
-		Readline.completion_proc = self.method( :completion_callback ).to_proc
+		self.setup_completion
 
 		until @quit
 			input = Readline.readline( @currbranch.dn + '> ', true )
@@ -76,10 +67,18 @@ class Shell
 	protected
 	#########
 
+	### Set up Readline completion
+	def setup_completion
+		Readline.completion_proc = self.method( :completion_callback ).to_proc
+		Readline.completer_word_break_characters = ''
+	end
+
+
 	### Handle completion requests from Readline.
 	def completion_callback( input )
-		$stderr.puts "Completing for %p" % [ input ]
-		return @completions[ input ]
+		if command = @completions[ input ]
+			return []
+		end
 	end
 
 
@@ -87,6 +86,13 @@ class Shell
 	def quit_command( *args )
 		$stderr.puts "Okay, exiting."
 		@quit = true
+	end
+
+
+	### Show the completions hash
+	def show_completions_command
+		$stderr.puts "Completions:",
+			@completions.inspect
 	end
 
 
@@ -105,7 +111,7 @@ class Shell
 
 	### List the children of the current branch.
 	def ls_command( *args )
-		$stdout.puts *@currbranch.children
+		$stdout.puts *@currbranch.children.collect {|b| b.rdn }.sort
 	end
 
 

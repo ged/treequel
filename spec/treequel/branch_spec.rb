@@ -87,6 +87,9 @@ describe Treequel::Branch do
 			@entry = mock( "entry object" )
 			@directory.stub!( :schema ).and_return( @schema )
 			@directory.stub!( :get_entry ).and_return( @entry )
+			@schema.stub!( :attribute_types ).
+				and_return({ :cn => :a_value, :ou => :a_value })
+
 			@attribute_type = mock( "schema attribute type object" )
 		end
 
@@ -98,6 +101,33 @@ describe Treequel::Branch do
 		it "knows what its DN is" do
 			@branch.dn.should == TEST_HOSTS_DN
 		end
+
+		it "can return its DN as an array of attribute=value pairs" do
+			@branch.split_dn.should == TEST_HOSTS_DN.split(/\s*,\s*/)
+		end
+
+		it "can return its DN as a limited array of attribute=value pairs" do
+			@branch.split_dn( 2 ).should have( 2 ).members
+			@branch.split_dn( 2 ).should include( TEST_HOSTS_RDN, TEST_BASE_DN )
+		end
+
+		it "are Comparable if they are siblings" do
+			sibling = Treequel::Branch.new( @directory,
+				TEST_PEOPLE_DN_ATTR, TEST_PEOPLE_DN_VALUE, TEST_BASE_DN )
+
+			( @branch <=> sibling ).should == -1
+			( sibling <=> @branch ).should == 1
+			( @branch <=> @branch ).should == 0
+		end
+
+		it "are Comparable if they are parent and child" do
+			child = Treequel::Branch.new( @directory,
+				TEST_HOST_DN_ATTR, TEST_HOST_DN_VALUE, TEST_HOSTS_DN )
+
+			( @branch <=> child ).should == 1
+			( child <=> @branch ).should == -1
+		end
+
 
 		it "fetch their LDAP::Entry from the directory if they don't already have one" do
 			@directory.should_receive( :get_entry ).with( @branch ).exactly( :once ).
@@ -119,7 +149,10 @@ describe Treequel::Branch do
 		end
 
 
-		it "implement a proxy method that allow for creation of sub-branches" do
+		it "create sub-branches for messages that match valid attributeType OIDs" do
+			@schema.should_receive( :attribute_types ).twice.
+				and_return({ :cn => :a_value, :ou => :a_value })
+
 			rval = @branch.cn( 'rondori' )
 			rval.dn.should == "cn=rondori,#{TEST_HOSTS_DN}"
 
@@ -127,10 +160,13 @@ describe Treequel::Branch do
 			rval2.dn.should == "ou=Config,cn=rondori,#{TEST_HOSTS_DN}"
 		end
 
-		it "don't try to create sub-branches for method calls with more than one parameter" do
+		it "don't create sub-branches for messages that don't match valid attributeType OIDs" do
+			@schema.should_receive( :attribute_types ).
+				and_return({ :cn => :a_value, :ou => :a_value })
+
 			lambda {
-				@branch.dc( 'sbc', 'glar' )
-			}.should raise_error( ArgumentError, /wrong number of arguments/ )
+				@branch.facelart( 'sbc' )
+			}.should raise_error( NoMethodError )
 		end
 
 
@@ -261,7 +297,21 @@ describe Treequel::Branch do
 		end
 
 
-		it "can be moved to a new location within the directory"
+		it "can be moved to a new location within the directory" do
+			newdn = "ou=hosts,dc=admin,#{TEST_BASE_DN}"
+			@directory.should_receive( :move ).with( @branch, newdn, {} )
+			@branch.move( newdn )
+		end
+
+
+		it "resets any cached data when its RDN changes" do
+			@directory.should_receive( :get_entry ).with( @branch ).
+				and_return( :first_entry, :second_entry )
+
+			@branch.entry
+			@branch.rdn = TEST_HOSTS_RDN
+			@branch.entry.should == :second_entry
+		end
 
 
 		it "can be deleted from the directory" do
