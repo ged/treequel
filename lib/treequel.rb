@@ -99,11 +99,11 @@ module Treequel
 
 	### Create a Treequel::Directory object by URI and return it.
 	def self::directory( ldapurl )
-		uri = URI.parse( ldapurl )
-		raise ArgumentError, "malformed LDAP URL %p" % [ uri ] unless
-			uri.scheme =~ /ldaps?/
+		ldapurl = URI( ldapurl ) unless ldapurl.is_a?( URI )
+		raise ArgumentError, "malformed LDAP URL %p" % [ ldapurl ] unless
+			ldapurl.scheme =~ /ldaps?/
 
-		options = self.make_options_from_uri( uri )
+		options = self.make_options_from_uri( ldapurl )
 		return Treequel::Directory.new( options )
 	end
 

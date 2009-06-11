@@ -55,6 +55,10 @@ describe Treequel::Directory do
 
 
 	it "is created with reasonable default options if none are specified" do
+		conn = mock( "LDAP connection", :set_option => true )
+		LDAP::SSLConn.stub!( :new ).and_return( conn )
+		conn.should_receive( :root_dse ).and_return( nil )
+
 		dir = Treequel::Directory.new
 
 		dir.host.should == 'localhost'
@@ -81,6 +85,15 @@ describe Treequel::Directory do
 
 		dir = Treequel::Directory.new( @options.merge( :binddn => TEST_BIND_DN, :pass => TEST_BIND_PASS ))
 		dir.instance_variable_get( :@bound_as ).should == TEST_BIND_DN
+	end
+
+	it "uses the first namingContext from the Root DSE if no base is specified" do
+		conn = mock( "LDAP connection", :set_option => true )
+		LDAP::Conn.stub!( :new ).and_return( conn )
+		conn.should_receive( :root_dse ).and_return( TEST_DSE )
+
+		@dir = Treequel::Directory.new( @options.merge(:base => nil) )
+		@dir.base.should == TEST_BASE_DN
 	end
 
 

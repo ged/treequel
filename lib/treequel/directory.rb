@@ -44,7 +44,7 @@ class Treequel::Directory
 		:host          => 'localhost',
 		:port          => LDAP::LDAP_PORT,
 		:connect_type  => :tls,
-		:base          => '',
+		:base          => nil,
 		:binddn        => nil,
 		:pass          => nil
 	}
@@ -76,16 +76,16 @@ class Treequel::Directory
 	### [pass]::
 	###   The base DN of the directory.
 	def initialize( options={} )
-		options = DEFAULT_OPTIONS.merge( options )
+		options         = DEFAULT_OPTIONS.merge( options )
 
-		@host         = options[:host]
-		@port         = options[:port]
-		@connect_type = options[:connect_type]
-		@base         = options[:base]
+		@host           = options[:host]
+		@port           = options[:port]
+		@connect_type   = options[:connect_type]
 
-		@conn     = nil
-		@bound_as = nil
+		@conn           = nil
+		@bound_as       = nil
 
+		@base           = options[:base] || self.get_default_base_dn
 		@syntax_mapping = DEFAULT_SYNTAX_MAPPING.dup
 
 		# Immediately bind if credentials are passed to the initializer.
@@ -359,6 +359,12 @@ class Treequel::Directory
 	end
 
 
+	### Return all the top-level entries in the directory as Branches.
+	def children
+		return self.search( self, :one, [] )
+	end
+
+
 	#########
 	protected
 	#########
@@ -392,6 +398,14 @@ class Treequel::Directory
 
 		conn.set_option( LDAP::LDAP_OPT_PROTOCOL_VERSION, 3 )
 		return conn
+	end
+
+
+	### Fetch the default base dn for the server from the server's Root DSE.
+	def get_default_base_dn
+		dse = self.conn.root_dse
+		return '' if dse.nil? || dse.empty?
+		return dse.first['namingContexts'].first
 	end
 
 

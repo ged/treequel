@@ -1,8 +1,16 @@
 #!/usr/bin/env ruby
 
+begin
+	require 'readline'
+	require 'rbreadline'
+rescue LoadError => err
+	$stderr.puts "This utility requires the pure-Ruby readline library",
+	             "from http://github.com/luislavena/rb-readline:",
+	             err.class.name + ': ' + err.message
+	exit( 1 )
+end
+
 require 'logger'
-require 'readline'
-require 'rbreadline'
 require 'shellwords'
 require 'abbrev'
 require 'treequel'
@@ -70,6 +78,7 @@ class Shell
 
 	### Handle completion requests from Readline.
 	def completion_callback( input )
+		$stderr.puts "Completing for %p" % [ input ]
 		return @completions[ input ]
 	end
 
@@ -150,8 +159,7 @@ end
 
 
 if __FILE__ == $0
-	ldapuri = ARGV.shift or raise "usage: #$0 URI"
-
+	ldapuri = URI( ARGV.shift || 'ldap://localhost' )
 	Shell.new( ldapuri ).run
 end
 
