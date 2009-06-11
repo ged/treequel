@@ -1,0 +1,164 @@
+/* 
+ *	  Manual Stylesheet
+ *	$Id$
+ *	Time-stamp: <06-Sep-2004 15:09:35 ged>
+ */
+
+/* Start with Blueprint screen */
+/*@import url(screen.css);*/
+@import url(deveiate.css);
+
+/* Uses the "Brazilian Red Cap" Palette from COLOURlovers:
+ *   http://www.colourlovers.com/palette/91529/Brazilian_Red_Cap
+ * 
+ * RGB: 240, 24, 24
+ * Hex: #F01818
+ * 
+ * RGB: 144, 0, 0
+ * Hex: #900000
+ * 
+ * RGB: 243, 243, 243
+ * Hex: #F3F3F3
+ * 
+ * RGB: 72, 72, 96
+ * Hex: #484860
+ * 
+ * RGB: 120, 120, 144
+ * Hex: #787890
+ * 
+ */
+
+body {
+	margin: 0;
+	padding: 2em 4em;
+	font: 14px/1.2em "Helvetica Neue", Helvetica, Tahoma, sans-serif;
+	background: #f3f3f3;
+	color: #333;
+	border-left: 5px solid #ca2f1b;
+}
+
+h1,h2,h3,h4,h5,h6 {
+	font-weight: normal;
+	color: #484860;
+}
+h1,h2,h3 {
+	text-shadow: #a7a7a7 1px 1px 2px;
+}
+h1 {
+	font-size: 3em;
+	margin: 0.5em 0 0;
+	color: #ca2f1b;
+	text-shadow: #999 2px 2px 3px;
+}
+h2 {
+	font-size: 2em;
+	margin: 1em 0 0;
+}
+h3 {
+	font-size: 1.5em;
+	margin: 1em 0 0;
+}
+h4 {
+	font-size: 1.25em;
+	margin: 1em 0 0;
+}
+
+p, ul {
+	line-height: 1.5;
+}
+
+li {
+	margin: 0.5em 0;
+}
+
+acronym, abbr {
+	border-bottom: 1px dotted #666;
+}
+
+a {
+	color: #791707;
+	text-decoration: none;
+	border-bottom: 1px dotted;
+}
+
+dl {
+	margin: 1em 2em;
+}
+dl dt {
+	font-weight: bold;
+	border: 1px solid #ccc;
+	background-color: #e7e7e7;
+	color: #484860;
+	padding: 4px;
+}
+dd {
+	padding: 4px;
+	margin: 0 0 0.5em;
+}
+dd.format {
+	color: #791707;
+	background: #ddd;
+	padding: 2px 10px;
+}
+
+dt + dd {
+	margin-top: 0.25em;
+}
+dd + dt {
+	margin-top: 1em;
+}
+
+code {
+	background: #ddd;
+}
+
+table {
+	margin: 1em;
+	background-color: #fff;
+	border-collapse: collapse;
+}
+th {
+	color: white;
+	background: #484860;
+}
+tr {}
+td, th {
+	padding: 4px;
+	border: 1px solid #484860;
+}
+
+div.screenshot {
+	margin: 1em 3em;
+}
+div.screenshot img {
+}
+
+/* @group Generic Classes */
+.todo {
+}
+/* @end Generic Classes */
+
+/* @group Examples */
+div.caption {
+	font-size: 12px;
+	text-align: center;
+	padding: 0.25em 0;
+	border-top: 1px solid #787890;
+}
+div.example {
+	border: 3px solid #787890;
+	margin: 0.5em 1em;
+	padding: 0;
+	font: 14px Monaco, Profont, "Andale Mono", mono;
+}
+div.example pre {
+	line-height: 1.2em;
+	margin: 0;
+	padding: 0;
+}
+
+pre.deveiate .line-numbers {
+	background-color: #474860;
+	color: #f3f3f3;
+}
+
