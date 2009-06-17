@@ -14,7 +14,66 @@ h1. <%= page.config['title'] %>
 
 <div id="auto-toc"></div>
 
-This is a manual for Treequel. It's not done yet.
+This is a manual for Treequel, a Ruby library that is intended to make interacting with an LDAP directory natural and easy. It's built on top of "Ruby-LDAP":http://ruby-ldap.sourceforge.net/, so if you don't already have that installed you'll need to install it, and you'll need to have access to an LDAP server, of course. 
+
+Once those things are done, you can fire Treequel up via IRb and get a <?api Treequel::Directory ?> object to play around with:
+
+  $ irb -rtreequel -rubygems
+  
+  irb> $dir = Treequel.directory( 'ldap://localhost/dc=acme,dc=com' )
+  => #<Treequel::Directory:0x69cbac localhost:389 (not connected) base="dc=acme,dc=com", 
+       bound as=anonymous, schema=(schema not loaded)>
+
+h2. Branches
+
+Once you have a directory, you can fetch entries from the directory hierarchy by traversing <abbr title="relative distinguished name">RDN</abbr>s. A traversal is accomplished by calling a method with the same name as the attribute half of the @RDN@ you want to traverse, and passing the desired value as the only argument to that method. Doign so yields a <?api Treequel::Branch:"Branch" ?>, which is a wrapper around the resulting @DN@. The resulting @DN@ doesn't necessarily need to map to an extent entry in the directory. For instance, if you had an @OU@ for people called @People@, you could fetch a @Branch@ for it like so:
+
+  irb> people = $dir.ou( :people )
+  => #<Treequel::Branch:0x19a76d4 ou=people,dc=acme,dc=com @ localhost:389 
+      (dc=acme,dc=com, tls, anonymous) entry=nil>
+  irb> people.dn
+  => "ou=people,dc=acme,dc=com"
+
+Then you can fetch the branch for individuals by fetching their branch by calling the @RDN@ method, too:
+
+  irb> me = people.uid( :mgranger )
+  => #<Treequel::Branch:0x19a4970 uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389
+      (dc=acme,dc=com, tls, anonymous) entry=nil>
+  irb> me.dn
+  => "uid=mgranger,ou=people,dc=laika,dc=com"
+
+A @Branch@ can be 
+
+  irb> me[:gecos]
+  => "Michael Granger"
+
+A convenient way to look at a branch's entry is via its @ldif@ string:
+
+  irb> puts me.to_ldif
+	dn: uid=mgranger,ou=people,dc=acme,dc=com
+	gidNumber: 200
+	cn: Michael Granger
+	l: Portland, OR
+	givenName: Michael
+	title: Lead Software Developer
+	gecos: Michael Granger
+	homeDirectory: /home/m/mgranger
+	uid: mgranger
+	mail: mgranger@acme.com
+	sn: Granger
+	mobile: +1 9075551212
+	loginShell: /bin/base
+	uidNumber: 2053
+	objectClass: inetOrgPerson
+	objectClass: organizationalPerson
+	objectClass: person
+	objectClass: top
+	objectClass: posixAccount
+	objectClass: shadowAccount
+	objectClass: apple-user
+	homePhone: +1 9075551212
+	departmentNumber: 18
+	
 
 h2. Authors
 

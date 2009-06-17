@@ -250,7 +250,7 @@ class Treequel::Branch
 		self.entry.keys.reject {|k| k == 'dn' }.each do |attribute|
 			self.entry[ attribute ].each do |val|
 				# self.log.debug "  creating LDIF fragment for %p=%p" % [ attribute, val ]
-				frag = LDAP::LDIF.to_ldif( attribute, [val] )
+				frag = LDAP::LDIF.to_ldif( attribute, [val.dup] )
 				# self.log.debug "  LDIF fragment is: %p" % [ frag ]
 				ldif << frag
 			end

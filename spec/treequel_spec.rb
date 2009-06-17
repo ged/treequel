@@ -67,7 +67,14 @@ describe Treequel do
 	it "raises an exception if #directory is called with a non-ldap URL" do
 		lambda {
 			Treequel.directory( 'http://example.com/' )
-		}.should raise_error( ArgumentError, /malformed/ )
+		}.should raise_error( ArgumentError, /ldap url/i )
+	end
+
+	it "allows an options hash to be passed in instead of a URL" do
+		opts = { :host => 'ldap.example.com', :base => 'dc=example,dc=com' }
+		Treequel::Directory.should_receive( :new ).with( opts ).
+			and_return( :a_directory )
+		Treequel.directory( opts ).should == :a_directory
 	end
 
 	it "can build an options hash from an LDAP URL" do
