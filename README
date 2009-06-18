@@ -1,18 +1,21 @@
 = Treequel
 
-Treequel is a Sequel-like DSL library for interacting with hierarchical datasets such as those
-contained in an LDAP directory. It's mostly experimental still.
+Treequel is an honest LDAP library. It is an attempt to remove the impedence
+mismatch of trying to treat LDAP as if it's a relational database, and instead
+embrace its hierarchical, free-form nature. Its philosophy is modeled after
+Sequel (http://sequel.rubyforge.org/), which does the same thing for relational
+databases.
 
 You can check out the current development source with Subversion from the
 following URL:
 
     svn://deveiate.org/Treequel/trunk
 
-The project page is also likely to have more details:
+You can submit bug reports, suggestions, and read more about future plans at the
+project page:
 
     http://deveiate.org/projects/Treequel
 
 == License
 
-See the LICENSE file in the same directory for licensing details.
-
+See the included LICENSE file for licensing details.

@@ -16,7 +16,7 @@ unless URI.const_defined?( :LDAPS )
 end
 
 
-# A Sequel-like DSL for hierarchical datasets.
+# A library for interacting with LDAP modelled after Sequel.
 #
 # == Subversion Id
 #

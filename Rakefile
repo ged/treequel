@@ -7,7 +7,7 @@
 # Copyright (c) 2007-2009 The FaerieMUD Consortium
 #
 # Authors:
-#  * Michael Granger <ged@FaerieMUD.org>
+#  * Michael Granger and Mahlon E. Smith <ged@FaerieMUD.orgmahlon@martini.nu>
 #
 
 BEGIN {
@@ -42,7 +42,7 @@ DATADIR       = BASEDIR + 'data'
 
 PROJECT_NAME  = 'Treequel'
 PKG_NAME      = PROJECT_NAME.downcase
-PKG_SUMMARY   = 'A Sequel-like DSL library for interacting with hierarchical datasets'
+PKG_SUMMARY   = 'An honest LDAP library'
 
 # Cruisecontrol stuff
 CC_BUILD_LABEL     = ENV['CC_BUILD_LABEL']
@@ -186,12 +186,13 @@ GEMSPEC   = Gem::Specification.new do |gem|
 
 	gem.summary           = PKG_SUMMARY
 	gem.description       = [
-		"A Sequel-like DSL library for interacting with hierarchical datasets. It's mostly experimental",
-		"still.",
+		"A library for interacting with LDAP (modeled after Sequel). It is an attempt to remove",
+		"the impedence mismatch of trying to treat LDAP as if it's a relational database, and",
+		"instead embrace its hierarchical, free-form nature.",
   	  ].join( "\n" )
 
-	gem.authors           = "Michael Granger"
-	gem.email             = "ged@FaerieMUD.org"
+	gem.authors           = "Michael Granger and Mahlon E. Smith"
+	gem.email             = ["ged@FaerieMUD.org", "mahlon@martini.nu"]
 	gem.homepage          = 'http://deveiate.org/projects/Treequel'
 	gem.rubyforge_project = RUBYFORGE_PROJECT
 
@@ -201,7 +202,7 @@ GEMSPEC   = Gem::Specification.new do |gem|
 
 	gem.bindir            = BINDIR.relative_path_from(BASEDIR).to_s
 	gem.executables       = BIN_FILES.select {|pn| File.executable?(pn) }.
-                                collect {|pn| File.basename(pn) }
+	                            collect {|pn| File.basename(pn) }
 
 	if EXTCONF.exist?
 		gem.extensions << EXTCONF.relative_path_from( BASEDIR ).to_s
@@ -209,12 +210,12 @@ GEMSPEC   = Gem::Specification.new do |gem|
 
 	gem.files             = RELEASE_FILES
 	gem.test_files        = SPEC_FILES
-
+		
 	DEPENDENCIES.each do |name, version|
 		version = '>= 0' if version.length.zero?
 		gem.add_runtime_dependency( name, version )
 	end
-
+	
 	# Developmental dependencies don't work as of RubyGems 1.2.0
 	unless Gem::Version.new( Gem::RubyGemsVersion ) <= Gem::Version.new( "1.2.0" )
 		DEVELOPMENT_DEPENDENCIES.each do |name, version|
@@ -222,7 +223,7 @@ GEMSPEC   = Gem::Specification.new do |gem|
 			gem.add_development_dependency( name, version )
 		end
 	end
-
+	
 	REQUIREMENTS.each do |name, version|
 		gem.requirements << [ name, version ].compact.join(' ')
 	end
@@ -291,13 +292,13 @@ task :cruise => [:clean, 'spec:quiet', :package] do |task|
 	raise "Artifacts dir not set." if ARTIFACTS_DIR.to_s.empty?
 	artifact_dir = ARTIFACTS_DIR.cleanpath + (CC_BUILD_LABEL || Time.now.strftime('%Y%m%d-%T'))
 	artifact_dir.mkpath
-
+	
 	coverage = BASEDIR + 'coverage'
 	if coverage.exist? && coverage.directory?
 		$stderr.puts "Copying coverage stats..."
 		FileUtils.cp_r( 'coverage', artifact_dir )
 	end
-
+	
 	$stderr.puts "Copying packages..."
 	FileUtils.cp_r( FileList['pkg/*'].to_a, artifact_dir )
 end

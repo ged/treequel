@@ -65,6 +65,26 @@ describe Treequel::Schema do
 	end
 
 
+	it "can parse the schema structure returned from LDAP::Conn#schema even under $SAFE >= 1" do
+		schema_dumpfile = @datadir + 'schema.yml'
+		hash = YAML.load_file( schema_dumpfile )
+
+		schema = nil
+		Thread.new do
+			Thread.current.abort_on_exception = true
+			$SAFE = 1
+			schemahash = LDAP::Schema.new( hash )
+			schema = Treequel::Schema.new( schemahash )
+		end.join
+
+		schema.object_classes.should have( 298 ).members
+		schema.attribute_types.should have( 1085 ).members
+		schema.matching_rules.should have( 72 ).members
+		schema.matching_rule_uses.should have( 54 ).members
+		schema.ldap_syntaxes.should have( 31 ).members
+	end
+
+
 	it "can parse a valid oidlist" do
 		oids = Treequel::Schema.parse_oids( TEST_OIDLIST )
 		oids.should have(3).members
