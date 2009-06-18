@@ -58,6 +58,11 @@ describe Treequel do
 
 
 	it "provides a convenience function for creating directory objects" do
+		Treequel::Directory.should_receive( :new ).and_return( :a_directory )
+		Treequel.directory.should == :a_directory
+	end
+
+	it "accepts an LDAP url as the argument to the directory convenience method" do
 		Treequel::Directory.should_receive( :new ).
 			with({ :host => 'ldap.example.com', :base => 'dc=example,dc=com', :port => 389 }).
 			and_return( :a_directory )
@@ -70,7 +75,7 @@ describe Treequel do
 		}.should raise_error( ArgumentError, /ldap url/i )
 	end
 
-	it "allows an options hash to be passed in instead of a URL" do
+	it "accepts an options hash as the argument to the directory convenience function" do
 		opts = { :host => 'ldap.example.com', :base => 'dc=example,dc=com' }
 		Treequel::Directory.should_receive( :new ).with( opts ).
 			and_return( :a_directory )

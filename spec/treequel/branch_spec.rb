@@ -16,6 +16,7 @@ begin
 
 	require 'treequel/branch'
 	require 'treequel/branchset'
+	require 'treequel/branchcollection'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
@@ -368,6 +369,23 @@ describe Treequel::Branch do
 			ldif = @branch.to_ldif
 			ldif.should =~ /dn: #{TEST_HOSTS_DN_ATTR}=#{TEST_HOSTS_DN_VALUE},#{TEST_BASE_DN}/i
 			ldif.should =~ /description: A chilly little penguin./
+		end
+
+
+		it "returns a Treequel::BranchCollection with equivalent Branchsets if added to another " +
+		   "Branch" do
+			other_branch = Treequel::Branch.new(
+				@directory,
+				TEST_SUBHOSTS_DN_ATTR,
+				TEST_SUBHOSTS_DN_VALUE,
+				TEST_SUBDOMAIN_DN
+			  )
+			Treequel::Branchset.should_receive( :new ).with( @branch ).and_return( :branchset )
+			Treequel::Branchset.should_receive( :new ).with( other_branch ).and_return( :other_branchset )
+			Treequel::BranchCollection.should_receive( :new ).with( :branchset, :other_branchset ).
+				and_return( :a_collection )
+
+			(@branch + other_branch).should == :a_collection
 		end
 
 

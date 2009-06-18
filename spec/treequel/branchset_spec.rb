@@ -103,6 +103,11 @@ describe Treequel::Branchset do
 			@branchset.scope.should == :subtree
 		end
 
+		it "can return the DN of its base" do
+			@branch.should_receive( :dn ).and_return( :foo )
+			@branchset.base_dn.should == :foo
+		end
+
 		it "can create a new branchset cloned from itself with a different scope" do
 			newset = @branchset.scope( :onelevel )
 			newset.should be_a( Treequel::Branchset )
