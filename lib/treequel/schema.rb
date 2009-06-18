@@ -69,9 +69,9 @@ class Treequel::Schema
 	### Parse a single OID into either a numeric OID string or a Symbol.
 	def self::parse_oid( oidstring )
 		if oidstring =~ NUMERICOID
-			return oidstring
+			return oidstring.untaint
 		else
-			return oidstring.to_sym
+			return oidstring.untaint.to_sym
 		end
 	end
 
@@ -89,13 +89,13 @@ class Treequel::Schema
 		# Multi-value
 		elsif names =~ /#{LPAREN} #{WSP} (#{QDESCRLIST}) #{WSP} #{RPAREN}/x
 			Treequel.logger.debug "    parsing a NAME list from %p" % [ $1 ]
-			return $1.scan( QDESCR ).collect {|qd| qd[1..-2].to_sym }
+			return $1.scan( QDESCR ).collect {|qd| qd[1..-2].untaint.to_sym }
 
 		# Single-value
 		else
 			# Return the name without the quotes
 			Treequel.logger.debug "    dequoting a single NAME"
-			return [ names[1..-2].to_sym ]
+			return [ names[1..-2].untaint.to_sym ]
 		end
 	end
 
