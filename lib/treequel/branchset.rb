@@ -110,6 +110,12 @@ class Treequel::Branchset
 	attr_accessor :base
 
 
+	### Returns the DN of the Branchset's base Branch.
+	def base_dn
+		return self.base.dn
+	end
+
+
 	### Override the default clone method to support cloning with different options.
 	def clone( options={} )
 		self.log.debug "cloning %p with options = %p" % [ self, options ]
@@ -121,9 +127,10 @@ class Treequel::Branchset
 
 	### Return a human-readable string representation of the object suitable for debugging.
 	def inspect
-		"#<%s:0x%0x filter=%s, scope=%s, options=%p>" % [
+		"#<%s:0x%0x base='%s', filter=%s, scope=%s, options=%p>" % [
 			self.class.name,
 			self.object_id * 2,
+			self.base,
 			self.filter_string,
 			@scope,
 			self.options,

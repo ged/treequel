@@ -8,6 +8,7 @@ require 'treequel'
 require 'treequel/mixins'
 require 'treequel/constants'
 require 'treequel/branchset'
+require 'treequel/branchcollection'
 
 
 # The object in Treequel that wraps an entry. It knows how to construct other branches
@@ -365,6 +366,14 @@ class Treequel::Branch
 		# The branches are related, so directly comparing DN strings will work
 		return self.dn <=> other_branch.dn
 	end
+
+
+	### Addition operator: return a Treequel::BranchCollection that contains both the receiver
+	### and +other_branch+.
+	def +( other_branch )
+		return Treequel::BranchCollection.new( self.branchset, other_branch.branchset )
+	end
+
 
 
 	#########
