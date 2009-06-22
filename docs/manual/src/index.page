@@ -1,13 +1,17 @@
 ---
 title: Introduction
 layout: default
-tagline: A tagline
+tagline: An honest LDAP library.
 index: 1
 filters:
   - erb
   - links
   - examples
+  - editorial
+  - api
   - textile
+example_prelude: |-
+  require 'treequel'
 ---
 
 h1. <%= page.config['title'] %>
@@ -18,37 +22,46 @@ This is a manual for Treequel, a Ruby library that is intended to make interacti
 
 Once those things are done, you can fire Treequel up via IRb and get a <?api Treequel::Directory ?> object to play around with:
 
+<?example { language: ruby, caption: "Fetching a directory.", testable: false } ?>
   $ irb -rtreequel -rubygems
   
   irb> $dir = Treequel.directory( 'ldap://localhost/dc=acme,dc=com' )
   => #<Treequel::Directory:0x69cbac localhost:389 (not connected) base="dc=acme,dc=com", 
        bound as=anonymous, schema=(schema not loaded)>
+<?end ?>
 
 h2. Branches
 
-Once you have a directory, you can fetch entries from the directory hierarchy by traversing <abbr title="relative distinguished name">RDN</abbr>s. A traversal is accomplished by calling a method with the same name as the attribute half of the @RDN@ you want to traverse, and passing the desired value as the only argument to that method. Doign so yields a <?api Treequel::Branch:"Branch" ?>, which is a wrapper around the resulting @DN@. The resulting @DN@ doesn't necessarily need to map to an extent entry in the directory. For instance, if you had an @OU@ for people called @People@, you could fetch a @Branch@ for it like so:
+Once you have a directory, you can fetch entries from the directory hierarchy by traversing <abbr title="relative distinguished name">RDN</abbr>s. A traversal is accomplished by calling a method with the same name as the attribute half of the @RDN@ you want to traverse, and passing the desired value as the only argument to that method. Doign so yields a <?api "Branch":Treequel::Branch ?>, which is a wrapper around the resulting @DN@. The resulting @DN@ doesn't necessarily need to map to an extent entry in the directory. For instance, if you had an @OU@ for people called @People@, you could fetch a @Branch@ for it like so:
 
+<?example { language: ruby, caption: "Fetching a branch ou=people.", testable: false } ?>
   irb> people = $dir.ou( :people )
   => #<Treequel::Branch:0x19a76d4 ou=people,dc=acme,dc=com @ localhost:389 
       (dc=acme,dc=com, tls, anonymous) entry=nil>
   irb> people.dn
   => "ou=people,dc=acme,dc=com"
+<?end ?>
 
 Then you can fetch the branch for individuals by fetching their branch by calling the @RDN@ method, too:
 
+<?example { language: ruby, caption: "Fetching a branch for uid=mgranger,ou=people.", testable: false } ?>
   irb> me = people.uid( :mgranger )
   => #<Treequel::Branch:0x19a4970 uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389
       (dc=acme,dc=com, tls, anonymous) entry=nil>
   irb> me.dn
   => "uid=mgranger,ou=people,dc=laika,dc=com"
+<?end ?>
 
 A @Branch@ can be 
 
+<?example { language: ruby, caption: "Fetching an attribute.", testable: false } ?>
   irb> me[:gecos]
   => "Michael Granger"
+<?end ?>
 
 A convenient way to look at a branch's entry is via its @ldif@ string:
 
+<?example { language: ruby, caption: "Viewing an entry as LDIF.", testable: false } ?>
   irb> puts me.to_ldif
 	dn: uid=mgranger,ou=people,dc=acme,dc=com
 	gidNumber: 200
@@ -73,7 +86,7 @@ A convenient way to look at a branch's entry is via its @ldif@ string:
 	objectClass: apple-user
 	homePhone: +1 9075551212
 	departmentNumber: 18
-	
+<?end?>	
 
 h2. Authors
 

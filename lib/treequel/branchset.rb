@@ -52,7 +52,7 @@ require 'treequel/sequel_integration'
 # 
 # :include: LICENSE
 #
-#---
+#--
 #
 # Please see the file LICENSE in the base directory for licensing details.
 #

@@ -48,7 +48,7 @@ require 'treequel/sequel_integration'
 # 
 # :include: LICENSE
 #
-#---
+#--
 #
 # Please see the file LICENSE in the base directory for licensing details.
 #
@@ -533,7 +533,7 @@ class Treequel::Filter
 			raise NotImplementedError, "extensible filters are not yet supported"
 		when value == '*'
 			return Treequel::Filter::PresentItemComponent.new( attribute )
-		when value =~ LDAP_SUBSTRING_VALUE
+		when value =~ LDAP_SUBSTRING_FILTER_VALUE
 			return Treequel::Filter::SubstringItemComponent.new( attribute, value )
 		else
 			return Treequel::Filter::SimpleItemComponent.new( attribute, value )

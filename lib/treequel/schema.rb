@@ -21,7 +21,7 @@ require 'treequel/mixins'
 # 
 # :include: LICENSE
 #
-#---
+#--
 #
 # Please see the file LICENSE in the base directory for licensing details.
 #
