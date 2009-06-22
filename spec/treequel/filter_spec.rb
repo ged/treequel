@@ -129,7 +129,7 @@ describe Treequel::Filter do
 
 
 	it "parses a Substring item from a filter that includes an asterisk" do
-		filter = Treequel::Filter.new( :portrait, "\xff\xd8\xff\xe0*" )
+		filter = Treequel::Filter.new( :portrait, "\\ff\\d8\\ff\\e0*" )
 		filter.component.class.should == Treequel::Filter::SubstringItemComponent
 	end
 
@@ -305,10 +305,10 @@ describe Treequel::Filter do
 
 			it "can parse a component object from a string literal with attribute options" do
 				jpeg_portraits = Treequel::Filter::SubstringItemComponent.
-					parse_from_string( "portrait;binary=\xff\xd8\xff\xe0*" )
+					parse_from_string( "portrait;binary=\\xff\\xd8\\xff\\xe0*" )
 				jpeg_portraits.attribute.should == 'portrait'
 				jpeg_portraits.options.should   == ';binary'
-				jpeg_portraits.pattern.should   == "\xff\xd8\xff\xe0*"
+				jpeg_portraits.pattern.should   == "\\xff\\xd8\\xff\\xe0*"
 			end
 
 			it "raises an ExpressionError if it can't parse a string literal" do

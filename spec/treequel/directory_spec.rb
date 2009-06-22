@@ -143,10 +143,8 @@ describe Treequel::Directory do
 
 			@schema = mock( "Directory schema" )
 			@conn.stub!( :schema ).and_return( :the_schema )
-			Treequel::Schema.stub!( :new ).with( :the_schema ).
-				and_return( @schema )
-			@schema.stub!( :attribute_types ).
-				and_return({ :cn => :a_value, :ou => :a_value })
+			Treequel::Schema.stub!( :new ).with( :the_schema ).and_return( @schema )
+			@schema.stub!( :attribute_types ).and_return({ :cn => :a_value, :ou => :a_value })
 		end
 
 		it "can bind with the given user DN and password" do

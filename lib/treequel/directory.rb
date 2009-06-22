@@ -6,6 +6,7 @@ require 'ldap'
 require 'ldap/schema'
 
 require 'treequel'
+require 'treequel/connection'
 require 'treequel/schema'
 require 'treequel/mixins'
 require 'treequel/constants'
@@ -25,7 +26,7 @@ require 'treequel/constants'
 #
 # :include: LICENSE
 #
-#---
+#--
 #
 # Please see the file LICENSE in the base directory for licensing details.
 #

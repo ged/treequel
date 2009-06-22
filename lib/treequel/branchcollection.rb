@@ -9,9 +9,9 @@ require 'treequel/constants'
 require 'treequel/branch'
 
 
-# A Treequel::BranchCollection is a union of Treequel::BranchSets,
-# suitable for performing operations on multiple branches of the
-# directory at once.
+# A Treequel::BranchCollection is a union of Treequel::Branchset
+# objects, suitable for performing operations on multiple branches
+# of the directory at once.
 # 
 # For example, if you have hosts under ou=Hosts in two different
 # subdomains (e.g., acme.com, seattle.acme.com, and newyork.acme.com),
@@ -40,7 +40,7 @@ require 'treequel/branch'
 # 
 # :include: LICENSE
 #
-#---
+#--
 #
 # Please see the file LICENSE in the base directory for licensing details.
 #
@@ -76,6 +76,7 @@ class Treequel::BranchCollection
 			self.send( :define_method, methname, &methodbody )
 		end
 	end
+	private_class_method :def_cloning_delegators
 
 
 	#################################################################
