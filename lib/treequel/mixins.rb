@@ -93,7 +93,7 @@ module Treequel # :nodoc:
 		end
 
 
-		### Define the given +delegated_methods as delegators to the like-named method
+		### Define the given +delegated_methods+ as delegators to the like-named method
 		### of the specified +ivar+. This is pretty much identical with how 'Forwardable'
 		### from the stdlib does delegation, but it's reimplemented here for consistency.
 		### 

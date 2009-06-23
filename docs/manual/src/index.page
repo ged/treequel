@@ -1,6 +1,6 @@
 ---
 title: Introduction
-layout: default
+layout: intro
 tagline: An honest LDAP library.
 index: 1
 filters:
@@ -14,78 +14,167 @@ example_prelude: |-
   require 'treequel'
 ---
 
-h1. <%= page.config['title'] %>
-
 <div id="auto-toc"></div>
 
-This is a manual for Treequel, a Ruby library that is intended to make interacting with an LDAP directory natural and easy. It's built on top of "Ruby-LDAP":http://ruby-ldap.sourceforge.net/, so if you don't already have that installed you'll need to install it, and you'll need to have access to an LDAP server, of course. 
+This is a manual for *Treequel*, a Ruby library that is intended to make interacting with an LDAP directory natural and easy. It's built on top of "Ruby-LDAP":http://ruby-ldap.sourceforge.net/, so if you don't already have that installed you'll need to install it, and you'll need to have access to an LDAP server, of course. 
+
+h2(#connecting). Connecting to a Directory
 
 Once those things are done, you can fire Treequel up via IRb and get a <?api Treequel::Directory ?> object to play around with:
 
-<?example { language: ruby, caption: "Fetching a directory.", testable: false } ?>
-  $ irb -rtreequel -rubygems
-  
-  irb> $dir = Treequel.directory( 'ldap://localhost/dc=acme,dc=com' )
-  => #<Treequel::Directory:0x69cbac localhost:389 (not connected) base="dc=acme,dc=com", 
-       bound as=anonymous, schema=(schema not loaded)>
+<?example { language: ruby, caption: "Fetching a directory." } ?>
+$ irb -rtreequel -rubygems
+
+irb> dir = Treequel.directory
+# => #<Treequel::Directory:0x69cbac localhost:389 (not connected) base="dc=acme,dc=com", 
+#      bound as=anonymous, schema=(schema not loaded)>
 <?end ?>
 
-h2. Branches
+The @.directory@ method has some reasonable defaults, so if your directory is running on localhost, you want to connect using @TLS@ on the default port, and bind anonymously, this will be all you need. 
 
-Once you have a directory, you can fetch entries from the directory hierarchy by traversing <abbr title="relative distinguished name">RDN</abbr>s. A traversal is accomplished by calling a method with the same name as the attribute half of the @RDN@ you want to traverse, and passing the desired value as the only argument to that method. Doign so yields a <?api "Branch":Treequel::Branch ?>, which is a wrapper around the resulting @DN@. The resulting @DN@ doesn't necessarily need to map to an extent entry in the directory. For instance, if you had an @OU@ for people called @People@, you could fetch a @Branch@ for it like so:
+For anything other than testing, though, it's likely you'll want to control the connection parameters a bit more than that. There are two options for doing this: via an "LDAP URL":http://tools.ietf.org/html/rfc4516, or with a @Hash@ of options.
 
-<?example { language: ruby, caption: "Fetching a branch ou=people.", testable: false } ?>
-  irb> people = $dir.ou( :people )
-  => #<Treequel::Branch:0x19a76d4 ou=people,dc=acme,dc=com @ localhost:389 
-      (dc=acme,dc=com, tls, anonymous) entry=nil>
-  irb> people.dn
-  => "ou=people,dc=acme,dc=com"
+h3(#connect-ldap-url). Connecting With an LDAP URL
+
+The LDAP URL format can contain quite a lot of specific instructions, but @Treequel::Directory@ only uses the scheme, host, port, and base DN parts:
+
+<?example { language: ruby, caption: "Fetching a directory by URL." } ?>
+irb> dir = Treequel.directory( 'ldap://ldap.andrew.cmu.edu/dc=cmu,dc=edu' )
+# => #<Treequel::Directory:0x4f052e ldap.andrew.cmu.edu:389 (not connected) base="dc=cmu,dc=edu", 
+#      bound as=anonymous, schema=(schema not loaded)>
 <?end ?>
 
-Then you can fetch the branch for individuals by fetching their branch by calling the @RDN@ method, too:
+It will also use the (deprecated) @user:pass@ part of the URL, if present, and use them to bind to the directory. See "the section on binding":#binding for details.
 
-<?example { language: ruby, caption: "Fetching a branch for uid=mgranger,ou=people.", testable: false } ?>
-  irb> me = people.uid( :mgranger )
-  => #<Treequel::Branch:0x19a4970 uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389
-      (dc=acme,dc=com, tls, anonymous) entry=nil>
-  irb> me.dn
-  => "uid=mgranger,ou=people,dc=laika,dc=com"
+h3(#connect-options-hash). Connecting With an Options Hash
+
+Creating a directory with an options hash allows more fine-grained control over the connection and binding parameters. It's the same as the hash supported by <?api Treequel::Directory ?>'s constructor:
+
+- @:host@ := The LDAP host to connect to.
+- @:port@ := The port to connect to.
+- @:connect_type@ := The type of connection to establish. Must be one of @:plain@, @:tls@, or @:ssl@.
+- @:base@ := The base DN of the directory.
+- @:binddn@ := The DN of the user to bind as.
+- @:pass@ := The password to use when binding.
+
+Any values which you don't provide will default to the values in @Treequel::Directory::DEFAULT_OPTIONS@:
+
+<?example { language: ruby, caption: "Fetching a directory with an options hash." } ?>
+irb> dir = Treequel.directory( :host => 'localhost', :base => 'dc=acme,dc=com' )
+# => => #<Treequel::Directory:0x4f2586 localhost:389 (not connected) base="dc=acme,dc=com", 
+#         bound as=anonymous, schema=(schema not loaded)>
 <?end ?>
 
-A @Branch@ can be 
+h3(#mixing-url-and-options-hash). Connecting with a URL and an Options Hash
 
-<?example { language: ruby, caption: "Fetching an attribute.", testable: false } ?>
-  irb> me[:gecos]
-  => "Michael Granger"
+You can also mix the two connection styles, allowing you to still use a compact URL, but set the @connection_type@ explicitly, e.g.:
+
+<?example { language: ruby, caption: "Using both a URL and options." } ?>
+irb> dir = Treequel.directory( 'ldap://localhost/dc=acme,dc=com', :connect_type => :plain )
+# => #<Treequel::Directory:0x4a0844 localhost:389 (not connected) base="dc=acme,dc=com", 
+#         bound as=anonymous, schema=(schema not loaded)>
 <?end ?>
 
-A convenient way to look at a branch's entry is via its @ldif@ string:
 
-<?example { language: ruby, caption: "Viewing an entry as LDIF.", testable: false } ?>
-  irb> puts me.to_ldif
-	dn: uid=mgranger,ou=people,dc=acme,dc=com
-	gidNumber: 200
-	cn: Michael Granger
-	l: Portland, OR
-	givenName: Michael
-	title: Lead Software Developer
-	gecos: Michael Granger
-	homeDirectory: /home/m/mgranger
-	uid: mgranger
-	mail: mgranger@acme.com
-	sn: Granger
-	mobile: +1 9075551212
-	loginShell: /bin/base
-	uidNumber: 2053
-	objectClass: inetOrgPerson
-	objectClass: organizationalPerson
-	objectClass: person
-	objectClass: top
-	objectClass: posixAccount
-	objectClass: shadowAccount
-	objectClass: apple-user
-	homePhone: +1 9075551212
-	departmentNumber: 18
+h2(#binding). Binding to the Directory
+
+If you don't specify a user @DN@ and password, a new @Directory@ object will be bound anonymously, which is usually sufficient for reading the public attributes of records, but it's likely that you'll need to bind as a particular user to write to the directory or access protected attributes:
+
+<?example { language: ruby, caption: "Binding to the directory as a particular user." } ?>
+irb> dir.bind( 'uid=mgranger,ou=people,dc=laika,dc=com', 'my_password' )
+<?end ?>
+
+You can also bind to the directory using a URL that contains _authority_ information; this is not recommended for production use, as it requires that the password be in plain text in the connection information, but it's supported for convenience's sake:
+
+<?example { language: ruby, caption: "Fetching a directory by URL with automatic binding." } ?>
+irb> url = 'ldap://cn=user,dc=acme,dc=com:my_password@localhost/dc=acme,dc=com'
+irb> dir = Treequel.directory( url )
+# => #<Treequel::Directory:0x4f052e localhost:389 (not connected) base="dc=acme,dc=com", 
+#      bound as="cn=user,dc=acme,dc=com", schema=(schema not loaded)>
+<?end ?>
+
+h2(#rebinding). Binding With A Block
+
+If you'd rather keep the connection bound anonymously, but want to rebind for just a few operations, you can do that by calling the @#bound_as@ method and passing it a block that contains the operations which require more privileges:
+
+
+<?example { language: ruby, caption: "Executing a block with a different binding." } ?>
+irb> dir.bound_as( 'cn=admin,dc=acme,dc=com', 's00per:sekrit' ) { dir }
+# => #<Treequel::Directory:0x4f052e localhost:389 (not connected) base="dc=acme,dc=com", 
+#      bound as="cn=admin,dc=acme,dc=com", schema=(schema not loaded)>
+<?end ?>
+
+There are a bunch of other things you can do with the Directory object, but in most case you won't interact with it directly. To interact with the entries in the directory, you'll probably want to start with a <?api Treequel::Branch ?>
+
+h2(#branches). Branches
+
+Once you have a directory, you can fetch entries from the directory hierarchy by traversing the directory hierarchy using <abbr title="relative distinguished name">RDN</abbr>s. A traversal is accomplished by calling a method with the same name as the attribute half of the @RDN@ you want to traverse, and passing the desired value as the only argument to that method. Doing so yields a <?api "Branch":Treequel::Branch ?>, which is a wrapper around the resulting @DN@. The resulting @DN@ doesn't necessarily need to map to an extent entry in the directory. For instance, my company's directory has people organized under a top-level @OU@ called "people", so I can fetch a @Branch@ for it like so:
+
+<?example { language: ruby, caption: "Fetching a branch ou=people." } ?>
+irb> people = dir.ou( :people )
+# => #<Treequel::Branch:0x19a76d4 ou=people,dc=acme,dc=com @ localhost:389 
+#     (dc=acme,dc=com, tls, anonymous) entry=nil>
+irb> people.dn
+# => "ou=people,dc=acme,dc=com"
+<?end ?>
+
+Then you can fetch branches for individuals under @ou=People@ by calling their @RDN@ method, too. Since I happen to know that all of my company's People are keyed by @uid@, everyone's @RDN@ will be @uid=«something»@:
+
+<?example { language: ruby, caption: "Fetching a branch for uid=mgranger,ou=people." } ?>
+irb> me = people.uid( :mgranger )
+# => #<Treequel::Branch:0x19a4970 uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389
+#     (dc=acme,dc=com, tls, anonymous) entry=nil>
+irb> me.dn
+# => "uid=mgranger,ou=people,dc=laika,dc=com"
+<?end ?>
+
+h3(#branch-attribute-accessors). Reading and Writing Attributes
+
+Once you have a the Branch for the entry you need, fetching its attributes works just like a Hash:
+
+<?example { language: ruby, caption: "Fetching an attribute." } ?>
+irb> me[:gecos]
+# => "Michael Granger"
+<?end ?>
+
+If you have write privileges on the entry, you can set attributes the same way:
+
+<?example { language: ruby, caption: "Fetching an attribute." } ?>
+irb> me = people.uid( :mgranger )
+irb> dir.bound_as( me, 'password' ) { me[:gecos] = "Pasoquod Singular" }
+irb> me[:gecos] 
+# => "Pasoquod Singular"
+<?end ?>
+
+h3(#branch-ldif). Getting a Branch's LDIF
+
+A convenient way to look at a branch's entry is via its "LDIF":http://en.wikipedia.org/wiki/LDAP_Data_Interchange_Format string:
+
+<?example { language: ruby, caption: "Viewing an entry as LDIF." } ?>
+irb> puts me.to_ldif
+# dn: uid=mgranger,ou=people,dc=acme,dc=com
+# gidNumber: 200
+# cn: Michael Granger
+# l: Portland, OR
+# givenName: Michael
+# title: Lead Software Developer
+# gecos: Michael Granger
+# homeDirectory: /home/m/mgranger
+# uid: mgranger
+# mail: mgranger@acme.com
+# sn: Granger
+# mobile: +1 9075551212
+# loginShell: /bin/base
+# uidNumber: 2053
+# objectClass: inetOrgPerson
+# objectClass: organizationalPerson
+# objectClass: person
+# objectClass: top
+# objectClass: posixAccount
+# objectClass: shadowAccount
+# objectClass: apple-user
+# homePhone: +1 9075551212
+# departmentNumber: 18
 <?end?>	
 
 h2. Authors

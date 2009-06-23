@@ -1,11 +1,10 @@
 /* 
- *	  Manual Stylesheet
+ *	Redleaf Manual Stylesheet
  *	$Id$
- *	Time-stamp: <06-Sep-2004 15:09:35 ged>
+ *  
  */
 
-/* Start with Blueprint screen */
-/*@import url(screen.css);*/
+/* Import the code-highlighting styles derived from the 'deveiate' TextMate theme */
 @import url(deveiate.css);
 
 /* Uses the "Brazilian Red Cap" Palette from COLOURlovers:
@@ -28,13 +27,15 @@
  * 
  */
 
+
+/* @group Elements */
 body {
 	margin: 0;
-	padding: 2em 4em;
-	font: 14px/1.2em "Helvetica Neue", Helvetica, Tahoma, sans-serif;
+	font: 14px/1.2em "Gill Sans", Helvetica, Tahoma, sans-serif;
 	background: #f3f3f3;
 	color: #333;
 	border-left: 5px solid #ca2f1b;
+	min-width: 800px;
 }
 
 h1,h2,h3,h4,h5,h6 {
@@ -79,6 +80,18 @@ a {
 	color: #791707;
 	text-decoration: none;
 	border-bottom: 1px dotted;
+}
+a + img {
+	border: 0;
+}
+h1 a,
+h2 a,
+h3 a,
+h4 a,
+h5 a,
+h6 a {
+	border: 0;
+	color: inherit;
 }
 
 dl {
@@ -127,16 +140,161 @@ td, th {
 	border: 1px solid #484860;
 }
 
-div.screenshot {
-	margin: 1em 3em;
+/* @end */
+
+
+/* @group IDed Elements */
+#intro-header {
+	text-align: center;
 }
-div.screenshot img {
+
+#auto-toc {
+	margin: 0;
+	margin-left: 2em;
+	margin-bottom: 2em;
+	float: right;
+	border: 1px solid #484860;
+	background: white;
+	-webkit-box-shadow: #ccc 3px 3px 5px;
 }
+#auto-toc ul:before {
+	content: "Table of Contents";
+}
+#auto-toc ul {
+	margin: 0;
+	padding: 0.5em 1em;
+}
+#auto-toc li {
+	line-height: 1em;
+	padding: 0;
+	margin-left: 1.5em;
+}
+
+#header {
+	position: relative;
+	padding: 0.25em 15em 0.25em 0;
+	border-bottom: 1px solid #787890;
+	background: #484860 url(../images/shadows/smallest-30-down.png) repeat-x 0 bottom;
+}
+#header h1 {
+	display: inline;
+	font-size: 1.75em;
+	padding: 0.2em 1em;
+	background: #f3f3f3;
+	font-weight: bold;
+	-webkit-border-top-right-radius: 1em;
+	-moz-border-radius-topright: 1em;
+}
+#header div {
+	display: inline;
+}
+#tagline {
+	position: absolute;
+	right: 1em;
+	top: 0.5em;
+	font-size: 0.75em;
+	color: #f3f3f3;
+}
+
+#header .index {
+	display: inline;
+}
+#header .index h2 {
+	display: inline;
+	font-size: 1.5em;
+	color: white;
+	text-shadow: none;
+	padding: 2px 0.5em;
+}
+
+#header .index ul {
+	list-style-type: none;
+	padding: 0;
+	display: none;
+}
+
+#header .index ul.current-index-section {
+	position: absolute;
+	display: inline;
+	left: 0;
+	top: 1em;
+	margin-left: 11em;
+	font-weight: bold;
+}
+#header .index ul li {
+	font-size: 0.8em;
+	display: inline;
+	padding: 0 0.5em;
+}
+#header .index ul li + li {
+	border-left: 1px solid #999;
+	padding-left: 0.75em;
+}
+#header .index a {
+	color: inherit;
+}
+
+#content {
+	position: relative;
+	margin: 3em 3em 6em;
+}
+
+#content #version {
+	margin: 0;
+	position: absolute;
+	top: 0;
+	right: 0.5em;
+	font-size: 0.75em;
+	color: #999;
+}
+
+#footer {
+	margin: 2em 0 0;
+	border-top: 1px solid #c0c0d5;
+	padding: 0;
+	font-size: 0.75em;
+	position: relative;
+}
+
+#footer p {
+	margin: 0;
+}
+#footer .copyright {
+	position: absolute;
+	left: 0;
+	top: 0.5em;
+}
+#footer .svnid {
+	margin: 0.5em auto;
+	text-align: center;
+}
+#footer .timestamp {
+	position: absolute;
+	right: 0;
+	top: 0.5em;
+}
+
+/* @end */
+
 
 /* @group Generic Classes */
 .todo {
 }
+
+p.diagram {
+	text-align: center;
+	margin-bottom: 0;
+	clear: both;
+}
+p.caption {
+	text-align: center;
+	margin: 0 auto 1.5em;
+	font-size: 0.9em;
+	width: 50%;
+	font-weight: bold;
+}
 /* @end Generic Classes */
+
 
 /* @group Examples */
 div.caption {
@@ -144,21 +302,126 @@ div.caption {
 	text-align: center;
 	padding: 0.25em 0;
 	border-top: 1px solid #787890;
+	overflow: hidden;
 }
 div.example {
+	max-width: 60em;
 	border: 3px solid #787890;
 	margin: 0.5em 1em;
 	padding: 0;
 	font: 14px Monaco, Profont, "Andale Mono", mono;
+	overflow: hidden;
 }
 div.example pre {
 	line-height: 1.2em;
 	margin: 0;
 	padding: 0;
+	overflow: hidden;
+}
+div.example pre:hover {
+	overflow: auto;
 }
 
 pre.deveiate .line-numbers {
 	background-color: #474860;
 	color: #f3f3f3;
+	font-size: 0.8em;
+	padding: 0.3em 0;
+	letter-spacing: -0.1em;
 }
+pre.console-output {
+	
+}
+
+/* @end Examples */
+
+
+
+/* @group Template node-display classes */
+.node-tree {
+    border: 1px dotted #333;
+    margin: 2px;
+    padding: 4px;
+    background: #999;
+}
+
+.node-subtree {
+    border: 1px dotted #666;
+    padding: 4px 8px;
+    margin: 1px 4px;
+    background: #CCC;
+}
+
+.node-subtree-head {
+    color: #333;
+}
+
+.node {
+    border: 1px solid black;
+    margin-bottom: 4px;
+}
+
+.node-head {
+    border-bottom: 1px solid black;
+    font-weight: bold;
+    font-variant: small-caps;
+    padding: 2px;
+    color: black;
+    background: #f3f3f3;
+}
+
+.node-body {
+    background: #e3e3e3;
+    padding: 2px 4px 4px 4px;
+}
+
+.node-subtemplate {
+    background: #999;
+    border: 1px dotted #333;
+    margin: 2px;
+    padding: 4px;
+}
+
+.text-node-body {
+    background: #CCC;
+    font-family: "Andale Mono", "ProFont", "Monotype.com", fixed;
+}
+.call-directive-node-body,
+.attr-directive-node-body { background: #CDC; }
+.escape-directive-node-body { background: #DCC; }
+.yield-directive-node-body { background: #DDC; }
+.if-directive-node-body,
+.else-directive-node-body,
+.elsif-directive-node-body { background: #BCD; }
+/* @end */
+
+/* @group Template syntax-highlighted html classes */
+.highlighted-source {
+    border: 1px dotted #333;
+    margin: 2px;
+    padding: 10px;
+    background: #ccc;
+}
+
+.token {
+    font-family: "Vera Sans Mono", "Andale Mono", fixed;
+    color: #333;
+}
+
+.text-token { color: #666; }
+.comment-token { color: #666; background: #cdc; }
+.doc-type-token { color: #226; background: #ccd; }
+
+.tag-token { color: #242; background: #b9b9b9; }
+.tag-token-name { color: #272; }
+.tag-token-attr-name { color: #262; }
+.tag-token-attr-value { color: #333; }
+
+.processing-instruction-token,
+.tag-attr-directive {
+    color: #933;
+    background: #dcc;
+    font-weight: bold;
+}
+/* @end */
 

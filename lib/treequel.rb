@@ -98,9 +98,18 @@ module Treequel
 	end
 
 	### Create a Treequel::Directory object, either from a Hash of options or an LDAP URL.
-	def self::directory( options={} )
-		if options.is_a?( String ) || options.is_a?( URI )
-			options = self.make_options_from_uri( options )
+	def self::directory( *args )
+		options = {}
+
+		args.each do |arg|
+			case arg
+			when String, URI
+				options.merge!( self.make_options_from_uri(arg) )
+			when Hash
+				options.merge!( arg )
+			else
+				raise ArgumentError, "unknown directory option %p: expected URL or Hash"
+			end
 		end
 
 		return Treequel::Directory.new( options )

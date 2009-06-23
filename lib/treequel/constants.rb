@@ -5,9 +5,9 @@ require 'treequel'
 
 
 ### A collection of constants that are shared across the library
-module Treequel::Constants # :nodoc:
+module Treequel::Constants
 
-	### Scope constants that map symbolic names to LDAP integer values. Valid
+	### Mapping of various symbolic names to LDAP integer LDAP_SCOPE_* values. Valid
 	### values are:
 	###
 	###   :onelevel, :one, :base, :subtree, :sub
@@ -23,6 +23,8 @@ module Treequel::Constants # :nodoc:
 
 	### OIDs of RFC values
 	module OIDS
+
+		# :stopdoc:
 
 		### Syntaxes
 		RDN_SYNTAX                         = '1.2.36.79672281.1.5.0'
@@ -67,6 +69,8 @@ module Treequel::Constants # :nodoc:
 
 	### A collection of Regexps to match various LDAP values
 	module Patterns
+
+		# :stopdoc:
 
 		# Schema-parsing patterns based on the BNF in 
 		# RFC 4512 (http://tools.ietf.org/html/rfc4512#section-4.1.1)
