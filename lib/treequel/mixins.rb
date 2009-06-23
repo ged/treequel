@@ -27,9 +27,17 @@ module Treequel # :nodoc:
 			error_frame = caller(4)[0]
 			file, line = error_frame.split( ':', 2 )
 
-			code = <<-END_CODE
-			lambda {|*args| self.#{delegate}.#{name}(*args) }
-			END_CODE
+			# Ruby can't parse obj.method=(*args), so we have to special-case setters...
+			if name =~ /(\w+)=$/
+				name = $1
+				code = <<-END_CODE
+				lambda {|*args| self.#{delegate}.#{name} = *args }
+				END_CODE
+			else
+				code = <<-END_CODE
+				lambda {|*args| self.#{delegate}.#{name}(*args) }
+				END_CODE
+			end
 
 			return eval( code, nil, file, line.to_i )
 		end
@@ -41,9 +49,17 @@ module Treequel # :nodoc:
 			error_frame = caller(4)[0]
 			file, line = error_frame.split( ':', 2 )
 
-			code = <<-END_CODE
-			lambda {|*args| #{ivar}.#{name}(*args) }
-			END_CODE
+			# Ruby can't parse obj.method=(*args), so we have to special-case setters...
+			if name =~ /(\w+)=$/
+				name = $1
+				code = <<-END_CODE
+				lambda {|*args| #{ivar}.#{name} = *args }
+				END_CODE
+			else
+				code = <<-END_CODE
+				lambda {|*args| #{ivar}.#{name}(*args) }
+				END_CODE
+			end
 
 			return eval( code, nil, file, line.to_i )
 		end
