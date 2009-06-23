@@ -76,10 +76,10 @@ class Treequel::Directory
 	###   The type of connection to establish. Must be one of +:plain+, +:tls+, or +:ssl+.
 	### [base]::
 	###   The base DN of the directory.
-	### [user]::
-	###   The base DN of the directory.
+	### [binddn]::
+	###   The DN of the user to bind as.
 	### [pass]::
-	###   The base DN of the directory.
+	###   The password to use when binding.
 	def initialize( options={} )
 		options         = DEFAULT_OPTIONS.merge( options )
 
@@ -156,6 +156,8 @@ class Treequel::Directory
 	### it will be executed with the receiver bound, then returned to its previous state when
 	### the block exits.
 	def bind( user_dn, password )
+		user_dn = user_dn.dn if user_dn.respond_to?( :dn )
+
 		self.log.debug "Binding with connection %p as: %s" % [ self.conn, user_dn ]
 		self.conn.bind( user_dn.to_s, password )
 		@bound_as = user_dn.to_s
@@ -168,7 +170,7 @@ class Treequel::Directory
 		raise LocalJumpError, "no block given" unless block_given?
 		previous_bind_dn = @bound_as
 		self.with_duplicate_conn do
-			self.bind( user_dn.to_s, password )
+			self.bind( user_dn, password )
 			yield
 		end
 	ensure

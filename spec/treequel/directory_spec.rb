@@ -152,6 +152,12 @@ describe Treequel::Directory do
 			@dir.bind( TEST_BIND_DN, TEST_BIND_PASS )
 		end
 
+		it "can bind with the DN of the given Branch (or a quack-alike) and password" do
+			branch = stub( "branch", :dn => TEST_BIND_DN )
+			@conn.should_receive( :bind ).with( TEST_BIND_DN, TEST_BIND_PASS )
+			@dir.bind( branch, TEST_BIND_PASS )
+		end
+
 		it "can temporarily bind as another user for the duration of a block" do
 			dupconn = mock( "duplicate connection" )
 			@conn.should_receive( :dup ).and_return( dupconn )
