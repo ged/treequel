@@ -43,18 +43,26 @@ describe Treequel::Connection do
 
 
 	before( :each ) do
-		@options = {
-			:host         => TEST_HOST,
-			:port         => TEST_PORT,
-			:base         => TEST_BASE_DN,
-			:connect_type => :plain,
-		}
 	end
 
 
-	it "delegates methods to an underlying connection object"
+	it "delegates methods to an underlying connection object" do
+		ldapconn = mock( "LDAP::Conn object" )
+		LDAP::SSLConn.should_receive( :new ).with( TEST_HOST, TEST_PORT, true ).
+			and_return( ldapconn )
+		ldapconn.should_receive( :set_option ).with( LDAP::LDAP_OPT_PROTOCOL_VERSION, 3 )
+		ldapconn.should_receive( :root_dse ).and_return( TEST_DSE )
+
+		conn = Treequel::Connection.new( TEST_HOST, TEST_PORT )
+		conn.root_dse.should == TEST_DSE
+	end
+
+
 	it "re-raises plain RuntimeErrors raised during delegated calls as more-interesting " +
-	   "exception types"
+	   "exception types" do
+		
+	end
+
 	it "attempts to re-establish its connection if the current one indicates it's no longer valid"
 	it "stops trying to re-establish a connection if it's tried too many times within a certain " +
 	   "time period"

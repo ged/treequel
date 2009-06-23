@@ -61,6 +61,10 @@ class Treequel::Directory
 	}
 
 
+	#################################################################
+	###	C L A S S   M E T H O D S
+	#################################################################
+
 	### Create a new Treequel::Directory with the given +options+. Options is a hash with one
 	### or more of the following key-value pairs:
 	###
