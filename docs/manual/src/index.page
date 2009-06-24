@@ -81,7 +81,7 @@ h2(#binding). Binding to the Directory
 If you don't specify a user @DN@ and password, a new @Directory@ object will be bound anonymously, which is usually sufficient for reading the public attributes of records, but it's likely that you'll need to bind as a particular user to write to the directory or access protected attributes:
 
 <?example { language: ruby, caption: "Binding to the directory as a particular user." } ?>
-irb> dir.bind( 'uid=mgranger,ou=people,dc=laika,dc=com', 'my_password' )
+irb> dir.bind( 'uid=mgranger,ou=people,dc=acme,dc=com', 'my_password' )
 <?end ?>
 
 You can also bind to the directory using a URL that contains _authority_ information; this is not recommended for production use, as it requires that the password be in plain text in the connection information, but it's supported for convenience's sake:
@@ -125,7 +125,7 @@ irb> me = people.uid( :mgranger )
 # => #<Treequel::Branch:0x19a4970 uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389
 #     (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> me.dn
-# => "uid=mgranger,ou=people,dc=laika,dc=com"
+# => "uid=mgranger,ou=people,dc=acme,dc=com"
 <?end ?>
 
 h3(#branch-attribute-accessors). Reading and Writing Attributes
