@@ -309,12 +309,13 @@ class Treequel::Branch
 
 
 	### Make the changes to the entry specified by the given +attributes+.
-	def modify( attributes )
+	def merge( attributes )
 		self.directory.modify( self, attributes )
 		self.clear_caches
 
 		return true
 	end
+	alias_method :modify, :merge
 
 
 	### Delete the entry associated with the branch from the directory.

@@ -347,7 +347,7 @@ describe Treequel::Branch do
 		end
 
 
-		it "can modify its entry's attributes" do
+		it "can modify its entry's attributes en masse by merging a Hash" do
 			attributes = {
 				:displayName => 'Chilly T. Penguin',
 				:description => "A chilly little penguin.",
@@ -355,7 +355,7 @@ describe Treequel::Branch do
 
 			@directory.should_receive( :modify ).with( @branch, attributes )
 
-			@branch.modify( attributes )
+			@branch.merge( attributes )
 		end
 
 
@@ -391,7 +391,6 @@ describe Treequel::Branch do
 
 		### Attribute reader
 		describe "index fetch operator" do
-
 
 			it "fetches a multi-value attribute as an Array of Strings" do
 				@schema.should_receive( :attribute_types ).and_return({ :glumpy => @attribute_type })
@@ -482,7 +481,9 @@ describe Treequel::Branch do
 				@branch[ :glorpy ].should == :secondval
 			end
 		end
+
 	end
+
 end
 
 
