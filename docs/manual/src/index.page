@@ -44,7 +44,7 @@ irb> dir = Treequel.directory( 'ldap://ldap.andrew.cmu.edu/dc=cmu,dc=edu' )
 #      bound as=anonymous, schema=(schema not loaded)>
 <?end ?>
 
-It will also use the (deprecated) @user:pass@ part of the URL, if present, and use them to bind to the directory. See "the section on binding":#binding for details.
+It will also use the user and password from a ==<code>user:pass@host</code>==-style URL, if present, and use them to immediately bind to the directory. See "the section on binding":#binding for details.
 
 h3(#connect-options-hash). Connecting With an Options Hash
 
@@ -95,8 +95,7 @@ irb> dir = Treequel.directory( url )
 
 h2(#rebinding). Binding With A Block
 
-If you'd rather keep the connection bound anonymously, but want to rebind for just a few operations, you can do that by calling the @#bound_as@ method and passing it a block that contains the operations which require more privileges:
-
+If you want to rebind as a different user for just a few operations, you can do that by calling the @#bound_as@ method and passing it a block that contains the operations which require more privileges:
 
 <?example { language: ruby, caption: "Executing a block with a different binding." } ?>
 irb> dir.bound_as( 'cn=admin,dc=acme,dc=com', 's00per:sekrit' ) { dir }
@@ -104,11 +103,17 @@ irb> dir.bound_as( 'cn=admin,dc=acme,dc=com', 's00per:sekrit' ) { dir }
 #      bound as="cn=admin,dc=acme,dc=com", schema=(schema not loaded)>
 <?end ?>
 
-There are a bunch of other things you can do with the Directory object, but in most case you won't interact with it directly. To interact with the entries in the directory, you'll probably want to start with a <?api Treequel::Branch ?>
+Once the block returns, the binding reverts to what it previously was.
+
+There are a bunch of other things you can do with the Directory object, but in most case you won't interact with it directly except as the root of the directory. To interact with the entries in the directory, you'll probably want to start with a <?api Treequel::Branch ?>
 
 h2(#branches). Branches
 
-Once you have a directory, you can fetch entries from the directory hierarchy by traversing the directory hierarchy using <abbr title="relative distinguished name">RDN</abbr>s. A traversal is accomplished by calling a method with the same name as the attribute half of the @RDN@ you want to traverse, and passing the desired value as the only argument to that method. Doing so yields a <?api "Branch":Treequel::Branch ?>, which is a wrapper around the resulting @DN@. The resulting @DN@ doesn't necessarily need to map to an extent entry in the directory. For instance, my company's directory has people organized under a top-level @OU@ called "people", so I can fetch a @Branch@ for it like so:
+Once you have a directory, you can fetch entries from the directory hierarchy by traversing the directory hierarchy using Branches. A Branch (<?api Treequel::Branch ?>) is just a wrapper around a DN. The wrapped DN doesn't necessarily need to map to an extent entry in the directory; the entry behind it isn't fetched until it's needed for something. 
+
+You can get a Branch for a DN in several ways. The easiest, once you have a @Directory@, is to use the <abbr title="Relative Distinguished Name">RDN</abbr> from the base of the directory to fetch it. You can fetch a @Branch@ from a @Directory@ or any other @Branch@ by calling a method on it with the same name as the attribute half of the @RDN@ you want to traverse, and passing the desired value as the only argument to that method. 
+
+For instance, my company's directory has people organized under a top-level <abbr title="Organizational Unit">OU</abbr> called "people", so I can fetch a @Branch@ for it like so:
 
 <?example { language: ruby, caption: "Fetching a branch ou=people." } ?>
 irb> people = dir.ou( :people )
@@ -118,7 +123,7 @@ irb> people.dn
 # => "ou=people,dc=acme,dc=com"
 <?end ?>
 
-Then you can fetch branches for individuals under @ou=People@ by calling their @RDN@ method, too. Since I happen to know that all of my company's People are keyed by @uid@, everyone's @RDN@ will be @uid=«something»@:
+Then you can fetch branches for individuals under @ou=People@ by calling their @RDN@ method, too. Since I happen to know that all of my company's People are keyed by @uid@, everyone's @RDN@ from @ou=People@ will be @uid=«something»@:
 
 <?example { language: ruby, caption: "Fetching a branch for uid=mgranger,ou=people." } ?>
 irb> me = people.uid( :mgranger )
@@ -127,6 +132,35 @@ irb> me = people.uid( :mgranger )
 irb> me.dn
 # => "uid=mgranger,ou=people,dc=acme,dc=com"
 <?end ?>
+
+You can also create a Branch from its full DN:
+
+<?example { language: ruby, caption: "Fetching a branch using its DN." } ?>
+irb(main):005:0> me = Treequel::Branch.new_from_dn( 'uid=mgranger,ou=people,dc=acme,dc=com', dir )
+# => #<Treequel::Branch:0x12b676c uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389 
+#      (dc=acme,dc=com, tls, anonymous) entry=nil>
+<?end ?>
+
+or from a raw @LDAP::Entry@ object:
+
+<?example { language: ruby, caption: "Fetching a branch using its DN." } ?>
+irb> entries = dir.conn.search2( 'ou=people,dc=acme,dc=com', LDAP::LDAP_SCOPE_SUBTREE, 
+                                 '(uid=mgranger)' )
+irb> me = Treequel::Branch.new_from_entry( entries.first, dir )
+# => #<Treequel::Branch:0x129dd70 uid=mgranger,ou=People,dc=acme,dc=com @ localhost:389 
+#      (dc=acme,dc=com, tls, anonymous) entry={...}>
+<?end ?>
+
+You can also, of course, create Branches using the plain @::new@ constructor:
+
+<?example { language: ruby, caption: "Fetching a branch for uid=mgranger,ou=people." } ?>
+irb> dir = Treequel.directory
+irb> me = Treequel::Branch.new( dir, :uid, 'mgranger', 'ou=people,dc=acme,dc=com' )
+# => #<Treequel::Branch:0x13c408c uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389 
+#      (dc=acme,dc=com, tls, anonymous) entry=nil>
+<?end ?>
+
+Branches are also returned as the results from a search, but "that will be covered a little later":#searching.
 
 h3(#branch-attribute-accessors). Reading and Writing Attributes
 
@@ -139,12 +173,58 @@ irb> me[:gecos]
 
 If you have write privileges on the entry, you can set attributes the same way:
 
-<?example { language: ruby, caption: "Fetching an attribute." } ?>
+<?example { language: ruby, caption: "Setting an attribute." } ?>
 irb> me = people.uid( :mgranger )
 irb> dir.bound_as( me, 'password' ) { me[:gecos] = "Pasoquod Singular" }
 irb> me[:gecos] 
 # => "Pasoquod Singular"
 <?end ?>
+
+Changes to the branch are written to the directory as soon as they're made, so if you have several attributes to change, you'll likely want to make them all at once for efficiency.
+
+h3(#branch-merging). Modifying Several Attributes At Once
+
+You can modify several attributes at once on the Branch via the @#merge@ method:
+
+<?example { language: ruby, caption: "Merging attributes." } ?>
+irb> me.merge( :gecos => 'Michael Granger', :uidNumber => 514 )
+<?end ?>
+
+h3(#heirarchical-traversal). Parents and Children
+
+Each branch can also fetch its parent and its children:
+
+<?example { language: ruby, caption: "Fetching a branch's parent and its children." } ?>
+irb(main):022:0> marketing_hosts = dir.dc( :marketing ).ou( :hosts )
+# => #<Treequel::Branch:0x135ad94 ou=hosts,dc=marketing,dc=acme,dc=com @ localhost:389 
+#      (dc=acme,dc=com, tls, anonymous) entry=nil>
+irb(main):023:0> marketing_hosts.parent
+# => #<Treequel::Branch:0x13508d0 dc=marketing,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, 
+#     anonymous) entry=nil>
+irb(main):024:0> marketing_hosts.children.map {|b| b.dn }
+# => ["cn=rockbox,ou=Hosts,dc=marketing,dc=acme,dc=com", 
+#     "cn=bone,ou=Hosts,dc=marketing,dc=acme,dc=com"]
+<?end ?>
+
+* parent
+* children
+
+* copy
+* create
+* delete
+* move
+
+* entry
+
+* may_oids
+* may_attribute_types
+* must_oids
+* must_attribute_types
+* object_classes
+* valid_attribute?
+* valid_attribute_oids
+* valid_attribute_types
+
 
 h3(#branch-ldif). Getting a Branch's LDIF
 
