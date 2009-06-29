@@ -370,6 +370,24 @@ describe Treequel::Filter do
 			filter.to_s.should == '(uid>=2000)'
 		end
 
+		it "supports Sequel expressions in ANDed subexpressions" do
+			filter = Treequel::Filter.new( :and, [:uid >= 1024], [:uid <= 65535] )
+			filter.should be_a( Treequel::Filter )
+			filter.to_s.should == '(&(uid>=1024)(uid<=65535))'
+		end
+
+		it "advises user to use '>=' instead of '>' in expressions" do
+			expect {
+				Treequel::Filter.new( :uid > 1024 )
+			}.to raise_error( Treequel::ExpressionError, /greater-than-or-equal/i )
+		end
+
+		it "advises user to use '<=' instead of '<' in expressions" do
+			expect {
+				Treequel::Filter.new( :activated < Time.today )
+			}.to raise_error( Treequel::ExpressionError, /less-than-or-equal/i )
+		end
+
 		it "supports the 'LIKE' expression syntax with a single string argument" do
 			filter = Treequel::Filter.new( :cn.like('mar*n') )
 			filter.should be_a( Treequel::Filter )
