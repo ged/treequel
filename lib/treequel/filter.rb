@@ -388,6 +388,8 @@ class Treequel::Filter
 	UNSUPPORTED_SEQUEL_FILTERTYPES = {
 		:'~*' => %{LDAP doesn't support Regex filters},
 		:'~'  => %{LDAP doesn't support Regex filters},
+		:>    => %{LDAP doesn't support "greater-than"; use "greater-than-or-equal-to" (>=) instead},
+		:<    => %{LDAP doesn't support "less-than"; use "less-than-or-equal-to" (<=) instead},
 	}
 
 
@@ -440,8 +442,7 @@ class Treequel::Filter
 
 		# [ :attribute ] := '(attribute=*)'
 		when expression.length == 1
-			Treequel.logger.debug "  unary expression -> presence item component"
-			return Treequel::Filter::PresentItemComponent.new( *expression )
+			return self.parse_expression( expression[0] )
 
 		when expression[0].is_a?( Symbol )
 			case expression[1]
@@ -489,6 +490,10 @@ class Treequel::Filter
 			filters = expression.collect {|item| Treequel::Filter.new(item) }
 			return Treequel::Filter::FilterList.new( filters )
 
+		# Collection of subfilter objects
+		when expression.all? {|elem| elem.is_a?(Treequel::Filter) }
+			return Treequel::Filter::FilterList.new( expression )
+
 		else
 			raise Treequel::ExpressionError,
 				"don't know how to turn %p into a filter component" % [ expression ]
@@ -507,16 +512,9 @@ class Treequel::Filter
 			raise "don't know what a %p condition is. I only know about: %p" %
 			 	[ op, LOGICAL_COMPONENTS.keys ]
 
-		filterlist = components.collect do |comp|
-			case comp.first
-			when String, Symbol
-				Treequel::Filter.new( comp )
-			when Treequel::Filter
-				comp
-			else
-				raise Treequel::ExpressionError,
-					"don't know how to turn %p into a %p component" % [ comp, op ]
-			end
+		filterlist = components.collect do |filterexp|
+			Treequel.logger.debug "  making %p into a component" % [ filterexp ]
+			Treequel::Filter.new( filterexp )
 		end.flatten
 
 		return compclass.new( *filterlist )
@@ -545,9 +543,7 @@ class Treequel::Filter
 	def self::parse_sequel_expression( expression )
 		Treequel.logger.debug "  parsing Sequel expression: %p" % [ expression ]
 
-		case expression
-
-		when Sequel::SQL::BooleanExpression
+		if expression.respond_to?( :op )
 			op = expression.op.to_s.downcase.to_sym
 
 			if equivalent = SEQUEL_FILTERTYPE_EQUIVALENTS[ op ]
@@ -557,7 +553,7 @@ class Treequel::Filter
 				if op == :like && value !~ /\*/
 					Treequel.logger.debug \
 						"    turning a LIKE expression with no wildcards into an 'approx' filter"
-					equivalent = :approx 
+					equivalent = :approx
 				end
 
 				return Treequel::Filter::SimpleItemComponent.new( attribute, value, equivalent )
