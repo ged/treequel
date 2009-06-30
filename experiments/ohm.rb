@@ -1,6 +1,28 @@
 #!ruby
 
-require 'treequel/model'
+require 'treequel'
+#require 'treequel/model'
+
+class Treequel::Model
+
+	@branchset = nil
+	class << self; attr_accessor :branchset; end
+
+	def self::inherited( mod )
+		mod.instance_variable_set( :@branchset, nil )
+		super
+	end
+
+	def self::model_branchset( bs )
+		if bs
+			bs = bs.branchset if bs.respond_to?( :branchset )
+			self.branchset = bs
+		end
+
+		return self.branchset
+	end
+end
+
 
 # This is an experiment to see how LDAP entries can be mapped into
 # Ruby object-space. Since LDAP has a freeform, class+mixin-based
@@ -10,14 +32,10 @@ require 'treequel/model'
 # an attempt to model it more faithfully to LDAP's principles.
 
 class Employee < Treequel::Model
-	model_base DIR.ou( :people ) +
-		DIR.dc( :ny ).ou( :people ) +
-		DIR.dc( :la ).ou( :people )
-
-	model_filter :objectClass => 'posixAccount'
+	model_branchset DIR.ou( :people ).filter( :objectClass => 'posixAccount' )
 
 	def_branchset_method( :active ) do
-		self.filter([ :and [:activated >= Time.today, :deactivated <= Time.today] ])
+		self.filter( :activated <= Time.now, :deactivated >= Time.now )
 	end
 
 end

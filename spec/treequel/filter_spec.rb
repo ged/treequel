@@ -384,7 +384,7 @@ describe Treequel::Filter do
 
 		it "advises user to use '<=' instead of '<' in expressions" do
 			expect {
-				Treequel::Filter.new( :activated < Time.today )
+				Treequel::Filter.new( :activated < Time.now )
 			}.to raise_error( Treequel::ExpressionError, /less-than-or-equal/i )
 		end
 
