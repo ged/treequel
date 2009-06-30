@@ -6,7 +6,6 @@ require 'ldap'
 require 'ldap/schema'
 
 require 'treequel'
-require 'treequel/connection'
 require 'treequel/schema'
 require 'treequel/mixins'
 require 'treequel/constants'
@@ -272,13 +271,22 @@ class Treequel::Directory
 				sortfunc
 			]
 		}
-		results = self.conn.search2( base_dn, scope, filter.to_s,
+		results = self.conn.search_ext2( base_dn, scope, filter.to_s,
 			selectattrs, false,
 			timeout_s, timeout_us,
 			sortattr, sortfunc )
 
 		return results.collect do |entry|
 			collectclass.new_from_entry( entry, self )
+		end
+	rescue RuntimeError => err
+		conn = self.conn
+
+		case err.message
+		when /no result returned by search/i
+			raise LDAP::ResultError.new( LDAP.err2string(conn.err) )
+		else
+			raise
 		end
 	end
 
@@ -426,6 +434,8 @@ class Treequel::Directory
 		end
 
 		conn.set_option( LDAP::LDAP_OPT_PROTOCOL_VERSION, 3 )
+		conn.set_option( LDAP::LDAP_OPT_REFERRALS, LDAP::LDAP_OPT_OFF )
+
 		return conn
 	end
 

@@ -359,6 +359,11 @@ describe Treequel::Branch do
 		end
 
 
+		it "knows how to represent its DN as an RFC1781-style UFN" do
+			@branch.to_ufn.should =~ /Hosts, acme\.com/i
+		end
+
+
 		it "knows how to represent itself as LDIF" do
 			@entry.should_receive( :keys ).and_return([ 'description', 'l' ])
 			@entry.should_receive( :[] ).with( 'description' ).

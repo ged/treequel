@@ -244,6 +244,12 @@ class Treequel::Branch
 	end
 
 
+	### Return the entry's DN as an RFC1781-style UFN (User-Friendly Name).
+	def to_ufn
+		return LDAP.dn2ufn( self.dn.to_s )
+	end
+
+
 	### Return the entry underlying the Branch as a String containing its LDIF.
 	def to_ldif
 		ldif = "dn: %s\n" % [ self.dn ]

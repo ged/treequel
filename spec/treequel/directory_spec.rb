@@ -226,7 +226,7 @@ describe Treequel::Directory do
 				{ 'dn' => ["uid=jonlong,#{TEST_PEOPLE_DN}"] },
 				{ 'dn' => ["uid=margento,#{TEST_PEOPLE_DN}"] },
 			]
-			@conn.should_receive( :search2 ).
+			@conn.should_receive( :search_ext2 ).
 				with( base, LDAP::LDAP_SCOPE_BASE, filter, [], false, 0, 0, '', nil ).
 				and_return( entries )
 
@@ -237,6 +237,18 @@ describe Treequel::Directory do
 				and_return( found_branch2 )
 
 			@dir.search( base, :base, filter ).should == [ found_branch1, found_branch2 ]
+		end
+
+
+		it "catches plain RuntimeErrors raised by #search2 and re-casts them as " +
+		   "more-interesting errors" do
+			@conn.should_receive( :search_ext2 ).
+				and_raise( RuntimeError.new('no result returned by search') )
+			@conn.should_receive( :err ).and_return( -1 )
+
+			expect {
+				@dir.search( TEST_BASE_DN, :base, '(objectClass=*)' )
+			}.to raise_error( LDAP::ResultError, /can't contact/i )
 		end
 
 
@@ -265,7 +277,7 @@ describe Treequel::Directory do
 				{ 'dn' => ["uid=jonlong,#{TEST_PEOPLE_DN}"] },
 				{ 'dn' => ["uid=margento,#{TEST_PEOPLE_DN}"] },
 			]
-			@conn.should_receive( :search2 ).
+			@conn.should_receive( :search_ext2 ).
 				with( TEST_PEOPLE_DN, LDAP::LDAP_SCOPE_BASE, filter, [], false, 0, 0, '', nil ).
 				and_return( entries )
 
