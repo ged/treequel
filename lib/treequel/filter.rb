@@ -445,39 +445,7 @@ class Treequel::Filter
 			return self.parse_expression( expression[0] )
 
 		when expression[0].is_a?( Symbol )
-			case expression[1]
-
-			# [ :and/:or/:not, [:uid, 1] ]    := (&/|/!(uid=1))
-			when Array
-				return self.parse_logical_array_expression( *expression )
-
-			# [ :or, {:uid => [1, 2]} ]    := (|(uid=1)(uid=2))
-			when Hash
-				Treequel.logger.debug "  logical expression from a Hash"
-				compclass = LOGICAL_COMPONENTS[ expression[0] ] or
-					raise "don't know how to parse the tuple expression %p" % [ expression ]
-				filterlist = expression[1].collect do |attribute, vals|
-					vals.collect {|exp| Treequel::Filter.new(attribute, exp) }
-				end.flatten
-				return compclass.new( *filterlist )
-
-			# [ :attribute, 'value' ]  := '(attribute=value)'
-			when String, Symbol
-				Treequel.logger.debug "  item expression from a %p" % [ expression[1].class ]
-				return self.parse_item_component( *expression )
-
-			when Range
-				Treequel.logger.debug "  two ANDed item expressions from a Range"
-				attribute = expression[0]
-				range = expression[1]
-				left = "#{attribute}>=#{range.begin}"
-				right = "#{attribute}<=#{range.exclude_end? ? range.max : range.end}"
-				return self.parse_logical_array_expression( :and, [left, right] )
-
-			else
-				raise Treequel::ExpressionError,
-					"don't know how to parse the expression tuple %p" % [ expression ]
-			end
+			return self.parse_tuple_array_expression( expression )
 
 		# Collection of subfilters
 		# [ [:uid, 'mahlon'], [:employeeNumber, 20202] ]
@@ -499,6 +467,42 @@ class Treequel::Filter
 				"don't know how to turn %p into a filter component" % [ expression ]
 		end
 
+	end
+
+
+	### Parse a tuple of the form: [ Symbol, Object ] into a Treequel::Filter::Component
+	### and return it.
+	def self::parse_tuple_array_expression( expression )
+		case expression[1]
+
+		# [ :and/:or/:not, [:uid, 1] ]    := (&/|/!(uid=1))
+		when Array
+			return self.parse_logical_array_expression( *expression )
+
+		# [ :or, {:uid => [1, 2]} ]    := (|(uid=1)(uid=2))
+		when Hash
+			Treequel.logger.debug "  logical expression from a Hash"
+			compclass = LOGICAL_COMPONENTS[ expression[0] ] or
+				raise "don't know how to parse the tuple expression %p" % [ expression ]
+			filterlist = expression[1].collect do |attribute, vals|
+				vals.collect {|exp| Treequel::Filter.new(attribute, exp) }
+			end.flatten
+			return compclass.new( *filterlist )
+
+		when Range
+			Treequel.logger.debug "  two ANDed item expressions from a Range"
+			attribute = expression[0]
+			range = expression[1]
+			left = "#{attribute}>=#{range.begin}"
+			right = "#{attribute}<=#{range.exclude_end? ? range.max : range.end}"
+			return self.parse_logical_array_expression( :and, [left, right] )
+
+		# [ :attribute, 'value' ]  := '(attribute=value)'
+		# when String, Symbol, Numeric, Time
+		else
+			Treequel.logger.debug "  item expression from a %p" % [ expression[1].class ]
+			return self.parse_item_component( *expression )
+		end
 	end
 
 

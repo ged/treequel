@@ -226,12 +226,14 @@ class Treequel::Directory
 	### Perform a +scope+ search at +base+ using the specified +filter+. The +scope+ argument
 	### can be one of +:onelevel+, +:base+, or +:subtree+. Results will be returned as instances
 	### of the given +collectclass+.
-	def search( base, scope, filter, selectattrs=[], timeout=0, sortby=nil )
+	def search( base, scope, filter, selectattrs=[], timeout=0, sortby=nil, limit=0 )
 		timeout_s = timeout_us = 0
 		sortattr = ''
 		sortfunc = nil
 		base_dn = nil
 		collectclass = nil
+		s_ctrls = nil
+		c_ctrls = nil
 
 		# Normalize the arguments into what LDAP::Conn#search2 expects
 		if base.respond_to?( :dn )
@@ -259,21 +261,33 @@ class Treequel::Directory
 		#	sec=0, usec=0, s_attr=nil, s_proc=nil)
 		self.log.debug {
 			fmt = "Searching with: base_dn=%p, scope=%p, filter=%p, attrs=%p, " +
-			      "attrsonly=false, sec=%p, usec=%p, s_attr=%p, s_proc=%p"
+			      "attrsonly=false, s_ctrls=%p, c_ctrls=%p, sec=%p, usec=%p, " +
+			      "limit=%d, s_attr=%p, s_proc=%p"
 			fmt % [
 				base_dn,
 				scope,
 				filter.to_s,
 				selectattrs,
+				s_ctrls,
+				c_ctrls,
 				timeout_s,
 				timeout_us,
+				limit,
 				sortattr,
 				sortfunc
 			]
 		}
+
+		# :NOTE: the docs for #search_ext2 lie. The method signature is actually:
+		# rb_scan_args (argc, argv, "39",
+		#               &base, &scope, &filter, &attrs, &attrsonly,
+		#               &serverctrls, &clientctrls, &sec, &usec, &limit,
+		#               &s_attr, &s_proc)
 		results = self.conn.search_ext2( base_dn, scope, filter.to_s,
 			selectattrs, false,
+			s_ctrls, c_ctrls,
 			timeout_s, timeout_us,
+			limit,
 			sortattr, sortfunc )
 
 		return results.collect do |entry|
@@ -309,18 +323,18 @@ class Treequel::Directory
 
 	### Create a new Branch relative to the specified +branch+ with the given +rdn+ and 
 	### +newattrs+ hash.
-	def create( branch, rdn, newattrs={} )
-		rdnattr, rdnval = rdn.split( /=/, 2 )
-		newdn = rdn + ',' + branch.dn
+	def create( branch, newattrs={} )
+		newdn = branch.dn
 
-		newattrs[rdnattr] ||= []
-		newattrs[rdnattr] << rdnval
+		newattrs[branch.rdn_attribute] ||= []
+		newattrs[branch.rdn_attribute] << branch.rdn_value
+
 		normattrs = self.normalize_attributes( newattrs )
 
 		self.log.debug "Creating an entry at %s with the attributes: %p" % [ newdn, normattrs ]
 		self.conn.add( newdn, normattrs )
 
-		return branch.class.new( self, rdnattr, rdnval, branch )
+		return true
 	end
 
 
@@ -462,7 +476,7 @@ class Treequel::Directory
 
 
 	### Normalize the attributes in +hash+ to be of the form expected by the
-	### LDAP library (i.e., keys as Strings, values as Arrays)
+	### LDAP library (i.e., keys as Strings, values as Arrays of Strings)
 	def normalize_attributes( hash )
 		normhash = {}
 		hash.each do |key,val|

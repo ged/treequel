@@ -57,7 +57,8 @@ require 'treequel/sequel_integration'
 # Please see the file LICENSE in the base directory for licensing details.
 #
 class Treequel::Branchset
-	include Treequel::Loggable,
+	include Enumerable,
+	        Treequel::Loggable,
 	        Treequel::Constants
 
 	# SVN Revision
@@ -80,9 +81,10 @@ class Treequel::Branchset
 		:base    => nil,
 		:filter  => DEFAULT_FILTER,
 		:scope   => DEFAULT_SCOPE,
-		:timeout => 0,                   # Floating-point timeout -> sec, usec
+		:timeout => 0,                  # Floating-point timeout -> sec, usec
 		:select  => [],                 # Attributes to return -> attrs
 		:order   => '',                 # Sorting criteria -> s_attr/s_proc
+		:limit   => 0,                  # Limit -> number of results
 	}.freeze
 
 
@@ -149,7 +151,16 @@ class Treequel::Branchset
 	def all
 		directory = self.base.directory
 		return directory.search( self.base, self.scope, self.filter, self.select,
-			self.timeout, self.order )
+			self.timeout, self.order, self.limit )
+	end
+
+
+	### Iterate over the entries which match the current criteria and yield each of them 
+	### as Treequel::Branch objects to the supplied block.
+	def each
+		raise LocalJumpError, "no block given" unless block_given?
+		block = Proc.new
+		self.all.each( &block )
 	end
 
 
@@ -161,7 +172,7 @@ class Treequel::Branchset
 		# the first value
 		directory = self.base.directory
 		return directory.search( self.base, self.scope, self.filter, self.select,
-			self.timeout, self.order ).first
+			self.timeout, self.order, 1 ).first
 	end
 
 
@@ -170,6 +181,7 @@ class Treequel::Branchset
 	def filter( *filterspec )
 		if filterspec.empty?
 			opts = self.options
+			self.log.debug "fetching filter: %p" % [ opts[:filter] ]
 			opts[:filter] = Treequel::Filter.new(opts[:filter]) unless
 				opts[:filter].is_a?( Treequel::Filter )
 			return opts[:filter]
@@ -220,6 +232,27 @@ class Treequel::Branchset
 	### +attributes+ in addition to its own.
 	def select_more( *attributes )
 		return self.select( *(Array(@options[:select]) | attributes) )
+	end
+
+
+	### If called with a +new_limit+, returns a clone of the receiving Branchset that will
+	### fetch (at most) +new_limit+ Branches. If no +new_limit+ argument is specified,
+	### returns the Branchset's current limit. A limit of '0' means that all Branches
+	### will be fetched.
+	def limit( new_limit=nil )
+		if new_limit.nil?
+			return self.options[:limit]
+		else
+			self.log.debug "cloning %p with new limit: %p" % [ self, new_limit ]
+			return self.clone( :limit => Integer(new_limit) )
+		end
+	end
+
+
+	### Return a clone of the receiving Branchset that has no restriction on the number
+	### of Branches that will be fetched.
+	def without_limit
+		return self.clone( :limit => 0 )
 	end
 
 

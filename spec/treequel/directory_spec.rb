@@ -227,7 +227,7 @@ describe Treequel::Directory do
 				{ 'dn' => ["uid=margento,#{TEST_PEOPLE_DN}"] },
 			]
 			@conn.should_receive( :search_ext2 ).
-				with( base, LDAP::LDAP_SCOPE_BASE, filter, [], false, 0, 0, '', nil ).
+				with( base, LDAP::LDAP_SCOPE_BASE, filter, [], false, nil, nil, 0, 0, 0, '', nil ).
 				and_return( entries )
 
 			# Turn found entries into Branch objects
@@ -278,7 +278,8 @@ describe Treequel::Directory do
 				{ 'dn' => ["uid=margento,#{TEST_PEOPLE_DN}"] },
 			]
 			@conn.should_receive( :search_ext2 ).
-				with( TEST_PEOPLE_DN, LDAP::LDAP_SCOPE_BASE, filter, [], false, 0, 0, '', nil ).
+				with( TEST_PEOPLE_DN, LDAP::LDAP_SCOPE_BASE, filter, [],
+				      false, nil, nil, 0, 0, 0, '', nil ).
 				and_return( entries )
 
 			rval = @dir.search( base, :base, filter, [], 0, nil )
@@ -337,7 +338,7 @@ describe Treequel::Directory do
 			@dir.delete( branch )
 		end
 
-		it "can create a record under a Branch" do
+		it "can create an entry for a Branch" do
 			newattrs = {
 				:cn => 'Chilly T',
 				:desc => 'Audi like Jetta',
@@ -348,16 +349,13 @@ describe Treequel::Directory do
 				TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE],
 			}
 
-			branch = mock( "parent branch obj" )
-			branch.should_receive( :dn ).and_return( TEST_PEOPLE_DN )
-			branch.should_receive( :class ).and_return( Treequel::Branch )
-			Treequel::Branch.should_receive( :new ).
-				with( @dir, TEST_PERSON_DN_ATTR, TEST_PERSON_DN_VALUE, branch ).
-				and_return( :the_new_branch )
-
+			branch = mock( "new person branch" )
+			branch.should_receive( :dn ).and_return( TEST_PERSON_DN )
+			branch.should_receive( :rdn_attribute ).twice.and_return( TEST_PERSON_DN_ATTR )
+			branch.should_receive( :rdn_value ).and_return( TEST_PERSON_DN_VALUE )
 			@conn.should_receive( :add ).with( TEST_PERSON_DN, addattrs )
 
-			@dir.create( branch, TEST_PERSON_RDN, newattrs ).should == :the_new_branch
+			@dir.create( branch, newattrs )
 		end
 
 		it "can copy an entry with an rdn" do
