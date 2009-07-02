@@ -322,11 +322,15 @@ describe Treequel::Branch do
 
 
 		it "can create children under itself" do
-			newattrs = { :cn => 'Chilly T' }
-			newbranch = stub( "child branch object" )
-			@directory.should_receive( :create ).with( @branch, TEST_PERSON_RDN, newattrs ).
-				and_return( newbranch )
-			@branch.create( TEST_PERSON_RDN, newattrs ).should == newbranch
+			newattrs = {
+				:ipHostNumber => '127.0.0.1',
+				:objectClass  => [:ipHost],
+			}
+			@directory.should_receive( :create ).
+				with( an_instance_of(Treequel::Branch), newattrs ).
+				and_return( true )
+
+			@branch.cn( :chillyt ).create( newattrs )
 		end
 
 

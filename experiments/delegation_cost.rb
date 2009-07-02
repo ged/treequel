@@ -28,13 +28,13 @@ class TestClass
 
 		return eval( code )
 	end
-	
+
 	def self::make_closure_method_delegator( delegate, name )
 		return Proc.new {|*args|
 			self.send( delegate ).send( name, *args )
 		}
 	end
-	
+
 	def self::make_evaled_ivar_delegator( ivar, name )
 		code = <<-END_CODE
 		lambda {|*args| #{ivar}.#{name}(*args) }
@@ -42,7 +42,7 @@ class TestClass
 
 		return eval( code )
 	end
-	
+
 	def self::make_closure_ivar_delegator( ivar, name )
 		return Proc.new {|*args|
 			self.instance_variable_get( ivar ).send( name, *args )
@@ -54,7 +54,7 @@ class TestClass
 	end
 
 	attr_reader :delegate
-	
+
 	begin
 		block = make_evaled_method_delegator( :delegate, :evaled_method_delegate )
 		define_method( :evaled_method_delegate, &block )

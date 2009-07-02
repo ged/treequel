@@ -331,10 +331,9 @@ class Treequel::Branch
 	end
 
 
-	### Create a new child entry under this Branch with the specified +rdn+ and 
-	### +attributes+ and return it.
-	def create( rdn, attributes={} )
-		return self.directory.create( self, rdn, attributes )
+	### Create the entry for this Branch with the specified +attributes+.
+	def create( attributes={} )
+		return self.directory.create( self, attributes )
 	end
 
 

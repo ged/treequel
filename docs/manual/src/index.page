@@ -206,8 +206,11 @@ irb(main):024:0> marketing_hosts.children.map {|b| b.dn }
 #     "cn=bone,ou=Hosts,dc=marketing,dc=acme,dc=com"]
 <?end ?>
 
-* parent
-* children
+h3(#create-copy-delete-move). Creating, Copying, Deleting, and Moving Entries
+
+If you have a @Branch@ object for an entry which doesn't exist in the directory, you can create it via the @#create@ method:
+
+
 
 * copy
 * create
