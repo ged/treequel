@@ -136,7 +136,7 @@ irb> me.dn
 You can also create a Branch from its full DN:
 
 <?example { language: ruby, caption: "Fetching a branch using its DN." } ?>
-irb(main):005:0> me = Treequel::Branch.new_from_dn( 'uid=mgranger,ou=people,dc=acme,dc=com', dir )
+irb> me = Treequel::Branch.new_from_dn( 'uid=mgranger,ou=people,dc=acme,dc=com', dir )
 # => #<Treequel::Branch:0x12b676c uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389 
 #      (dc=acme,dc=com, tls, anonymous) entry=nil>
 <?end ?>
@@ -195,13 +195,13 @@ h3(#heirarchical-traversal). Parents and Children
 Each branch can also fetch its parent and its children:
 
 <?example { language: ruby, caption: "Fetching a branch's parent and its children." } ?>
-irb(main):022:0> marketing_hosts = dir.dc( :marketing ).ou( :hosts )
+irb> marketing_hosts = dir.dc( :marketing ).ou( :hosts )
 # => #<Treequel::Branch:0x135ad94 ou=hosts,dc=marketing,dc=acme,dc=com @ localhost:389 
 #      (dc=acme,dc=com, tls, anonymous) entry=nil>
-irb(main):023:0> marketing_hosts.parent
+irb> marketing_hosts.parent
 # => #<Treequel::Branch:0x13508d0 dc=marketing,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, 
 #     anonymous) entry=nil>
-irb(main):024:0> marketing_hosts.children.map {|b| b.dn }
+irb> marketing_hosts.children.map {|b| b.dn }
 # => ["cn=rockbox,ou=Hosts,dc=marketing,dc=acme,dc=com", 
 #     "cn=bone,ou=Hosts,dc=marketing,dc=acme,dc=com"]
 <?end ?>
@@ -209,6 +209,10 @@ irb(main):024:0> marketing_hosts.children.map {|b| b.dn }
 h3(#create-copy-delete-move). Creating, Copying, Deleting, and Moving Entries
 
 If you have a @Branch@ object for an entry which doesn't exist in the directory, you can create it via the @#create@ method:
+
+<?example { language: ruby, caption: "Fetching a branch's parent and its children." } ?>
+irb> 
+<?end ?>
 
 
 

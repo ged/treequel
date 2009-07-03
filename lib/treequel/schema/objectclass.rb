@@ -146,14 +146,22 @@ class Treequel::Schema
 		### Return Treequel::Schema::AttributeType objects for each of the objectClass's
 		### MUST attributes.
 		def must
-			self.must_oids.collect {|oid| self.schema.attribute_types[oid] }
+			self.must_oids.collect do |oid|
+				self.log.warn "No attribute type for OID %p (case bug?)" % [ oid ] unless
+					self.schema.attribute_types.key?( oid )
+				self.schema.attribute_types[oid]
+			end.compact
 		end
 
 
 		### Return Treequel::Schema::AttributeType objects for each of the objectClass's
 		### MAY attributes.
 		def may
-			self.may_oids.collect {|oid| self.schema.attribute_types[oid] }
+			self.may_oids.collect do |oid|
+				self.log.warn "No attribute type for OID %p (case bug?)" % [ oid ] unless
+					self.schema.attribute_types.key?( oid )
+				self.schema.attribute_types[oid]
+			end.compact
 		end
 
 

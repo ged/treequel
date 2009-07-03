@@ -60,6 +60,41 @@ class Treequel::Directory
 	}
 
 
+	# :NOTE: the docs for #search_ext2 lie. The method signature is actually:
+	# rb_scan_args (argc, argv, "39",
+	#               &base, &scope, &filter, &attrs, &attrsonly,
+	#               &serverctrls, &clientctrls, &sec, &usec, &limit,
+	#               &s_attr, &s_proc)
+	SEARCH_PARAMETER_ORDER = [
+		:selectattrs,
+		:attrsonly,
+		:server_controls,
+		:client_controls,
+		:timeout_s,
+		:timeout_us,
+		:limit,
+		:sort_attribute,
+		:sort_func,
+	].freeze
+
+	# Default values to pass to LDAP::Conn#search_ext2; they'll be passed in the order 
+	# specified by SEARCH_PARAMETER_ORDER.
+	# :NOTE: the docs for #search_ext2 lie. The method signature is actually:
+	# rb_scan_args (argc, argv, "39",
+	#               &base, &scope, &filter, &attrs, &attrsonly,
+	#               &serverctrls, &clientctrls, &sec, &usec, &limit,
+	#               &s_attr, &s_proc)
+	SEARCH_DEFAULTS = {
+		:selectattrs     => ['*'],
+		:attrsonly       => false,
+		:server_controls => nil,
+		:client_controls => nil,
+		:timeout         => 0,
+		:limit           => 0,
+		:sortby          => nil,
+	}.freeze
+
+
 	#################################################################
 	###	C L A S S   M E T H O D S
 	#################################################################
@@ -226,76 +261,35 @@ class Treequel::Directory
 	### Perform a +scope+ search at +base+ using the specified +filter+. The +scope+ argument
 	### can be one of +:onelevel+, +:base+, or +:subtree+. Results will be returned as instances
 	### of the given +collectclass+.
-	def search( base, scope, filter, selectattrs=[], timeout=0, sortby=nil, limit=0 )
-		timeout_s = timeout_us = 0
-		sortattr = ''
-		sortfunc = nil
-		base_dn = nil
-		collectclass = nil
-		s_ctrls = nil
-		c_ctrls = nil
+	def search( base, scope=:subtree, filter='(objectClass=*)', parameters={} )
+		# If the base argument is an object whose class knows how to create instances of itself
+		# from an LDAP::Entry, use it instead of Treequel::Branch to wrap results
+		collectclass = base.class.respond_to?( :new_from_entry ) ? base.class : Treequel::Branch
 
-		# Normalize the arguments into what LDAP::Conn#search2 expects
-		if base.respond_to?( :dn )
-			base_dn = base.dn
-			collectclass = base.class
-		else
-			base_dn = base
-			collectclass = Treequel::Branch
-		end
+		# Format the arguments in the way #search_ext2 expects them
+		base, scope, filter, searchparams =
+			self.normalize_search_parameters( base, scope, filter, parameters )
 
-		scope = SCOPE[scope] if scope.is_a?( Symbol )
-
-		if !timeout.nil? && !timeout.zero?
-			timeout_s = self.timeout.truncate
-			timeout_us = Integer((self.timeout - timeout_s) * 1_000_000) # convert to µsec
-		end
-
-		if sortby.respond_to?( :call )
-			sortfunc = sortby
-		elsif !sortby.nil?
-			sortattr = sortby.to_s
-		end
-
-		# conn.search2(base_dn, scope, filter, attrs=nil, attrsonly=false,
-		#	sec=0, usec=0, s_attr=nil, s_proc=nil)
+		# Unwrap the search parameters from the hash in the correct order
 		self.log.debug {
-			fmt = "Searching with: base_dn=%p, scope=%p, filter=%p, attrs=%p, " +
-			      "attrsonly=false, s_ctrls=%p, c_ctrls=%p, sec=%p, usec=%p, " +
-			      "limit=%d, s_attr=%p, s_proc=%p"
-			fmt % [
-				base_dn,
-				scope,
-				filter.to_s,
-				selectattrs,
-				s_ctrls,
-				c_ctrls,
-				timeout_s,
-				timeout_us,
-				limit,
-				sortattr,
-				sortfunc
-			]
+			attrlist = SEARCH_PARAMETER_ORDER.inject([]) do |list, param|
+				list << "%s: %p" % [ param, searchparams[param] ]
+			end
+			"searching with base: %p, scope: %p, filter: %p, %s" %
+				[ base, scope, filter, attrlist.join(', ') ]
 		}
+		results = self.conn.search_ext2( base, scope, filter,
+			*searchparams.values_at(*SEARCH_PARAMETER_ORDER) )
 
-		# :NOTE: the docs for #search_ext2 lie. The method signature is actually:
-		# rb_scan_args (argc, argv, "39",
-		#               &base, &scope, &filter, &attrs, &attrsonly,
-		#               &serverctrls, &clientctrls, &sec, &usec, &limit,
-		#               &s_attr, &s_proc)
-		results = self.conn.search_ext2( base_dn, scope, filter.to_s,
-			selectattrs, false,
-			s_ctrls, c_ctrls,
-			timeout_s, timeout_us,
-			limit,
-			sortattr, sortfunc )
-
+		# Wrap each result in the class derived from the 'base' argument
 		return results.collect do |entry|
 			collectclass.new_from_entry( entry, self )
 		end
 	rescue RuntimeError => err
 		conn = self.conn
 
+		# The LDAP library raises a plain RuntimeError with an incorrect message if the 
+		# connection goes away, so it's caught here to rewrap it
 		case err.message
 		when /no result returned by search/i
 			raise LDAP::ResultError.new( LDAP.err2string(conn.err) )
@@ -485,6 +479,37 @@ class Treequel::Directory
 		end
 
 		return normhash
+	end
+
+
+	### Normalize the parameters to the #search method into the format expected by 
+	### the LDAP::Conn#Search_ext2 method and return them as a Hash.
+	def normalize_search_parameters( base, scope, filter, parameters )
+		search_paramhash = SEARCH_DEFAULTS.merge( parameters )
+
+		# Use the DN of the base object if it's an object that knows what a DN is
+		base = base.dn if base.respond_to?( :dn )
+		scope = SCOPE[scope.to_sym] if scope.respond_to?( :to_sym ) && SCOPE.key?( scope.to_sym )
+		filter = filter.to_s
+
+		# Split seconds and microseconds from the timeout value, convert the 
+		# fractional part to µsec
+		timeout = search_paramhash.delete( :timeout ) || 0
+		search_paramhash[:timeout_s] = timeout.truncate
+		search_paramhash[:timeout_us] = Integer((timeout - timeout.truncate) * 1_000_000)
+
+		# Assign the 'sortby' parameter to either the sort proc or the sorting attribute, depending
+		# on whether it's something that can be turned into a Proc or not.
+		sortby = search_paramhash.delete( :sortby )
+		search_paramhash[:sort_func] = nil
+		search_paramhash[:sort_attribute] = ''
+		if sortby.respond_to?( :to_proc )
+			search_paramhash[:sort_func] = sortby.to_proc
+		elsif !sortby.nil?
+			search_paramhash[:sort_attribute] = sortby.to_s
+		end
+
+		return base, scope, filter, search_paramhash
 	end
 
 end # class Treequel::Directory

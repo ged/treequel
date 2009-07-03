@@ -113,11 +113,11 @@ class Treequel::Branch
 
 
 	### Return the LDAP::Entry associated with the receiver, fetching it from the
-	### directory if necessary.
+	### directory if necessary. Returns +nil+ if the entry doesn't exist in the
+	### directory.
 	def entry
 		unless @entry
-			@entry = self.directory.get_entry( self ) or
-				raise "couldn't fetch entry for %p" % [ self.dn ]
+			@entry = self.directory.get_entry( self )
 		end
 
 		return @entry
@@ -173,38 +173,110 @@ class Treequel::Branch
 
 
 	### Return Treequel::Schema::ObjectClass instances for each of the receiver's
-	### objectClass attributes.
-	def object_classes
+	### objectClass attributes. If any +additional_classes+ are given, 
+	### merge them with the current list of the current objectClasses for the lookup.
+	def object_classes( *additional_classes )
 		schema = self.directory.schema
-		return self[:objectClass].collect {|oid| schema.object_classes[oid.to_sym] }
+		object_classes = self[:objectClass] || [:top]
+		object_classes |= additional_classes
+
+		return object_classes.collect {|oid| schema.object_classes[oid.to_sym] }.uniq
 	end
 
 
 	### Return Treequel::Schema::AttributeType instances for each of the receiver's
-	### objectClass's MUST attributeTypes.
-	def must_attribute_types
-		return self.object_classes.collect {|oc| oc.must }.flatten.uniq
+	### objectClass's MUST attributeTypes. If any +additional_object_classes+ are given, 
+	### include the MUST attributeTypes for them as well. This can be used to predict what
+	### attributes would need to be present for the entry to be saved if it added the
+	### +additional_object_classes+ to its own.
+	def must_attribute_types( *additional_object_classes )
+		return self.object_classes( *additional_object_classes ).
+			collect {|oc| oc.must }.flatten.uniq
 	end
 
 
 	### Return OIDs (numeric OIDs as Strings, named OIDs as Symbols) for each of the receiver's
-	### objectClass's MUST attributeTypes.
-	def must_oids
-		return self.object_classes.collect {|oc| oc.must_oids }.flatten.uniq
+	### objectClass's MUST attributeTypes. If any +additional_object_classes+ are given, 
+	### include the OIDs of the MUST attributes for them as well. This can be used to predict 
+	### what attributes would need to be present for the entry to be saved if it added the
+	### +additional_object_classes+ to its own.
+	def must_oids( *additional_object_classes )
+		return self.object_classes( *additional_object_classes ).
+			collect {|oc| oc.must_oids }.flatten.uniq
+	end
+
+
+	### Return a Hash of the attributes required by the Branch's objectClasses. If 
+	### any +additional_object_classes+ are given, include the attributes that would be
+	### necessary for the entry to be saved with them.
+	def must_attributes_hash( *additional_object_classes )
+		entry = self.entry
+		attrhash = {}
+
+		self.must_attribute_types( *additional_object_classes ).each do |attrtype|
+			# Use the existing value if the branch's entry exists already.
+			if entry
+				attrhash[ attrtype.name ] = self[ attrtype.name ]
+
+			# Otherwise, set a default value based on whether it's SINGLE or not.
+			elsif attrtype.single?
+				attrhash[ attrtype.name ] = ''
+			else
+				attrhash[ attrtype.name ] = []
+			end
+		end
+
+		attrhash[ :objectClass ] |= additional_object_classes
+		return attrhash
 	end
 
 
 	### Return Treequel::Schema::AttributeType instances for each of the receiver's
-	### objectClass's MAY attributeTypes.
-	def may_attribute_types
-		return self.object_classes.collect {|oc| oc.may }.flatten.uniq
+	### objectClass's MAY attributeTypes. If any +additional_object_classes+ are given, 
+	### include the MAY attributeTypes for them as well. This can be used to predict what
+	### optional attributes could be added to the entry if the +additional_object_classes+ 
+	### were added to it.
+	def may_attribute_types( *additional_object_classes )
+		return self.object_classes( *additional_object_classes ).
+			collect {|oc| oc.may }.flatten.uniq
 	end
 
 
 	### Return OIDs (numeric OIDs as Strings, named OIDs as Symbols) for each of the receiver's
-	### objectClass's MAY attributeTypes.
-	def may_oids
-		return self.object_classes.collect {|oc| oc.may_oids }.flatten.uniq
+	### objectClass's MAY attributeTypes. If any +additional_object_classes+ are given, 
+	### include the OIDs of the MAY attributes for them as well. This can be used to predict 
+	### what optional attributes could be added to the entry if the +additional_object_classes+ 
+	### were added to it.
+	def may_oids( *additional_object_classes )
+		return self.object_classes( *additional_object_classes ).
+			collect {|oc| oc.may_oids }.flatten.uniq
+	end
+
+
+	### Return a Hash of the optional attributes allowed by the Branch's objectClasses. If 
+	### any +additional_object_classes+ are given, include the attributes that would be
+	### available for the entry if it had them.
+	def may_attributes_hash( *additional_object_classes )
+		entry = self.entry
+		attrhash = {}
+
+		self.may_attribute_types( *additional_object_classes ).each do |attrtype|
+			self.log.debug "  adding attrtype %p to the may attributes hash" % [ attrtype ]
+
+			# Use the existing value if the branch's entry exists already.
+			if entry
+				attrhash[ attrtype.name ] = self[ attrtype.name ]
+
+			# Otherwise, set a default value based on whether it's SINGLE or not.
+			elsif attrtype.single?
+				attrhash[ attrtype.name ] = ''
+			else
+				attrhash[ attrtype.name ] = []
+			end
+		end
+
+		attrhash[ :objectClass ] |= additional_object_classes
+		return attrhash
 	end
 
 
@@ -281,7 +353,8 @@ class Treequel::Branch
 			end
 
 			self.log.debug "  attribute exists; checking the entry for a value"
-			return nil unless (( value = self.entry[attrsym.to_s] ))
+			entry = self.entry or return nil
+			return nil unless (( value = entry[attrsym.to_s] ))
 
 			syntax_oid = attribute.syntax_oid
 

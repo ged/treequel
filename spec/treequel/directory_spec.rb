@@ -227,7 +227,7 @@ describe Treequel::Directory do
 				{ 'dn' => ["uid=margento,#{TEST_PEOPLE_DN}"] },
 			]
 			@conn.should_receive( :search_ext2 ).
-				with( base, LDAP::LDAP_SCOPE_BASE, filter, [], false, nil, nil, 0, 0, 0, '', nil ).
+				with( base, LDAP::LDAP_SCOPE_BASE, filter, ['*'], false, nil, nil, 0, 0, 0, '', nil ).
 				and_return( entries )
 
 			# Turn found entries into Branch objects
@@ -278,11 +278,11 @@ describe Treequel::Directory do
 				{ 'dn' => ["uid=margento,#{TEST_PEOPLE_DN}"] },
 			]
 			@conn.should_receive( :search_ext2 ).
-				with( TEST_PEOPLE_DN, LDAP::LDAP_SCOPE_BASE, filter, [],
+				with( TEST_PEOPLE_DN, LDAP::LDAP_SCOPE_BASE, filter, ['*'],
 				      false, nil, nil, 0, 0, 0, '', nil ).
 				and_return( entries )
 
-			rval = @dir.search( base, :base, filter, [], 0, nil )
+			rval = @dir.search( base, :base, filter )
 
 			rval[0].should be_an_instance_of( customclass )
 			rval[0].entry.should == entries[0]
