@@ -271,6 +271,26 @@ describe Treequel::Branch do
 			must_attrs.should include( :cn, :uid, :l )
 		end
 
+		it "can return a Hash pre-populated with pairs that correspond to its MUST attributes" do
+			cn_attrtype = mock( "cn attribute type" )
+			l_attrtype = mock( "l attribute type" )
+			objectClass_attrtype = mock( "objectClass attribute type" )
+
+			cn_attrtype.should_receive( :name ).at_least( :once ).and_return( :cn )
+			@branch.should_receive( :[] ).with( :cn ).at_least( :once ).and_return( 'cn' )
+			l_attrtype.should_receive( :name ).at_least( :once ).and_return( :l )
+			@branch.should_receive( :[] ).with( :l ).at_least( :once ).and_return( 'l' )
+			objectClass_attrtype.should_receive( :name ).at_least( :once ).and_return( :objectClass )
+			@branch.should_receive( :[] ).with( :objectClass ).at_least( :once ).and_return([:top])
+
+			@branch.should_receive( :must_attribute_types ).at_least( :once ).
+				and_return([ cn_attrtype, l_attrtype, objectClass_attrtype ])
+
+			@branch.must_attributes_hash.
+				should == { :cn => 'cn', :l => 'l', :objectClass => [:top] }
+		end
+
+
 		it "can return the set of all its MAY attributeTypes based on which objectClasses it has" do
 			oc1 = mock( "first objectclass" )
 			oc2 = mock( "second objectclass" )

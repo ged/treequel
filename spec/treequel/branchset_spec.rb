@@ -34,6 +34,13 @@ include Treequel::Constants
 describe Treequel::Branchset do
 	include Treequel::SpecHelpers
 
+	DEFAULT_PARAMS = {
+		:limit       => 0,
+		:selectattrs => [],
+		:timeout     => 0,
+		:sortby      => "",
+	}
+
 	before( :all ) do
 		setup_logging( :fatal )
 	end
@@ -45,6 +52,7 @@ describe Treequel::Branchset do
 	before( :each ) do
 		@directory = mock( "treequel directory ")
 		@branch = mock( "treequel branchset" )
+		@params = DEFAULT_PARAMS.dup
 	end
 
 
@@ -75,7 +83,7 @@ describe Treequel::Branchset do
 		it "performs a search using the default filter and scope when all records are requested" do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
-				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, [], 0, '', 0 ).
+				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, @params ).
 				and_return( :matching_branches )
 
 			@branchset.all.should == :matching_branches
@@ -84,7 +92,8 @@ describe Treequel::Branchset do
 		it "performs a search using the default filter and scope when the first record is requested" do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
-				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, [], 0, '', 1 ).
+				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter,
+				      @params.merge(:limit => 1) ).
 				and_return( [:first_matching_branch, :other_branches] )
 
 			@branchset.first.should == :first_matching_branch
@@ -125,7 +134,7 @@ describe Treequel::Branchset do
 			@branchset.options[:scope] = :onelevel
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
-				with( @branch, :onelevel, @branchset.filter, [], 0, '', 0 ).
+				with( @branch, :onelevel, @branchset.filter, @params ).
 				and_return( :matching_branches )
 
 			@branchset.all.should == :matching_branches
@@ -155,7 +164,7 @@ describe Treequel::Branchset do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
 				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter,
-				      ['l', 'cn', 'uid'], 0, '', 0 ).
+				      @params.merge(:selectattrs => ['l', 'cn', 'uid']) ).
 				and_return( :matching_branches )
 
 			@branchset.all.should == :matching_branches
@@ -180,8 +189,8 @@ describe Treequel::Branchset do
 			@branchset.options[:timeout] = 5.375
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
-				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, 
-				      [], 5.375, '', 0 ).
+				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter,
+				      @params.merge(:timeout => 5.375) ).
 				and_return( :matching_branches )
 
 			@branchset.all.should == :matching_branches
@@ -216,8 +225,8 @@ describe Treequel::Branchset do
 			@branchset.options[:timeout] = 5.375
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
-				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, 
-				      [], 5.375, '', 0 ).
+				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter,
+				      @params.merge(:timeout => 5.375) ).
 				and_return( :matching_branches )
 
 			@branchset.all.should == :matching_branches
@@ -241,7 +250,7 @@ describe Treequel::Branchset do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
 				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter,
-				      [], 0.0, '', 8 ).
+				      @params.merge(:limit => 8) ).
 				and_return( :five_matching_branches )
 
 			@branchset.all.should == :five_matching_branches
@@ -260,11 +269,10 @@ describe Treequel::Branchset do
 			@branchset.filter_string.should == '(objectClass=*)'
 		end
 
-
 		it "performs a search using the default filter and scope when all records are requested" do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
-				with( @branch, :onelevel, @branchset.filter, [], 0, '', 0 ).
+				with( @branch, :onelevel, @branchset.filter, @params ).
 				and_return( :matching_branches )
 
 			@branchset.all.should == :matching_branches

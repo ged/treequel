@@ -150,8 +150,12 @@ class Treequel::Branchset
 	### objects.
 	def all
 		directory = self.base.directory
-		return directory.search( self.base, self.scope, self.filter, self.select,
-			self.timeout, self.order, self.limit )
+		return directory.search( self.base, self.scope, self.filter,
+			:selectattrs => self.select,
+			:timeout => self.timeout,
+			:sortby => self.order,
+			:limit => self.limit
+		  )
 	end
 
 
@@ -171,8 +175,12 @@ class Treequel::Branchset
 		# it only actually fetches one row, but for now it just fetches everything and returns
 		# the first value
 		directory = self.base.directory
-		return directory.search( self.base, self.scope, self.filter, self.select,
-			self.timeout, self.order, 1 ).first
+		return directory.search( self.base, self.scope, self.filter,
+			:selectattrs => self.select,
+			:timeout => self.timeout,
+			:sortby => self.order,
+			:limit => 1
+		  ).first
 	end
 
 
@@ -181,7 +189,6 @@ class Treequel::Branchset
 	def filter( *filterspec )
 		if filterspec.empty?
 			opts = self.options
-			self.log.debug "fetching filter: %p" % [ opts[:filter] ]
 			opts[:filter] = Treequel::Filter.new(opts[:filter]) unless
 				opts[:filter].is_a?( Treequel::Filter )
 			return opts[:filter]
