@@ -7,14 +7,17 @@ require 'shellwords'
 require 'abbrev'
 require 'treequel'
 require 'treequel/mixins'
+require 'treequel/constants'
 
 
 class Shell
-	include Treequel::Loggable
+	include Treequel::Loggable,
+	        Treequel::Constants::Patterns
+
 
 	### Create a new shell that will traverse the directory at the specified +uri+.
 	def initialize( uri )
-		Treequel.logger.level = Logger::DEBUG
+		Treequel.logger.level = Logger::WARN
 
 		@uri        = uri
 		@quit       = false
@@ -40,6 +43,9 @@ class Shell
 			# EOL makes the shell quit
 			if input.nil?
 				@quit = true
+
+			elsif input == ''
+				self.log.debug "No command. Re-displaying the prompt."
 
 			# Parse everything else into command + everything else
 			else
@@ -90,6 +96,34 @@ class Shell
 	end
 
 
+	LOG_LEVELS = {
+		'debug' => Logger::DEBUG,
+		'info'  => Logger::INFO,
+		'warn'  => Logger::WARN,
+		'error' => Logger::ERROR,
+		'fatal' => Logger::FATAL,
+	}.freeze
+	LOG_LEVEL_NAMES = LOG_LEVELS.invert.freeze
+
+	### Set the logging level (if invoked with an argument) or display the current
+	### level (with no argument).
+	def log_command( *args )
+		newlevel = args.shift
+		if newlevel
+			if LOG_LEVELS.key?( newlevel )
+				Treequel.logger.level = LOG_LEVELS[ newlevel ]
+				$stderr.puts "Set log level to: %s" % [ newlevel ]
+			else
+				levelnames = LOG_LEVEL_NAMES.keys.sort.join(', ')
+				raise "Invalid log level %p: valid values are:\n   %s" % [ newlevel, levelnames ]
+			end
+		else
+			$stderr.puts "Log level is currently: %s" %
+				[ LOG_LEVEL_NAMES[Treequel.logger.level] ]
+		end
+	end
+
+
 	### Show the completions hash
 	def show_completions_command
 		$stderr.puts "Completions:",
@@ -116,9 +150,10 @@ class Shell
 	end
 
 
-	### Change the current working DN.
-	def cd_command( *args )
-		rdn = args.shift
+	### Change the current working DN to +rdn+.
+	def cdn_command( rdn, *args )
+		raise "invalid RDN %p" % [ rdn ] unless RELATIVE_DISTINGUISHED_NAME.match( rdn )
+
 		pairs = rdn.split( /\s*,\s*/ )
 		pairs.each do |dnpair|
 			self.log.debug "  cd to %p" % [ dnpair ]
@@ -126,6 +161,21 @@ class Shell
 			self.log.debug "  changing to %s( %p )" % [ attribute, value ]
 			@currbranch = @currbranch.send( attribute, value )
 		end
+	end
+
+
+	### Change the current working DN to the current entry's parent.
+	def parent_command( *args )
+		parent = @currbranch.parent or raise "%s is the root DN" % [ @currbranch.dn ]
+
+		self.log.debug "  changing to %s" % [ parent.dn ]
+		@currbranch = parent
+	end
+
+
+	### Edit the entry specified by +rdn+.
+	def edit_command( rdn, *args )
+		
 	end
 
 

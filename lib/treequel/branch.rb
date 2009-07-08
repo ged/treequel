@@ -177,7 +177,13 @@ class Treequel::Branch
 	### merge them with the current list of the current objectClasses for the lookup.
 	def object_classes( *additional_classes )
 		schema = self.directory.schema
-		object_classes = self[:objectClass] || [:top]
+
+		# 5.1. objectClass
+		#   The values of the objectClass attribute describe the kind of object
+		#   which an entry represents.  The objectClass attribute is present in
+		#   every entry, with at least two values.  One of the values is either
+		#   "top" or "alias".
+		object_classes = self[:objectClass] || [ :top ]
 		object_classes |= additional_classes
 
 		return object_classes.collect {|oid| schema.object_classes[oid.to_sym] }.uniq
@@ -222,7 +228,7 @@ class Treequel::Branch
 			elsif attrtype.single?
 				attrhash[ attrtype.name ] = ''
 			else
-				attrhash[ attrtype.name ] = []
+				attrhash[ attrtype.name ] = ['']
 			end
 		end
 
@@ -269,7 +275,7 @@ class Treequel::Branch
 
 			# Otherwise, set a default value based on whether it's SINGLE or not.
 			elsif attrtype.single?
-				attrhash[ attrtype.name ] = ''
+				attrhash[ attrtype.name ] = nil
 			else
 				attrhash[ attrtype.name ] = []
 			end
@@ -291,6 +297,17 @@ class Treequel::Branch
 	### the set of all of the receiver's MUST and MAY attributeTypes.
 	def valid_attribute_oids
 		return self.must_oids | self.may_oids
+	end
+
+
+	### Return a Hash of all the attributes allowed by the Branch's objectClasses. If 
+	### any +additional_object_classes+ are given, include the attributes that would be
+	### available for the entry if it had them.
+	def valid_attributes_hash( *additional_object_classes )
+		must = self.must_attributes_hash( *additional_object_classes )
+		may  = self.may_attributes_hash( *additional_object_classes )
+
+		return may.merge( must )
 	end
 
 

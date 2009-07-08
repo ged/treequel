@@ -136,7 +136,7 @@ describe Treequel::Directory do
 	describe "instances with a connection" do
 
 		before( :each ) do
-			@conn = mock( "ldap connection" )
+			@conn = mock( "ldap connection", :bound? => false )
 
 			@dir = Treequel::Directory.new( @options )
 			@dir.instance_variable_set( :@conn, @conn )
@@ -251,47 +251,82 @@ describe Treequel::Directory do
 			}.to raise_error( LDAP::ResultError, /can't contact/i )
 		end
 
+		describe "and a custom search results class" do
 
-		it "can search for entries and return them as instances of a custom class" do
-			customclass = Class.new {
-				def self::new_from_entry( entry, directory )
-					new( entry, directory, 'a_dn' )
-				end
-				def initialize( entry, directory, dn )
-					@entry = entry
-					@directory = directory
-					@dn = dn
-				end
-				attr_reader :entry, :directory, :dn
-			}
+			before( :each ) do
+				@customclass = Class.new {
+					def self::new_from_entry( entry, directory )
+						new( entry, directory, 'a_dn' )
+					end
+					def initialize( entry, directory, dn )
+						@entry = entry
+						@directory = directory
+						@dn = dn
+					end
+					attr_reader :entry, :directory, :dn
+				}
 
-			base = customclass.new( nil, nil, TEST_PEOPLE_DN )
-			filter = '(|(uid=jonlong)(uid=margento))'
-			branch = mock( "branch" )
+			end
 
-			found_branch1 = stub( "entry1 branch" )
-			found_branch2 = stub( "entry2 branch" )
+			it "can search for entries and return them as instances of a custom class" do
+				filter = '(|(uid=jonlong)(uid=margento))'
+				base = mock( "branch" )
 
-			# Do the search
-			entries = [
-				{ 'dn' => ["uid=jonlong,#{TEST_PEOPLE_DN}"] },
-				{ 'dn' => ["uid=margento,#{TEST_PEOPLE_DN}"] },
-			]
-			@conn.should_receive( :search_ext2 ).
-				with( TEST_PEOPLE_DN, LDAP::LDAP_SCOPE_BASE, filter, ['*'],
-				      false, nil, nil, 0, 0, 0, '', nil ).
-				and_return( entries )
+				found_branch1 = stub( "entry1 branch" )
+				found_branch2 = stub( "entry2 branch" )
 
-			rval = @dir.search( base, :base, filter )
+				# Do the search
+				entries = [
+					{ 'dn' => ["uid=jonlong,#{TEST_PEOPLE_DN}"] },
+					{ 'dn' => ["uid=margento,#{TEST_PEOPLE_DN}"] },
+				]
+				@conn.should_receive( :search_ext2 ).
+					with( base, LDAP::LDAP_SCOPE_BASE, filter, ['*'],
+					      false, nil, nil, 0, 0, 0, '', nil ).
+					and_return( entries )
 
-			rval[0].should be_an_instance_of( customclass )
-			rval[0].entry.should == entries[0]
-			rval[0].directory.should == @dir
-			rval[1].should be_an_instance_of( customclass )
-			rval[1].entry.should == entries[1]
-			rval[1].directory.should == @dir
+				rval = @dir.search( base, :base, filter, :results_class => @customclass )
+
+				rval[0].should be_an_instance_of( @customclass )
+				rval[0].entry.should == entries[0]
+				rval[0].directory.should == @dir
+				rval[1].should be_an_instance_of( @customclass )
+				rval[1].entry.should == entries[1]
+				rval[1].directory.should == @dir
+			end
+
+
+			it "returns instances of the base argument if it responds to new_from_entry and no " +
+			   "custom class is specified" do
+
+				base = @customclass.new( nil, nil, TEST_PEOPLE_DN )
+				filter = '(|(uid=jonlong)(uid=margento))'
+				branch = mock( "branch" )
+
+				found_branch1 = stub( "entry1 branch" )
+				found_branch2 = stub( "entry2 branch" )
+
+				# Do the search
+				entries = [
+					{ 'dn' => ["uid=jonlong,#{TEST_PEOPLE_DN}"] },
+					{ 'dn' => ["uid=margento,#{TEST_PEOPLE_DN}"] },
+				]
+				@conn.should_receive( :search_ext2 ).
+					with( TEST_PEOPLE_DN, LDAP::LDAP_SCOPE_BASE, filter, ['*'],
+					      false, nil, nil, 0, 0, 0, '', nil ).
+					and_return( entries )
+
+				rval = @dir.search( base, :base, filter )
+
+				rval[0].should be_an_instance_of( @customclass )
+				rval[0].entry.should == entries[0]
+				rval[0].directory.should == @dir
+				rval[1].should be_an_instance_of( @customclass )
+				rval[1].entry.should == entries[1]
+				rval[1].directory.should == @dir
+			end
+
 		end
-
 
 		it "can turn a DN string into an RDN string from its base" do
 			@dir.rdn_to( TEST_PERSON_DN ).should == TEST_PERSON_DN.sub( /,#{TEST_BASE_DN}$/, '' )
