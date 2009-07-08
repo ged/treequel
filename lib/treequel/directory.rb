@@ -262,9 +262,15 @@ class Treequel::Directory
 	### can be one of +:onelevel+, +:base+, or +:subtree+. Results will be returned as instances
 	### of the given +collectclass+.
 	def search( base, scope=:subtree, filter='(objectClass=*)', parameters={} )
+		collectclass = nil
+
 		# If the base argument is an object whose class knows how to create instances of itself
 		# from an LDAP::Entry, use it instead of Treequel::Branch to wrap results
-		collectclass = base.class.respond_to?( :new_from_entry ) ? base.class : Treequel::Branch
+		if parameters.key?( :results_class )
+			collectclass = parameters.delete( :results_class )
+		else
+			collectclass = base.class.respond_to?( :new_from_entry ) ? base.class : Treequel::Branch
+		end
 
 		# Format the arguments in the way #search_ext2 expects them
 		base, scope, filter, searchparams =

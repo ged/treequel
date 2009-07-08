@@ -95,9 +95,17 @@ module Treequel::Constants
 
 		### These are inlined for simplicity
 		#	NULL    = %x00 ; null (0)
+		NULL = '\x00'
+
 		#	SPACE   = %x20 ; space (" ")
+		SPACE = '\x20'
+
 		#	DQUOTE  = %x22 ; quote (""")
+		DQUOTE = '\x22'
+
 		#	SHARP   = %x23 ; octothorpe (or sharp sign) ("#")
+		SHARP = '\x23'
+
 		#	DOLLAR  = %x24 ; dollar sign ("$")
 		DOLLAR = '\x24'
 
@@ -110,7 +118,11 @@ module Treequel::Constants
 		RPAREN = '\x29'
 
 		#	PLUS    = %x2B ; plus sign ("+")
+		PLUS = '\x2b'
+
 		#	COMMA   = %x2C ; comma (",")
+		COMMA = '\x2c'
+
 		#	HYPHEN  = %x2D ; hyphen ("-")
 		HYPHEN = '\x2d'
 
@@ -118,9 +130,15 @@ module Treequel::Constants
 		DOT = '\x2e'
 
 		#	SEMI    = %x3B ; semicolon (";")
+		SEMI = '\x3b'
+
 		#	LANGLE  = %x3C ; left angle bracket ("<")
 		#	EQUALS  = %x3D ; equals sign ("=")
 		#	RANGLE  = %x3E ; right angle bracket (">")
+		LANGLE = '\x3c'
+		EQUALS = '\x3d'
+		RANGLE = '\x3e'
+
 		#	ESC     = %x5C ; backslash ("\")
 		ESC = '\x5c'
 
@@ -138,8 +156,12 @@ module Treequel::Constants
 		# COLON          = %x3A ; colon (":")
 		# VERTBAR        = %x7C ; vertical bar (or pipe) ("|")
 		# TILDE          = %x7E ; tilde ("~")
+		EXCLAMATION = '\x21'
 		AMPERSAND = '\x26'
 		ASTERISK = '\x2a'
+		COLON = '\x3a'
+		VERTBAR = '\x7c'
+		TILDE = '\x7e'
 
 		#	; Any UTF-8 [RFC3629] encoded Unicode [Unicode] character
 		#	UTF0    = %x80-BF
@@ -457,6 +479,111 @@ module Treequel::Constants
 			=
 			(#{LDAP_SUBSTRING_FILTER_VALUE})           # $2: value
 		}x
+
+
+		# 
+		# Distinguished Names (RFC4514)
+		# 
+
+		# hexpair = HEX HEX
+		HEXPAIR = /#{HEX}{2}/
+
+		# hexstring = SHARP 1*hexpair
+		HEXSTRING = %r{ #{SHARP} #{HEXPAIR}+ }x
+
+		# escaped = DQUOTE / PLUS / COMMA / SEMI / LANGLE / RANGLE
+		ESCAPED = %r{ #{DQUOTE} | #{PLUS} | #{COMMA} | #{SEMI} | #{LANGLE} | #{RANGLE} }x
+
+		# special = escaped / SPACE / SHARP / EQUALS
+		SPECIAL = %r{ #{ESCAPED} | #{SPACE} | #{SHARP} | #{EQUALS} }x
+
+		# pair = ESC ( ESC / special / hexpair )
+		PAIR = %r{
+			#{ESC}
+			(?:
+				#{ESC}
+				| #{SPECIAL}
+				| #{HEXPAIR}
+			)
+		}x
+
+		# SUTF1 = %x01-21 / %x23-2A / %x2D-3A / %x3D / %x3F-5B / %x5D-7F
+		SUTF1 = /[\x01-\x21\x23-\x2a\x2d-\x3a\x3d\x3f-\x5b\x5d-\x7f]/
+
+		# stringchar = SUTF1 / UTFMB
+		STRINGCHAR = %r{ #{SUTF1} | #{UTFMB} }x
+
+		# TUTF1 = %x01-1F / %x21 / %x23-2A / %x2D-3A / %x3D / %x3F-5B / %x5D-7F
+		TUTF1 = /[\x01-\x1f\x21\x23-\x2a\x2d-\x3a\x3d\x3f-\x5b\x5d-\x7f]/
+
+		# trailchar  = TUTF1 / UTFMB
+		TRAILCHAR = %r{ #{TUTF1} | #{UTFMB} }x
+
+		# LUTF1 = %x01-1F / %x21 / %x24-2A / %x2D-3A / %x3D / %x3F-5B / %x5D-7F
+		LUTF1 = /[\x01-\x1f\x21\x24-\x2a\x2d-\x3a\x3d\x3f-\x5b\x5d-\x7f]/
+
+		# leadchar = LUTF1 / UTFMB
+		LEADCHAR = %r{ #{LUTF1} | #{UTFMB} }x
+
+		# ; The following characters are to be escaped when they appear
+		# ; in the value to be encoded: ESC, one of <escaped>, leading
+		# ; SHARP or SPACE, trailing SPACE, and NULL.
+		# string =   [ ( leadchar / pair ) [ *( stringchar / pair )
+		#    ( trailchar / pair ) ] ]
+		# NOTE: the RFC specifies that all characters are optional in a STRING, which means that
+		#       the RDN 'cn=' is valid. While I hesitate to deviate from the RFC, I can't currently
+		#       conceive of a way such an RDN would be useful, so I'm defining this as requiring at
+		#       least one character. If this becomes a problem later, we can just surround it
+		#       with non-capturing parens with a optional qualifier.
+		STRING = %r{
+			(?:
+				#{LEADCHAR}
+				| #{PAIR}
+			)
+			(?:
+				(?: #{STRINGCHAR} | #{PAIR} )*
+				#{TRAILCHAR} | #{PAIR}
+			)?
+		}x
+
+		# attributeValue = string / hexstring
+		ATTRIBUTE_VALUE = %r{
+			#{HEXSTRING}			# Since STRING can match the empty string, try HEXSTRING first
+			| #{STRING}
+		}x
+
+		# attributeType = descr / numericoid
+		ATTRIBUTE_TYPE = %r{
+			#{DESCR}
+			|
+			#{NUMERICOID}
+		}x
+
+		# attributeTypeAndValue = attributeType EQUALS attributeValue
+		ATTRIBUTE_TYPE_AND_VALUE = %r{
+			#{ATTRIBUTE_TYPE} = #{ATTRIBUTE_VALUE}
+		}x
+
+		# relativeDistinguishedName = attributeTypeAndValue
+		#     *( PLUS attributeTypeAndValue )
+		RELATIVE_DISTINGUISHED_NAME = %r{
+			#{ATTRIBUTE_TYPE_AND_VALUE}
+			(?:
+				\+
+				#{ATTRIBUTE_TYPE_AND_VALUE}
+			)*
+		}x
+
+		# distinguishedName = [ relativeDistinguishedName
+		#     *( COMMA relativeDistinguishedName ) ]
+		DISTINGUISHED_NAME = %r{
+			#{RELATIVE_DISTINGUISHED_NAME}
+			(?:
+				,
+				#{RELATIVE_DISTINGUISHED_NAME}
+			)*
+		}x
+
 
 	end # module Patterns
 
