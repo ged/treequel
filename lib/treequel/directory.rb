@@ -33,6 +33,8 @@ class Treequel::Directory
 	include Treequel::Loggable,
 	        Treequel::Constants
 
+	extend Treequel::Delegation
+
 	# SVN Revision
 	SVNRev = %q$Rev$
 
@@ -45,7 +47,7 @@ class Treequel::Directory
 		:port          => LDAP::LDAP_PORT,
 		:connect_type  => :tls,
 		:base          => nil,
-		:binddn        => nil,
+		:bind_dn        => nil,
 		:pass          => nil
 	}
 
@@ -108,9 +110,9 @@ class Treequel::Directory
 	###   The port to connect to.
 	### [connect_type]::
 	###   The type of connection to establish. Must be one of +:plain+, +:tls+, or +:ssl+.
-	### [base]::
+	### [base_dn]::
 	###   The base DN of the directory.
-	### [binddn]::
+	### [bind_dn]::
 	###   The DN of the user to bind as.
 	### [pass]::
 	###   The password to use when binding.
@@ -124,12 +126,14 @@ class Treequel::Directory
 		@conn           = nil
 		@bound_as       = nil
 
-		@base           = options[:base] || self.get_default_base_dn
+		@base_dn        = options[:base_dn] || self.get_default_base_dn
 		@syntax_mapping = DEFAULT_SYNTAX_MAPPING.dup
 
+		@base           = nil
+
 		# Immediately bind if credentials are passed to the initializer.
-		if ( options[:binddn] && options[:pass] )
-			self.bind( options[:binddn], options[:pass] )
+		if ( options[:bind_dn] && options[:pass] )
+			self.bind( options[:bind_dn], options[:pass] )
 		end
 	end
 
@@ -137,6 +141,9 @@ class Treequel::Directory
 	######
 	public
 	######
+
+	# Delegate some methods to the #base Branch.
+	def_method_delegators :base, :children, :branchset, :filter, :scope, :select
 
 	# The host to connect to.
 	attr_accessor :host
@@ -147,9 +154,14 @@ class Treequel::Directory
 	# The type of connection to establish
 	attr_accessor :connect_type
 
-	# The base DN of the directory.
-	attr_accessor :base
-	alias_method :dn, :base
+	# The base DN of the directory
+	attr_accessor :base_dn
+
+
+	### Fetch the Branch for the base node of the directory.
+	def base
+		return @base ||= Treequel::Branch.new( self, self.base_dn )
+	end
 
 
 	### Returns a string that describes the directory
@@ -157,7 +169,7 @@ class Treequel::Directory
 		return "%s:%d (%s, %s, %s)" % [
 			self.host,
 			self.port,
-			self.base,
+			self.base_dn,
 			self.connect_type,
 			self.bound? ? @bound_as : 'anonymous'
 		  ]
@@ -166,13 +178,13 @@ class Treequel::Directory
 
 	### Return a human-readable representation of the object suitable for debugging
 	def inspect
-		return %{#<%s:0x%0x %s:%d (%s) base=%p, bound as=%s, schema=%s>} % [
+		return %{#<%s:0x%0x %s:%d (%s) base_dn=%p, bound as=%s, schema=%s>} % [
 			self.class.name,
 			self.object_id / 2,
 			self.host,
 			self.port,
 			@conn ? "connected" : "not connected",
-			self.base,
+			self.base_dn,
 			@bound_as ? @bound_as.dump : "anonymous",
 			@schema ? @schema.inspect : "(schema not loaded)",
 		]
@@ -183,6 +195,19 @@ class Treequel::Directory
 	### current options if necessary.
 	def conn
 		return @conn ||= self.connect
+	end
+
+
+	### Return the URI object that corresponds to the directory.
+	def uri
+		uri_parts = {
+			:scheme => self.connect_type == :ssl ? 'ldaps' : 'ldap',
+			:host   => self.host,
+			:port   => self.port,
+			:dn     => '/' + self.base_dn
+		}
+
+		return URI::LDAP.build( uri_parts )
 	end
 
 
@@ -231,7 +256,7 @@ class Treequel::Directory
 
 	### Return the RDN string to the given +dn+ from the base of the directory.
 	def rdn_to( dn )
-		base_re = Regexp.new( ',' + Regexp.quote(self.base) + '$' )
+		base_re = Regexp.new( ',' + Regexp.quote(self.base_dn) + '$' )
 		return dn.to_s.sub( base_re, '' )
 	end
 
@@ -239,11 +264,8 @@ class Treequel::Directory
 	### Given a Treequel::Branch object, find its corresponding LDAP::Entry and return
 	### it.
 	def get_entry( branch )
-		base = branch.base
-		filter = branch.rdn
-
-		self.log.debug "Looking up entry for %p from %s" % [ filter, base ]
-		return self.conn.search2( base.to_s, SCOPE[:onelevel], filter ).first
+		self.log.debug "Looking up entry for %p" % [ branch.dn ]
+		return self.conn.search_ext2( branch.dn, SCOPE[:base], '(objectClass=*)' ).first
 	end
 
 
@@ -284,13 +306,18 @@ class Treequel::Directory
 			"searching with base: %p, scope: %p, filter: %p, %s" %
 				[ base, scope, filter, attrlist.join(', ') ]
 		}
-		results = self.conn.search_ext2( base, scope, filter,
-			*searchparams.values_at(*SEARCH_PARAMETER_ORDER) )
+		parameters = searchparams.values_at( *SEARCH_PARAMETER_ORDER )
 
 		# Wrap each result in the class derived from the 'base' argument
-		return results.collect do |entry|
-			collectclass.new_from_entry( entry, self )
+		if block_given?
+			self.conn.search_ext2( base, scope, filter, *parameters ).each do |entry|
+				yield collectclass.new_from_entry( entry, self )
+			end
+		else
+			return self.conn.search_ext2( base, scope, filter, *parameters ).
+				collect {|entry| collectclass.new_from_entry(entry, self) }
 		end
+
 	rescue RuntimeError => err
 		conn = self.conn
 
@@ -378,6 +405,7 @@ class Treequel::Directory
 
 		if new_parent_dn.nil?
 			new_parent_dn = source_parent_dn
+			newdn = [new_rdn, new_parent_dn].join(',')
 		end
 
 		if new_parent_dn != source_parent_dn
@@ -388,7 +416,7 @@ class Treequel::Directory
 		self.log.debug "Modrdn (move): %p -> %p within %p" % [ source_rdn, new_rdn, source_parent_dn ]
 
 		self.conn.modrdn( branch.dn, new_rdn, true )
-		branch.rdn = new_rdn
+		branch.dn = newdn
 	end
 
 
@@ -410,23 +438,14 @@ class Treequel::Directory
 	end
 
 
-	### Return all the top-level entries in the directory as Branches.
-	def children
-		return self.search( self.base, :one, '(objectClass=*)' )
-	end
-
 
 	#########
 	protected
 	#########
 
-	### Proxy method: if the first argument matches a valid attribute in the directory's
-	### schema, return a new Branch for the RDN made by using the first two arguments as
-	### attribute and value.
-	def method_missing( *args )
-		attribute, value, *extra = *args
-		return super unless attribute && self.schema.attribute_types.key?( attribute )
-		return Treequel::Branch.new( self, attribute, value, self.base )
+	### Delegate attribute/value calls on the directory itself to the directory's #base Branch.
+	def method_missing( attribute, *args )
+		return self.base.send( attribute, *args )
 	end
 
 

@@ -48,27 +48,9 @@ class Treequel::Branch
 	###	C L A S S   M E T H O D S
 	#################################################################
 
-	### Create a new Treequel::Branch for the specified +dn+ starting from the
-	### given +directory+.
-	def self::new_from_dn( dn, directory )
-		rdn = directory.rdn_to( dn )
-
-		return rdn.split(/,/).reverse.inject( directory ) do |prev, pair|
-			attribute, value = pair.split( /=/, 2 )
-			Treequel.logger.debug "new_from_dn: fetching %s=%s from %p" % [ attribute, value, prev ]
-			prev.send( attribute, value )
-		end
-	end
-
-
-	### Create a new Treequel::Branch from the given +entry+ hash from the specified +directory+
-	### and +parent+.
+	### Create a new Treequel::Branch from the given +entry+ hash from the specified +directory+.
 	def self::new_from_entry( entry, directory )
-		dn = entry['dn']
-		rdn, base = dn.first.split( /,/, 2 )
-		attribute, value = rdn.split( /=/, 2 )
-
-		return self.new( directory, attribute, value, base, entry )
+		return self.new( directory, entry['dn'].first, entry )
 	end
 
 
@@ -77,17 +59,19 @@ class Treequel::Branch
 	#################################################################
 
 	### Create a new Treequel::Branch with the given +directory+, +rdn_attribute+, +rdn_value+, and
-	### +base+. If the optional +entry+ object is given, it will be used to fetch values from
+	### +base_dn+. If the optional +entry+ object is given, it will be used to fetch values from
 	### the directory; if it isn't provided, it will be fetched from the +directory+ the first
 	### time it is needed.
-	def initialize( directory, rdn_attribute, rdn_value, base, entry=nil )
-		@directory     = directory
-		@rdn_attribute = rdn_attribute
-		@rdn_value     = rdn_value
-		@base          = base
-		@entry         = entry
+	def initialize( directory, dn, entry=nil )
+		raise ArgumentError, "invalid DN" unless dn.match( Patterns::DISTINGUISHED_NAME )
+		raise ArgumentError, "can't cast a %s to an LDAP::Entry" % [entry.class.name] unless
+			entry.nil? || entry.is_a?( Hash )
 
-		@values        = {}
+		@directory = directory
+		@dn        = dn
+		@entry     = entry
+
+		@values    = {}
 	end
 
 
@@ -102,48 +86,40 @@ class Treequel::Branch
 	# The directory the branch's entry lives in
 	attr_reader :directory
 
-	# The attribute of the branch's RDN
-	attr_reader :rdn_attribute
+	# The DN of the branch
+	attr_reader :dn
+	alias_method :to_s, :dn
 
-	# The value of the RDN attribute of the branch
-	attr_reader :rdn_value
 
-	# The DN of the base of the branch
-	attr_reader :base
+	### Change the DN the Branch uses to look up its entry.
+	def dn=( newdn )
+		self.clear_caches
+		@dn = newdn
+	end
+
+
+	### Return the attribute/s which make up this Branch's RDN.
+	def rdn_attributes
+		return self.rdn.split( /\s*\+\s*/ ).inject({}) do |attributes, pair|
+			attrname, value = pair.split(/\s*=\s*/)
+			attributes[ attrname ] = value
+			attributes
+		end
+	end
 
 
 	### Return the LDAP::Entry associated with the receiver, fetching it from the
 	### directory if necessary. Returns +nil+ if the entry doesn't exist in the
 	### directory.
 	def entry
-		unless @entry
-			@entry = self.directory.get_entry( self )
-		end
-
-		return @entry
+		return @entry ||= self.directory.get_entry( self )
 	end
 
 
-	### Return the receiver's Relative Distinguished Name as a String.
+	### Return the RDN of the branch.
 	def rdn
-		return [ self.rdn_attribute, self.rdn_value ].join('=')
+		return self.split_dn( 2 ).first
 	end
-
-
-	### Set the Branch's RDN to +newrdn+. Note that this doesn't actually cause any change to
-	### happen in the directory, it just points the branch at a different entry. To move entries
-	### around, use #move or #copy.
-	def rdn=( newrdn )
-		self.clear_caches
-		@rdn_attribute, @rdn_value = newrdn.split( /=/, 2 )
-	end
-
-
-	### Return the receiver's DN as a String.
-	def dn
-		return [ self.rdn, self.base ].join(',')
-	end
-	alias_method :to_s, :dn
 
 
 	### Return the receiver's DN as an Array of attribute=value pairs. If +limit+ is non-zero, 
@@ -154,9 +130,18 @@ class Treequel::Branch
 	end
 
 
+	### Return the LDAP URI for this branch
+	def uri
+		uri = self.directory.uri
+		uri.dn = self.dn
+		return uri
+	end
+
+
 	### Return the Branch's immediate parent node.
 	def parent
-		self.class.new_from_dn( self.base, self.directory )
+		parent_dn = self.split_dn( 2 ).last
+		return self.class.new( self.directory, parent_dn )
 	end
 
 
@@ -335,11 +320,11 @@ class Treequel::Branch
 
 	### Return the entry's DN as an RFC1781-style UFN (User-Friendly Name).
 	def to_ufn
-		return LDAP.dn2ufn( self.dn.to_s )
+		return LDAP.dn2ufn( self.dn )
 	end
 
 
-	### Return the entry underlying the Branch as a String containing its LDIF.
+	### Return the Branch as an LDAP::LDIF::Entry.
 	def to_ldif
 		ldif = "dn: %s\n" % [ self.dn ]
 
@@ -448,7 +433,8 @@ class Treequel::Branch
 	### equal to, and +1 if other_branch is greater than the receiving Branch.
 	def <=>( other_branch )
 		# Try the easy cases first
-		return nil unless other_branch.is_a?( self.class )
+		return nil unless other_branch.respond_to?( :dn ) &&
+			other_branch.respond_to?( :split_dn )
 		return 0 if other_branch.dn == self.dn
 
 		# Try comparing reversed attribute pairs
@@ -478,11 +464,49 @@ class Treequel::Branch
 
 	### Proxy method: if the first argument matches a valid attribute in the directory's
 	### schema, return a new Branch for the RDN made by using the first two arguments as
-	### attribute and value.
-	def method_missing( *args )
-		attribute, value, *extra = *args
-		return super unless attribute && self.directory.schema.attribute_types.key?( attribute )
-		return self.class.new( self.directory, attribute, value, self )
+	### attribute and value, and the remaining hash as additional attributes.
+	### 
+	### E.g.,
+	###   branch = Treequel::Branch.new( directory, 'ou=people,dc=acme,dc=com' )
+	###   branch.uid( :chester ).dn
+	###   # => 'uid=chester,ou=people,dc=acme,dc=com'
+	###   branch.uid( :chester, :employeeType => 'admin' ).dn
+	###   # => 'uid=chester+employeeType=admin,ou=people,dc=acme,dc=com'
+	def method_missing( attribute, value=nil, additional_attributes={} )
+		return super( attribute ) if value.nil?
+		valid_types = self.directory.schema.attribute_types
+
+		return super(attribute) unless
+			valid_types.key?( attribute ) &&
+			additional_attributes.keys.all? {|ex_attr| valid_types.key?(ex_attr) }
+
+		rdn = self.rdn_from_pair_and_hash( attribute, value, additional_attributes )
+		newdn = [ rdn, self.dn ].join( ',' )
+
+		return self.class.new( self.directory, newdn )
+	end
+
+
+	### Make an RDN string (RFC 4514) from the primary +attribute+ and +value+ pair plus any 
+	### +additional_attributes+ (for multivalue RDNs).
+	def rdn_from_pair_and_hash( attribute, value, additional_attributes={} )
+		additional_attributes.merge!( attribute => value )
+		return additional_attributes.collect {|pair| pair.join('=') }.join('+')
+	end
+
+
+	### Split the given +rdn+ into an Array of the iniital RDN attribute and value, and a
+	### Hash containing any additional pairs.
+	def pair_and_hash_from_rdn( rdn )
+		initial, *trailing = rdn.split( '+' )
+		initial_pair = initial.split( /\s*=\s*/ )
+		trailing_pairs = trailing.inject({}) do |hash,pair|
+			k,v = pair.split( /\s*=\s*/ )
+			hash[ k ] = v
+			hash
+		end
+
+		return initial_pair + [ trailing_pairs ]
 	end
 
 

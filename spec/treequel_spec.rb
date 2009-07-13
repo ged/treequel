@@ -114,7 +114,7 @@ describe Treequel do
 			:base => 'dc=example,dc=com',
 			:port => 389,
 			:connect_type => :plain,
-			:binddn => user_dn,
+			:bind_dn => user_dn,
 			:pass => pass,
 		}
 
@@ -122,7 +122,7 @@ describe Treequel do
 			with( options_hash ).
 			and_return( :a_directory )
 
-		Treequel.directory( uri, :binddn => user_dn, :pass => pass, :connect_type => :plain )
+		Treequel.directory( uri, :bind_dn => user_dn, :pass => pass, :connect_type => :plain )
 	end
 
 

@@ -78,7 +78,6 @@ class Treequel::Branchset
 
 	# The default options hash for new Branchsets
 	DEFAULT_OPTIONS = {
-		:base    => nil,
 		:filter  => DEFAULT_FILTER,
 		:scope   => DEFAULT_SCOPE,
 		:timeout => 0,                  # Floating-point timeout -> sec, usec
@@ -92,11 +91,11 @@ class Treequel::Branchset
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new Branchset for a search from the specified +base+ (a Treequel::Branch), with 
-	### the given +options+.
-	def initialize( base, options={} )
+	### Create a new Branchset for a search from the DN of the specified +branch+ (a 
+	### Treequel::Branch), with the given +options+.
+	def initialize( branch, options={} )
 		super()
-		@base = base
+		@branch = branch
 		@options = DEFAULT_OPTIONS.merge( options )
 	end
 
@@ -105,16 +104,18 @@ class Treequel::Branchset
 	public
 	######
 
+	alias_method :all, :entries
+
 	# The branchset's search options hash
 	attr_accessor :options
 
 	# The branchset's base branch that will be used when searching as the basedn
-	attr_accessor :base
+	attr_accessor :branch
 
 
-	### Returns the DN of the Branchset's base Branch.
+	### Returns the DN of the Branchset's branch.
 	def base_dn
-		return self.base.dn
+		return self.branch.dn
 	end
 
 
@@ -127,12 +128,37 @@ class Treequel::Branchset
 	end
 
 
+	### Return a string representation of the Branchset's filter
+	def uri
+		# :scheme,
+		# :host, :port,
+		# :dn,
+		# :attributes,
+		# :scope,
+		# :filter,
+		# :extensions,
+		uri = self.branch.uri
+		uri.attributes = self.select.join(',')
+		uri.scope = SCOPE_NAME[ self.scope ]
+		uri.filter = self.filter_string
+		# :TODO: Add extensions? Support extensions in Branchset?
+
+		return uri
+	end
+
+
+	### Return the Branchset as a stringified URI.
+	def to_s
+		return "%s/%s" % [ self.branch.dn, self.filter_string ]
+	end
+
+
 	### Return a human-readable string representation of the object suitable for debugging.
 	def inspect
-		"#<%s:0x%0x base='%s', filter=%s, scope=%s, options=%p>" % [
+		"#<%s:0x%0x base_dn='%s', filter=%s, scope=%s, options=%p>" % [
 			self.class.name,
 			self.object_id * 2,
-			self.base,
+			self.base_dn,
 			self.filter_string,
 			@scope,
 			self.options,
@@ -146,36 +172,31 @@ class Treequel::Branchset
 	end
 
 
-	### Fetch the entries which match the current criteria and return them as Treequel::Branch 
-	### objects.
-	def all
-		directory = self.base.directory
-		return directory.search( self.base, self.scope, self.filter,
-			:selectattrs => self.select,
-			:timeout => self.timeout,
-			:sortby => self.order,
-			:limit => self.limit
-		  )
+	### Create a BranchCollection from the results of the Branchset and return it.
+	def collection
+		Treequel::BranchCollection.new( self.all )
 	end
 
 
 	### Iterate over the entries which match the current criteria and yield each of them 
 	### as Treequel::Branch objects to the supplied block.
-	def each
-		raise LocalJumpError, "no block given" unless block_given?
-		block = Proc.new
-		self.all.each( &block )
+	def each( &block )
+		raise LocalJumpError, "no block given" unless block
+		directory = self.branch.directory
+
+		directory.search( self.branch, self.scope, self.filter,
+			:selectattrs => self.select,
+			:timeout => self.timeout,
+			:sortby => self.order,
+			:limit => self.limit,
+			&block
+		  )
 	end
 
-
 	### Fetch the first entry which matches the current criteria and return it as an instance of
-	### the object that is set as the +base+ (e.g., Treequel::Branch).
+	### the object that is set as the +branch+ (e.g., Treequel::Branch).
 	def first
-		# :FIXME: This could eventually be implemented with the "paged results" control so
-		# it only actually fetches one row, but for now it just fetches everything and returns
-		# the first value
-		directory = self.base.directory
-		return directory.search( self.base, self.scope, self.filter,
+		self.branch.directory.search( self.branch, self.scope, self.filter,
 			:selectattrs => self.select,
 			:timeout => self.timeout,
 			:sortby => self.order,

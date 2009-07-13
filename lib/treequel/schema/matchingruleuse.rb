@@ -42,7 +42,7 @@ class Treequel::Schema::MatchingRuleUse
 		end
 
 		oid, names, desc, obsolete, attr_oids, extensions = match.captures
-		Treequel.logger.debug "  parsed matchingRuleUse: %p" % [ match.captures ]
+		# Treequel.logger.debug "  parsed matchingRuleUse: %p" % [ match.captures ]
 
 		# Normalize the attributes
 		names     = Treequel::Schema.parse_names( names )

@@ -45,7 +45,8 @@ require 'treequel/branch'
 # Please see the file LICENSE in the base directory for licensing details.
 #
 class Treequel::BranchCollection
-	include Treequel::Loggable,
+	include Enumerable,
+	        Treequel::Loggable,
 	        Treequel::Constants
 
 	extend Treequel::Delegation
@@ -85,7 +86,13 @@ class Treequel::BranchCollection
 
 	### Create a new Treequel::BranchCollection that will operate on the given +branchsets+.
 	def initialize( *branchsets )
-		@branchsets = branchsets.flatten
+		@branchsets = branchsets.flatten.collect do |obj|
+			if obj.respond_to?( :each )
+				obj
+			else
+				Treequel::Branchset.new( obj )
+			end
+		end
 	end
 
 
@@ -102,13 +109,31 @@ class Treequel::BranchCollection
 	public
 	######
 
+	alias_method :all, :entries
+
+
 	# The collection's branchsets
 	attr_reader :branchsets
 
 
-	### Return all of the Treequel::Branches returned from the collection's branchsets.
-	def all
-		return self.branchsets.collect {|bs| bs.all }.flatten
+	### Return a human-readable string representation of the object suitable for debugging.
+	def inspect
+		"#<%s:0x%0x %d branchsets: %p>" % [
+			self.class.name,
+			self.object_id * 2,
+			self.branchsets.length,
+			self.branchsets.collect {|bs| bs.to_s },
+		]
+	end
+
+
+	### Iterate over the Treequel::Branches found by each member branchset, yielding each 
+	### one in turn.
+	def each( &block )
+		raise LocalJumpError, "no block given" unless block
+		self.branchsets.each do |bs|
+			bs.each( &block )
+		end
 	end
 
 

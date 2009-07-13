@@ -27,12 +27,6 @@ class Treequel::Model < Treequel::Branch
 	end
 
 	def self::model_branchset( bs )
-		if bs
-			
-			bs = bs.branchset if bs.respond_to?( :base )
-			self.branchset = bs
-		end
-
 		return self.branchset
 	end
 

@@ -53,14 +53,14 @@ Creating a directory with an options hash allows more fine-grained control over 
 - @:host@ := The LDAP host to connect to.
 - @:port@ := The port to connect to.
 - @:connect_type@ := The type of connection to establish. Must be one of @:plain@, @:tls@, or @:ssl@.
-- @:base@ := The base DN of the directory.
-- @:binddn@ := The DN of the user to bind as.
+- @:base_dn@ := The base DN of the directory.
+- @:bind_dn@ := The DN of the user to bind as.
 - @:pass@ := The password to use when binding.
 
 Any values which you don't provide will default to the values in @Treequel::Directory::DEFAULT_OPTIONS@:
 
 <?example { language: ruby, caption: "Fetching a directory with an options hash." } ?>
-irb> dir = Treequel.directory( :host => 'localhost', :base => 'dc=acme,dc=com' )
+irb> dir = Treequel.directory( :host => 'localhost', :base_dn => 'dc=acme,dc=com' )
 # => => #<Treequel::Directory:0x4f2586 localhost:389 (not connected) base="dc=acme,dc=com", 
 #         bound as=anonymous, schema=(schema not loaded)>
 <?end ?>
@@ -111,7 +111,7 @@ h2(#branches). Branches
 
 Once you have a directory, you can fetch entries from the directory hierarchy by traversing the directory hierarchy using Branches. A Branch (<?api Treequel::Branch ?>) is just a wrapper around a DN. The wrapped DN doesn't necessarily need to map to an extent entry in the directory; the entry behind it isn't fetched until it's needed for something. 
 
-You can get a Branch for a DN in several ways. The easiest, once you have a @Directory@, is to use the <abbr title="Relative Distinguished Name">RDN</abbr> from the base of the directory to fetch it. You can fetch a @Branch@ from a @Directory@ or any other @Branch@ by calling a method on it with the same name as the attribute half of the @RDN@ you want to traverse, and passing the desired value as the only argument to that method. 
+You can get a Branch for a DN in several ways. The easiest, once you have a @Directory@, is to use the <abbr title="Relative Distinguished Name">RDN</abbr> from the base of the directory to fetch it. You can fetch a @Branch@ from a @Directory@ or any other @Branch@ by calling a method on it with the same name as one of the attributes of the @RDN@ you want to traverse, and passing the value as the first argument to that method.
 
 For instance, my company's directory has people organized under a top-level <abbr title="Organizational Unit">OU</abbr> called "people", so I can fetch a @Branch@ for it like so:
 
@@ -133,10 +133,20 @@ irb> me.dn
 # => "uid=mgranger,ou=people,dc=acme,dc=com"
 <?end ?>
 
+You can pass any addition attributes in the @RDN@ (if you have entries with multi-value @RDNs@) as a Hash:
+
+<?example { language: ruby, caption: "Fetching a branch for an entry with a multi-value RDN." } ?>
+irb> hosts = dir.ou( :hosts )
+# => #<Treequel::Branch:0x19a76d4 ou=hosts,dc=acme,dc=com @ localhost:389 
+#     (dc=acme,dc=com, tls, anonymous) entry=nil>
+irb> hosts.cn( :ns1, :l => 'newyork' ).dn
+# => "cn=ns1+l=newyork,ou=hosts,dc=acme,dc=com"
+<?end ?>
+
 You can also create a Branch from its full DN:
 
 <?example { language: ruby, caption: "Fetching a branch using its DN." } ?>
-irb> me = Treequel::Branch.new_from_dn( 'uid=mgranger,ou=people,dc=acme,dc=com', dir )
+irb> me = Treequel::Branch.new( dir, 'uid=mgranger,ou=people,dc=acme,dc=com' )
 # => #<Treequel::Branch:0x12b676c uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389 
 #      (dc=acme,dc=com, tls, anonymous) entry=nil>
 <?end ?>
@@ -149,15 +159,6 @@ irb> entries = dir.conn.search2( 'ou=people,dc=acme,dc=com', LDAP::LDAP_SCOPE_SU
 irb> me = Treequel::Branch.new_from_entry( entries.first, dir )
 # => #<Treequel::Branch:0x129dd70 uid=mgranger,ou=People,dc=acme,dc=com @ localhost:389 
 #      (dc=acme,dc=com, tls, anonymous) entry={...}>
-<?end ?>
-
-You can also, of course, create Branches using the plain @::new@ constructor:
-
-<?example { language: ruby, caption: "Fetching a branch for uid=mgranger,ou=people." } ?>
-irb> dir = Treequel.directory
-irb> me = Treequel::Branch.new( dir, :uid, 'mgranger', 'ou=people,dc=acme,dc=com' )
-# => #<Treequel::Branch:0x13c408c uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389 
-#      (dc=acme,dc=com, tls, anonymous) entry=nil>
 <?end ?>
 
 Branches are also returned as the results from a search, but "that will be covered a little later":#searching.

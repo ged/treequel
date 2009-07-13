@@ -20,6 +20,13 @@ module Treequel::Constants
 		:sub      => LDAP::LDAP_SCOPE_SUBTREE,
 	}.freeze
 
+	### Mapping of LDAP integer scope (LDAP_SCOPE_*) values to their names.
+	SCOPE_NAME = {
+		LDAP::LDAP_SCOPE_ONELEVEL => 'one',
+		LDAP::LDAP_SCOPE_BASE     => 'base',
+		LDAP::LDAP_SCOPE_SUBTREE  => 'subtree',
+	}
+
 
 	### OIDs of RFC values
 	module OIDS
@@ -492,10 +499,10 @@ module Treequel::Constants
 		HEXSTRING = %r{ #{SHARP} #{HEXPAIR}+ }x
 
 		# escaped = DQUOTE / PLUS / COMMA / SEMI / LANGLE / RANGLE
-		ESCAPED = %r{ #{DQUOTE} | #{PLUS} | #{COMMA} | #{SEMI} | #{LANGLE} | #{RANGLE} }x
+		DN_ESCAPED = %r{ #{DQUOTE} | #{PLUS} | #{COMMA} | #{SEMI} | #{LANGLE} | #{RANGLE} }x
 
 		# special = escaped / SPACE / SHARP / EQUALS
-		SPECIAL = %r{ #{ESCAPED} | #{SPACE} | #{SHARP} | #{EQUALS} }x
+		SPECIAL = %r{ #{DN_ESCAPED} | #{SPACE} | #{SHARP} | #{EQUALS} }x
 
 		# pair = ESC ( ESC / special / hexpair )
 		PAIR = %r{

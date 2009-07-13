@@ -134,7 +134,7 @@ module Treequel
 
 		options[:host]   = uri.host if uri.host
 		options[:base]   = uri.dn if uri.dn
-		options[:binddn] = uri.user if uri.user
+		options[:bind_dn] = uri.user if uri.user
 		options[:pass]   = uri.password if uri.password
 
 		return options

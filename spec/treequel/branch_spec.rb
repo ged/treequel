@@ -50,26 +50,24 @@ describe Treequel::Branch do
 
 
 	it "can be constructed from a DN" do
-		@directory.should_receive( :rdn_to ).with( TEST_PEOPLE_DN ).
-			and_return( TEST_PEOPLE_RDN )
-		@directory.should_receive( TEST_PEOPLE_DN_ATTR ).with( TEST_PEOPLE_DN_VALUE ).and_return do 
-			args = [@directory, TEST_PEOPLE_DN_ATTR, TEST_PEOPLE_DN_VALUE, TEST_BASE_DN]
-			Treequel::Branch.new( *args ) 
-		end
-
-		branch = Treequel::Branch.new_from_dn( TEST_PEOPLE_DN, @directory )
+		branch = Treequel::Branch.new( @directory, TEST_PEOPLE_DN )
 		branch.dn.should == TEST_PEOPLE_DN
 	end
 
-	it "can be constructed from an entry returned from LDAP::Conn.search2"  do
+	it "raises an exception if created with an invalid DN" do
+		expect {
+			Treequel::Branch.new(@directory, 'soapyfinger')
+		}.to raise_error( ArgumentError, /invalid dn/i )
+	end
+
+	it "can be constructed from an entry returned from LDAP::Conn.search_ext2"  do
 		entry = {
 			'dn'                => [TEST_PERSON_DN],
 			TEST_PERSON_DN_ATTR => TEST_PERSON_DN_VALUE,
 		}
 		branch = Treequel::Branch.new_from_entry( entry, @directory )
 
-		branch.rdn_attribute.should == TEST_PERSON_DN_ATTR
-		branch.rdn_value.should == TEST_PERSON_DN_VALUE
+		branch.rdn_attributes.should == { TEST_PERSON_DN_ATTR => TEST_PERSON_DN_VALUE }
 		branch.entry.should == entry
 	end
 
@@ -77,12 +75,7 @@ describe Treequel::Branch do
 	describe "instances" do
 
 		before( :each ) do
-			@branch = Treequel::Branch.new(
-				@directory,
-				TEST_HOSTS_DN_ATTR,
-				TEST_HOSTS_DN_VALUE,
-				TEST_BASE_DN
-			  )
+			@branch = Treequel::Branch.new( @directory, TEST_HOSTS_DN )
 
 			@schema = mock( "treequel schema" )
 			@entry = mock( "entry object" )
@@ -113,8 +106,7 @@ describe Treequel::Branch do
 		end
 
 		it "are Comparable if they are siblings" do
-			sibling = Treequel::Branch.new( @directory,
-				TEST_PEOPLE_DN_ATTR, TEST_PEOPLE_DN_VALUE, TEST_BASE_DN )
+			sibling = Treequel::Branch.new( @directory, TEST_PEOPLE_DN )
 
 			( @branch <=> sibling ).should == -1
 			( sibling <=> @branch ).should == 1
@@ -122,8 +114,7 @@ describe Treequel::Branch do
 		end
 
 		it "are Comparable if they are parent and child" do
-			child = Treequel::Branch.new( @directory,
-				TEST_HOST_DN_ATTR, TEST_HOST_DN_VALUE, TEST_HOSTS_DN )
+			child = Treequel::Branch.new( @directory, TEST_HOST_DN )
 
 			( @branch <=> child ).should == 1
 			( child <=> @branch ).should == -1
@@ -161,6 +152,17 @@ describe Treequel::Branch do
 			rval2.dn.should == "ou=Config,cn=rondori,#{TEST_HOSTS_DN}"
 		end
 
+		it "create sub-branches for messages with additional attribute pairs" do
+			@schema.should_receive( :attribute_types ).
+				and_return({ :cn => :a_value, :ou => :a_value, :l => :a_value })
+
+			rval = @branch.cn( 'rondori', :l => 'Portland' )
+			rval.dn.should == "cn=rondori+l=Portland,#{TEST_HOSTS_DN}"
+
+			rval2 = rval.ou( 'Config' )
+			rval2.dn.should == "ou=Config,cn=rondori+l=Portland,#{TEST_HOSTS_DN}"
+		end
+
 		it "don't create sub-branches for messages that don't match valid attributeType OIDs" do
 			@schema.should_receive( :attribute_types ).
 				and_return({ :cn => :a_value, :ou => :a_value })
@@ -181,7 +183,7 @@ describe Treequel::Branch do
 		it "can return its parent as a Branch" do
 			parent_branch = stub( "parent branch object" )
 			@branch.should_receive( :class ).and_return( Treequel::Branch )
-			Treequel::Branch.should_receive( :new_from_dn ).with( TEST_BASE_DN, @directory ).
+			Treequel::Branch.should_receive( :new ).with( @directory, TEST_BASE_DN ).
 				and_return( parent_branch )
 			@branch.parent.should == parent_branch
 		end
@@ -325,12 +327,12 @@ describe Treequel::Branch do
 		end
 
 
-		it "resets any cached data when its RDN changes" do
+		it "resets any cached data when its DN changes" do
 			@directory.should_receive( :get_entry ).with( @branch ).
 				and_return( :first_entry, :second_entry )
 
 			@branch.entry
-			@branch.rdn = TEST_HOSTS_RDN
+			@branch.dn = TEST_HOSTS_DN
 			@branch.entry.should == :second_entry
 		end
 
@@ -403,12 +405,8 @@ describe Treequel::Branch do
 
 		it "returns a Treequel::BranchCollection with equivalent Branchsets if added to another " +
 		   "Branch" do
-			other_branch = Treequel::Branch.new(
-				@directory,
-				TEST_SUBHOSTS_DN_ATTR,
-				TEST_SUBHOSTS_DN_VALUE,
-				TEST_SUBDOMAIN_DN
-			  )
+			other_branch = Treequel::Branch.new( @directory, TEST_SUBHOSTS_DN )
+
 			Treequel::Branchset.should_receive( :new ).with( @branch ).and_return( :branchset )
 			Treequel::Branchset.should_receive( :new ).with( other_branch ).and_return( :other_branchset )
 			Treequel::BranchCollection.should_receive( :new ).with( :branchset, :other_branchset ).

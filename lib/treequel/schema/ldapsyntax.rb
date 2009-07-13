@@ -42,7 +42,7 @@ class Treequel::Schema::LDAPSyntax
 		end
 
 		oid, desc, extensions = match.captures
-		Treequel.logger.debug "  parsed syntax: %p" % [ match.captures ]
+		# Treequel.logger.debug "  parsed syntax: %p" % [ match.captures ]
 
 		# Normalize the attributes
 		desc  = Treequel::Schema.unquote_desc( desc )
