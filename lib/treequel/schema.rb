@@ -50,7 +50,7 @@ class Treequel::Schema
 		end
 
 		oids = $MATCH
-		Treequel.logger.debug "  found OIDs: %p" % [ oids ]
+		# Treequel.logger.debug "  found OIDs: %p" % [ oids ]
 
 		# If it's an OIDLIST, strip off leading and trailing parens and whitespace, then split 
 		# on ' $ ' and parse each OID
@@ -79,22 +79,22 @@ class Treequel::Schema
 	### Parse the given short +names+ string (a 'qdescrs' in the BNF) into an Array of zero or
 	### more Strings.
 	def self::parse_names( names )
-		Treequel.logger.debug "  parsing NAME attribute from: %p" % [ names ]
+		# Treequel.logger.debug "  parsing NAME attribute from: %p" % [ names ]
 
 		# Unspecified
 		if names.nil?
-			Treequel.logger.debug "    no NAME attribute"
+			# Treequel.logger.debug "    no NAME attribute"
 			return []
 
 		# Multi-value
 		elsif names =~ /#{LPAREN} #{WSP} (#{QDESCRLIST}) #{WSP} #{RPAREN}/x
-			Treequel.logger.debug "    parsing a NAME list from %p" % [ $1 ]
+			# Treequel.logger.debug "    parsing a NAME list from %p" % [ $1 ]
 			return $1.scan( QDESCR ).collect {|qd| qd[1..-2].untaint.to_sym }
 
 		# Single-value
 		else
 			# Return the name without the quotes
-			Treequel.logger.debug "    dequoting a single NAME"
+			# Treequel.logger.debug "    dequoting a single NAME"
 			return [ names[1..-2].untaint.to_sym ]
 		end
 	end

@@ -48,23 +48,22 @@ describe Treequel::Directory do
 		@options = {
 			:host         => TEST_HOST,
 			:port         => TEST_PORT,
-			:base         => TEST_BASE_DN,
+			:base_dn      => TEST_BASE_DN,
 			:connect_type => :plain,
 		}
+		@conn = mock( "LDAP connection", :set_option => true, :bound? => false )
+		LDAP::SSLConn.stub!( :new ).and_return( @conn )
+		@conn.stub!( :root_dse ).and_return( nil )
 	end
 
 
 	it "is created with reasonable default options if none are specified" do
-		conn = mock( "LDAP connection", :set_option => true )
-		LDAP::SSLConn.stub!( :new ).and_return( conn )
-		conn.should_receive( :root_dse ).and_return( nil )
-
 		dir = Treequel::Directory.new
 
 		dir.host.should == 'localhost'
 		dir.port.should == 389
 		dir.connect_type.should == :tls
-		dir.base.should == ''
+		dir.base_dn.should == ''
 	end
 
 	it "is created with the specified options if options are specified" do
@@ -73,7 +72,7 @@ describe Treequel::Directory do
 		dir.host.should == TEST_HOST
 		dir.port.should == TEST_PORT
 		dir.connect_type.should == @options[:connect_type]
-		dir.base.should == TEST_BASE_DN
+		dir.base_dn.should == TEST_BASE_DN
 	end
 
 	it "binds immediately if user/pass is included in the ldap URI" do
@@ -83,7 +82,7 @@ describe Treequel::Directory do
 			and_return( conn )
 		conn.should_receive( :bind ).with( TEST_BIND_DN, TEST_BIND_PASS )
 
-		dir = Treequel::Directory.new( @options.merge( :binddn => TEST_BIND_DN, :pass => TEST_BIND_PASS ))
+		dir = Treequel::Directory.new( @options.merge( :bind_dn => TEST_BIND_DN, :pass => TEST_BIND_PASS ))
 		dir.instance_variable_get( :@bound_as ).should == TEST_BIND_DN
 	end
 
@@ -92,8 +91,8 @@ describe Treequel::Directory do
 		LDAP::Conn.stub!( :new ).and_return( conn )
 		conn.should_receive( :root_dse ).and_return( TEST_DSE )
 
-		@dir = Treequel::Directory.new( @options.merge(:base => nil) )
-		@dir.base.should == TEST_BASE_DN
+		@dir = Treequel::Directory.new( @options.merge(:base_dn => nil) )
+		@dir.base_dn.should == TEST_BASE_DN
 	end
 
 
@@ -203,11 +202,10 @@ describe Treequel::Directory do
 		it "can look up a Branch's corresponding LDAP::Entry hash" do
 			branch = mock( "branch" )
 
-			branch.should_receive( :base ).and_return( TEST_PEOPLE_DN )
-			branch.should_receive( :rdn ).and_return( TEST_PERSON_RDN )
+			branch.should_receive( :dn ).at_least( :once ).and_return( TEST_PERSON_DN )
 
-			@conn.should_receive( :search2 ).
-				with( TEST_PEOPLE_DN, LDAP::LDAP_SCOPE_ONELEVEL, TEST_PERSON_RDN ).
+			@conn.should_receive( :search_ext2 ).
+				with( TEST_PERSON_DN, LDAP::LDAP_SCOPE_BASE, '(objectClass=*)' ).
 				and_return([ :the_entry ])
 
 			@dir.get_entry( branch ).should == :the_entry
@@ -237,6 +235,38 @@ describe Treequel::Directory do
 				and_return( found_branch2 )
 
 			@dir.search( base, :base, filter ).should == [ found_branch1, found_branch2 ]
+		end
+
+
+		it "can search for entries and yield them as Sequel::Branch objects" do
+			base = TEST_PEOPLE_DN
+			filter = '(|(uid=jonlong)(uid=margento))'
+			branch = mock( "branch", :dn => "thedn" )
+
+			found_branch1 = stub( "entry1 branch" )
+			found_branch2 = stub( "entry2 branch" )
+
+			# Do the search
+			entries = [
+				{ 'dn' => ["uid=jonlong,#{TEST_PEOPLE_DN}"] },
+				{ 'dn' => ["uid=margento,#{TEST_PEOPLE_DN}"] },
+			]
+			@conn.should_receive( :search_ext2 ).
+				with( base, LDAP::LDAP_SCOPE_BASE, filter, ['*'], false, nil, nil, 0, 0, 0, '', nil ).
+				and_return( entries )
+
+			# Turn found entries into Branch objects
+			Treequel::Branch.should_receive( :new_from_entry ).with( entries[0], @dir ).
+				and_return( found_branch1 )
+			Treequel::Branch.should_receive( :new_from_entry ).with( entries[1], @dir ).
+				and_return( found_branch2 )
+
+			results = []
+			@dir.search( base, :base, filter ) do |branch|
+				results << branch
+			end
+
+			results.should == [ found_branch1, found_branch2 ]
 		end
 
 
@@ -445,7 +475,7 @@ describe Treequel::Directory do
 				and_return([ TEST_PERSON_RDN, TEST_PEOPLE_DN ])
 
 			@conn.should_receive( :modrdn ).with( TEST_PERSON_DN, TEST_PERSON2_RDN, true )
-			branch.should_receive( :rdn= ).with( TEST_PERSON2_RDN )
+			branch.should_receive( :dn= ).with( TEST_PERSON2_DN )
 
 			@dir.move( branch, TEST_PERSON2_DN )
 		end

@@ -172,6 +172,7 @@ DEVELOPMENT_DEPENDENCIES = {
 	'tmail'       => '>= 1.2.3.1',
 	'ultraviolet' => '>= 0.10.2',
 	'libxml-ruby' => '>= 0.8.3',
+	'rdoc'        => '>= 2.4.3',
 }
 
 # Non-gem requirements: packagename => version
