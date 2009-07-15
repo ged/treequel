@@ -491,7 +491,9 @@ class Treequel::Branch
 	### +additional_attributes+ (for multivalue RDNs).
 	def rdn_from_pair_and_hash( attribute, value, additional_attributes={} )
 		additional_attributes.merge!( attribute => value )
-		return additional_attributes.collect {|pair| pair.join('=') }.join('+')
+		return additional_attributes.sort_by {|k,v| k.to_s }.
+			collect {|pair| pair.join('=') }.
+			join('+')
 	end
 
 

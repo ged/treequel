@@ -2,7 +2,7 @@
 
 require 'ldap'
 
-require 'treequel' 
+require 'treequel'
 require 'treequel/branchset'
 require 'treequel/exceptions'
 require 'treequel/sequel_integration'
@@ -421,6 +421,10 @@ class Treequel::Filter
 		when Sequel::SQL::Expression
 			return self.parse_sequel_expression( expression )
 
+		# Filters and components can already act as components of other filters
+		when Treequel::Filter, Treequel::Filter::Component
+			return expression
+
 		else
 			raise Treequel::ExpressionError, 
 				"don't know how to turn %p into an filter component" % [ expression ]
@@ -562,6 +566,27 @@ class Treequel::Filter
 
 				return Treequel::Filter::SimpleItemComponent.new( attribute, value, equivalent )
 
+			elsif op == :'!='
+				contents = Treequel::Filter.new( expression.args )
+				return Treequel::Filter::NotComponent.new( contents )
+
+			elsif op == :'not like'
+				equivalent = nil
+				attribute, value = *expression.args
+				Treequel.logger.debug "  making a NOT LIKE expression out of: %p" % [ expression ]
+
+				if value !~ /\*/
+					Treequel.logger.debug \
+						"    turning a NOT LIKE expression with no wildcards into an 'approx' filter"
+					equivalent = :approx
+				else
+					equivalent = :equal
+				end
+
+				comp = Treequel::Filter::SimpleItemComponent.new( attribute, value, equivalent )
+				filter = Treequel::Filter.new( comp )
+				return Treequel::Filter::NotComponent.new( filter )
+
 			elsif LOGICAL_COMPONENTS.key?( op )
 				components = expression.args.collect do |comp|
 					Treequel::Filter.new( comp )
@@ -574,13 +599,13 @@ class Treequel::Filter
 					"unsupported Sequel filter syntax %p: %s" %
 					[ expression, msg ]
 			else
-				raise ScriptError, 
-					"  unhandled Sequel BooleanExpression: add handling for %p" % [ op ]
+				raise ScriptError,
+					"  unhandled Sequel BooleanExpression: add handling for %p: %p" % [ op, expression ]
 			end
 
 		else
 			raise Treequel::ExpressionError,
-				"don't know how to turn %p into a component" % [ expression.class ]
+				"don't know how to turn %p into a component" % [ expression ]
 		end
 	end
 
