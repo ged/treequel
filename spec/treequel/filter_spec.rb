@@ -429,6 +429,29 @@ describe Treequel::Filter do
 			}.to raise_error( Treequel::ExpressionError, /regex/i )
 		end
 
+		it "supports negation of a 'exists' expression via the Sequel ~ syntax" do
+			filter = Treequel::Filter.new( ~:cn )
+			filter.should be_a( Treequel::Filter )
+			filter.to_s.should == '(!(cn=*))'
+		end
+
+		it "supports negation of a simple equality expression via the Sequel ~ syntax" do
+			filter = Treequel::Filter.new( ~{ :l => 'anoos' } )
+			filter.should be_a( Treequel::Filter )
+			filter.to_s.should == '(!(l=anoos))'
+		end
+
+		it "supports negation of an approximate-match expression via the Sequel ~ syntax" do
+			filter = Treequel::Filter.new( ~:cn.like('maylin') )
+			filter.should be_a( Treequel::Filter )
+			filter.to_s.should == '(!(cn~=maylin))'
+		end
+
+		it "supports negation of a matching expression via the Sequel ~ syntax" do
+			filter = Treequel::Filter.new( ~:cn.like('may*i*') )
+			filter.should be_a( Treequel::Filter )
+			filter.to_s.should == '(!(cn=may*i*))'
+		end
 	end
 end
 
