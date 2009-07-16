@@ -132,10 +132,10 @@ module Treequel
 
 		options[:connect_type] = :ssl if uri.scheme == 'ldaps'
 
-		options[:host]   = uri.host if uri.host
-		options[:base]   = uri.dn if uri.dn
+		options[:host]    = uri.host if uri.host
+		options[:base_dn] = uri.dn unless uri.dn.nil? || uri.dn.empty?
 		options[:bind_dn] = uri.user if uri.user
-		options[:pass]   = uri.password if uri.password
+		options[:pass]    = uri.password if uri.password
 
 		return options
 	end

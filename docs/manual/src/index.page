@@ -44,6 +44,8 @@ irb> dir = Treequel.directory( 'ldap://ldap.andrew.cmu.edu/dc=cmu,dc=edu' )
 #      bound as=anonymous, schema=(schema not loaded)>
 <?end ?>
 
+You may omit the base DN in the URL if your environment only has one top level base (or you don't know it!) Treequel will use the first base DN it finds from the server's advertised "namingContexts":http://tools.ietf.org/html/rfc2251#section-3.4 by default.
+
 It will also use the user and password from a ==<code>user:pass@host</code>==-style URL, if present, and use them to immediately bind to the directory. See "the section on binding":#binding for details.
 
 h3(#connect-options-hash). Connecting With an Options Hash
@@ -57,7 +59,7 @@ Creating a directory with an options hash allows more fine-grained control over 
 - @:bind_dn@ := The DN of the user to bind as.
 - @:pass@ := The password to use when binding.
 
-Any values which you don't provide will default to the values in @Treequel::Directory::DEFAULT_OPTIONS@:
+Any values which you don't provide will default to the values in @Treequel::Directory::DEFAULT_OPTIONS@.
 
 <?example { language: ruby, caption: "Fetching a directory with an options hash." } ?>
 irb> dir = Treequel.directory( :host => 'localhost', :base_dn => 'dc=acme,dc=com' )
@@ -80,7 +82,7 @@ h2(#binding). Binding to the Directory
 
 If you don't specify a user @DN@ and password, a new @Directory@ object will be bound anonymously, which is usually sufficient for reading the public attributes of records, but it's likely that you'll need to bind as a particular user to write to the directory or access protected attributes:
 
-<?example { language: ruby, caption: "Binding to the directory as a particular user." } ?>
+<?example { language: ruby, caption: "Binding to the directory as a particular entry." } ?>
 irb> dir.bind( 'uid=mgranger,ou=people,dc=acme,dc=com', 'my_password' )
 <?end ?>
 
@@ -133,7 +135,7 @@ irb> me.dn
 # => "uid=mgranger,ou=people,dc=acme,dc=com"
 <?end ?>
 
-You can pass any addition attributes in the @RDN@ (if you have entries with multi-value @RDNs@) as a Hash:
+You can pass any additional attributes in the @RDN@ (if you have entries with multi-value @RDNs@) as a Hash:
 
 <?example { language: ruby, caption: "Fetching a branch for an entry with a multi-value RDN." } ?>
 irb> hosts = dir.ou( :hosts )
@@ -211,10 +213,21 @@ h3(#create-copy-delete-move). Creating, Copying, Deleting, and Moving Entries
 
 If you have a @Branch@ object for an entry which doesn't exist in the directory, you can create it via the @#create@ method:
 
-<?example { language: ruby, caption: "Fetching a branch's parent and its children." } ?>
-irb> 
+<?example { language: ruby, caption: "Creating a new entry." } ?>
+irb> new = dir.ou( :people ).uid( :mahlon ).ou( :organs )
+# => #<Treequel::Branch:0xfb7b9e954 ou=organs,uid=mahlon,ou=people,dc=acme,dc=com @
+#    localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
+irb> new.create( :cn => 'bladder', :objectClass => ['top', 'room'] )    ???
 <?end ?>
 
+* object_classes
+
+* may_attribute_types
+* must_attribute_types
+
+* valid_attribute?
+* valid_attribute_oids
+* valid_attribute_types
 
 
 * copy
@@ -224,21 +237,12 @@ irb>
 
 * entry
 
-* may_oids
-* may_attribute_types
-* must_oids
-* must_attribute_types
-* object_classes
-* valid_attribute?
-* valid_attribute_oids
-* valid_attribute_types
-
 
 h3(#branch-ldif). Getting a Branch's LDIF
 
 A convenient way to look at a branch's entry is via its "LDIF":http://en.wikipedia.org/wiki/LDAP_Data_Interchange_Format string:
 
-<?example { language: ruby, caption: "Viewing an entry as LDIF." } ?>
+<?example { language: ruby, caption: "Displaying a branch's LDIF." } ?>
 irb> puts me.to_ldif
 # dn: uid=mgranger,ou=people,dc=acme,dc=com
 # gidNumber: 200
@@ -263,16 +267,17 @@ irb> puts me.to_ldif
 # objectClass: apple-user
 # homePhone: +1 9075551212
 # departmentNumber: 18
-<?end?>	
+<?end?>
 
 h2. Authors
 
 * Michael Granger
+* Mahlon E. Smith
 
 
 h2. License
 
-Copyright © 2009, Michael Granger
+Copyright © 2009, Michael Granger and Mahlon E. Smith
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are

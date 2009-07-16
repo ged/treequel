@@ -102,7 +102,7 @@ class Treequel::Branch
 	def rdn_attributes
 		return self.rdn.split( /\s*\+\s*/ ).inject({}) do |attributes, pair|
 			attrname, value = pair.split(/\s*=\s*/)
-			attributes[ attrname ] = value
+			attributes[ attrname ] = [ value ]
 			attributes
 		end
 	end

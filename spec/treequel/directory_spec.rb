@@ -408,6 +408,9 @@ describe Treequel::Directory do
 				:cn => 'Chilly T',
 				:desc => 'Audi like Jetta',
 			}
+			rdn_attrs = {
+				TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE]
+			}
 			addattrs = {
 				'cn' => ['Chilly T'],
 				'desc' => ['Audi like Jetta'],
@@ -416,8 +419,7 @@ describe Treequel::Directory do
 
 			branch = mock( "new person branch" )
 			branch.should_receive( :dn ).and_return( TEST_PERSON_DN )
-			branch.should_receive( :rdn_attribute ).twice.and_return( TEST_PERSON_DN_ATTR )
-			branch.should_receive( :rdn_value ).and_return( TEST_PERSON_DN_VALUE )
+			branch.should_receive( :rdn_attributes ).and_return( rdn_attrs )
 			@conn.should_receive( :add ).with( TEST_PERSON_DN, addattrs )
 
 			@dir.create( branch, newattrs )
