@@ -46,8 +46,8 @@ class Treequel::Directory
 		:host          => 'localhost',
 		:port          => LDAP::LDAP_PORT,
 		:connect_type  => :tls,
-		:base          => nil,
-		:bind_dn        => nil,
+		:base_dn       => nil,
+		:bind_dn       => nil,
 		:pass          => nil
 	}
 
@@ -353,8 +353,10 @@ class Treequel::Directory
 	def create( branch, newattrs={} )
 		newdn = branch.dn
 
-		newattrs[branch.rdn_attribute] ||= []
-		newattrs[branch.rdn_attribute] << branch.rdn_value
+		# Merge RDN attributes with existing ones, combining any that exist in both
+		newattrs.merge!( branch.rdn_attributes ) do |key, *values|
+			values.flatten
+		end
 
 		normattrs = self.normalize_attributes( newattrs )
 
