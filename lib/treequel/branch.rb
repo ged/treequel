@@ -289,7 +289,7 @@ class Treequel::Branch
 	end
 
 
-	### Return a Hash of all the attributes allowed by the Branch's objectClasses. If 
+	### Return a Hash of all the attributes allowed by the Branch's objectClasses. If
 	### any +additional_object_classes+ are given, include the attributes that would be
 	### available for the entry if it had them.
 	def valid_attributes_hash( *additional_object_classes )
@@ -303,9 +303,10 @@ class Treequel::Branch
 	### Return +true+ if the specified +attrname+ is a valid attributeType given the
 	### receiver's current objectClasses.
 	def valid_attribute?( attroid )
-		attroid = attroid.to_sym if attroid.is_a?( String ) && 
+		attroid = attroid.to_sym if attroid.is_a?( String ) &&
 			attroid !~ NUMERICOID
-		return self.valid_attribute_oids.include?( attroid )
+
+		return self.valid_attribute_types.any? { |a| a.names.include?( attroid ) }
 	end
 
 

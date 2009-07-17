@@ -247,10 +247,13 @@ h3(#create-copy-delete-move). Creating, Copying, Deleting, and Moving Entries
 If you have a @Branch@ object for an entry which doesn't exist in the directory, you can create it via the @#create@ method. It takes any attributes that should be set when creating it, and requires at least that you provide a "structural objectClass":http://tools.ietf.org/html/rfc4512#page-18.
 
 <?example { language: ruby, caption: "Creating a new entry." } ?>
-irb> new = dir.ou( :people ).uid( :mahlon ).ou( :organs )
-# => #<Treequel::Branch:0xfb7b9e954 ou=organs,uid=mahlon,ou=people,dc=acme,dc=com @
+irb> mahlon_things = dir.ou( :people ).uid( :mahlon ).ou( :things )
+# => #<Treequel::Branch:0xfb7b9e954 ou=things,uid=mahlon,ou=people,dc=acme,dc=com @
 #    localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
-irb> new.create( :objectClass => 'room' )
+irb> mahlon_things.create( :objectClass => [ 'top', 'organizationalUnit' ] )
+# => true
+irb> mahlon_things.cn( :thing ).create( :objectClass => 'room', :description => 'a thing' )
+# => true
 <?end ?>
 
 * copy
