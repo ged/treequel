@@ -26,8 +26,7 @@ Once those things are done, you can fire Treequel up via IRb and get a <?api Tre
 $ irb -rtreequel -rubygems
 
 irb> dir = Treequel.directory
-# => #<Treequel::Directory:0x69cbac localhost:389 (not connected) base="dc=acme,dc=com", 
-#      bound as=anonymous, schema=(schema not loaded)>
+# => #<Treequel::Directory:0x69cbac localhost:389 (not connected) base="dc=acme,dc=com", bound as=anonymous, schema=(schema not loaded)>
 <?end ?>
 
 The @.directory@ method has some reasonable defaults, so if your directory is running on localhost, you want to connect using @TLS@ on the default port, and bind anonymously, this will be all you need. 
@@ -40,8 +39,7 @@ The LDAP URL format can contain quite a lot of information, but @Treequel::Direc
 
 <?example { language: ruby, caption: "Fetching a directory by URL." } ?>
 irb> dir = Treequel.directory( 'ldap://ldap.andrew.cmu.edu/dc=cmu,dc=edu' )
-# => #<Treequel::Directory:0x4f052e ldap.andrew.cmu.edu:389 (not connected) base="dc=cmu,dc=edu", 
-#      bound as=anonymous, schema=(schema not loaded)>
+# => #<Treequel::Directory:0x4f052e ldap.andrew.cmu.edu:389 (not connected) base="dc=cmu,dc=edu", bound as=anonymous, schema=(schema not loaded)>
 <?end ?>
 
 You may omit the base DN in the URL if your environment only has one top level base (or you don't know it!) Treequel will use the first base DN it finds from the server's advertised "namingContexts":http://tools.ietf.org/html/rfc2251#section-3.4 by default.
@@ -63,8 +61,7 @@ Any values which you don't provide will default to the values in @Treequel::Dire
 
 <?example { language: ruby, caption: "Fetching a directory with an options hash." } ?>
 irb> dir = Treequel.directory( :host => 'localhost', :base_dn => 'dc=acme,dc=com' )
-# => => #<Treequel::Directory:0x4f2586 localhost:389 (not connected) base="dc=acme,dc=com", 
-#         bound as=anonymous, schema=(schema not loaded)>
+# => => #<Treequel::Directory:0x4f2586 localhost:389 (not connected) base="dc=acme,dc=com",    bound as=anonymous, schema=(schema not loaded)>
 <?end ?>
 
 h3(#mixing-url-and-options-hash). Connecting with a URL and an Options Hash
@@ -73,8 +70,7 @@ You can also mix the two connection styles, allowing you to still use a compact 
 
 <?example { language: ruby, caption: "Using both a URL and options." } ?>
 irb> dir = Treequel.directory( 'ldap://localhost/dc=acme,dc=com', :connect_type => :plain )
-# => #<Treequel::Directory:0x4a0844 localhost:389 (not connected) base="dc=acme,dc=com", 
-#         bound as=anonymous, schema=(schema not loaded)>
+# => #<Treequel::Directory:0x4a0844 localhost:389 (not connected) base="dc=acme,dc=com",    bound as=anonymous, schema=(schema not loaded)>
 <?end ?>
 
 
@@ -91,8 +87,7 @@ You can also bind to the directory using a URL that contains _authority_ informa
 <?example { language: ruby, caption: "Fetching a directory by URL with automatic binding." } ?>
 irb> url = 'ldap://cn=user,dc=acme,dc=com:my_password@localhost/dc=acme,dc=com'
 irb> dir = Treequel.directory( url )
-# => #<Treequel::Directory:0x4f052e localhost:389 (not connected) base="dc=acme,dc=com", 
-#      bound as="cn=user,dc=acme,dc=com", schema=(schema not loaded)>
+# => #<Treequel::Directory:0x4f052e localhost:389 (not connected) base="dc=acme,dc=com", bound as="cn=user,dc=acme,dc=com", schema=(schema not loaded)>
 <?end ?>
 
 h3(#unbinding). Unbinding
@@ -105,8 +100,7 @@ If you want to rebind as a different user for just a few operations, you can do 
 
 <?example { language: ruby, caption: "Executing a block with a different binding." } ?>
 irb> dir.bound_as( 'cn=admin,dc=acme,dc=com', 's00per:sekrit' ) { dir }
-# => #<Treequel::Directory:0x4f052e localhost:389 (not connected) base="dc=acme,dc=com", 
-#      bound as="cn=admin,dc=acme,dc=com", schema=(schema not loaded)>
+# => #<Treequel::Directory:0x4f052e localhost:389 (not connected) base="dc=acme,dc=com", bound as="cn=admin,dc=acme,dc=com", schema=(schema not loaded)>
 <?end ?>
 
 Once the block returns, the binding reverts to what it previously was.
@@ -153,8 +147,7 @@ You can also create a Branch from its full DN:
 
 <?example { language: ruby, caption: "Fetching a branch using its DN." } ?>
 irb> me = Treequel::Branch.new( dir, 'uid=mgranger,ou=people,dc=acme,dc=com' )
-# => #<Treequel::Branch:0x12b676c uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389 
-#      (dc=acme,dc=com, tls, anonymous) entry=nil>
+# => #<Treequel::Branch:0x12b676c uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 <?end ?>
 
 or from a raw @LDAP::Entry@ object:
@@ -163,8 +156,7 @@ or from a raw @LDAP::Entry@ object:
 irb> entries = dir.conn.search2( 'ou=people,dc=acme,dc=com', LDAP::LDAP_SCOPE_SUBTREE, 
                                  '(uid=mgranger)' )
 irb> me = Treequel::Branch.new_from_entry( entries.first, dir )
-# => #<Treequel::Branch:0x129dd70 uid=mgranger,ou=People,dc=acme,dc=com @ localhost:389 
-#      (dc=acme,dc=com, tls, anonymous) entry={...}>
+# => #<Treequel::Branch:0x129dd70 uid=mgranger,ou=People,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry={...}>
 <?end ?>
 
 Branches are also returned as the results from a search, but "that will be covered a little later":#searching.
@@ -232,8 +224,7 @@ Each branch can also fetch its parent and its children:
 
 <?example { language: ruby, caption: "Fetching a branch's parent and its children." } ?>
 irb> marketing_hosts = dir.dc( :marketing ).ou( :hosts )
-# => #<Treequel::Branch:0x135ad94 ou=hosts,dc=marketing,dc=acme,dc=com @ localhost:389 
-#      (dc=acme,dc=com, tls, anonymous) entry=nil>
+# => #<Treequel::Branch:0x135ad94 ou=hosts,dc=marketing,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> marketing_hosts.parent
 # => #<Treequel::Branch:0x13508d0 dc=marketing,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, 
 #     anonymous) entry=nil>
@@ -279,7 +270,7 @@ irb> new.create( :objectClass => 'room' )
 
 h3(#schema-objectclasses). objectClasses
 
-You can fetch information about the objectClasses the directory knows about through 
+You can fetch information about the objectClasses the directory knows about through the 
 
 * object_classes
 
