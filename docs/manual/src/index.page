@@ -24,7 +24,6 @@ Once those things are done, you can fire Treequel up via IRb and get a <?api Tre
 
 <?example { language: ruby, caption: "Fetching a directory." } ?>
 $ irb -rtreequel -rubygems
-
 irb> dir = Treequel.directory
 # => #<Treequel::Directory:0x69cbac localhost:389 (not connected) base="dc=acme,dc=com", bound as=anonymous, schema=(schema not loaded)>
 <?end ?>
@@ -117,8 +116,7 @@ For instance, my company's directory has people organized under a top-level <abb
 
 <?example { language: ruby, caption: "Fetching a branch ou=people." } ?>
 irb> people = dir.ou( :people )
-# => #<Treequel::Branch:0x19a76d4 ou=people,dc=acme,dc=com @ localhost:389 
-#     (dc=acme,dc=com, tls, anonymous) entry=nil>
+# => #<Treequel::Branch:0x19a76d4 ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> people.dn
 # => "ou=people,dc=acme,dc=com"
 <?end ?>
@@ -127,8 +125,7 @@ Then you can fetch branches for individuals under @ou=People@ by calling their @
 
 <?example { language: ruby, caption: "Fetching a branch for uid=mgranger,ou=people." } ?>
 irb> me = people.uid( :mgranger )
-# => #<Treequel::Branch:0x19a4970 uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389
-#     (dc=acme,dc=com, tls, anonymous) entry=nil>
+# => #<Treequel::Branch:0x19a4970 uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> me.dn
 # => "uid=mgranger,ou=people,dc=acme,dc=com"
 <?end ?>
@@ -137,8 +134,7 @@ You can pass any additional attributes in the @RDN@ (if you have entries with mu
 
 <?example { language: ruby, caption: "Fetching a branch for an entry with a multi-value RDN." } ?>
 irb> hosts = dir.ou( :hosts )
-# => #<Treequel::Branch:0x19a76d4 ou=hosts,dc=acme,dc=com @ localhost:389 
-#     (dc=acme,dc=com, tls, anonymous) entry=nil>
+# => #<Treequel::Branch:0x19a76d4 ou=hosts,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> hosts.cn( :ns1, :l => 'newyork' ).dn
 # => "cn=ns1+l=newyork,ou=hosts,dc=acme,dc=com"
 <?end ?>
@@ -153,8 +149,7 @@ irb> me = Treequel::Branch.new( dir, 'uid=mgranger,ou=people,dc=acme,dc=com' )
 or from a raw @LDAP::Entry@ object:
 
 <?example { language: ruby, caption: "Fetching a branch using its DN." } ?>
-irb> entries = dir.conn.search2( 'ou=people,dc=acme,dc=com', LDAP::LDAP_SCOPE_SUBTREE, 
-                                 '(uid=mgranger)' )
+irb> entries = dir.conn.search2( 'ou=people,dc=acme,dc=com', LDAP::LDAP_SCOPE_SUBTREE, '(uid=mgranger)' )
 irb> me = Treequel::Branch.new_from_entry( entries.first, dir )
 # => #<Treequel::Branch:0x129dd70 uid=mgranger,ou=People,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry={...}>
 <?end ?>
@@ -226,11 +221,9 @@ Each branch can also fetch its parent and its children:
 irb> marketing_hosts = dir.dc( :marketing ).ou( :hosts )
 # => #<Treequel::Branch:0x135ad94 ou=hosts,dc=marketing,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> marketing_hosts.parent
-# => #<Treequel::Branch:0x13508d0 dc=marketing,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, 
-#     anonymous) entry=nil>
+# => #<Treequel::Branch:0x13508d0 dc=marketing,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> marketing_hosts.children.map {|b| b.dn }
-# => ["cn=rockbox,ou=Hosts,dc=marketing,dc=acme,dc=com", 
-#     "cn=bone,ou=Hosts,dc=marketing,dc=acme,dc=com"]
+# => ["cn=rockbox,ou=Hosts,dc=marketing,dc=acme,dc=com", "cn=bone,ou=Hosts,dc=marketing,dc=acme,dc=com"]
 <?end ?>
 
 h3(#create-copy-delete-move). Creating, Copying, Deleting, and Moving Entries
@@ -239,8 +232,7 @@ If you have a @Branch@ object for an entry which doesn't exist in the directory,
 
 <?example { language: ruby, caption: "Creating a new entry." } ?>
 irb> mahlon_things = dir.ou( :people ).uid( :mahlon ).ou( :things )
-# => #<Treequel::Branch:0xfb7b9e954 ou=things,uid=mahlon,ou=people,dc=acme,dc=com @
-#    localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
+# => #<Treequel::Branch:0xfb7b9e954 ou=things,uid=mahlon,ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> mahlon_things.create( :objectClass => [ 'top', 'organizationalUnit' ] )
 # => true
 irb> mahlon_things.cn( :thing ).create( :objectClass => 'room', :description => 'a thing' )
@@ -262,8 +254,7 @@ You can get the <?api Treequel::Schema ?> from the directory by calling its @#sc
 
 <?example { language: ruby, caption: "Fetching a ." } ?>
 irb> new = dir.ou( :people ).uid( :mahlon ).ou( :organs )
-# => #<Treequel::Branch:0xfb7b9e954 ou=organs,uid=mahlon,ou=people,dc=acme,dc=com @
-#    localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
+# => #<Treequel::Branch:0xfb7b9e954 ou=organs,uid=mahlon,ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> new.create( :objectClass => 'room' )
 <?end ?>
 
