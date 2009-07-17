@@ -266,6 +266,9 @@ class Treequel::Directory
 	def get_entry( branch )
 		self.log.debug "Looking up entry for %p" % [ branch.dn ]
 		return self.conn.search_ext2( branch.dn, SCOPE[:base], '(objectClass=*)' ).first
+	rescue LDAP::ResultError => err
+		self.log.info "  search for %p failed: %s" % [ branch.dn, err.message ]
+		return nil
 	end
 
 
@@ -352,13 +355,19 @@ class Treequel::Directory
 	### +newattrs+ hash.
 	def create( branch, newattrs={} )
 		newdn = branch.dn
+		schema = self.schema
 
 		# Merge RDN attributes with existing ones, combining any that exist in both
+		self.log.debug "Smushing rdn attributes %p into %p" % [ branch.rdn_attributes, newdn ]
 		newattrs.merge!( branch.rdn_attributes ) do |key, *values|
 			values.flatten
 		end
 
 		normattrs = self.normalize_attributes( newattrs )
+		raise ArgumentError, "Can't create an entry with no objectClasses" unless
+			normattrs.key?( 'objectClass' )
+		raise ArgumentError, "Can't create an entry with no structural objectClass" unless
+			normattrs['objectClass'].any? {|oc| schema.object_classes[oc.to_sym].structural? }
 
 		self.log.debug "Creating an entry at %s with the attributes: %p" % [ newdn, normattrs ]
 		self.conn.add( newdn, normattrs )
@@ -502,6 +511,8 @@ class Treequel::Directory
 		normhash = {}
 		hash.each do |key,val|
 			val = [ val ] unless val.is_a?( Array )
+			val.collect! {|obj| obj.to_s }
+
 			normhash[ key.to_s ] = val
 		end
 

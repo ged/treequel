@@ -4,6 +4,8 @@ require 'rubygems'
 require 'readline'
 require 'logger'
 require 'shellwords'
+require 'tempfile'
+require 'digest/sha1'
 require 'abbrev'
 require 'treequel'
 require 'treequel/mixins'
@@ -175,7 +177,12 @@ class Shell
 
 	### Edit the entry specified by +rdn+.
 	def edit_command( rdn, *args )
-		
+		branch = @currbranch.get_child( rdn )
+
+		fn = Digest::SHA1.hexdigest( rdn )
+		tf = Tempfile.new( fn )
+		if branch.exists?
+			tf.print(  )
 	end
 
 

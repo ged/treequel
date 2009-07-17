@@ -242,22 +242,23 @@ describe Treequel::Branch do
 			@schema.should_receive( :attribute_types ).and_return({ :objectClass => oc_attr })
 			oc_attr.should_receive( :single? ).and_return( false )
 			oc_attr.should_receive( :syntax_oid ).and_return( OIDS::STRING_SYNTAX )
+
 			@entry.should_receive( :[] ).with( 'objectClass' ).at_least( :once ).
-				and_return([ 'ou', 'cn' ])
+				and_return([ 'organizationalUnit', 'extensibleObject' ])
 
 			@directory.should_receive( :convert_syntax_value ).
-				with( OIDS::STRING_SYNTAX, 'ou' ).
-				and_return( 'ou' )
+				with( OIDS::STRING_SYNTAX, 'organizationalUnit' ).
+				and_return( 'organizationalUnit' )
 			@directory.should_receive( :convert_syntax_value ).
-				with( OIDS::STRING_SYNTAX, 'cn' ).
-				and_return( 'cn' )
+				with( OIDS::STRING_SYNTAX, 'extensibleObject' ).
+				and_return( 'extensibleObject' )
 
 			@schema.should_receive( :object_classes ).twice.and_return({
-				:ou => :ou_objectclass,
-				:cn => :cn_objectclass,
-			})
+					:organizationalUnit => :ou_objectclass,
+					:extensibleObject => :extobj_objectclass,
+				})
 
-			@branch.object_classes.should == [ :ou_objectclass, :cn_objectclass ]
+			@branch.object_classes.should == [ :ou_objectclass, :extobj_objectclass ]
 		end
 
 		it "can return the set of all its MUST attributeTypes based on which objectClasses it has" do
@@ -265,8 +266,8 @@ describe Treequel::Branch do
 			oc2 = mock( "second objectclass" )
 
 			@branch.should_receive( :object_classes ).and_return([ oc1, oc2 ])
-			oc1.should_receive( :must ).and_return([ :cn, :uid ])
-			oc2.should_receive( :must ).and_return([ :cn, :l ])
+			oc1.should_receive( :must ).at_least( :once ).and_return([ :cn, :uid ])
+			oc2.should_receive( :must ).at_least( :once ).and_return([ :cn, :l ])
 
 			must_attrs = @branch.must_attribute_types
 			must_attrs.should have( 3 ).members
@@ -274,22 +275,19 @@ describe Treequel::Branch do
 		end
 
 		it "can return a Hash pre-populated with pairs that correspond to its MUST attributes" do
-			cn_attrtype = mock( "cn attribute type" )
-			l_attrtype = mock( "l attribute type" )
-			objectClass_attrtype = mock( "objectClass attribute type" )
+			cn_attrtype = mock( "cn attribute type", :single? => true )
+			l_attrtype = mock( "l attribute type", :single? => true )
+			objectClass_attrtype = mock( "objectClass attribute type", :single? => false )
 
 			cn_attrtype.should_receive( :name ).at_least( :once ).and_return( :cn )
-			@branch.should_receive( :[] ).with( :cn ).at_least( :once ).and_return( 'cn' )
 			l_attrtype.should_receive( :name ).at_least( :once ).and_return( :l )
-			@branch.should_receive( :[] ).with( :l ).at_least( :once ).and_return( 'l' )
 			objectClass_attrtype.should_receive( :name ).at_least( :once ).and_return( :objectClass )
-			@branch.should_receive( :[] ).with( :objectClass ).at_least( :once ).and_return([:top])
 
 			@branch.should_receive( :must_attribute_types ).at_least( :once ).
 				and_return([ cn_attrtype, l_attrtype, objectClass_attrtype ])
 
 			@branch.must_attributes_hash.
-				should == { :cn => 'cn', :l => 'l', :objectClass => [:top] }
+				should == { :cn => '', :l => '', :objectClass => [:top] }
 		end
 
 

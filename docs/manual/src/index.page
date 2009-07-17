@@ -217,7 +217,7 @@ If you have a @Branch@ object for an entry which doesn't exist in the directory,
 irb> new = dir.ou( :people ).uid( :mahlon ).ou( :organs )
 # => #<Treequel::Branch:0xfb7b9e954 ou=organs,uid=mahlon,ou=people,dc=acme,dc=com @
 #    localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
-irb> new.create( :cn => 'bladder', :objectClass => ['top', 'room'] )    ???
+irb> new.create( :objectClass => 'room' )
 <?end ?>
 
 * object_classes
