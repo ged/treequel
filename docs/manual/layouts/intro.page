@@ -14,7 +14,8 @@
 <body class="manual intro">
 
 	<div id="intro-header">
-		<!-- Logo goes here -->
+		<img src="<%= @basepath %>/images/logo.png" width="312" height="312" alt="Treequel Logo" />
+
 		<h1>Treequel</h1>
 		<p class="version">Version: <%= metadata.version %></p>
 	</div>
