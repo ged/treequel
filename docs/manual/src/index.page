@@ -36,7 +36,7 @@ For anything other than testing, though, it's likely you'll want to control the 
 
 h3(#connect-ldap-url). Connecting With an LDAP URL
 
-The LDAP URL format can contain quite a lot of specific instructions, but @Treequel::Directory@ only uses the scheme, host, port, and base DN parts:
+The LDAP URL format can contain quite a lot of information, but @Treequel::Directory@ only uses the _scheme_, _host_, _port_, and _base DN_ parts:
 
 <?example { language: ruby, caption: "Fetching a directory by URL." } ?>
 irb> dir = Treequel.directory( 'ldap://ldap.andrew.cmu.edu/dc=cmu,dc=edu' )
@@ -107,11 +107,11 @@ irb> dir.bound_as( 'cn=admin,dc=acme,dc=com', 's00per:sekrit' ) { dir }
 
 Once the block returns, the binding reverts to what it previously was.
 
-There are a bunch of other things you can do with the Directory object, but in most case you won't interact with it directly except as the root of the directory. To interact with the entries in the directory, you'll probably want to start with a <?api Treequel::Branch ?>
+There are a bunch of other things you can do with the Directory object, but in most cases you won't interact with it directly except as the root of the directory. To interact with the entries in the directory, you'll probably want to start with a <?api Treequel::Branch ?>
 
 h2(#branches). Branches
 
-Once you have a directory, you can fetch entries from the directory hierarchy by traversing the directory hierarchy using Branches. A Branch (<?api Treequel::Branch ?>) is just a wrapper around a DN. The wrapped DN doesn't necessarily need to map to an extent entry in the directory; the entry behind it isn't fetched until it's needed for something. 
+Once you have a directory, you can fetch entries from the directory hierarchy by traversing the directory hierarchy using Branches. A Branch (<?api Treequel::Branch ?>) is just a wrapper around a DN. The wrapped DN doesn't necessarily need to map to an extant entry in the directory; the entry behind it isn't fetched until it's needed for something. 
 
 You can get a Branch for a DN in several ways. The easiest, once you have a @Directory@, is to use the <abbr title="Relative Distinguished Name">RDN</abbr> from the base of the directory to fetch it. You can fetch a @Branch@ from a @Directory@ or any other @Branch@ by calling a method on it with the same name as one of the attributes of the @RDN@ you want to traverse, and passing the value as the first argument to that method.
 
