@@ -165,6 +165,13 @@ class Treequel::Schema
 		end
 
 
+		### Returns +true+ if this objectClass is STRUCTURAL. Defaults to +false+ and then
+		### overridden in StructuralObjectClass.
+		def structural?
+			return false
+		end
+
+
 		### Return a human-readable representation of the object suitable for debugging
 		def inspect
 			return %{#<%s:0x%0x %s(%s) < %p "%s" MUST: %p, MAY: %p>} % [
@@ -200,7 +207,6 @@ class Treequel::Schema
 	###
 	class AbstractObjectClass < Treequel::Schema::ObjectClass
 		Treequel::Schema::OBJECTCLASS_TYPES[ 'ABSTRACT' ] = self
-
 	end # class AbstractObjectClass
 
 
@@ -223,7 +229,6 @@ class Treequel::Schema
 	###   change over time.
 	class AuxiliaryObjectClass < Treequel::Schema::ObjectClass
 		Treequel::Schema::OBJECTCLASS_TYPES[ 'AUXILIARY' ] = self
-
 	end # class AuxiliaryObjectClass
 
 
@@ -267,7 +272,12 @@ class Treequel::Schema
 	class StructuralObjectClass < Treequel::Schema::ObjectClass
 		Treequel::Schema::OBJECTCLASS_TYPES[ 'STRUCTURAL' ] = self
 
-	end
+		### Returns +true+, indicating that instances of this class are STRUCTURAL.
+		def structural?
+			return true
+		end
+
+	end # class StructuralObjectClass
 
 end # class Treequel::Schema
 

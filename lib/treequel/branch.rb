@@ -116,6 +116,13 @@ class Treequel::Branch
 	end
 
 
+	### Returns <tt>true</tt> if there is an entry currently in the directory with the
+	### branch's DN.
+	def exists?
+		return self.entry ? true : false
+	end
+
+
 	### Return the RDN of the branch.
 	def rdn
 		return self.split_dn( 2 ).first
@@ -163,15 +170,13 @@ class Treequel::Branch
 	def object_classes( *additional_classes )
 		schema = self.directory.schema
 
-		# 5.1. objectClass
-		#   The values of the objectClass attribute describe the kind of object
-		#   which an entry represents.  The objectClass attribute is present in
-		#   every entry, with at least two values.  One of the values is either
-		#   "top" or "alias".
-		object_classes = self[:objectClass] || [ :top ]
-		object_classes |= additional_classes
+		object_classes = self[:objectClass] || []
+		object_classes |= additional_classes.collect {|str| str.to_sym }
+		object_classes << :top if object_classes.empty?
 
-		return object_classes.collect {|oid| schema.object_classes[oid.to_sym] }.uniq
+		return object_classes.
+			collect {|oid| schema.object_classes[oid.to_sym] }.
+			uniq
 	end
 
 
@@ -181,8 +186,15 @@ class Treequel::Branch
 	### attributes would need to be present for the entry to be saved if it added the
 	### +additional_object_classes+ to its own.
 	def must_attribute_types( *additional_object_classes )
-		return self.object_classes( *additional_object_classes ).
-			collect {|oc| oc.must }.flatten.uniq
+		types = []
+		oclasses = self.object_classes( *additional_object_classes )
+		self.log.debug "Gathering MUST attribute types for %d objectClasses" % [ oclasses.length ]
+		oclasses.each do |oc|
+			self.log.debug "  adding %p from %p" % [ oc.must, oc ]
+			types |= oc.must
+		end
+
+		return types
 	end
 
 
@@ -193,7 +205,7 @@ class Treequel::Branch
 	### +additional_object_classes+ to its own.
 	def must_oids( *additional_object_classes )
 		return self.object_classes( *additional_object_classes ).
-			collect {|oc| oc.must_oids }.flatten.uniq
+			collect {|oc| oc.must_oids }.flatten.uniq.reject {|val| val == '' }
 	end
 
 
@@ -201,15 +213,13 @@ class Treequel::Branch
 	### any +additional_object_classes+ are given, include the attributes that would be
 	### necessary for the entry to be saved with them.
 	def must_attributes_hash( *additional_object_classes )
-		entry = self.entry
 		attrhash = {}
 
 		self.must_attribute_types( *additional_object_classes ).each do |attrtype|
-			# Use the existing value if the branch's entry exists already.
-			if entry
-				attrhash[ attrtype.name ] = self[ attrtype.name ]
+			self.log.debug "  adding attrtype %p to the MUST attributes hash" % [ attrtype ]
 
-			# Otherwise, set a default value based on whether it's SINGLE or not.
+			if attrtype.name == :objectClass
+				attrhash[ :objectClass ] = [:top] | additional_object_classes
 			elsif attrtype.single?
 				attrhash[ attrtype.name ] = ''
 			else
@@ -217,7 +227,6 @@ class Treequel::Branch
 			end
 		end
 
-		attrhash[ :objectClass ] |= additional_object_classes
 		return attrhash
 	end
 
@@ -252,14 +261,9 @@ class Treequel::Branch
 		attrhash = {}
 
 		self.may_attribute_types( *additional_object_classes ).each do |attrtype|
-			self.log.debug "  adding attrtype %p to the may attributes hash" % [ attrtype ]
+			self.log.debug "  adding attrtype %p to the MAY attributes hash" % [ attrtype ]
 
-			# Use the existing value if the branch's entry exists already.
-			if entry
-				attrhash[ attrtype.name ] = self[ attrtype.name ]
-
-			# Otherwise, set a default value based on whether it's SINGLE or not.
-			elsif attrtype.single?
+			if attrtype.single?
 				attrhash[ attrtype.name ] = nil
 			else
 				attrhash[ attrtype.name ] = []
@@ -328,8 +332,10 @@ class Treequel::Branch
 	def to_ldif
 		ldif = "dn: %s\n" % [ self.dn ]
 
-		self.entry.keys.reject {|k| k == 'dn' }.each do |attribute|
-			self.entry[ attribute ].each do |val|
+		entry = self.entry || self.valid_attributes_hash
+
+		entry.keys.reject {|k| k == 'dn' }.each do |attribute|
+			entry[ attribute ].each do |val|
 				# self.log.debug "  creating LDIF fragment for %p=%p" % [ attribute, val ]
 				frag = LDAP::LDIF.to_ldif( attribute, [val.dup] )
 				# self.log.debug "  LDIF fragment is: %p" % [ frag ]
@@ -406,7 +412,8 @@ class Treequel::Branch
 	end
 
 
-	### Create the entry for this Branch with the specified +attributes+.
+	### Create the entry for this Branch with the specified +attributes+. The +attributes+ should,
+	### at a minimum, contain the pair `:objectClass => :someStructuralObjectClass`.
 	def create( attributes={} )
 		return self.directory.create( self, attributes )
 	end
@@ -450,6 +457,14 @@ class Treequel::Branch
 	end
 
 
+	### Fetch a new Treequel::Branch object for the child of the receiver with the specified
+	### +rdn+.
+	def get_child( rdn )
+		newdn = [ rdn, self.dn ].join( ',' )
+		return self.class.new( self.directory, newdn )
+	end
+
+
 	### Addition operator: return a Treequel::BranchCollection that contains both the receiver
 	### and +other_branch+.
 	def +( other_branch )
@@ -481,9 +496,8 @@ class Treequel::Branch
 			additional_attributes.keys.all? {|ex_attr| valid_types.key?(ex_attr) }
 
 		rdn = self.rdn_from_pair_and_hash( attribute, value, additional_attributes )
-		newdn = [ rdn, self.dn ].join( ',' )
 
-		return self.class.new( self.directory, newdn )
+		return self.get_child( rdn )
 	end
 
 
