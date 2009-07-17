@@ -317,6 +317,18 @@ describe Treequel::Branch do
 			all_attrs.should include( :cn, :uid, :l, :description, :mobilePhone, :chunktype )
 		end
 
+		it "knows if a attribute is valid given its objectClasses" do
+			attrs = mock( "Attribute list", :null_object => true )
+
+			@branch.should_receive( :valid_attribute_types ).
+				twice.
+				and_return([ attrs ])
+
+			attrs.should_receive( :names ).twice.and_return([ :cn, :l, :uid ])
+
+			@branch.valid_attribute?( :uid ).should be_true()
+			@branch.valid_attribute?( :rubberChicken ).should be_false()
+		end
 
 		it "can be moved to a new location within the directory" do
 			newdn = "ou=hosts,dc=admin,#{TEST_BASE_DN}"
