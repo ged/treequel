@@ -95,7 +95,11 @@ irb> dir = Treequel.directory( url )
 #      bound as="cn=user,dc=acme,dc=com", schema=(schema not loaded)>
 <?end ?>
 
-h2(#rebinding). Binding With A Block
+h3(#unbinding). Unbinding
+
+You can also revert back to an anonymous binding by calling @#unbind@.
+
+h3(#rebinding). Binding With A Block
 
 If you want to rebind as a different user for just a few operations, you can do that by calling the @#bound_as@ method and passing it a block that contains the operations which require more privileges:
 
@@ -165,7 +169,7 @@ irb> me = Treequel::Branch.new_from_entry( entries.first, dir )
 
 Branches are also returned as the results from a search, but "that will be covered a little later":#searching.
 
-h3(#branch-attribute-accessors). Reading and Writing Attributes
+h3(#attributes). Attributes
 
 Once you have a the Branch for the entry you need, fetching its attributes works just like a Hash:
 
@@ -185,62 +189,15 @@ irb> me[:gecos]
 
 Changes to the branch are written to the directory as soon as they're made, so if you have several attributes to change, you'll likely want to make them all at once for efficiency.
 
-h3(#branch-merging). Modifying Several Attributes At Once
-
-You can modify several attributes at once on the Branch via the @#merge@ method:
+You can do that with the @#merge@ method:
 
 <?example { language: ruby, caption: "Merging attributes." } ?>
 irb> me.merge( :gecos => 'Michael Granger', :uidNumber => 514 )
 <?end ?>
 
-h3(#heirarchical-traversal). Parents and Children
-
-Each branch can also fetch its parent and its children:
-
-<?example { language: ruby, caption: "Fetching a branch's parent and its children." } ?>
-irb> marketing_hosts = dir.dc( :marketing ).ou( :hosts )
-# => #<Treequel::Branch:0x135ad94 ou=hosts,dc=marketing,dc=acme,dc=com @ localhost:389 
-#      (dc=acme,dc=com, tls, anonymous) entry=nil>
-irb> marketing_hosts.parent
-# => #<Treequel::Branch:0x13508d0 dc=marketing,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, 
-#     anonymous) entry=nil>
-irb> marketing_hosts.children.map {|b| b.dn }
-# => ["cn=rockbox,ou=Hosts,dc=marketing,dc=acme,dc=com", 
-#     "cn=bone,ou=Hosts,dc=marketing,dc=acme,dc=com"]
-<?end ?>
-
-h3(#create-copy-delete-move). Creating, Copying, Deleting, and Moving Entries
-
-If you have a @Branch@ object for an entry which doesn't exist in the directory, you can create it via the @#create@ method:
-
-<?example { language: ruby, caption: "Creating a new entry." } ?>
-irb> new = dir.ou( :people ).uid( :mahlon ).ou( :organs )
-# => #<Treequel::Branch:0xfb7b9e954 ou=organs,uid=mahlon,ou=people,dc=acme,dc=com @
-#    localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
-irb> new.create( :objectClass => 'room' )
-<?end ?>
-
-* object_classes
-
-* may_attribute_types
-* must_attribute_types
-
-* valid_attribute?
-* valid_attribute_oids
-* valid_attribute_types
-
-
-* copy
-* create
-* delete
-* move
-
-* entry
-
-
 h3(#branch-ldif). Getting a Branch's LDIF
 
-A convenient way to look at a branch's entry is via its "LDIF":http://en.wikipedia.org/wiki/LDAP_Data_Interchange_Format string:
+A convenient way to look at all of a branch's attributes is via its "LDIF":http://en.wikipedia.org/wiki/LDAP_Data_Interchange_Format string:
 
 <?example { language: ruby, caption: "Displaying a branch's LDIF." } ?>
 irb> puts me.to_ldif
@@ -268,6 +225,71 @@ irb> puts me.to_ldif
 # homePhone: +1 9075551212
 # departmentNumber: 18
 <?end?>
+
+h3(#heirarchical-traversal). Parents and Children
+
+Each branch can also fetch its parent and its children:
+
+<?example { language: ruby, caption: "Fetching a branch's parent and its children." } ?>
+irb> marketing_hosts = dir.dc( :marketing ).ou( :hosts )
+# => #<Treequel::Branch:0x135ad94 ou=hosts,dc=marketing,dc=acme,dc=com @ localhost:389 
+#      (dc=acme,dc=com, tls, anonymous) entry=nil>
+irb> marketing_hosts.parent
+# => #<Treequel::Branch:0x13508d0 dc=marketing,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, 
+#     anonymous) entry=nil>
+irb> marketing_hosts.children.map {|b| b.dn }
+# => ["cn=rockbox,ou=Hosts,dc=marketing,dc=acme,dc=com", 
+#     "cn=bone,ou=Hosts,dc=marketing,dc=acme,dc=com"]
+<?end ?>
+
+h3(#create-copy-delete-move). Creating, Copying, Deleting, and Moving Entries
+
+If you have a @Branch@ object for an entry which doesn't exist in the directory, you can create it via the @#create@ method. It takes any attributes that should be set when creating it, and requires at least that you provide a "structural objectClass":http://tools.ietf.org/html/rfc4512#page-18.
+
+<?example { language: ruby, caption: "Creating a new entry." } ?>
+irb> new = dir.ou( :people ).uid( :mahlon ).ou( :organs )
+# => #<Treequel::Branch:0xfb7b9e954 ou=organs,uid=mahlon,ou=people,dc=acme,dc=com @
+#    localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
+irb> new.create( :objectClass => 'room' )
+<?end ?>
+
+* copy
+* move 
+
+<?ed fixme:"Treequel currently doesn't support moving an entry to a new parent, only renaming it under its current parent, but you can always copy it to the new @DN@ and delete the original. This will be corrected in a future version." ?>
+
+* delete
+
+h2(#schema). Schema Introspection
+
+Some objectClasses require that the entry contain values for particular attributes, and it's nice to be able to tell which ones you'll need if you're building tools that can create new entries. To that end, Treequel comes with a set of tools for fetching and using the information contained in a Directory's schema.
+
+You can get the <?api Treequel::Schema ?> from the directory by calling its @#schema@ method:
+
+<?example { language: ruby, caption: "Fetching a ." } ?>
+irb> new = dir.ou( :people ).uid( :mahlon ).ou( :organs )
+# => #<Treequel::Branch:0xfb7b9e954 ou=organs,uid=mahlon,ou=people,dc=acme,dc=com @
+#    localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
+irb> new.create( :objectClass => 'room' )
+<?end ?>
+
+
+h3(#schema-objectclasses). objectClasses
+
+You can fetch information about the objectClasses the directory knows about through 
+
+* object_classes
+
+* may_attribute_types
+* must_attribute_types
+
+* valid_attribute?
+* valid_attribute_oids
+* valid_attribute_types
+
+
+* entry
+
 
 h2. Authors
 

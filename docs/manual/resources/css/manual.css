@@ -1,3 +1,5 @@
+/* @override http://localhost/Treequel/css/manual.css */
+
 /* 
  *	Redleaf Manual Stylesheet
  *	$Id$
@@ -58,6 +60,8 @@ h2 {
 h3 {
 	font-size: 1.5em;
 	margin: 1em 0 0;
+	border-left: 0.75em solid;
+	padding-left: 0.25em;
 }
 h4 {
 	font-size: 1.25em;
@@ -145,6 +149,7 @@ td, th {
 
 /* @group IDed Elements */
 #intro-header {
+	margin-top: 1em;
 	text-align: center;
 }
 
