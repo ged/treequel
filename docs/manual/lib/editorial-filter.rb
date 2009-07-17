@@ -23,7 +23,7 @@ end
 ###   <?ed verify:"this content needs checking or verification" ?>
 ### 
 class EditorialFilter < Manual::Page::Filter
-	
+
 	# PI	   ::= '<?' PITarget (S (Char* - (Char* '?>' Char*)))? '?>'
 	LinkPI = %r{
 		<\?
@@ -37,8 +37,8 @@ class EditorialFilter < Manual::Page::Filter
 			\s*
 		\?>
 	  }x
-	
-	
+
+
 	######
 	public
 	######
@@ -49,16 +49,16 @@ class EditorialFilter < Manual::Page::Filter
 			# Grab the tag values
 			mark_type = $1
 			content   = $2
-			
+
 			self.generate_mark( page, mark_type, content )
 		end
 	end
-	
-	
+
+
 	### Create an HTML fragment from the parsed LinkPI.
 	def generate_mark( current_page, mark_type, content )
 		return "%%(editorial %s-mark)%s%%" % [ mark_type, content ]
 	end
-	
-	
+
+
 end
