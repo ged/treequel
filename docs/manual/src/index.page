@@ -182,6 +182,12 @@ You can do that with the @#merge@ method:
 irb> me.merge( :gecos => 'Michael Granger', :uidNumber => 514 )
 <?end ?>
 
+h3(#attribute-datatypes). Attribute Datatypes
+
+Attribute values are cast to Ruby objects based on the "syntax rule":http://tools.ietf.org/html/rfc4517#section-3.3 that corresponds to its attribute type. By default, all values are mapped to Strings except those contained in @Treequel::Directory::DEFAULT_SYNTAX_MAPPING@, which is a mapping of syntax rule OID to an object which converts the String value from the directory into a Ruby object.
+
+
+
 h3(#branch-ldif). Getting a Branch's LDIF
 
 A convenient way to look at all of a branch's attributes is via its "LDIF":http://en.wikipedia.org/wiki/LDAP_Data_Interchange_Format string:
@@ -252,21 +258,42 @@ Some objectClasses require that the entry contain values for particular attribut
 
 You can get the <?api Treequel::Schema ?> from the directory by calling its @#schema@ method:
 
-<?example { language: ruby, caption: "Fetching a ." } ?>
-irb> new = dir.ou( :people ).uid( :mahlon ).ou( :organs )
-# => #<Treequel::Branch:0xfb7b9e954 ou=organs,uid=mahlon,ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
-irb> new.create( :objectClass => 'room' )
+<?example { language: ruby, caption: "Fetching the schema for a Directory." } ?>
+irb> dir.schema
+# => #<Treequel::Schema:0x66511b 1119 attribute types, 31 ldap syntaxes, 54 matching rule uses, 72 matching rules, 310 object classes>
 <?end ?>
-
 
 h3(#schema-objectclasses). objectClasses
 
-You can fetch information about the objectClasses the directory knows about through the 
+You can fetch information about the "objectClasses":http://tools.ietf.org/html/rfc4512#section-2.4 the directory knows about through the schema's @#object_classes@ Hash:
 
-* object_classes
+<?example { language: ruby, caption: "Fetching  an ObjectClass object for the 'inetOrgPerson' objectClass." } ?>
+irb> dir.schema.object_classes[:inetOrgPerson] 
+#=> #<Treequel::Schema::StructuralObjectClass:0x65d91b inetOrgPerson(2.16.840.1.113730.3.2.2) < "organizationalPerson" "RFC2798: Internet Organizational Person" MUST: [], MAY: [:audio, :businessCategory, :carLicense, :departmentNumber, :displayName, :employeeNumber, :employeeType, :givenName, :homePhone, :homePostalAddress, :initials, :jpegPhoto, :labeledURI, :mail, :manager, :mobile, :o, :pager, :photo, :roomNumber, :secretary, :uid, :userCertificate, :x500uniqueIdentifier, :preferredLanguage, :userSMIMECertificate, :userPKCS12]>
+<?end ?>
+
+This hash is keyed by both OID and any associated names (as Symbols), and the value is a <?api Treequel::Schema::ObjectClass ?> object that contains the information about that objectClass parsed from the schema.
+
+<?example { language: ruby, caption: "Introspection on the inetOrgPerson objectClass." } ?>
+irb> inetOrgPerson.oid      #=> "2.16.840.1.113730.3.2.2"
+irb> inetOrgPerson.names    #=> [:inetOrgPerson]
+irb> inetOrgPerson.may_oids #=> [:audio, :businessCategory, :carLicense, :departmentNumber, :displayName, :employeeNumber, :employeeType, :givenName, :homePhone, :homePostalAddress, :initials, :jpegPhoto, :labeledURI, :mail, :manager, :mobile, :o, :pager, :photo, :roomNumber, :secretary, :uid, :userCertificate, :x500uniqueIdentifier, :preferredLanguage, :userSMIMECertificate, :userPKCS12]
+irb> inetOrgPerson.desc     #=> "RFC2798: Internet Organizational Person"
+irb> inetOrgPerson.sup      #=> #<Treequel::Schema::StructuralObjectClass:0x65fe6e person(2.5.6.6) < #<Treequel::Schema::AbstractObjectClass:0x6637ad top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2256: a person" MUST: [:sn, :cn], MAY: [:userPassword, :telephoneNumber, :seeAlso, :description]>
+<?end?>
+
+Treequel::Branch objects know which objectClasses they have, too:
+
+<?example { language: ruby, caption: "Fetching the objectClasses for an entry through its Branch." } ?>
+irb(main):008:0> dir.base.object_classes.map {|oc| oc.name } #=> [:dcObject, :organization]
+<?end?>
+
+The schema object also knows about 
 
 * may_attribute_types
 * must_attribute_types
+
+There are several convenience methods built on top of this introspection, too. For instance, if you need to create a new entry, it's nice to know what attributes you'll need to define for an entry with particular objectClasses. 
 
 * valid_attribute?
 * valid_attribute_oids

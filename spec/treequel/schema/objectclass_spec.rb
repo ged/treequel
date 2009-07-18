@@ -107,6 +107,9 @@ describe Treequel::Schema::ObjectClass do
 			@oc.should_not be_obsolete()
 		end
 
+		it "knows that it doesn't have a superclass" do
+			@oc.sup.should be_nil()
+		end
 
 	end
 
@@ -217,6 +220,38 @@ describe Treequel::Schema::ObjectClass do
 
 		it "knows that it's obsolete" do
 			@oc.should be_obsolete()
+		end
+
+	end
+
+	describe "parsed from an objectClass that has organizationalPerson as its SUP" do
+
+		SUB_OBJECTCLASS = %{( 1.1.1.1 SUP organizationalPerson )}
+
+		before( :each ) do
+			@oc = Treequel::Schema::ObjectClass.parse( @schema, SUB_OBJECTCLASS )
+		end
+
+		it "returns the corresponding objectClass from its schema" do
+			@schema.should_receive( :object_classes ).
+				and_return({ :organizationalPerson => :organizationalPerson_objectclass })
+			@oc.sup.should == :organizationalPerson_objectclass
+		end
+
+	end
+
+	describe "parsed from an objectClass that has no explicit SUP" do
+
+		ORPHAN_OBJECTCLASS = %{( 1.1.1.1 )}
+
+		before( :each ) do
+			@oc = Treequel::Schema::ObjectClass.parse( @schema, ORPHAN_OBJECTCLASS )
+		end
+
+		it "returns the objectClass for 'top' from its schema" do
+			@schema.should_receive( :object_classes ).
+				and_return({ :top => :top_objectclass })
+			@oc.sup.should == :top_objectclass
 		end
 
 	end
