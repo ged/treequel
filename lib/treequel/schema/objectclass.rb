@@ -96,7 +96,7 @@ class Treequel::Schema
 			@names      = names
 			@desc       = desc
 			@obsolete   = obsolete ? true : false
-			@sup        = sup
+			@sup_name   = sup
 			@must_oids  = must_oids
 			@may_oids   = may_oids
 			@extensions = extensions
@@ -124,8 +124,8 @@ class Treequel::Schema
 		# Is the objectClass obsolete?
 		predicate_attr :obsolete
 
-		# The objectClass's superior class
-		attr_accessor :sup
+		# The name of the objectClass's superior class (if specified)
+		attr_accessor :sup_name
 
 		# The Array of the objectClass's MUST OIDs
 		attr_reader :must_oids
@@ -186,6 +186,16 @@ class Treequel::Schema
 			]
 		end
 
+
+		### Return the ObjectClass for the receiver's SUP. If this is called on
+		### 'top', returns nil.
+		def sup
+			unless name = self.sup_name
+				return nil if self.oid == Treequel::Constants::OIDS::TOP_OBJECTCLASS
+				return self.schema.object_classes[ :top ]
+			end
+			return self.schema.object_classes[ name.to_sym ]
+		end
 
 	end # class ObjectClass
 

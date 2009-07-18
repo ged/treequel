@@ -272,6 +272,18 @@ class Treequel::Directory
 	end
 
 
+	### Given a Treequel::Branch object, find its corresponding LDAP::Entry and return
+	### it with its operational attributes (http://tools.ietf.org/html/rfc4512#section-3.4)
+	### included.
+	def get_extended_entry( branch )
+		self.log.debug "Looking up entry for %p" % [ branch.dn ]
+		return self.conn.search_ext2( branch.dn, SCOPE[:base], '(objectClass=*)', %w[* +] ).first
+	rescue LDAP::ResultError => err
+		self.log.info "  search for %p failed: %s" % [ branch.dn, err.message ]
+		return nil
+	end
+
+
 	### Fetch the schema from the server.
 	def schema
 		unless @schema

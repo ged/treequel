@@ -33,7 +33,10 @@ module Treequel::Constants
 
 		# :stopdoc:
 
-		### Syntaxes
+		### Object Classes (from RFC 4519)
+		TOP_OBJECTCLASS = '2.5.6.0'
+
+		### Syntaxes (from RFC 4517)
 		RDN_SYNTAX                         = '1.2.36.79672281.1.5.0'
 		RFC2307_NIS_NETGROUP_TRIPLE_SYNTAX = '1.3.6.1.1.1.0.0'
 		RFC2307_BOOT_PARAMETER_SYNTAX      = '1.3.6.1.1.1.0.1'
