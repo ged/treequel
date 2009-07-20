@@ -31,7 +31,8 @@ require 'treequel/constants'
 #
 class Treequel::Directory
 	include Treequel::Loggable,
-	        Treequel::Constants
+	        Treequel::Constants,
+	        Treequel::HashUtilities
 
 	extend Treequel::Delegation
 
@@ -396,6 +397,7 @@ class Treequel::Directory
 
 		if new_parent_dn.nil?
 			new_parent_dn = source_parent_dn
+			newdn = "#{new_rdn},#{new_parent_dn}"
 		end
 
 		if new_parent_dn != source_parent_dn
@@ -403,18 +405,18 @@ class Treequel::Directory
 				"can't (yet) copy an entry to a new parent"
 		end
 
-		self.log.debug "Modrdn (copy): %p -> %p within %p" % [ source_rdn, new_rdn, source_parent_dn ]
+		self.log.debug "Modrdn (copy): %p -> %p within %p" % [ branch.dn, new_rdn, source_parent_dn ]
 
 		self.conn.modrdn( branch.dn, new_rdn, false )
-		rdn_attr, rdn_val = new_rdn.split( /=/, 2 )
-		newbranch = branch.class.new( self, rdn_attr, rdn_val, branch.parent )
+		newbranch = branch.class.new( self, newdn )
 
-		attributes = self.normalize_attributes( attributes )
-		attributes[ rdn_attr ] ||= []
-		attributes[ rdn_attr ] -= [ branch.rdn_value ]
-		attributes[ rdn_attr ] |= [ rdn_val ]
-		self.log.debug "  changing attributes of the new entry: %p" % [ attributes ]
-		self.modify( newbranch, attributes )
+		unless attributes.empty?
+			attributes = self.normalize_attributes( attributes )
+			rdn_attrs = self.normalize_attributes( newbranch.rdn_attributes )
+			attributes.merge!( rdn_attrs, &method(:merge_recursively) )
+			self.log.debug "  changing attributes of the new entry: %p" % [ attributes ]
+			self.modify( newbranch, attributes )
+		end
 
 		return newbranch
 	end

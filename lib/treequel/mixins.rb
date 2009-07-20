@@ -181,30 +181,6 @@ module Treequel # :nodoc:
 	### A collection of utilities for working with Hashes.
 	module HashUtilities
 
-		# Recursive hash-merge function
-		HashMergeFunction = Proc.new {|key, oldval, newval|
-			case oldval
-			when Hash
-				case newval
-				when Hash
-					oldval.merge( newval, &HashMergeFunction )
-				else
-					newval
-				end
-
-			when Array
-				case newval
-				when Array
-					oldval | newval
-				else
-					newval
-				end
-
-			else
-				newval
-			end
-		}
-
 		###############
 		module_function
 		###############
@@ -245,7 +221,32 @@ module Treequel # :nodoc:
 		end
 		alias_method :internify_keys, :symbolify_keys
 
-	end
+
+		# Recursive hash-merge function
+		def merge_recursively( key, oldval, newval )
+			case oldval
+			when Hash
+				case newval
+				when Hash
+					oldval.merge( newval, &method(:merge_recursively) )
+				else
+					newval
+				end
+
+			when Array
+				case newval
+				when Array
+					oldval | newval
+				else
+					newval
+				end
+
+			else
+				newval
+			end
+		end
+
+	end # HashUtilities
 
 
 	### A collection of utilities for working with Arrays.

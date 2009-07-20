@@ -23,7 +23,6 @@ BEGIN {
 
 require 'rbconfig'
 require 'rake'
-require 'rake/rdoctask'
 require 'rake/testtask'
 require 'rake/packagetask'
 require 'rake/clean'
