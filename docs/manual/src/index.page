@@ -184,7 +184,20 @@ irb> me.merge( :gecos => 'Michael Granger', :uidNumber => 514 )
 
 h3(#attribute-datatypes). Attribute Datatypes
 
-Attribute values are cast to Ruby objects based on the "syntax rule":http://tools.ietf.org/html/rfc4517#section-3.3 that corresponds to its attribute type. By default, all values are mapped to Strings except those contained in @Treequel::Directory::DEFAULT_SYNTAX_MAPPING@, which is a mapping of syntax rule OID to an object which converts the String value from the directory into a Ruby object.
+Attribute values are cast to Ruby objects based on the "syntax rule":http://tools.ietf.org/html/rfc4517#section-3.3 that corresponds to its attribute type. By default, all values are mapped to Strings except those contained in @Treequel::Directory::DEFAULT_SYNTAX_MAPPING@, which is a mapping of syntax rule @OID@s to an object which converts the @String@ value from the directory into a Ruby object. The value can be any object which responds to @#[]@ with a @String@ argument, e.g., a @Proc@, a @Hash@, a @Method@, etc.
+
+You can use this to, for example, return every attribute that's a @DN@ as a @Treequel::Branch@ instead of the DN string:
+
+<?example { language: ruby, caption: "Mapping DNs to Treequel::Branches by default" } ?>
+irb> dir = Treequel.directory 
+#=> #<Treequel::Directory:0x665783 localhost:389 (connected) base_dn="dc=acme,dc=com", bound as=anonymous, schema=(schema not loaded)>
+irb> dir.add_syntax_mapping( Treequel::Constants::OIDS::DISTINGUISHED_NAME_SYNTAX ) {|dn| Treequel::Branch.new(dir, dn) }
+#=> #<Proc:0x0198ddd8@(irb):2>
+irb> isdept = dir.ou( :departments ).cn( :sales )
+#=> #<Treequel::Branch:0x18def54 cn=sales,ou=departments,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
+irb> isdept['supervisor']
+#=> #<Treequel::Branch:0x18db228 uid=mahlon,ou=People,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
+<?end ?>
 
 h3(#operational-attributes). Operational Attributes
 
@@ -272,12 +285,18 @@ irb> jtran['sn']
 # => ["Tran"]
 <?end?>
 
+or rename it:
 
-* move 
+<?example { language: ruby, caption: "Copying an entry." } ?>
+# Rename 'Miriam Robson' to 'Miriam Price' when she gets married.
+irb> user = dir.ou( :people ).uid( :mrobson ).move( 'uid=mprice', :sn => 'Price' )
+# => #<Treequel::Branch:0x12bff60 uid=mprice,ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, cn=admin,dc=acme,dc=com) entry=nil>
+<?end?>
 
 <?ed fixme:"Treequel currently doesn't support moving an entry to a new parent, only renaming it under its current parent, but you can always copy it to the new @DN@ and delete the original. This will be corrected in a future version." ?>
 
-* delete
+Finally, you can delete an entry 
+
 
 h2(#schema). Schema Introspection
 

@@ -404,9 +404,9 @@ class Treequel::Branch
 				@values[ attrsym ] = value.collect do |raw|
 					directory.convert_syntax_value( syntax_oid, raw )
 				end
+				@values[ attrsym ].freeze if @values[ attrsym ].is_a?( Array )
 			end
 
-			@values[ attrsym ].freeze
 		else
 			self.log.debug "  value is cached."
 		end

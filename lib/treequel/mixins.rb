@@ -166,6 +166,12 @@ module Treequel # :nodoc:
 		protected
 		#########
 
+		### Copy constructor -- clear the original's log proxy.
+		def initialize_copy( original )
+			@log_proxy = @log_debug_proxy = nil
+			super
+		end
+
 		### Return the proxied logger.
 		def log
 			@log_proxy ||= ClassNameProxy.new( self.class )
@@ -311,9 +317,7 @@ module Treequel # :nodoc:
 			end
 		end
 
-	end
-
-
+	end # module AttributeDeclarations
 
 end # module Treequel
 
