@@ -448,21 +448,17 @@ describe Treequel::Directory do
 		it "can copy an entry with an rdn" do
 			@dir.stub!( :bound? ).and_return( false )
 			branch = mock( "sibling branch obj" )
-			branch.should_receive( :dn ).and_return( TEST_PERSON_DN )
+			branch.should_receive( :dn ).at_least( :once ).and_return( TEST_PERSON_DN )
 			branch.should_receive( :split_dn ).at_least( :once ).
 				and_return([ TEST_PERSON_RDN, TEST_PEOPLE_DN ])
 
 			@conn.should_receive( :modrdn ).with( TEST_PERSON_DN, TEST_PERSON2_RDN, false )
 			branch.should_receive( :class ).and_return( Treequel::Branch )
-			branch.should_receive( :parent ).and_return( :the_parent_branch )
-			branch.should_receive( :rdn_value ).and_return( 'lancelot' )
 
 			newbranch = stub( "new branch", :dn => TEST_PERSON2_DN )
-			Treequel::Branch.should_receive( :new ).
-				with( @dir, TEST_PERSON2_DN_ATTR, TEST_PERSON2_DN_VALUE, :the_parent_branch ).
+			Treequel::Branch.should_receive( :new ).with( @dir, TEST_PERSON2_DN ).
 				and_return( newbranch )
-			@dir.should_receive( :modify ).
-				with( newbranch, TEST_PERSON2_DN_ATTR => [TEST_PERSON2_DN_VALUE] )
+			@dir.should_not_receive( :modify )
 
 			@dir.copy( branch, TEST_PERSON2_RDN ).should == newbranch
 		end
@@ -476,15 +472,11 @@ describe Treequel::Directory do
 
 			@conn.should_receive( :modrdn ).with( TEST_PERSON_DN, TEST_PERSON2_RDN, false )
 			branch.should_receive( :class ).and_return( Treequel::Branch )
-			branch.should_receive( :parent ).and_return( :the_parent_branch )
-			branch.should_receive( :rdn_value ).and_return( 'lancelot' )
 
 			newbranch = stub( "new branch", :dn => TEST_PERSON2_DN )
-			Treequel::Branch.should_receive( :new ).
-				with( @dir, TEST_PERSON2_DN_ATTR, TEST_PERSON2_DN_VALUE, :the_parent_branch ).
+			Treequel::Branch.should_receive( :new ).with( @dir, TEST_PERSON2_DN ).
 				and_return( newbranch )
-			@dir.should_receive( :modify ).
-				with( newbranch, TEST_PERSON2_DN_ATTR => [TEST_PERSON2_DN_VALUE] )
+			@dir.should_not_receive( :modify )
 
 			@dir.copy( branch, TEST_PERSON2_DN ).should == newbranch
 		end
@@ -524,20 +516,20 @@ describe Treequel::Directory do
 				'displayName' => ['Chumpy Lumpkins'],
 				'uid'         => ['hunker'],
 			  }
+
 			branch = mock( "sibling branch obj" )
-			branch.should_receive( :dn ).and_return( TEST_PERSON_DN )
+			branch.should_receive( :dn ).at_least( :once ).and_return( TEST_PERSON_DN )
 			branch.should_receive( :split_dn ).at_least( :once ).
 				and_return([ TEST_PERSON_RDN, TEST_PEOPLE_DN ])
-			branch.should_receive( :rdn_value ).and_return( TEST_PERSON_DN_VALUE )
 
 			@conn.should_receive( :modrdn ).with( TEST_PERSON_DN, TEST_PERSON2_RDN, false )
 			branch.should_receive( :class ).and_return( Treequel::Branch )
-			branch.should_receive( :parent ).and_return( :the_parent_branch )
 
 			newbranch = stub( "new branch", :dn => TEST_PERSON2_DN )
-			Treequel::Branch.should_receive( :new ).
-				with( @dir, TEST_PERSON2_DN_ATTR, TEST_PERSON2_DN_VALUE, :the_parent_branch ).
+			Treequel::Branch.should_receive( :new ).with( @dir, TEST_PERSON2_DN ).
 				and_return( newbranch )
+			newbranch.should_receive( :rdn_attributes ).
+				and_return( TEST_PERSON2_DN_ATTR => TEST_PERSON2_DN_VALUE )
 
 			@dir.should_receive( :modify ).
 				with( newbranch, newattrs.merge('uid' => ['hunker', TEST_PERSON2_DN_VALUE]) )

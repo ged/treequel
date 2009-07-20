@@ -119,6 +119,36 @@ describe Treequel, "mixin" do
 				}
 			}
 		end
+
+		it "includes a function that can be used as the key-collision callback for " +
+		   "Hash#merge that does recursive merging" do
+			hash1 = {
+				:foo => 1,
+				:bar => [:one],
+				:baz => {
+					:glom => [:chunker]
+				}
+			}
+			hash2 = {
+				:klong => 88.8,
+				:bar => [:locke],
+				:baz => {
+					:trim => :liquor,
+					:glom => [:plunker]
+				}
+			}
+
+			hash1.merge( hash2, &Treequel::HashUtilities.method(:merge_recursively) ).should == {
+				:foo => 1,
+				:bar => [:one, :locke],
+				:baz => {
+					:glom => [:chunker, :plunker],
+					:trim => :liquor,
+				},
+				:klong => 88.8,
+			}
+		end
+
 	end
 
 	describe Treequel::ArrayUtilities do

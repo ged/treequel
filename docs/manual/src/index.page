@@ -261,7 +261,18 @@ irb> mahlon_things.cn( :thing ).create( :objectClass => 'room', :description => 
 # => true
 <?end ?>
 
-* copy
+You can also copy an existing entry:
+
+<?example { language: ruby, caption: "Copying an entry." } ?>
+irb> dir.bind( 'cn=admin,dc=acme,dc=com', 'bucket' )
+# => "cn=admin,dc=acme,dc=com"
+irb> jtran = dir.ou( :people ).uid( :mahlon ).copy( 'uid=jtran', :givenName => 'Jim', :sn => 'Tran' )
+# => #<Treequel::Branch:0x12bff60 uid=jtran,ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, cn=admin,dc=acme,dc=com) entry=nil>
+irb> jtran['sn']
+# => ["Tran"]
+<?end?>
+
+
 * move 
 
 <?ed fixme:"Treequel currently doesn't support moving an entry to a new parent, only renaming it under its current parent, but you can always copy it to the new @DN@ and delete the original. This will be corrected in a future version." ?>
@@ -301,7 +312,7 @@ irb> inetOrgPerson.sup      #=> #<Treequel::Schema::StructuralObjectClass:0x65fe
 Treequel::Branch objects know which objectClasses they have, too:
 
 <?example { language: ruby, caption: "Fetching the objectClasses for an entry through its Branch." } ?>
-irb(main):008:0> dir.base.object_classes.map {|oc| oc.name } #=> [:dcObject, :organization]
+irb> dir.base.object_classes.map {|oc| oc.name } #=> [:dcObject, :organization]
 <?end?>
 
 The schema object also knows about 

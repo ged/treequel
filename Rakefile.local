@@ -1,0 +1,43 @@
+#!rake
+# coding: utf-8
+
+require 'pathname'
+require 'English'
+require 'pp'
+
+# Project-specific tasks
+
+#####################################################################
+###	T A S K S
+#####################################################################
+
+MANUAL_PAGES = Pathname.glob( MANUALDIR + '**/*.page' )
+
+task :local => :check_manual
+
+# Check the manual for laika references before committing
+Rake::Task[ 'svn:checkin' ].prerequisites.unshift( 'check_manual' )
+
+desc "Check the manual for various problems and/or inconsistencies"
+task :check_manual => MANUAL_PAGES do
+	MANUAL_PAGES.each do |page|
+		lines = page.readlines
+		lines.each_with_index do |line, i|
+			if line =~ /\blaika\b/i
+				msg = [
+					'   ',
+					i.zero? ? "" : lines[ i - 1 ],
+					'   ',
+					$PREMATCH,
+					colorize( :bold, :yellow ) { $MATCH },
+					$POSTMATCH,
+					'   ',
+					lines[ i + 1 ]
+				].join
+				abort "Page #{page} has a LAIKA reference on line #{i + 1}:\n#{msg}"
+			end
+		end
+	end
+end
+
+
