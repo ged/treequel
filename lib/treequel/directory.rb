@@ -217,7 +217,7 @@ class Treequel::Directory
 	def bind( user_dn, password )
 		user_dn = user_dn.dn if user_dn.respond_to?( :dn )
 
-		self.log.debug "Binding with connection %p as: %s" % [ self.conn, user_dn ]
+		self.log.info "Binding with connection %p as: %s" % [ self.conn, user_dn ]
 		self.conn.bind( user_dn.to_s, password )
 		@bound_as = user_dn.to_s
 	end
@@ -276,7 +276,7 @@ class Treequel::Directory
 	### it with its operational attributes (http://tools.ietf.org/html/rfc4512#section-3.4)
 	### included.
 	def get_extended_entry( branch )
-		self.log.debug "Looking up entry for %p" % [ branch.dn ]
+		self.log.debug "Looking up entry (with operational attributes) for %p" % [ branch.dn ]
 		return self.conn.search_ext2( branch.dn, SCOPE[:base], '(objectClass=*)', %w[* +] ).first
 	rescue LDAP::ResultError => err
 		self.log.info "  search for %p failed: %s" % [ branch.dn, err.message ]
@@ -509,10 +509,10 @@ class Treequel::Directory
 	def with_duplicate_conn
 		original_conn = self.conn
 		@conn = original_conn.dup
-		self.log.debug "Executing with %p, a copy of connection %p" % [ @conn, original_conn ]
+		self.log.info "Executing with %p, a copy of connection %p" % [ @conn, original_conn ]
 		yield
 	ensure
-		self.log.debug "  restoring original connection %p." % [ original_conn ]
+		self.log.info "  restoring original connection %p." % [ original_conn ]
 		@conn = original_conn
 	end
 

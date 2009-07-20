@@ -48,6 +48,10 @@ describe Treequel::Branch do
 		@directory = mock( "treequel directory", :get_entry => :an_entry_hash )
 	end
 
+	after( :each ) do
+		Treequel::Branch.include_operational_attrs = false
+	end
+
 
 	it "can be constructed from a DN" do
 		branch = Treequel::Branch.new( @directory, TEST_PEOPLE_DN )
@@ -69,6 +73,13 @@ describe Treequel::Branch do
 
 		branch.rdn_attributes.should == { TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE] }
 		branch.entry.should == entry
+	end
+
+	it "can be configured to include operational attributes for all future instances" do
+		Treequel::Branch.include_operational_attrs = false
+		Treequel::Branch.new( @directory, TEST_PEOPLE_DN ).include_operational_attrs?.should be_false
+		Treequel::Branch.include_operational_attrs = true
+		Treequel::Branch.new( @directory, TEST_PEOPLE_DN ).include_operational_attrs?.should be_true
 	end
 
 
@@ -126,7 +137,27 @@ describe Treequel::Branch do
 				and_return( :the_entry )
 
 			@branch.entry.should == :the_entry
+			@branch.entry.should == :the_entry # this should fetch the cached one
+		end
+
+		it "fetch their LDAP::Entry with operational attributes if include_operational_attrs is set" do
+			@branch.include_operational_attrs = true
+			@directory.should_not_receive( :get_entry )
+			@directory.should_receive( :get_extended_entry ).with( @branch ).exactly( :once ).
+				and_return( :the_extended_entry )
+
+			@branch.entry.should == :the_extended_entry
+		end
+
+		it "clears any cached values if its include_operational_attrs attribute is changed" do
+			@directory.should_receive( :get_entry ).with( @branch ).exactly( :once ).
+				and_return( :the_entry )
+			@directory.should_receive( :get_extended_entry ).with( @branch ).exactly( :once ).
+				and_return( :the_extended_entry )
+
 			@branch.entry.should == :the_entry
+			@branch.include_operational_attrs = true
+			@branch.entry.should == :the_extended_entry
 		end
 
 		it "returns a human-readable representation of itself for #inspect" do
