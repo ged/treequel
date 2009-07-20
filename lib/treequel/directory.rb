@@ -63,11 +63,8 @@ class Treequel::Directory
 	}
 
 
-	# :NOTE: the docs for #search_ext2 lie. The method signature is actually:
-	# rb_scan_args (argc, argv, "39",
-	#               &base, &scope, &filter, &attrs, &attrsonly,
-	#               &serverctrls, &clientctrls, &sec, &usec, &limit,
-	#               &s_attr, &s_proc)
+	# The order in which hash arguments should be extracted from Hash parameters to 
+	# #search
 	SEARCH_PARAMETER_ORDER = [
 		:selectattrs,
 		:attrsonly,
@@ -446,9 +443,9 @@ class Treequel::Directory
 
 
 	### Add +conversion+ mapping for the specified +oid+. A conversion is any object that
-	### responds to #[] (e.g., Proc, Method, Hash, Array); the argument is the raw
-	### value String returned from the LDAP entry, and it should return the converted
-	### value. Adding a mapping with a nil +conversion+ effectively clears it.
+	### responds to #[] with a String argument(e.g., Proc, Method, Hash); the argument is 
+	### the raw value String returned from the LDAP entry, and it should return the 
+	### converted value. Adding a mapping with a nil +conversion+ effectively clears it.
 	def add_syntax_mapping( oid, conversion=nil )
 		conversion = Proc.new if block_given?
 		@syntax_mapping[ oid ] = conversion
