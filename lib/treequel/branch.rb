@@ -34,7 +34,8 @@ class Treequel::Branch
 	        Treequel::Loggable,
 	        Treequel::Constants
 
-	extend Treequel::Delegation
+	extend Treequel::Delegation,
+	       Treequel::AttributeDeclarations
 
 
 	# SVN Revision
@@ -47,6 +48,14 @@ class Treequel::Branch
 	#################################################################
 	###	C L A S S   M E T H O D S
 	#################################################################
+
+	# Whether or not to include operational attributes when fetching the entry for branches.
+	class << self
+		extend Treequel::AttributeDeclarations
+		@include_operational_attrs = false
+		predicate_attr :include_operational_attrs
+	end
+
 
 	### Create a new Treequel::Branch from the given +entry+ hash from the specified +directory+.
 	def self::new_from_entry( entry, directory )
@@ -71,6 +80,8 @@ class Treequel::Branch
 		@dn        = dn
 		@entry     = entry
 
+		@include_operational_attrs = self.class.include_operational_attrs?
+
 		@values    = {}
 	end
 
@@ -90,11 +101,21 @@ class Treequel::Branch
 	attr_reader :dn
 	alias_method :to_s, :dn
 
+	# Whether or not to include operational attributes when fetching the Branch's entry
+	predicate_attr :include_operational_attrs
+
 
 	### Change the DN the Branch uses to look up its entry.
 	def dn=( newdn )
 		self.clear_caches
 		@dn = newdn
+	end
+
+
+	### Enable or disable fetching of operational attributes (RC4512, section 3.4).
+	def include_operational_attrs=( new_setting )
+		self.clear_caches
+		@include_operational_attrs = new_setting ? true : false
 	end
 
 
@@ -112,7 +133,15 @@ class Treequel::Branch
 	### directory if necessary. Returns +nil+ if the entry doesn't exist in the
 	### directory.
 	def entry
-		return @entry ||= self.directory.get_entry( self )
+		unless @entry
+			if self.include_operational_attrs?
+				@entry = self.directory.get_extended_entry( self )
+			else
+				@entry = self.directory.get_entry( self )
+			end
+		end
+
+		return @entry
 	end
 
 

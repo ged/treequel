@@ -186,6 +186,22 @@ h3(#attribute-datatypes). Attribute Datatypes
 
 Attribute values are cast to Ruby objects based on the "syntax rule":http://tools.ietf.org/html/rfc4517#section-3.3 that corresponds to its attribute type. By default, all values are mapped to Strings except those contained in @Treequel::Directory::DEFAULT_SYNTAX_MAPPING@, which is a mapping of syntax rule OID to an object which converts the String value from the directory into a Ruby object.
 
+h3(#operational-attributes). Operational Attributes
+
+In addition to its user-settable attributes, each entry in the directory also has a set of "operational attributes":http://tools.ietf.org/html/rfc4512#section-3.4 which are maintained by the server. These attributes are not normally visible, but you can enable them either for individual @Branch@ objects, or for all newly-created Branches:
+
+<?example { language: ruby, caption: "Enabling the inclusion of operational attributes." } ?>
+irb> dir.base.entry.keys.sort
+# => ["dc", "description", "dn", "o", "objectClass"]
+irb> dir.base.include_operational_attrs = true
+# => true
+irb> dir.base.entry.keys.sort
+# => ["createTimestamp", "creatorsName", "dc", "description", "dn", "entryCSN", "entryDN", "entryUUID", "hasSubordinates", "modifiersName", "modifyTimestamp", "o", "objectClass", "structuralObjectClass", "subschemaSubentry"]
+irb> Treequel::Branch.include_operational_attrs = true
+# => true
+irb> dir.ou( :people ).entry.keys.sort
+# => ["createTimestamp", "creatorsName", "description", "dn", "entryCSN", "entryDN", "entryUUID", "hasSubordinates", "modifiersName", "modifyTimestamp", "objectClass", "ou", "structuralObjectClass", "subschemaSubentry"]
+<?end ?>
 
 
 h3(#branch-ldif). Getting a Branch's LDIF

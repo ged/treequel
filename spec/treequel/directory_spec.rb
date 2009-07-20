@@ -211,6 +211,18 @@ describe Treequel::Directory do
 			@dir.get_entry( branch ).should == :the_entry
 		end
 
+		it "can look up a Branch's corresponding LDAP::Entry hash with operational attributes included" do
+			branch = mock( "branch" )
+
+			branch.should_receive( :dn ).at_least( :once ).and_return( TEST_PERSON_DN )
+
+			@conn.should_receive( :search_ext2 ).
+				with( TEST_PERSON_DN, LDAP::LDAP_SCOPE_BASE, '(objectClass=*)', ['*', '+'] ).
+				and_return([ :the_extended_entry ])
+
+			@dir.get_extended_entry( branch ).should == :the_extended_entry
+		end
+
 		it "can search for entries and return them as Sequel::Branch objects" do
 			base = TEST_PEOPLE_DN
 			filter = '(|(uid=jonlong)(uid=margento))'
