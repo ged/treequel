@@ -154,7 +154,15 @@ irb> me = Treequel::Branch.new_from_entry( entries.first, dir )
 # => #<Treequel::Branch:0x129dd70 uid=mgranger,ou=People,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry={...}>
 <?end ?>
 
-Branches are also returned as the results from a search, but "that will be covered a little later":#searching.
+The directory also provides a special @Branch@ object for its base DN:
+
+<?example { language: ruby, caption: "Fetching the directory's base branch." } ?>
+irb> dir.base
+# => #<Treequel::Branch:0x1368548 dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
+<?end ?>
+
+
+Branches are also returned as the results from a search, but "that will be covered a little later":#branchsets-and-filters.
 
 h3(#entries). The Branch's Entry
 
@@ -162,11 +170,11 @@ Once you have a Branch, you can fetch its corresponding entry from the directory
 
 <?example { language: ruby, caption: "Examining a Branch's entry." } ?>
 irb> www = dir.ou( :hosts ).cn( :www )
-#=> #<Treequel::Branch:0x1932f8c cn=www,ou=hosts,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, cn=admin,dc=acme,dc=com) entry=nil>
+# => #<Treequel::Branch:0x1932f8c cn=www,ou=hosts,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, cn=admin,dc=acme,dc=com) entry=nil>
 irb> www.exists?
 => true
 irb> www.entry
-#=> {"cn"=>["www"], "ipHostNumber"=>["127.0.0.1"], "objectClass"=>["device", "ipHost"], "dn"=>["cn=www,ou=hosts,dc=acme,dc=com"]}
+# => {"cn"=>["www"], "ipHostNumber"=>["127.0.0.1"], "objectClass"=>["device", "ipHost"], "dn"=>["cn=www,ou=hosts,dc=acme,dc=com"]}
 
 
 h3(#attributes). Attributes
@@ -203,13 +211,13 @@ You can use this to, for example, return every attribute that's a @DN@ as a @Tre
 
 <?example { language: ruby, caption: "Mapping DNs to Treequel::Branches by default" } ?>
 irb> dir = Treequel.directory 
-#=> #<Treequel::Directory:0x665783 localhost:389 (connected) base_dn="dc=acme,dc=com", bound as=anonymous, schema=(schema not loaded)>
+# => #<Treequel::Directory:0x665783 localhost:389 (connected) base_dn="dc=acme,dc=com", bound as=anonymous, schema=(schema not loaded)>
 irb> dir.add_syntax_mapping( Treequel::Constants::OIDS::DISTINGUISHED_NAME_SYNTAX ) {|dn| Treequel::Branch.new(dir, dn) }
-#=> #<Proc:0x0198ddd8@(irb):2>
+# => #<Proc:0x0198ddd8@(irb):2>
 irb> isdept = dir.ou( :departments ).cn( :sales )
-#=> #<Treequel::Branch:0x18def54 cn=sales,ou=departments,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
+# => #<Treequel::Branch:0x18def54 cn=sales,ou=departments,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> isdept['supervisor']
-#=> #<Treequel::Branch:0x18db228 uid=mahlon,ou=People,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
+# => #<Treequel::Branch:0x18db228 uid=mahlon,ou=People,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 <?end ?>
 
 h3(#operational-attributes). Operational Attributes
@@ -332,29 +340,31 @@ You can fetch information about the "objectClasses":http://tools.ietf.org/html/r
 
 <?example { language: ruby, caption: "Fetching  an ObjectClass object for the 'inetOrgPerson' objectClass." } ?>
 irb> dir.schema.object_classes[:inetOrgPerson] 
-#=> #<Treequel::Schema::StructuralObjectClass:0x65d91b inetOrgPerson(2.16.840.1.113730.3.2.2) < "organizationalPerson" "RFC2798: Internet Organizational Person" MUST: [], MAY: [:audio, :businessCategory, :carLicense, :departmentNumber, :displayName, :employeeNumber, :employeeType, :givenName, :homePhone, :homePostalAddress, :initials, :jpegPhoto, :labeledURI, :mail, :manager, :mobile, :o, :pager, :photo, :roomNumber, :secretary, :uid, :userCertificate, :x500uniqueIdentifier, :preferredLanguage, :userSMIMECertificate, :userPKCS12]>
+# => #<Treequel::Schema::StructuralObjectClass:0x65d91b inetOrgPerson(2.16.840.1.113730.3.2.2) < "organizationalPerson" "RFC2798: Internet Organizational Person" MUST: [], MAY: [:audio, :businessCategory, :carLicense, :departmentNumber, :displayName, :employeeNumber, :employeeType, :givenName, :homePhone, :homePostalAddress, :initials, :jpegPhoto, :labeledURI, :mail, :manager, :mobile, :o, :pager, :photo, :roomNumber, :secretary, :uid, :userCertificate, :x500uniqueIdentifier, :preferredLanguage, :userSMIMECertificate, :userPKCS12]>
 <?end ?>
 
 This hash is keyed by both OID and any associated names (as Symbols), and the value is a <?api Treequel::Schema::ObjectClass ?> object that contains the information about that objectClass parsed from the schema.
 
 <?example { language: ruby, caption: "Introspection on the inetOrgPerson objectClass." } ?>
+irb> inetOrgPerson = dir.schema.object_classes[:inetOrgPerson] 
+# => #<Treequel::Schema::StructuralObjectClass ...>
 irb> inetOrgPerson.oid
-#=> "2.16.840.1.113730.3.2.2"
+# => "2.16.840.1.113730.3.2.2"
 irb> inetOrgPerson.names
-#=> [:inetOrgPerson]
+# => [:inetOrgPerson]
 irb> inetOrgPerson.may_oids
-#=> [:audio, :businessCategory, :carLicense, :departmentNumber, :displayName, :employeeNumber, :employeeType, :givenName, :homePhone, :homePostalAddress, :initials, :jpegPhoto, :labeledURI, :mail, :manager, :mobile, :o, :pager, :photo, :roomNumber, :secretary, :uid, :userCertificate, :x500uniqueIdentifier, :preferredLanguage, :userSMIMECertificate, :userPKCS12]
+# => [:audio, :businessCategory, :carLicense, :departmentNumber, :displayName, :employeeNumber, :employeeType, :givenName, :homePhone, :homePostalAddress, :initials, :jpegPhoto, :labeledURI, :mail, :manager, :mobile, :o, :pager, :photo, :roomNumber, :secretary, :uid, :userCertificate, :x500uniqueIdentifier, :preferredLanguage, :userSMIMECertificate, :userPKCS12]
 irb> inetOrgPerson.desc
-#=> "RFC2798: Internet Organizational Person"
+# => "RFC2798: Internet Organizational Person"
 irb> inetOrgPerson.sup
-#=> #<Treequel::Schema::StructuralObjectClass:0x65fe6e person(2.5.6.6) < #<Treequel::Schema::AbstractObjectClass:0x6637ad top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2256: a person" MUST: [:sn, :cn], MAY: [:userPassword, :telephoneNumber, :seeAlso, :description]>
+# => #<Treequel::Schema::StructuralObjectClass:0x65fe6e person(2.5.6.6) < #<Treequel::Schema::AbstractObjectClass:0x6637ad top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2256: a person" MUST: [:sn, :cn], MAY: [:userPassword, :telephoneNumber, :seeAlso, :description]>
 <?end?>
 
 Treequel::Branch objects know which objectClasses they have, too:
 
 <?example { language: ruby, caption: "Fetching the objectClasses for an entry through its Branch." } ?>
 irb> dir.base.object_classes
-#=> [#<Treequel::Schema::AuxiliaryObjectClass:0x68b168 dcObject(1.3.6.1.4.1.1466.344) < #<Treequel::Schema::AbstractObjectClass:0x690555 top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2247: domain component object" MUST: [:dc], MAY: []>, #<Treequel::Schema::StructuralObjectClass:0x68d02b organization(2.5.6.4) < #<Treequel::Schema::AbstractObjectClass:0x690555 top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2256: an organization" MUST: [:o], MAY: [:userPassword, :searchGuide, :seeAlso, :businessCategory, :x121Address, :registeredAddress, :destinationIndicator, :preferredDeliveryMethod, :telexNumber, :teletexTerminalIdentifier, :telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber, :street, :postOfficeBox, :postalCode, :postalAddress, :physicalDeliveryOfficeName, :st, :l, :description]>]
+# => [#<Treequel::Schema::AuxiliaryObjectClass:0x68b168 dcObject(1.3.6.1.4.1.1466.344) < #<Treequel::Schema::AbstractObjectClass:0x690555 top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2247: domain component object" MUST: [:dc], MAY: []>, #<Treequel::Schema::StructuralObjectClass:0x68d02b organization(2.5.6.4) < #<Treequel::Schema::AbstractObjectClass:0x690555 top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2256: an organization" MUST: [:o], MAY: [:userPassword, :searchGuide, :seeAlso, :businessCategory, :x121Address, :registeredAddress, :destinationIndicator, :preferredDeliveryMethod, :telexNumber, :teletexTerminalIdentifier, :telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber, :street, :postOfficeBox, :postalCode, :postalAddress, :physicalDeliveryOfficeName, :st, :l, :description]>]
 <?end?>
 
 There are several convenience methods built on top of this introspection, too. For instance, if you need to create a new entry, it's nice to know what attributes you'll need to define for an entry with particular objectClasses. 
@@ -362,7 +372,7 @@ There are several convenience methods built on top of this introspection, too. F
 
 h2. Branchsets and Filters
 
-If you know exactly which entries you need, it's pretty easy to fetch the corresponding @Branch@ objects, but what about if you need to search for entries matching several criteria?
+If you know exactly which entries you need, it's pretty easy to fetch the corresponding @Branch@ objects, but what if you need to search for entries matching several criteria?
 
 Searching is implemented in Treequel via <?api "Treequel::Branchsets":Treequel::Branchset ?>. Much like Datasets from the _Sequel_ library which inspired Treequel, a @Branchset@ is an object which represents an abstract set of records returned by a search. The results of the search are returned on demand, so a @Branchset@ can be kept around and reused indefinitely.
 
@@ -370,25 +380,42 @@ You can construct a new @Branchset@ via the usual constructor; it takes the @Bra
 
 <?example { language: ruby, caption: "Creating a new Branchset." } ?>
 irb> Treequel::Branchset.new( dir.base )
-#=> #<Treequel::Branchset:0x1a418ec base_dn='dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
+# => #<Treequel::Branchset:0x1a418ec base_dn='dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
 <?end?>
 
 There are also several convenience methods on @Branch@ and @Directory@ that can create a new @Branchset@ relative to themselves, as well:
 
 <?example { language: ruby, caption: "Creating new Branchsets relative to the base DN and ou=Hosts." } ?>
 irb> dir.branchset
-#=> #<Treequel::Branchset:0x1a3fc54 base_dn='dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
+# => #<Treequel::Branchset:0x1a3fc54 base_dn='dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
 irb> dir.ou(:hosts).branchset
-#=> #<Treequel::Branchset:0x1998314 base_dn='ou=hosts,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
+# => #<Treequel::Branchset:0x1998314 base_dn='ou=hosts,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
 <?end?>
 
-Like _Sequel_ Datasets, Branchsets are meant to be chainable, so you can refine what entries a @Branchset@ will find by calling one of its mutators.
+Like _Sequel_ Datasets, Branchsets are meant to be chainable, so you can refine what entries a @Branchset@ will find by calling one of its mutators. Each branchset mutator method returns a new @Branchset@ with the new criteria set. This provides for flexible and concise queries.
 
-h3(#branchset-filter). 
+h3(#branchset-filter). Filter
 
 The first of these is @#filter@.
 
 With no modifications, a @Branchset@ will find every entry below its base using a filter of @(objectClass=*)@. 
+
+You can narrow the results of that search by adding one or more filter statements.  Each call to @#filter@ adds a clause to the LDAP filter string that is eventually sent to the server.  For example, this one-liner finds the first name of all @inetOrgPerson@ classes within the @People@ organizational unit that have a @uid@ that starts with the string "ma":
+
+<?example { language: ruby, caption: "Chaining filter methods" } ?>
+irb> dir.ou( :people ).filter( :objectClass => 'inetOrgPerson' ).filter( :uid => 'ma*' ).collect {|branch| branch[:givenName].first }.sort
+# => ["Mahlon", "Margaret", "Margaret", "Mark", "Marlon", "Matt", "Mike", "Mimi"]
+<?end ?>
+
+h3(#branchset-scope). Scope
+
+You can also create a @Branchset@ that will search using a different scope by passing @:single@, @:base@, or @:subtree@ (the default) to the @#scope@ method of the original @Branchset@:
+
+<?example { language: ruby, caption: "Find all the top-level OUs" } ?>
+irb> dir.filter( :objectClass => :organizationalUnit ).scope( :one ).collect {|branch| branch[:ou].first }
+=> ["Hosts", "Groups", "Lists", "Resources", "People", "Departments", "Netgroups"]
+<?end ?>
+
 
 * scope
 * limit
@@ -400,8 +427,10 @@ With no modifications, a @Branchset@ will find every entry below its base using 
 
 * map
 
+<?example { language: ruby, caption: "Mapping branch attributes" } ?>
 irb> dir.ou( :hosts ).filter( :ipHostNumber ).map( :ipHostNumber ).flatten
-=> ["192.168.0.253", "192.168.1.14", "192.168.1.21", "192.168.1.22", "192.168.1.23", "192.168.1.24", "192.168.1.240", "192.168.1.25", "192.168.1.28", "192.168.1.30", "192.168.1.31", "192.168.1.33", "192.168.1.34", "192.168.1.35", "192.168.2.118", "192.168.2.210", "192.168.2.211", "192.168.2.212", "192.168.2.213", "192.168.2.214", "192.168.2.216", "192.168.2.217", "192.168.2.218", "192.168.2.240", "192.168.2.39", "192.168.2.67", "192.168.2.70", "192.168.2.75", "192.168.2.81", "192.168.2.93", "192.168.222.1", "192.168.222.59", "192.168.222.60", "192.168.222.66", "192.168.3.250", "192.168.7.249", "192.168.7.250", "192.168.70.146"]
+=> ["192.168.1.253", "192.168.1.14", "192.168.1.21", "192.168.1.22", "192.168.1.23"]
+<?end?>
 
 h2. Branch Collections
 
