@@ -375,6 +375,10 @@ class Treequel::Directory
 		normattrs = self.normalize_attributes( newattrs )
 		raise ArgumentError, "Can't create an entry with no objectClasses" unless
 			normattrs.key?( 'objectClass' )
+		normattrs['objectClass'].each do |oc|
+			raise ArgumentError, "No such objectClass #{oc.inspect}" unless
+				schema.object_classes.key?(oc.to_sym)
+		end
 		raise ArgumentError, "Can't create an entry with no structural objectClass" unless
 			normattrs['objectClass'].any? {|oc| schema.object_classes[oc.to_sym].structural? }
 

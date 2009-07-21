@@ -106,6 +106,7 @@ class Treequel::Branch
 
 
 	### Change the DN the Branch uses to look up its entry.
+
 	def dn=( newdn )
 		self.clear_caches
 		@dn = newdn
@@ -440,6 +441,8 @@ class Treequel::Branch
 	### Delete the entry associated with the branch from the directory.
 	def delete
 		self.directory.delete( self )
+		self.clear_caches
+
 		return true
 	end
 
@@ -447,7 +450,8 @@ class Treequel::Branch
 	### Create the entry for this Branch with the specified +attributes+. The +attributes+ should,
 	### at a minimum, contain the pair `:objectClass => :someStructuralObjectClass`.
 	def create( attributes={} )
-		return self.directory.create( self, attributes )
+		self.directory.create( self, attributes )
+		return self
 	end
 
 

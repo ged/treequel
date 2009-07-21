@@ -156,9 +156,22 @@ irb> me = Treequel::Branch.new_from_entry( entries.first, dir )
 
 Branches are also returned as the results from a search, but "that will be covered a little later":#searching.
 
+h3(#entries). The Branch's Entry
+
+Once you have a Branch, you can fetch its corresponding entry from the directory via the @#entry@ method. If the entry doesn't exist, @#entry@ will return @nil@. You can test to see whether an entry for a branch exists via its @#exists?@ predicate method:
+
+<?example { language: ruby, caption: "Examining a Branch's entry." } ?>
+irb> www = dir.ou( :hosts ).cn( :www )
+#=> #<Treequel::Branch:0x1932f8c cn=www,ou=hosts,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, cn=admin,dc=acme,dc=com) entry=nil>
+irb> www.exists?
+=> true
+irb> www.entry
+#=> {"cn"=>["www"], "ipHostNumber"=>["127.0.0.1"], "objectClass"=>["device", "ipHost"], "dn"=>["cn=www,ou=hosts,dc=acme,dc=com"]}
+
+
 h3(#attributes). Attributes
 
-Once you have a the Branch for the entry you need, fetching its attributes works just like a Hash:
+Once you have a the Branch for the entry you need, you can also fetch its attributes just like a Hash:
 
 <?example { language: ruby, caption: "Fetching an attribute." } ?>
 irb> me[:gecos]
@@ -287,7 +300,7 @@ irb> jtran['sn']
 
 or rename it:
 
-<?example { language: ruby, caption: "Copying an entry." } ?>
+<?example { language: ruby, caption: "Moving an entry." } ?>
 # Rename 'Miriam Robson' to 'Miriam Price' when she gets married.
 irb> user = dir.ou( :people ).uid( :mrobson ).move( 'uid=mprice', :sn => 'Price' )
 # => #<Treequel::Branch:0x12bff60 uid=mprice,ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, cn=admin,dc=acme,dc=com) entry=nil>
@@ -295,8 +308,12 @@ irb> user = dir.ou( :people ).uid( :mrobson ).move( 'uid=mprice', :sn => 'Price'
 
 <?ed fixme:"Treequel currently doesn't support moving an entry to a new parent, only renaming it under its current parent, but you can always copy it to the new @DN@ and delete the original. This will be corrected in a future version." ?>
 
-Finally, you can delete an entry 
+Finally, you can delete an entry from its @Branch@, as well:
 
+<?example { language: ruby, caption: "Deleting an entry." } ?>
+irb> dir.ou( :hosts ).cn( :ns1 ).delete
+# => true
+<?end?>
 
 h2(#schema). Schema Introspection
 
@@ -321,32 +338,73 @@ irb> dir.schema.object_classes[:inetOrgPerson]
 This hash is keyed by both OID and any associated names (as Symbols), and the value is a <?api Treequel::Schema::ObjectClass ?> object that contains the information about that objectClass parsed from the schema.
 
 <?example { language: ruby, caption: "Introspection on the inetOrgPerson objectClass." } ?>
-irb> inetOrgPerson.oid      #=> "2.16.840.1.113730.3.2.2"
-irb> inetOrgPerson.names    #=> [:inetOrgPerson]
-irb> inetOrgPerson.may_oids #=> [:audio, :businessCategory, :carLicense, :departmentNumber, :displayName, :employeeNumber, :employeeType, :givenName, :homePhone, :homePostalAddress, :initials, :jpegPhoto, :labeledURI, :mail, :manager, :mobile, :o, :pager, :photo, :roomNumber, :secretary, :uid, :userCertificate, :x500uniqueIdentifier, :preferredLanguage, :userSMIMECertificate, :userPKCS12]
-irb> inetOrgPerson.desc     #=> "RFC2798: Internet Organizational Person"
-irb> inetOrgPerson.sup      #=> #<Treequel::Schema::StructuralObjectClass:0x65fe6e person(2.5.6.6) < #<Treequel::Schema::AbstractObjectClass:0x6637ad top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2256: a person" MUST: [:sn, :cn], MAY: [:userPassword, :telephoneNumber, :seeAlso, :description]>
+irb> inetOrgPerson.oid
+#=> "2.16.840.1.113730.3.2.2"
+irb> inetOrgPerson.names
+#=> [:inetOrgPerson]
+irb> inetOrgPerson.may_oids
+#=> [:audio, :businessCategory, :carLicense, :departmentNumber, :displayName, :employeeNumber, :employeeType, :givenName, :homePhone, :homePostalAddress, :initials, :jpegPhoto, :labeledURI, :mail, :manager, :mobile, :o, :pager, :photo, :roomNumber, :secretary, :uid, :userCertificate, :x500uniqueIdentifier, :preferredLanguage, :userSMIMECertificate, :userPKCS12]
+irb> inetOrgPerson.desc
+#=> "RFC2798: Internet Organizational Person"
+irb> inetOrgPerson.sup
+#=> #<Treequel::Schema::StructuralObjectClass:0x65fe6e person(2.5.6.6) < #<Treequel::Schema::AbstractObjectClass:0x6637ad top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2256: a person" MUST: [:sn, :cn], MAY: [:userPassword, :telephoneNumber, :seeAlso, :description]>
 <?end?>
 
 Treequel::Branch objects know which objectClasses they have, too:
 
 <?example { language: ruby, caption: "Fetching the objectClasses for an entry through its Branch." } ?>
-irb> dir.base.object_classes.map {|oc| oc.name } #=> [:dcObject, :organization]
+irb> dir.base.object_classes
+#=> [#<Treequel::Schema::AuxiliaryObjectClass:0x68b168 dcObject(1.3.6.1.4.1.1466.344) < #<Treequel::Schema::AbstractObjectClass:0x690555 top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2247: domain component object" MUST: [:dc], MAY: []>, #<Treequel::Schema::StructuralObjectClass:0x68d02b organization(2.5.6.4) < #<Treequel::Schema::AbstractObjectClass:0x690555 top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2256: an organization" MUST: [:o], MAY: [:userPassword, :searchGuide, :seeAlso, :businessCategory, :x121Address, :registeredAddress, :destinationIndicator, :preferredDeliveryMethod, :telexNumber, :teletexTerminalIdentifier, :telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber, :street, :postOfficeBox, :postalCode, :postalAddress, :physicalDeliveryOfficeName, :st, :l, :description]>]
 <?end?>
-
-The schema object also knows about 
-
-* may_attribute_types
-* must_attribute_types
 
 There are several convenience methods built on top of this introspection, too. For instance, if you need to create a new entry, it's nice to know what attributes you'll need to define for an entry with particular objectClasses. 
 
-* valid_attribute?
-* valid_attribute_oids
-* valid_attribute_types
 
+h2. Branchsets and Filters
 
-* entry
+If you know exactly which entries you need, it's pretty easy to fetch the corresponding @Branch@ objects, but what about if you need to search for entries matching several criteria?
+
+Searching is implemented in Treequel via <?api "Treequel::Branchsets":Treequel::Branchset ?>. Much like Datasets from the _Sequel_ library which inspired Treequel, a @Branchset@ is an object which represents an abstract set of records returned by a search. The results of the search are returned on demand, so a @Branchset@ can be kept around and reused indefinitely.
+
+You can construct a new @Branchset@ via the usual constructor; it takes the @Branch@ for the base DN of the search:
+
+<?example { language: ruby, caption: "Creating a new Branchset." } ?>
+irb> Treequel::Branchset.new( dir.base )
+#=> #<Treequel::Branchset:0x1a418ec base_dn='dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
+<?end?>
+
+There are also several convenience methods on @Branch@ and @Directory@ that can create a new @Branchset@ relative to themselves, as well:
+
+<?example { language: ruby, caption: "Creating new Branchsets relative to the base DN and ou=Hosts." } ?>
+irb> dir.branchset
+#=> #<Treequel::Branchset:0x1a3fc54 base_dn='dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
+irb> dir.ou(:hosts).branchset
+#=> #<Treequel::Branchset:0x1998314 base_dn='ou=hosts,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
+<?end?>
+
+Like _Sequel_ Datasets, Branchsets are meant to be chainable, so you can refine what entries a @Branchset@ will find by calling one of its mutators.
+
+h3(#branchset-filter). 
+
+The first of these is @#filter@.
+
+With no modifications, a @Branchset@ will find every entry below its base using a filter of @(objectClass=*)@. 
+
+* scope
+* limit
+* without_limit
+* select
+* select_more/select_all
+* timeout
+* without_timeout
+
+* map
+
+irb> dir.ou( :hosts ).filter( :ipHostNumber ).map( :ipHostNumber ).flatten
+=> ["192.168.0.253", "192.168.1.14", "192.168.1.21", "192.168.1.22", "192.168.1.23", "192.168.1.24", "192.168.1.240", "192.168.1.25", "192.168.1.28", "192.168.1.30", "192.168.1.31", "192.168.1.33", "192.168.1.34", "192.168.1.35", "192.168.2.118", "192.168.2.210", "192.168.2.211", "192.168.2.212", "192.168.2.213", "192.168.2.214", "192.168.2.216", "192.168.2.217", "192.168.2.218", "192.168.2.240", "192.168.2.39", "192.168.2.67", "192.168.2.70", "192.168.2.75", "192.168.2.81", "192.168.2.93", "192.168.222.1", "192.168.222.59", "192.168.222.60", "192.168.222.66", "192.168.3.250", "192.168.7.249", "192.168.7.250", "192.168.70.146"]
+
+h2. Branch Collections
+
 
 
 h2. Authors
@@ -383,7 +441,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 <div id="cc-license">
 <a rel="license" href="http://creativecommons.org/licenses/by/3.0/">
-	!http://i.creativecommons.org/l/by/3.0/88x31.png(Creative Commons License)!
+	!images/cc-by.png(Creative Commons License)!
 </a><br/>
 The content of this manual, including images, video, and any example source code is 
 licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/3.0/">Creative 

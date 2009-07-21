@@ -155,13 +155,16 @@ class Treequel::Branchset
 
 	### Return a human-readable string representation of the object suitable for debugging.
 	def inspect
-		"#<%s:0x%0x base_dn='%s', filter=%s, scope=%s, options=%p>" % [
+		"#<%s:0x%0x base_dn='%s', filter=%s, scope=%s, select=%s, order=%p, limit=%d, timeout=%0.3f>" % [
 			self.class.name,
 			self.object_id * 2,
 			self.base_dn,
 			self.filter_string,
-			@scope,
-			self.options,
+			self.scope,
+			self.select.empty? ? '*' : self.select.join(','),
+			self.order,
+			self.limit,
+			self.timeout,
 		]
 	end
 
@@ -204,6 +207,27 @@ class Treequel::Branchset
 		  ).first
 	end
 
+
+	### Either maps entries which match the current criteria into an Array of the given 
+	### +attribute+, or falls back to the block form if no +attribute+ is specified. If both an
+	### +attribute+ and a +block+ are given, the +block+ is called once for each +attribute+ value
+	### instead of with each Branch.
+	def map( attribute=nil, &block ) # :yields: branch or attribute
+		if attribute
+			if block
+				super() {|branch| block.call(branch[attribute]) }
+			else
+				super() {|branch| branch[attribute] }
+			end
+		else
+			super( &block )
+		end
+	end
+
+
+	### 
+	### Mutators
+	### 
 
 	### Returns a clone of the receiving Branchset with the given +filterspec+ added
 	### to it.

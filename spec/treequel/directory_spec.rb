@@ -436,7 +436,7 @@ describe Treequel::Directory do
 			branch.should_receive( :rdn_attributes ).at_least( :once ).and_return( rdn_attrs )
 
 			room_objectclass = stub( 'room objectClass', :structural? => true )
-			@schema.should_receive( :object_classes ).and_return({ 
+			@schema.should_receive( :object_classes ).at_least( :once ).and_return({ 
 				:room => room_objectclass,
 			})
 
