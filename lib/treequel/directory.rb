@@ -361,8 +361,7 @@ class Treequel::Directory
 	end
 
 
-	### Create a new Branch relative to the specified +branch+ with the given +rdn+ and 
-	### +newattrs+ hash.
+	### Create the entry for the given +branch+, setting its attributes to +newattrs+.
 	def create( branch, newattrs={} )
 		newdn = branch.dn
 		schema = self.schema
@@ -383,39 +382,6 @@ class Treequel::Directory
 		self.conn.add( newdn, normattrs )
 
 		return true
-	end
-
-
-	### Copy the entry from the specified +branch+ to a new entry specified by +newdn+ with the
-	### given +attributes+. Returns a new branch object for the new entry.
-	def copy( branch, newdn, attributes={} )
-		source_rdn, source_parent_dn = branch.split_dn( 2 )
-		new_rdn, new_parent_dn = newdn.split( /\s*,\s*/, 2 )
-
-		if new_parent_dn.nil?
-			new_parent_dn = source_parent_dn
-			newdn = "#{new_rdn},#{new_parent_dn}"
-		end
-
-		if new_parent_dn != source_parent_dn
-			raise Treequel::Error,
-				"can't (yet) copy an entry to a new parent"
-		end
-
-		self.log.debug "Modrdn (copy): %p -> %p within %p" % [ branch.dn, new_rdn, source_parent_dn ]
-
-		self.conn.modrdn( branch.dn, new_rdn, false )
-		newbranch = branch.class.new( self, newdn )
-
-		unless attributes.empty?
-			attributes = self.normalize_attributes( attributes )
-			rdn_attrs = self.normalize_attributes( newbranch.rdn_attributes )
-			attributes.merge!( rdn_attrs, &method(:merge_recursively) )
-			self.log.debug "  changing attributes of the new entry: %p" % [ attributes ]
-			self.modify( newbranch, attributes )
-		end
-
-		return newbranch
 	end
 
 
@@ -526,6 +492,8 @@ class Treequel::Directory
 
 			normhash[ key.to_s ] = val
 		end
+
+		normhash.delete( 'dn' )
 
 		return normhash
 	end

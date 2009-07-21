@@ -92,6 +92,7 @@ describe Treequel::Branch do
 			@entry = mock( "entry object" )
 			@directory.stub!( :schema ).and_return( @schema )
 			@directory.stub!( :get_entry ).and_return( @entry )
+			@directory.stub!( :base_dn ).and_return( TEST_BASE_DN )
 			@schema.stub!( :attribute_types ).
 				and_return({ :cn => :a_value, :ou => :a_value })
 
@@ -399,18 +400,27 @@ describe Treequel::Branch do
 
 		it "can copy itself to a sibling entry" do
 			newbranch = stub( "copied sibling branch" )
-			@directory.should_receive( :copy ).with( @branch, TEST_PERSON2_DN, {} ).
+			Treequel::Branch.should_receive( :new ).with( @directory, TEST_PERSON2_DN ).
 				and_return( newbranch )
+			@entry.should_receive( :merge ).with( {} ).and_return( :merged_attributes )
+			@directory.should_receive( :create ).with( newbranch, :merged_attributes ).
+				and_return( true )
+
 			@branch.copy( TEST_PERSON2_DN ).should == newbranch
 		end
 
 
 		it "can copy itself to a sibling entry with attribute changes" do
+			oldattrs = { :sn => "Davies", :firstName => 'David' }
 			newattrs = { :sn => "Michaels", :firstName => 'George' }
 			newbranch = stub( "copied sibling branch" )
-			@directory.should_receive( :copy ).with( @branch, TEST_PERSON2_RDN, newattrs ).
+			Treequel::Branch.should_receive( :new ).with( @directory, TEST_PERSON2_DN ).
 				and_return( newbranch )
-			@branch.copy( TEST_PERSON2_RDN, newattrs ).should == newbranch
+			@entry.should_receive( :merge ).with( newattrs ).and_return( newattrs )
+			@directory.should_receive( :create ).with( newbranch, newattrs ).
+				and_return( true )
+
+			@branch.copy( TEST_PERSON2_DN, newattrs ).should == newbranch
 		end
 
 
