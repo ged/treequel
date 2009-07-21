@@ -121,11 +121,7 @@ class Treequel::Branch
 
 	### Return the attribute/s which make up this Branch's RDN.
 	def rdn_attributes
-		return self.rdn.split( /\s*\+\s*/ ).inject({}) do |attributes, pair|
-			attrname, value = pair.split(/\s*=\s*/)
-			attributes[ attrname ] = [ value ]
-			attributes
-		end
+		return make_rdn_hash( self.rdn )
 	end
 
 
@@ -174,10 +170,16 @@ class Treequel::Branch
 	end
 
 
+	### Return the DN of this entry's parent, or nil if it doesn't have one.
+	def parent_dn
+		return nil if self.dn == self.directory.base_dn
+		return self.split_dn( 2 ).last
+	end
+
+
 	### Return the Branch's immediate parent node.
 	def parent
-		parent_dn = self.split_dn( 2 ).last
-		return self.class.new( self.directory, parent_dn )
+		return self.class.new( self.directory, self.parent_dn )
 	end
 
 
@@ -449,11 +451,22 @@ class Treequel::Branch
 	end
 
 
-	### Copy the entry under this branch to a new entry indicated by +rdn+ and
-	### with the given +attributes+, returning a new Branch object for it on success.
-	def copy( rdn, attributes={} )
-		self.log.debug "Asking the directory for a copy of myself called %p" % [ rdn ]
-		return self.directory.copy( self, rdn, attributes )
+	### Copy the entry for this Branch to a new entry with the given +newdn+ and merge in the
+	### specified +attributes+.
+	def copy( newdn, attributes={} )
+
+		# Fully-qualify RDNs
+		newdn = newdn + ',' + self.parent_dn unless newdn.index(',')
+
+		self.log.debug "Creating a copy of %p at %p" % [ self.dn, newdn ]
+		newbranch = self.class.new( self.directory, newdn )
+
+		attributes = self.entry.merge( attributes )
+
+		self.log.debug "  merged attributes: %p" % [ attributes ]
+		self.directory.create( newbranch, attributes )
+
+		return newbranch
 	end
 
 
@@ -525,11 +538,22 @@ class Treequel::Branch
 			valid_types.key?( attribute ) &&
 			additional_attributes.keys.all? {|ex_attr| valid_types.key?(ex_attr) }
 
-		rdn = self.rdn_from_pair_and_hash( attribute, value, additional_attributes )
+		rdn = rdn_from_pair_and_hash( attribute, value, additional_attributes )
 
 		return self.get_child( rdn )
 	end
 
+
+	### Clear any cached values when the structural state of the object changes.
+	def clear_caches
+		@entry = nil
+		@values.clear
+	end
+
+
+	#######
+	private
+	#######
 
 	### Make an RDN string (RFC 4514) from the primary +attribute+ and +value+ pair plus any 
 	### +additional_attributes+ (for multivalue RDNs).
@@ -556,12 +580,14 @@ class Treequel::Branch
 	end
 
 
-	### Clear any cached values when the structural state of the object changes.
-	def clear_caches
-		@entry = nil
-		@values.clear
+	### Given an +RDN+, return a Hash of the key/value pairs which make it up.
+	def make_rdn_hash( rdn )
+		return rdn.split( /\s*\+\s*/ ).inject({}) do |attributes, pair|
+			attrname, value = pair.split(/\s*=\s*/)
+			attributes[ attrname ] = [ value ]
+			attributes
+		end
 	end
-
 
 end # class Treequel::Branch
 
