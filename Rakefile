@@ -64,17 +64,17 @@ EXTCONF       = EXTDIR + 'extconf.rb'
 ARTIFACTS_DIR = Pathname.new( CC_BUILD_ARTIFACTS )
 
 TEXT_FILES    = Rake::FileList.new( %w[Rakefile ChangeLog README LICENSE] )
-BIN_FILES     = Rake::FileList.new( "#{BINDIR}/*" ).exclude( /\.svn/ )
-LIB_FILES     = Rake::FileList.new( "#{LIBDIR}/**/*.rb" ).exclude( /\.svn/ )
-EXT_FILES     = Rake::FileList.new( "#{EXTDIR}/**/*.{c,h,rb}" ).exclude( /\.svn/ )
-DATA_FILES    = Rake::FileList.new( "#{DATADIR}/**/*" ).exclude( /\.svn/ )
+BIN_FILES     = Rake::FileList.new( "#{BINDIR}/*" )
+LIB_FILES     = Rake::FileList.new( "#{LIBDIR}/**/*.rb" )
+EXT_FILES     = Rake::FileList.new( "#{EXTDIR}/**/*.{c,h,rb}" )
+DATA_FILES    = Rake::FileList.new( "#{DATADIR}/**/*" )
 
 SPECDIR       = BASEDIR + 'spec'
 SPECLIBDIR    = SPECDIR + 'lib'
 SPEC_FILES    = Rake::FileList.new( "#{SPECDIR}/**/*_spec.rb", "#{SPECLIBDIR}/**/*.rb" )
 
 TESTDIR       = BASEDIR + 'tests'
-TEST_FILES    = Rake::FileList.new( "#{TESTDIR}/**/*.tests.rb" ).exclude( /\.svn/ )
+TEST_FILES    = Rake::FileList.new( "#{TESTDIR}/**/*.tests.rb" )
 
 RAKE_TASKDIR  = BASEDIR + 'rake'
 RAKE_TASKLIBS = Rake::FileList.new( "#{RAKE_TASKDIR}/*.rb" )
@@ -82,7 +82,6 @@ RAKE_TASKLIBS = Rake::FileList.new( "#{RAKE_TASKDIR}/*.rb" )
 LOCAL_RAKEFILE = BASEDIR + 'Rakefile.local'
 
 EXTRA_PKGFILES = Rake::FileList.new
-EXTRA_PKGFILES.exclude( /\.svn/ )
 
 RELEASE_FILES = TEXT_FILES + 
 	SPEC_FILES + 
@@ -107,23 +106,11 @@ RCOV_OPTS = [
   ]
 
 
-# Subversion constants -- directory names for releases and tags
-SVN_TRUNK_DIR    = 'trunk'
-SVN_RELEASES_DIR = 'releases'
-SVN_BRANCHES_DIR = 'branches'
-SVN_TAGS_DIR     = 'tags'
-
-SVN_DOTDIR       = BASEDIR + '.svn'
-SVN_ENTRIES      = SVN_DOTDIR + 'entries'
-
-
 ### Load some task libraries that need to be loaded early
 require RAKE_TASKDIR + 'helpers.rb'
-require RAKE_TASKDIR + 'svn.rb'
-require RAKE_TASKDIR + 'verifytask.rb'
 
 # Define some constants that depend on the 'svn' tasklib
-PKG_BUILD = get_svn_rev( BASEDIR ) || 0
+PKG_BUILD = get_vcs_rev( BASEDIR ) || 0
 SNAPSHOT_PKG_NAME = "#{PKG_FILE_NAME}.#{PKG_BUILD}"
 SNAPSHOT_GEM_NAME = "#{SNAPSHOT_PKG_NAME}.gem"
 
