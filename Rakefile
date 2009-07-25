@@ -40,6 +40,8 @@ DOCSDIR       = BASEDIR + 'docs'
 PKGDIR        = BASEDIR + 'pkg'
 DATADIR       = BASEDIR + 'data'
 
+MANUALDIR     = DOCSDIR + 'manual'
+
 PROJECT_NAME  = 'Treequel'
 PKG_NAME      = PROJECT_NAME.downcase
 PKG_SUMMARY   = 'An honest LDAP library'
@@ -79,6 +81,8 @@ TEST_FILES    = Rake::FileList.new( "#{TESTDIR}/**/*.tests.rb" )
 
 RAKE_TASKDIR  = BASEDIR + 'rake'
 RAKE_TASKLIBS = Rake::FileList.new( "#{RAKE_TASKDIR}/*.rb" )
+PKG_TASKLIBS  = Rake::FileList.new( "#{RAKE_TASKDIR}/{191_compat,helpers,packaging,rdoc,testing}.rb" )
+PKG_TASKLIBS.include( "#{RAKE_TASKDIR}/manual.rb" ) if MANUALDIR.exist?
 
 LOCAL_RAKEFILE = BASEDIR + 'Rakefile.local'
 
@@ -218,9 +222,6 @@ GEMSPEC   = Gem::Specification.new do |gem|
 	end
 end
 
-# Manual-generation config
-MANUALDIR = DOCSDIR + 'manual'
-
 $trace = Rake.application.options.trace ? true : false
 $dryrun = Rake.application.options.dryrun ? true : false
 
@@ -265,7 +266,7 @@ CLOBBER.include 'artifacts', 'coverage.info', PKGDIR
 file 'ChangeLog' do |task|
 	log "Updating #{task.name}"
 
-	changelog = make_svn_changelog()
+	changelog = make_changelog()
 	File.open( task.name, 'w' ) do |fh|
 		fh.print( changelog )
 	end
@@ -293,7 +294,7 @@ end
 desc "Update the build system to the latest version"
 task :update_build do
 	log "Updating the build system"
-	sh 'svn', 'up', RAKE_TASKDIR
+	run 'hg', '-R', RAKE_TASKDIR, 'pull', '-u'
 	log "Updating the Rakefile"
 	sh 'rake', '-f', RAKE_TASKDIR + 'Metarakefile'
 end
