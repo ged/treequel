@@ -1,26 +1,25 @@
 --- 
 rubyforge_project: treequel
-project_requirements:
+project_requirements: 
   ldap: ">=0"
-
 project_pubdir: /usr/local/www/public/code
 project_description: |-
   A library for interacting with LDAP (modeled after Sequel). It is an attempt to remove
   the impedence mismatch of trying to treat LDAP as if it's a relational database, and
   instead embrace its hierarchical, free-form nature.
-  
 rubyforge_group: deveiate
-author_name: Michael Granger and Mahlon E. Smith
 project_pubhost: deveiate
 project_homepage: http://deveiate.org/projects/Treequel
-project_dependencies: 
+project_dependencies: {}
+
 project_summary: An honest LDAP library
 project_name: Treequel
 version_file: treequel.rb
 additional_pkgfiles: []
 
 dev_dependencies: {}
-author_email: 
-  - ged@FaerieMUD.org
-  - mahlon@martini.nu
+
+authors: 
+  Michael Granger: ged@FaerieMUD.org
+  Mahlon E. Smith: mahlon@martini.nu
 post_install_message: ""
