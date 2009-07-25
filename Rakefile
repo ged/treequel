@@ -124,7 +124,7 @@ RDOC_OPTIONS = [
 	'-i', '.',
 	'-m', 'README',
 	'-t', PKG_NAME,
-	'-W', 'http://deveiate.org/projects/Treequel/browser/trunk/'
+	'-W', 'http://deveiate.org/projects/Treequel/browser/'
   ]
 
 # Release constants
