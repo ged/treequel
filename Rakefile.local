@@ -16,7 +16,7 @@ MANUAL_PAGES = Pathname.glob( MANUALDIR + '**/*.page' )
 task :local => :check_manual
 
 # Check the manual for laika references before committing
-Rake::Task[ 'svn:checkin' ].prerequisites.unshift( 'check_manual' )
+Rake::Task[ 'checkin' ].prerequisites.unshift( 'check_manual' )
 
 desc "Check the manual for various problems and/or inconsistencies"
 task :check_manual => MANUAL_PAGES do
