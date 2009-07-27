@@ -62,6 +62,12 @@ end
 PKG_FILE_NAME = "#{PKG_NAME.downcase}-#{PKG_VERSION}"
 GEM_FILE_NAME = "#{PKG_FILE_NAME}.gem"
 
+# Universal VCS constants
+DEFAULT_EDITOR  = 'vi'
+COMMIT_MSG_FILE = 'commit-msg.txt'
+FILE_INDENT     = " " * 12
+LOG_INDENT      = " " * 3
+
 EXTCONF       = EXTDIR + 'extconf.rb'
 
 ARTIFACTS_DIR = Pathname.new( CC_BUILD_ARTIFACTS )
@@ -113,10 +119,14 @@ RCOV_OPTS = [
 
 ### Load some task libraries that need to be loaded early
 require RAKE_TASKDIR + 'helpers.rb'
-require RAKE_TASKDIR + 'hg.rb'
 
 # Define some constants that depend on the 'svn' tasklib
-PKG_BUILD = get_vcs_rev( BASEDIR ) || 0
+if hg = which( 'hg' )
+	id = IO.read('|-') or exec hg, 'id', '-q'
+	PKG_BUILD = id.chomp
+else
+	PKG_BUILD = 0
+end
 SNAPSHOT_PKG_NAME = "#{PKG_FILE_NAME}.#{PKG_BUILD}"
 SNAPSHOT_GEM_NAME = "#{SNAPSHOT_PKG_NAME}.gem"
 
@@ -228,7 +238,7 @@ $dryrun = Rake.application.options.dryrun ? true : false
 
 # Load any remaining task libraries
 RAKE_TASKLIBS.each do |tasklib|
-	next if tasklib.to_s =~ %r{/(helpers|svn|verifytask)\.rb$}
+	next if tasklib.to_s =~ %r{/helpers\.rb$}
 	begin
 		trace "  loading tasklib %s" % [ tasklib ]
 		require tasklib
