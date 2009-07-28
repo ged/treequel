@@ -1,1 +1,5 @@
 ^commit\-msg\.txt$
+docs/manual/output
+docs/api
+^pkg$
+ChangeLog$
