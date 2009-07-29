@@ -72,11 +72,19 @@ describe Treequel::Filter do
 	end
 
 	it "parses a single-item Symbol+value hash as a simple item equal filter" do
-		Treequel::Filter.new([ :uidNumber, 3036 ]).to_s.should == '(uidNumber=3036)'
+		Treequel::Filter.new({ :uidNumber => 3036 }).to_s.should == '(uidNumber=3036)'
 	end
 
 	it "parses a Symbol+value pair in an Array as a simple item equal filter" do
 		Treequel::Filter.new( [:uid, 'bigthung'] ).to_s.should == '(uid=bigthung)'
+	end
+
+	it "parses a multi-value Hash as an ANDed collection of simple item equals filters" do
+		expr = Treequel::Filter.new( :givenName => 'Michael', :sn => 'Granger' )
+		gnpat = Regexp.quote( '(givenName=Michael)' )
+		snpat = Regexp.quote( '(sn=Granger)' )
+
+		expr.to_s.should =~ /\(&(#{gnpat}#{snpat}|#{snpat}#{gnpat})\)/i
 	end
 
 	it "parses an AND expression with only a single clause" do

@@ -10,7 +10,8 @@ project_description: |-
 rubyforge_group: deveiate
 project_pubhost: deveiate
 project_homepage: http://deveiate.org/projects/Treequel
-project_dependencies: {}
+project_dependencies:
+  ruby-ldap: >= 0.9.9
 
 project_summary: An honest LDAP library
 project_name: Treequel
