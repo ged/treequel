@@ -158,6 +158,7 @@ RUBYFORGE_PROJECT = 'treequel'
 
 # Gem dependencies: gemname => version
 DEPENDENCIES = {
+	'ruby-ldap' => '>= 0.9.9',
 }
 
 # Developer Gem dependencies: gemname => version
