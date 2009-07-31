@@ -10,9 +10,8 @@ project_description: |-
 rubyforge_group: deveiate
 project_pubhost: deveiate
 project_homepage: http://deveiate.org/projects/Treequel
-project_dependencies:
-  ruby-ldap: >= 0.9.9
-
+project_dependencies: 
+  ruby-ldap: ">= 0.9.9"
 project_summary: An honest LDAP library
 project_name: Treequel
 version_file: treequel.rb
@@ -21,6 +20,6 @@ additional_pkgfiles: []
 dev_dependencies: {}
 
 authors: 
-  Michael Granger: ged@FaerieMUD.org
   Mahlon E. Smith: mahlon@martini.nu
+  Michael Granger: ged@FaerieMUD.org
 post_install_message: ""
