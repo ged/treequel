@@ -306,7 +306,7 @@ irb> jtran['sn']
 # => ["Tran"]
 <?end?>
 
-or rename it:
+or move (rename) it:
 
 <?example { language: ruby, caption: "Moving an entry." } ?>
 # Rename 'Miriam Robson' to 'Miriam Price' when she gets married.
@@ -325,7 +325,7 @@ irb> dir.ou( :hosts ).cn( :ns1 ).delete
 
 h2(#schema). Schema Introspection
 
-Some objectClasses require that the entry contain values for particular attributes, and it's nice to be able to tell which ones you'll need if you're building tools that can create new entries. To that end, Treequel comes with a set of tools for fetching and using the information contained in a Directory's schema.
+Some objectClasses require that the entry contain values for particular attributes (their @MUST@ attributes), and it's nice to be able to tell which ones you'll need if you're building tools that can create new entries. To that end, Treequel comes with a set of tools for fetching and using the information contained in a Directory's schema.
 
 You can get the <?api Treequel::Schema ?> from the directory by calling its @#schema@ method:
 
@@ -360,14 +360,12 @@ irb> inetOrgPerson.sup
 # => #<Treequel::Schema::StructuralObjectClass:0x65fe6e person(2.5.6.6) < #<Treequel::Schema::AbstractObjectClass:0x6637ad top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2256: a person" MUST: [:sn, :cn], MAY: [:userPassword, :telephoneNumber, :seeAlso, :description]>
 <?end?>
 
-Treequel::Branch objects know which objectClasses they have, too:
+Treequel::Branch objects provide a shortcut for looking up the @Treequel::ObjectClass@ objects that correspond to its @objectClass@ properties:
 
 <?example { language: ruby, caption: "Fetching the objectClasses for an entry through its Branch." } ?>
 irb> dir.base.object_classes
 # => [#<Treequel::Schema::AuxiliaryObjectClass:0x68b168 dcObject(1.3.6.1.4.1.1466.344) < #<Treequel::Schema::AbstractObjectClass:0x690555 top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2247: domain component object" MUST: [:dc], MAY: []>, #<Treequel::Schema::StructuralObjectClass:0x68d02b organization(2.5.6.4) < #<Treequel::Schema::AbstractObjectClass:0x690555 top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2256: an organization" MUST: [:o], MAY: [:userPassword, :searchGuide, :seeAlso, :businessCategory, :x121Address, :registeredAddress, :destinationIndicator, :preferredDeliveryMethod, :telexNumber, :teletexTerminalIdentifier, :telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber, :street, :postOfficeBox, :postalCode, :postalAddress, :physicalDeliveryOfficeName, :st, :l, :description]>]
 <?end?>
-
-There are several convenience methods built on top of this introspection, too. For instance, if you need to create a new entry, it's nice to know what attributes you'll need to define for an entry with particular objectClasses. 
 
 
 h2. Branchsets and Filters
@@ -398,7 +396,23 @@ h3(#branchset-filter). Filter
 
 The first of these is @#filter@.
 
-With no modifications, a @Branchset@ will find every entry below its base using a filter of @(objectClass=*)@. 
+With no modifications, a @Branchset@ will find every entry below its base using a filter of @(objectClass=*)@ (which will match every entry). 
+
+The argument to @#filter@ can be a literal LDAP filter in a @String@:
+
+<?example { language: ruby, caption: "Literal string filter expression" } ?>
+irb> dir.ou( :people ).filter( '(objectClass=room)' ).filter_string
+# => "(objectClass=room)"
+<?end ?>
+
+You can also use a @Hash@ to do simple @attribute=value@ matching:
+
+<?example { language: ruby, caption: "Literal string filter expression" } ?>
+irb> dir.ou( :people ).filter( :givenName => 'Michael' )
+# => "(givenName=Michael)"
+<?end ?>
+
+
 
 You can narrow the results of that search by adding one or more filter statements.  Each call to @#filter@ adds a clause to the LDAP filter string that is eventually sent to the server.  For example, this one-liner finds the first name of all @inetOrgPerson@ classes within the @People@ organizational unit that have a @uid@ that starts with the string "ma":
 

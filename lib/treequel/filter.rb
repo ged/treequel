@@ -407,11 +407,8 @@ class Treequel::Filter
 			return expression
 
 		# 'Item' components
-		when Array
+		when Array, Hash
 			return self.parse_array_expression( expression )
-
-		when Hash
-			return self.parse_array_expression( expression.to_a.first )
 
 		# Unwrapped presence item filter
 		when Symbol
@@ -444,18 +441,16 @@ class Treequel::Filter
 			Treequel.logger.debug "  empty expression -> objectClass presence item component"
 			return Treequel::Filter::PresentItemComponent.new
 
-		# [ :attribute ] := '(attribute=*)'
-		when expression.length == 1
-			return self.parse_expression( expression[0] )
-
-		when expression[0].is_a?( Symbol )
-			return self.parse_tuple_array_expression( expression )
-
 		# Collection of subfilters
 		# [ [:uid, 'mahlon'], [:employeeNumber, 20202] ]
 		when expression.all? {|elem| elem.is_a?(Array) }
-			filters = expression.collect {|exp| self.parse_array_expression(exp) }
-			return Treequel::Filter::FilterList.new( filters )
+			Treequel.logger.debug "  parsing array of subfilters"
+			filters = expression.collect {|exp| Treequel::Filter.new(exp) }
+			if filters.length > 1
+				return Treequel::Filter::AndComponent.new( filters )
+			else
+				return filters.first
+			end
 
 		# Literal filters [ 'uid~=gung', 'l=bangkok' ]  := '(uid~=gung)(l=bangkok)'
 		when expression.all? {|item| item.is_a?(String) }
@@ -465,6 +460,13 @@ class Treequel::Filter
 		# Collection of subfilter objects
 		when expression.all? {|elem| elem.is_a?(Treequel::Filter) }
 			return Treequel::Filter::FilterList.new( expression )
+
+		# [ :attribute ] := '(attribute=*)'
+		when expression.length == 1
+			return self.parse_expression( expression[0] )
+
+		when expression[0].is_a?( Symbol )
+			return self.parse_tuple_array_expression( expression )
 
 		else
 			raise Treequel::ExpressionError,

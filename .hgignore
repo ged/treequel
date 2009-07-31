@@ -3,3 +3,6 @@ docs/manual/output
 docs/api
 ^pkg$
 ChangeLog$
+coverage/
+coverage\\.info
+^coverage\.info$
