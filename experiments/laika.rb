@@ -19,7 +19,7 @@ require 'treequel'
 
 
 dir = Treequel::Directory.new( :host => 'localhost', :connect_type => :tls )
-dir.bind( 'cn=auth,dc=laika,dc=com', 'foobar' )
+dir.bind( 'cn=auth,dc=acme,dc=com', 'foobar' )
 
 
 class Treequel::Model

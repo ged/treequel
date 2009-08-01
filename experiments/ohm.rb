@@ -49,9 +49,9 @@ end
 
 
 class Employee < Treequel::Model
-	model_branchset DIR.ou( :people ).filter( :objectClass => :laikaAccount )
+	model_branchset DIR.ou( :people ).filter( :objectClass => :acmeAccount )
 
-	model_objectClasses :laikaAccount, :inetOrgPerson
+	model_objectClasses :acmeAccount, :inetOrgPerson
 end
 
 
