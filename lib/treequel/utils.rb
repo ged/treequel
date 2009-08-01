@@ -25,7 +25,7 @@ module Treequel # :nodoc:
 	#
 	# == Authors
 	#
-	# * Michael Granger <mgranger@laika.com>
+	# * Michael Granger <ged@FaerieMUD.org>
 	#
 	# :include: LICENSE
 	#

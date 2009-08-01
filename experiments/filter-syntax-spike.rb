@@ -2,7 +2,7 @@
 
 require 'treequel'
 
-dir = Treequel.directory( :host => 'localhost', :basedn => 'dc=laika,dc=com' )
+dir = Treequel.directory( :host => 'localhost', :basedn => 'dc=acme,dc=com' )
 
 people = dir.ou( :People )
 

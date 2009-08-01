@@ -216,20 +216,20 @@ end # module TreequelSpike
 
 directory_params = {
 	:connect_type => :tls,
-	:host => 'gont.ljc.laika.com',
-	:base => 'dc=laika,dc=com',
+	:host => 'gont.ljc.acme.com',
+	:base => 'dc=acme,dc=com',
 }
 
 dir = TreequelSpike.directory( directory_params )
 # => #<Treequel::Directory:0x49f2dc
-#     @base="dc=laika,dc=com",
+#     @base="dc=acme,dc=com",
 #     @bound_as=nil,
 #     @conn=nil,
 #     @connect_type=:tls,
-#     @host="gont.ljc.laika.com",
+#     @host="gont.ljc.acme.com",
 #     @options=
-#      {:base=>"dc=laika,dc=com",
-#       :host=>"gont.ljc.laika.com",
+#      {:base=>"dc=acme,dc=com",
+#       :host=>"gont.ljc.acme.com",
 #       :port=>389,
 #       :connect_type=>:tls},
 #     @port=389>
@@ -238,36 +238,36 @@ dir = TreequelSpike.directory( directory_params )
 
 # ...but you can set a default binding
 dir.bind( dir.ou(:people).uid(:mgranger), "foobar" )
-# => "Bound as: \"uid=mgranger,ou=people,dc=laika,dc=com\""
+# => "Bound as: \"uid=mgranger,ou=people,dc=acme,dc=com\""
 
 # ...or bind as someone else for the duration of the block
-# dir.bind( 'cn=auth,dc=laika,dc=com', "foobar" ) do
+# dir.bind( 'cn=auth,dc=acme,dc=com', "foobar" ) do
 # 	dir.ou( :people ).uid( 'mgranger' )
 # end
 
 
-# Make a "dataset" out of the 'ou=departments,dc=laika,dc=com' branch
+# Make a "dataset" out of the 'ou=departments,dc=acme,dc=com' branch
 departments = dir.ou( :departments )
-# => #<Treequel::Branch:0x49ac28 ou=departments,dc=laika,dc=com @ gont.ljc.laika.com:389 (tls, bound_as=,dc=laika,dc=com) {"ou"=>["Departments"], "objectClass"=>["organizationalUnit", "top"], "dn"=>["ou=Departments,dc=laika,dc=com"]}>
+# => #<Treequel::Branch:0x49ac28 ou=departments,dc=acme,dc=com @ gont.ljc.acme.com:389 (tls, bound_as=,dc=acme,dc=com) {"ou"=>["Departments"], "objectClass"=>["organizationalUnit", "top"], "dn"=>["ou=Departments,dc=acme,dc=com"]}>
 
 # Same thing, but for disparate branches
 hosts = dir.ou( :hosts ) +
         dir.dc( :pettygrove ).ou( :hosts ) +
         dir.dc( :bennett ).ou( :hosts ) +
         dir.dc( :ljc ).ou( :hosts )
-# => #<Treequel::Branch:0x498f40 ou=hosts,dc=ljc,dc=laika,dc=com @ gont.ljc.laika.com:389 (tls, bound_as=,dc=laika,dc=com) {"ou"=>["Hosts"], "objectClass"=>["organizationalUnit", "top"], "dn"=>["ou=Hosts,dc=ljc,dc=laika,dc=com"]}>
+# => #<Treequel::Branch:0x498f40 ou=hosts,dc=ljc,dc=acme,dc=com @ gont.ljc.acme.com:389 (tls, bound_as=,dc=acme,dc=com) {"ou"=>["Hosts"], "objectClass"=>["organizationalUnit", "top"], "dn"=>["ou=Hosts,dc=ljc,dc=acme,dc=com"]}>
 
 hosts
 # => #<Treequel::BranchCollection:0x498428
 #     @branches=
-#      [#<Treequel::Branch:0x49a0ac ou=hosts,dc=laika,dc=com @ gont.ljc.laika.com:389 (tls, bound_as=,dc=laika,dc=com) {"ou"=>["Hosts"], "objectClass"=>["top", "organizationalUnit"], "dn"=>["ou=Hosts,dc=laika,dc=com"]}>,
-#       #<Treequel::Branch:0x49a034 ou=hosts,dc=pettygrove,dc=laika,dc=com @ gont.ljc.laika.com:389 (tls, bound_as=,dc=laika,dc=com) {"ou"=>["Hosts"], "objectClass"=>["organizationalUnit", "top"], "dn"=>["ou=Hosts,dc=pettygrove,dc=laika,dc=com"]}>,
-#       #<Treequel::Branch:0x4991d4 ou=hosts,dc=bennett,dc=laika,dc=com @ gont.ljc.laika.com:389 (tls, bound_as=,dc=laika,dc=com) {"ou"=>["Hosts"], "objectClass"=>["top", "organizationalUnit"], "dn"=>["ou=Hosts,dc=bennett,dc=laika,dc=com"]}>,
-#       #<Treequel::Branch:0x498f40 ou=hosts,dc=ljc,dc=laika,dc=com @ gont.ljc.laika.com:389 (tls, bound_as=,dc=laika,dc=com) {"ou"=>["Hosts"], "objectClass"=>["organizationalUnit", "top"], "dn"=>["ou=Hosts,dc=ljc,dc=laika,dc=com"]}>]>
+#      [#<Treequel::Branch:0x49a0ac ou=hosts,dc=acme,dc=com @ gont.ljc.acme.com:389 (tls, bound_as=,dc=acme,dc=com) {"ou"=>["Hosts"], "objectClass"=>["top", "organizationalUnit"], "dn"=>["ou=Hosts,dc=acme,dc=com"]}>,
+#       #<Treequel::Branch:0x49a034 ou=hosts,dc=pettygrove,dc=acme,dc=com @ gont.ljc.acme.com:389 (tls, bound_as=,dc=acme,dc=com) {"ou"=>["Hosts"], "objectClass"=>["organizationalUnit", "top"], "dn"=>["ou=Hosts,dc=pettygrove,dc=acme,dc=com"]}>,
+#       #<Treequel::Branch:0x4991d4 ou=hosts,dc=bennett,dc=acme,dc=com @ gont.ljc.acme.com:389 (tls, bound_as=,dc=acme,dc=com) {"ou"=>["Hosts"], "objectClass"=>["top", "organizationalUnit"], "dn"=>["ou=Hosts,dc=bennett,dc=acme,dc=com"]}>,
+#       #<Treequel::Branch:0x498f40 ou=hosts,dc=ljc,dc=acme,dc=com @ gont.ljc.acme.com:389 (tls, bound_as=,dc=acme,dc=com) {"ou"=>["Hosts"], "objectClass"=>["organizationalUnit", "top"], "dn"=>["ou=Hosts,dc=ljc,dc=acme,dc=com"]}>]>
 
 hosts.filter( "(|(ipHostNumber=10.111.222.66)(ipHostNumber=10.4.1.194))" )
-# => [#<Treequel::Branch:0x494a08 cn=leroy,ou=Hosts,dc=laika,dc=com @ gont.ljc.laika.com:389 (tls, bound_as=,dc=laika,dc=com) {"cn"=>["leroy"], "macAddress"=>["00:e0:18:90:9f:16"], "description"=>["Provides vinton.com e-mail forwarding"], "ipHostNumber"=>["10.111.222.66"], "objectClass"=>["top", "device", "ipHost", "laikaHost", "ieee802Device"], "owner"=>["cn=isg,ou=Lists,dc=laika,dc=com"], "dn"=>["cn=leroy,ou=Hosts,dc=laika,dc=com"]}>,
-#     #<Treequel::Branch:0x492ce4 cn=zelda,ou=Hosts,dc=pettygrove,dc=laika,dc=com @ gont.ljc.laika.com:389 (tls, bound_as=,dc=laika,dc=com) {"cn"=>["zelda"], "macAddress"=>["00:13:72:d1:a0:0f"], "description"=>["workstation"], "ipHostNumber"=>["10.4.1.194"], "objectClass"=>["top", "laikaHost", "ipHost", "ieee802Device", "device"], "owner"=>["cn=isg,ou=Lists,dc=laika,dc=com"], "dn"=>["cn=zelda,ou=Hosts,dc=pettygrove,dc=laika,dc=com"]}>]
+# => [#<Treequel::Branch:0x494a08 cn=leroy,ou=Hosts,dc=acme,dc=com @ gont.ljc.acme.com:389 (tls, bound_as=,dc=acme,dc=com) {"cn"=>["leroy"], "macAddress"=>["00:e0:18:90:9f:16"], "description"=>["Provides vinton.com e-mail forwarding"], "ipHostNumber"=>["10.111.222.66"], "objectClass"=>["top", "device", "ipHost", "acmeHost", "ieee802Device"], "owner"=>["cn=isg,ou=Lists,dc=acme,dc=com"], "dn"=>["cn=leroy,ou=Hosts,dc=acme,dc=com"]}>,
+#     #<Treequel::Branch:0x492ce4 cn=zelda,ou=Hosts,dc=pettygrove,dc=acme,dc=com @ gont.ljc.acme.com:389 (tls, bound_as=,dc=acme,dc=com) {"cn"=>["zelda"], "macAddress"=>["00:13:72:d1:a0:0f"], "description"=>["workstation"], "ipHostNumber"=>["10.4.1.194"], "objectClass"=>["top", "acmeHost", "ipHost", "ieee802Device", "device"], "owner"=>["cn=isg,ou=Lists,dc=acme,dc=com"], "dn"=>["cn=zelda,ou=Hosts,dc=pettygrove,dc=acme,dc=com"]}>]
 
 departments.filter( :and,
 	[:supervisor, nil],
