@@ -81,9 +81,15 @@ def try_regexp( str, re )
 	end
 end
 
+IRB.conf[:PROMPT][:manual] = {
+    :PROMPT_I => "irb> ",
+    :PROMPT_S => "... ",
+    :PROMPT_C => "* ",
+    :RETURN => "# => %s\n"      # format to return value
+}
+IRB.conf[:PROMPT_MODE] = :manual
 
 
-# Try to require the 'thingfish' library
 begin
 	$stderr.puts "Loading Treequel..."
 	require 'treequel'
