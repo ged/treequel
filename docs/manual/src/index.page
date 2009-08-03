@@ -334,6 +334,7 @@ irb> dir.schema
 # => #<Treequel::Schema:0x66511b 1119 attribute types, 31 ldap syntaxes, 54 matching rule uses, 72 matching rules, 310 object classes>
 <?end ?>
 
+
 h3(#schema-objectclasses). objectClasses
 
 You can fetch information about the "objectClasses":http://tools.ietf.org/html/rfc4512#section-2.4 the directory knows about through the schema's @#object_classes@ Hash:
@@ -367,6 +368,55 @@ irb> dir.base.object_classes
 # => [#<Treequel::Schema::AuxiliaryObjectClass:0x68b168 dcObject(1.3.6.1.4.1.1466.344) < #<Treequel::Schema::AbstractObjectClass:0x690555 top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2247: domain component object" MUST: [:dc], MAY: []>, #<Treequel::Schema::StructuralObjectClass:0x68d02b organization(2.5.6.4) < #<Treequel::Schema::AbstractObjectClass:0x690555 top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2256: an organization" MUST: [:o], MAY: [:userPassword, :searchGuide, :seeAlso, :businessCategory, :x121Address, :registeredAddress, :destinationIndicator, :preferredDeliveryMethod, :telexNumber, :teletexTerminalIdentifier, :telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber, :street, :postOfficeBox, :postalCode, :postalAddress, :physicalDeliveryOfficeName, :st, :l, :description]>]
 <?end?>
 
+h3(#schema-attributetypes). Attribute Types
+
+You can also fetch introspection information on entry "attributeTypes":http://tools.ietf.org/html/rfc4512#section-2.5.1 via the schema's @#attribute_types@ Hash:
+
+<?example { language: ruby, caption: "Fetching an AttributeType object for the 'surname' attribute." } ?>
+irb> dir.schema.attribute_types[:surname]
+# => #<Treequel::Schema::AttributeType:0x146abd sn(2.5.4.4) "RFC2256: last (family) name(s) for which the entity is known by" SYNTAX: nil (length: unlimited)>
+<?end?>
+
+Like with objectClasses, they are keyed both by numeric OID strings and their associated names (as Symbols), and the values are instances of <?api Treequel::Schema::AttributeType ?>.
+
+<?example { language: ruby, caption: "Fetching an AttributeType object for the 'inetOrgPerson' objectClass." } ?>
+irb> sn = dir.schema.attribute_types[:surname]
+# => #<Treequel::Schema::AttributeType:0x696ec8 sn(2.5.4.4) "RFC2256: last (family) name(s) for which the entity is known by" SYNTAX: nil (length: unlimited)>
+irb> sn.oid
+# => "2.5.4.4"
+irb> sn.names
+# => [:sn, :surname]
+irb> sn.desc
+# => "RFC2256: last (family) name(s) for which the entity is known by"
+irb> sn.obsolete?
+# => false
+irb> sn.sup
+sn.sup_oid   sn.sup_oid=  sn.sup       
+irb> sn.sup
+# => #<Treequel::Schema::AttributeType:0x69e542 name(2.5.4.41) "RFC4519: common supertype of name attributes" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.15" (length: 32768)>
+irb> sn.eq
+sn.eql?                    sn.eqmatch_oid=            sn.equal?                  sn.equality_matching_rule  
+sn.eqmatch_oid             
+irb> sn.equal
+sn.equal?                  sn.equality_matching_rule  
+irb> sn.equality_matching_rule
+# => #<Treequel::Schema::MatchingRule:0x687f7c caseIgnoreMatch(2.5.13.2)  SYNTAX: #<Treequel::Schema::LDAPSyntax:0x689043 1.3.6.1.4.1.1466.115.121.1.15(Directory String)>>
+irb> sn.substr_matching_rule
+# => #<Treequel::Schema::MatchingRule:0x688026 caseIgnoreSubstringsMatch(2.5.13.4)  SYNTAX: nil>
+irb> sn.user_modifiable?
+# => true
+<?end?>
+
+Branches also know how to fetch the attribute types that are allowed by their objectClasses' _MUST_ and _MAY_ OIDs:
+
+<?example { language: ruby, caption: "Fetching an AttributeType object for the 'inetOrgPerson' objectClass." } ?>
+irb> base = dir.base
+# => #<Treequel::Branch:0x1a7f8cc dc=laika,dc=com @ localhost:389 (dc=laika,dc=com, tls, anonymous) entry=nil>
+irb> base.may_oids
+# => [:userPassword, :searchGuide, :seeAlso, :businessCategory, :x121Address, :registeredAddress, :destinationIndicator, :preferredDeliveryMethod, :telexNumber, :teletexTerminalIdentifier, :telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber, :street, :postOfficeBox, :postalCode, :postalAddress, :physicalDeliveryOfficeName, :st, :l, :description]
+irb> base.may_attribute_types
+# => [#<Treequel::Schema::AttributeType:0x69e1af userPassword(2.5.4.35) "RFC4519/2307: password of user" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.40" (length: 128)>, #<Treequel::Schema::AttributeType:0x6968ce searchGuide(2.5.4.14) "RFC2256: search guide, deprecated by enhancedSearchGuide" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.25" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x69dfa7 seeAlso(2.5.4.34) "RFC4519: DN of related object" SYNTAX: nil (length: unlimited)>, #<Treequel::Schema::AttributeType:0x69681f businessCategory(2.5.4.15) "RFC2256: business category" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.15" (length: 128)>, #<Treequel::Schema::AttributeType:0x6961d0 x121Address(2.5.4.24) "RFC2256: X.121 Address" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.36" (length: 15)>, #<Treequel::Schema::AttributeType:0x69606d registeredAddress(2.5.4.26) "RFC2256: registered postal address" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.41" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x695fbe destinationIndicator(2.5.4.27) "RFC2256: destination indicator" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.44" (length: 128)>, #<Treequel::Schema::AttributeType:0x695f0f preferredDeliveryMethod(2.5.4.28) "RFC2256: preferred delivery method" (SINGLE) SYNTAX: "1.3.6.1.4.1.1466.115.121.1.14" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x6963f6 telexNumber(2.5.4.21) "RFC2256: Telex Number" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.52" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x696351 teletexTerminalIdentifier(2.5.4.22) "RFC2256: Teletex Terminal Identifier" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.51" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x6964a0 telephoneNumber(2.5.4.20) "RFC2256: Telephone Number" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.50" (length: 32)>, #<Treequel::Schema::AttributeType:0x69611c internationaliSDNNumber(2.5.4.25) "RFC2256: international ISDN number" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.36" (length: 16)>, #<Treequel::Schema::AttributeType:0x696284 facsimileTelephoneNumber(2.5.4.23) "RFC2256: Facsimile (Fax) Telephone Number" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.22" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x696b3f street(2.5.4.9) "RFC2256: street address of this object" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.15" (length: 128)>, #<Treequel::Schema::AttributeType:0x696608 postOfficeBox(2.5.4.18) "RFC2256: Post Office Box" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.15" (length: 40)>, #<Treequel::Schema::AttributeType:0x6966bc postalCode(2.5.4.17) "RFC2256: postal code" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.15" (length: 40)>, #<Treequel::Schema::AttributeType:0x69676b postalAddress(2.5.4.16) "RFC2256: postal address" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.41" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x696554 physicalDeliveryOfficeName(2.5.4.19) "RFC2256: Physical Delivery Office Name" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.15" (length: 128)>, #<Treequel::Schema::AttributeType:0x696bee st(2.5.4.8) "RFC2256: state or province which this object resides in" SYNTAX: nil (length: unlimited)>, #<Treequel::Schema::AttributeType:0x696c93 l(2.5.4.7) "RFC2256: locality which this object resides in" SYNTAX: nil (length: unlimited)>, #<Treequel::Schema::AttributeType:0x69e051 description(2.5.4.13) "RFC4519: descriptive information" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.15" (length: 1024)>]
+<?end?>
 
 h2. Branchsets and Filters
 
