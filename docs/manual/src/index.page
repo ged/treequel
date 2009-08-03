@@ -483,7 +483,7 @@ irb> fivegroups.without_limit.all.length
 
 h3(#select). Select
 
-If you should want to limit the attributes that are returned by the query, you can do so by specifying which ones should be returned with the @#select@ method:
+If you should want to limit the attributes that are returned in the entries fetched by the query, you can do so by specifying which ones should be returned with the @#select@ method:
 
 <?example { language: ruby, caption: "Fetch only employee first and last names" } ?>
 irb> dir.ou( :people ).select( :sn, :givenName ).limit( 5 ).collect {|b| b.entry }

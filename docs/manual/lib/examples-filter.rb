@@ -67,8 +67,6 @@ class ExamplesFilter < Manual::Page::Filter
 
 	EndPI = %r{ <\? end (?: \s+ example )? \s* \?> }x
 
-	RENDERER_OPTIONS = YAML.load( File.read(__FILE__).split(/^__END__/, 2).last )
-
 
 	### Defer loading of dependenies until the filter is loaded
 	def initialize( *args )
@@ -76,7 +74,6 @@ class ExamplesFilter < Manual::Page::Filter
 			require 'pathname'
 			require 'strscan'
 			require 'yaml'
-			# require 'uv'
 			require 'rcodetools/xmpfilter'
 			require 'digest/md5'
 			require 'tmpdir'
@@ -151,19 +148,20 @@ class ExamplesFilter < Manual::Page::Filter
 		options = self.parse_options( params )
 		caption = options.delete( :caption )
 		content = ''
+		lang = options.delete( :language ).to_s
 
 		# Test it if it's testable
 		if options[:testable]
-			content = test_content( body, options[:language], page )
+			content = test_content( body, lang, page )
 		else
 			content = body
 		end
 
 		# Strip trailing blank lines and syntax-highlight
-		content = highlight( content.strip, options )
+		content = highlight( content.strip, options, lang )
 		caption = %{<div class="caption">} + caption.to_s + %{</div>} if caption
 
-		return %{<notextile><div class="example">%s%s</div></notextile>} %
+		return %{<notextile><div class="example #{lang}-example">%s%s</div></notextile>} %
 		 	[content, caption || '']
 	end
 
@@ -239,200 +237,10 @@ class ExamplesFilter < Manual::Page::Filter
 
 
 	### Highlights the given +content+ in language +lang+.
-	def highlight( content, options )
-		lang = options.delete( :language ).to_s
-
+	def highlight( content, options, lang )
 		source = ERB::Util.html_escape( content )
 		return %Q{\n\n<pre class="brush:#{lang}">#{source}</pre>\n\n}
-
-		# if Uv.syntaxes.include?( lang )
-		# 			return parse_with_ultraviolet( content, lang )
-		# 		else
-		# 			begin
-		# 				require 'amatch'
-		# 				pat = Amatch::PairDistance.new( lang )
-		# 				matches = Uv.syntaxes.
-		# 					collect {|syntax| [pat.match(syntax), syntax] }.
-		# 					sort_by {|tuple| tuple[0] }.
-		# 					reverse
-		# 				puts matches[ 0..5 ].inspect
-		# 				puts "No syntax called '#{lang}'.",
-		# 					"Perhaps you meant one of: ",
-		# 					*(matches[ 0..5 ].collect {|m| "  #{m[1]}" })
-		# 			rescue => err
-		# 				$stderr.puts err.message, err.backtrace.join("\n  ")
-		# 				raise "No UV syntax called '#{lang}'."
-		# 			end
-		# 		end
 	end
 
 end
 
-
-__END__
---- 
-name: DevEiate
-line: 
-  begin: ""
-  end: ""
-tags: 
-- begin: <span class="Comment">
-  end: </span>
-  selector: comment
-- begin: <span class="Constant">
-  end: </span>
-  selector: constant
-- begin: <span class="Entity">
-  end: </span>
-  selector: entity
-- begin: <span class="Keyword">
-  end: </span>
-  selector: keyword
-- begin: <span class="Storage">
-  end: </span>
-  selector: storage
-- begin: <span class="String">
-  end: </span>
-  selector: string
-- begin: <span class="Support">
-  end: </span>
-  selector: support
-- begin: <span class="Variable">
-  end: </span>
-  selector: variable
-- begin: <span class="InvalidDeprecated">
-  end: </span>
-  selector: invalid.deprecated
-- begin: <span class="InvalidIllegal">
-  end: </span>
-  selector: invalid.illegal
-- begin: <span class="RubyInstanceVariable">
-  end: </span>
-  selector: variable.other.readwrite.instance.ruby
-- begin: <span class="RubyConstant">
-  end: </span>
-  selector: variable.other.constant.ruby
-- begin: <span class="RubyClass">
-  end: </span>
-  selector: entity.name.class.ruby, entity.name.class.module.ruby
-- begin: <span class="RubyInheritedClass">
-  end: </span>
-  selector: entity.other.inherited-class.ruby, entity.other.inherited-class.module.ruby
-- begin: <span class="EmbeddedSource">
-  end: </span>
-  selector: text source
-- begin: <span class="EmbeddedSourceBright">
-  end: </span>
-  selector: text.html.ruby source
-- begin: <span class="EntityInheritedClass">
-  end: </span>
-  selector: entity.other.inherited-class
-- begin: <span class="StringEmbeddedSource">
-  end: </span>
-  selector: string.quoted source
-- begin: <span class="StringConstant">
-  end: </span>
-  selector: string constant
-- begin: <span class="StringRegexp">
-  end: </span>
-  selector: string.regexp
-- begin: <span class="StringRegexpSpecial">
-  end: </span>
-  selector: string.regexp constant.character.escaped, string.regexp source.ruby.embedded, string.regexp string.regexp.arbitrary-repitition
-- begin: <span class="StringVariable">
-  end: </span>
-  selector: string variable
-- begin: <span class="SupportFunction">
-  end: </span>
-  selector: support.function
-- begin: <span class="SupportConstant">
-  end: </span>
-  selector: support.constant
-- begin: <span class="CCCPreprocessorLine">
-  end: </span>
-  selector: other.preprocessor.c
-- begin: <span class="CCCPreprocessorDirective">
-  end: </span>
-  selector: other.preprocessor.c entity
-- begin: <span class="DoctypeXmlProcessing">
-  end: </span>
-  selector: declaration.sgml.html declaration.doctype, declaration.sgml.html declaration.doctype entity, declaration.sgml.html declaration.doctype string, declaration.xml-processing, declaration.xml-processing entity, declaration.xml-processing string, meta.tag.preprocessor.xml
-- begin: <span class="XmlPreprocessingDirective">
-  end: </span>
-  selector: meta.tag.preprocessor.xml entity.name.tag.xml
-- begin: <span class="XmlPreprocessingAttributes">
-  end: </span>
-  selector: meta.tag.preprocessor.xml entity.other.attribute-name.xml
-- begin: <span class="MetaTagAll">
-  end: </span>
-  selector: declaration.tag, declaration.tag entity, meta.tag, meta.tag entity
-- begin: <span class="MetaTagInline">
-  end: </span>
-  selector: declaration.tag.inline, declaration.tag.inline entity, source entity.name.tag, source entity.other.attribute-name, meta.tag.inline, meta.tag.inline entity
-- begin: <span class="CssTagName">
-  end: </span>
-  selector: meta.selector.css entity.name.tag
-- begin: <span class="CssPseudoClass">
-  end: </span>
-  selector: meta.selector.css entity.other.attribute-name.tag.pseudo-class
-- begin: <span class="CssId">
-  end: </span>
-  selector: meta.selector.css entity.other.attribute-name.id
-- begin: <span class="CssClass">
-  end: </span>
-  selector: meta.selector.css entity.other.attribute-name.class
-- begin: <span class="CssPropertyName">
-  end: </span>
-  selector: support.type.property-name.css
-- begin: <span class="CssPropertyValue">
-  end: </span>
-  selector: meta.property-group support.constant.property-value.css, meta.property-value support.constant.property-value.css
-- begin: <span class="CssAtRule">
-  end: </span>
-  selector: meta.preprocessor.at-rule keyword.control.at-rule
-- begin: <span class="CssAdditionalConstants">
-  end: </span>
-  selector: meta.property-value support.constant.named-color.css, meta.property-value constant
-- begin: <span class="CssConstructorArgument">
-  end: </span>
-  selector: meta.constructor.argument.css
-- begin: <span class="DiffHeader">
-  end: </span>
-  selector: meta.diff, meta.diff.header
-- begin: <span class="DiffDeleted">
-  end: </span>
-  selector: markup.deleted
-- begin: <span class="DiffChanged">
-  end: </span>
-  selector: markup.changed
-- begin: <span class="DiffInserted">
-  end: </span>
-  selector: markup.inserted
-- begin: <span class="MarkupList">
-  end: </span>
-  selector: markup.list
-- begin: <span class="MarkupHeading">
-  end: </span>
-  selector: markup.heading
-- begin: <span class="WebgenMetadataHeader">
-  end: </span>
-  selector: text.html.textile.webgen.metadata
-- begin: <span class="WebgenPlugin">
-  end: </span>
-  selector: text.html.textile.webgen.plugin
-- begin: <span class="WebgenPluginParameters">
-  end: </span>
-  selector: text.html.textile.webgen.plugin-parameters
-- begin: <span class="EvenTabs">
-  end: </span>
-  selector: meta.even-tab
-listing: 
-  begin: <pre class="deveiate">
-  end: </pre>
-document: 
-  begin: ""
-  end: ""
-filter: CGI.escapeHTML( @escaped )
-line-numbers: 
-  begin: <span class="line-numbers">
-  end: </span>

@@ -34,13 +34,17 @@
 
 
 /* @group Elements */
+html {
+	border-left: 5px solid #ca2f1b;
+	min-height: 100%;
+	min-width: 800px;
+}
+
 body {
 	margin: 0;
 	font: 14px/1.2em "Gill Sans", Helvetica, Tahoma, sans-serif;
 	background: #f3f3f3;
 	color: #333;
-	border-left: 5px solid #ca2f1b;
-	min-width: 800px;
 }
 
 h1,h2,h3,h4,h5,h6 {
@@ -265,10 +269,15 @@ td, th {
 
 #footer {
 	margin: 2em 0 0;
+	background-color: #fff;
 	border-top: 1px solid #c0c0d5;
+	-webkit-box-shadow: 0 -2px 5px rgba( 25,25,25, 0.4 );
 	padding: 0;
 	font-size: 0.75em;
-	position: relative;
+	position: fixed;
+	left: 0;
+	bottom: 0;
+	width: 100%;
 }
 
 #footer p {
@@ -921,5 +930,5 @@ pre.console-output {
 { 
 	color: #AEC4DE; 
 }
-
 /* @end */
+
