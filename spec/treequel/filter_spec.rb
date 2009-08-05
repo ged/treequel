@@ -110,8 +110,8 @@ describe Treequel::Filter do
 			should == '(|(cn~=facet)(cn=structure)(cn=envision))'
 	end
 
-	it "parses the hash form of OR expression" do
-		Treequel::Filter.new( [:or, {:uid => %w[lar bin fon guh]} ]).to_s.
+	it "infers the OR-hash form if the expression is Symbol => Array" do
+		Treequel::Filter.new( :uid => %w[lar bin fon guh] ).to_s.
 			should == '(|(uid=lar)(uid=bin)(uid=fon)(uid=guh))'
 	end
 
@@ -135,7 +135,7 @@ describe Treequel::Filter do
 
 	it "raises an exception with a NOT expression that contains more than one clause" do
 		expect {
-			Treequel::Filter.new( [:not, [:uid, 'kunglung'], [:name, 'chunger']] )
+			Treequel::Filter.new( :not, [:uid, 'kunglung'], [:name, 'chunger'] )
 		 }.to raise_error( ArgumentError )
 	end
 

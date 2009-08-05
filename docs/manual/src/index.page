@@ -162,7 +162,7 @@ irb> dir.base
 <?end ?>
 
 
-Branches are also returned as the results from a search, but "that will be covered a little later":#branchsets-and-filters.
+Branches are also returned as the results from a search, but "that will be covered a little later":#searching-with-branchsets.
 
 h3(#entries). The Branch's Entry
 
@@ -295,10 +295,12 @@ irb> mahlon_things.cn( :thing ).create( :objectClass => 'room', :description => 
 # => true
 <?end ?>
 
+Some objectClasses require that the entry contain values for particular attributes (their @MUST@ attributes), and it's nice to be able to tell which ones you'll need if you're building tools that can create new entries. To that end, Treequel comes with a set of tools for fetching and using the information contained in a Directory's schema. We'll cover schema introspection "a little later":#schema-introspection.
+
 You can also copy an existing entry:
 
 <?example { language: ruby, caption: "Copying an entry." } ?>
-irb> dir.bind( 'cn=admin,dc=acme,dc=com', 'bucket' )
+irb> dir.bind( 'cn=admin,dc=acme,dc=com', 'the_password' )
 # => "cn=admin,dc=acme,dc=com"
 irb> jtran = dir.ou( :people ).uid( :mahlon ).copy( 'uid=jtran', :givenName => 'Jim', :sn => 'Tran' )
 # => #<Treequel::Branch:0x12bff60 uid=jtran,ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, cn=admin,dc=acme,dc=com) entry=nil>
@@ -323,11 +325,178 @@ irb> dir.ou( :hosts ).cn( :ns1 ).delete
 # => true
 <?end?>
 
-h2(#schema). Schema Introspection
+h2(#searching-with-branchsets). Searching With Branchsets
 
-Some objectClasses require that the entry contain values for particular attributes (their @MUST@ attributes), and it's nice to be able to tell which ones you'll need if you're building tools that can create new entries. To that end, Treequel comes with a set of tools for fetching and using the information contained in a Directory's schema.
+If you know exactly which entries you need, it's pretty easy to fetch the corresponding @Branch@ objects, but what if you need to search for entries matching one or more criteria?
 
-You can get the <?api Treequel::Schema ?> from the directory by calling its @#schema@ method:
+Searching is implemented in Treequel via <?api "Treequel::Branchsets":Treequel::Branchset ?>. Much like @Datasets@ from the _Sequel_ library which inspired Treequel, a @Branchset@ is an object which represents an abstract set of records returned by a search. The results of the search are returned on demand, so a @Branchset@ can be kept around and reused indefinitely.
+
+You can construct a new @Branchset@ via the usual constructor; it takes the @Branch@ for the base DN of the search:
+
+<?example { language: ruby, caption: "Creating a new Branchset." } ?>
+irb> Treequel::Branchset.new( dir.ou(:people) )
+# => #<Treequel::Branchset:0x1a418ec base_dn='ou=people,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
+<?end?>
+
+There are also several convenience methods on @Branch@ and @Directory@ that can create a new @Branchset@ relative to themselves, as well:
+
+<?example { language: ruby, caption: "Creating new Branchsets relative to the base DN and ou=Hosts." } ?>
+irb> dir.branchset
+# => #<Treequel::Branchset:0x1a3fc54 base_dn='dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
+irb> dir.ou(:people).branchset
+# => #<Treequel::Branchset:0x1998314 base_dn='ou=people,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
+<?end?>
+
+Like _Sequel_ Datasets, Branchsets are meant to be chainable, so you can refine what entries it will find by calling one of its mutators. Each mutator method returns a new @Branchset@ with the new criteria set. This allows you to build up a query for what you need gradually, in a concise and flexible manner.
+
+h3(#branchset-filter). Filter
+
+The first of these mutators is @#filter@.
+
+You can narrow the results of that search by adding one or more filter statements. Each call to @#filter@ adds a clause to the LDAP filter string that is eventually sent to the server.
+
+With no modifications, a @Branchset@ will find every entry below its base using a filter of @(objectClass=*)@ (which will match every entry). 
+
+The @#filter@ method expects one or more expressions which are transformed into an "LDAP filter":http://tools.ietf.org/html/rfc4515, and can be a literal filter String, a Hash or an Array of criteria, or a Ruby expression.
+
+The simplest of these, of course, is a literal LDAP filter in a @String@:
+
+<?example { language: ruby, caption: "Literal string filter expression" } ?>
+irb> dir.ou( :people ).filter( '(objectClass=room)' )
+=> #<Treequel::Branchset:0x12b7c48 base_dn='ou=people,dc=acme,dc=com', filter=(objectClass=room), scope=subtree, select=*, order="", limit=0, timeout=0.000>
+<?end ?>
+
+You can see what the equivalent filter of a @Branchset@ is at any time using its @#filter_string@ method:
+
+<?example { language: ruby, caption: "Literal string filter expression" } ?>
+irb> dir.ou( :people ).filter( '(objectClass=room)' ).filter_string
+# => "(objectClass=room)"
+<?end ?>
+
+You can also use a @Hash@ to do simple @attribute=value@ matching:
+
+<?example { language: ruby, caption: "Hash filter expression" } ?>
+irb> dir.ou( :people ).filter( :givenName => 'Michael' ).filter_string
+# => "(givenName=Michael)"
+<?end ?>
+
+Multiple criteria in a Hash will be ANDed together:
+
+<?example { language: ruby, caption: "Multi-value Hash filter expression" } ?>
+irb> dir.ou( :people ).filter( :givenName => 'Michael', :sn => 'Granger' )
+# => "(&(givenName=Michael)(sn=Granger))"
+<?end ?>
+
+You can include an OR in a filter by passing @:or@ as the first element:
+
+<?example { language: ruby, caption: "An ORed filter" } ?>
+irb> dir.ou( :people ).filter( :or, [:sn, 'Granger'], [:sn, 'Smith'] ).filter_string
+# => "(|(sn=Granger)(sn=Smith))"
+<?end ?>
+
+You can do the same with @:and@ and @:not@, and combine them, too:
+
+<?example { language: ruby, caption: "Negation (NOT) of an explicit AND" } ?>
+irb> dir.ou( :people ).filter( :and, [:sn, 'Granger'], [:sn, 'Smith'] ).filter_string
+# => "(&(sn=Granger)(sn=Smith))"
+irb> dir.ou( :people ).filter( :not, [:and, [:sn, 'Granger'], [:sn, 'Smith']] ).filter_string
+# => "(!(&(sn=Granger)(sn=Smith)))"
+<?end ?>
+
+Because @filter@ returns the mutated branchset, you can always chain them together instead of using an explicit @:and@.
+
+<?example { language: ruby, caption: "Chaining filter expressions ANDs them, too." } ?>
+irb> dir.ou( :people ).filter( :objectClass => 'inetOrgPerson' ).filter( :sn => 'Smith' ).filter_string
+# => "(&(objectClass=inetOrgPerson)(sn=Smith))"
+<?end ?>
+
+We're experimenting with support for Sequel expressions for more-complex filter expressions, too:
+
+<?example { language: ruby, caption: "Advanced expressions" } ?>
+irb> dir.ou( :people ).filter( ~:photo ).filter_string
+# => "(!(photo=*))"
+irb> dir.ou( :people ).filter( :employeeNumber <= 1000 ).filter_string
+# => "(employeeNumber<=1000)"
+irb> dir.ou( :people ).filter( :sn.like('smith') ).filter_string
+# => "(sn~=smith)"
+irb> dir.ou( :people ).filter( :sn.like('sm*') ).filter_string
+# => "(sn=sm*)"
+irb> dir.ou( :people ).filter( :sn => ['smith', 'tran'] ).filter_string
+# => "(|(sn=smith)(sn=tran))"
+<?end ?>
+
+
+h3(#branchset-scope). Scope
+
+You can also create a @Branchset@ that will search using a different scope by passing @:onelevel@, @:base@, or @:subtree@ (the default) to the @#scope@ method of the original @Branchset@:
+
+Setting the scope to @:onelevel@ (as you might expect) means that it will only descend one level when searching:
+
+<?example { language: ruby, caption: "Find all the top-level OUs" } ?>
+irb> dir.filter( :objectClass => :organizationalUnit ).scope( :one ).collect {|branch| branch[:ou].first }
+=> ["Hosts", "Groups", "Lists", "Resources", "People", "Departments", "Netgroups"]
+<?end ?>
+
+Setting it to @:subtree@ (which is the default) means that it will descend infinitely, and setting it to @:base@ means that it will only consider the base entry, either returning it if it matches, or returning @nil@ if it does not.
+
+h3(#limit). Limit
+
+Setting a Branchset's @#limit@ will limit the number of results the search will return:
+
+<?example { language: ruby, caption: "Return the first 5 groups in the directory" } ?>
+irb> dir.ou( :groups ).limit( 5 ).collect {|b| b.dn }
+# => ["ou=Groups,dc=acme,dc=com", "cn=anim,ou=Groups,dc=acme,dc=com", "cn=acct,ou=Groups,dc=acme,dc=com", "cn=mailuser,ou=Groups,dc=acme,dc=com", "cn=producer,ou=Groups,dc=acme,dc=com"]
+<?end ?>
+
+If you already have a @Branchset@ with a limit, and want a new one that won't have any limits imposed on it, you can get one via the @#without_limit@ method.
+
+<?example { language: ruby, caption: "Making a Branchset without the limits of the original" } ?>
+irb> fivegroups = dir.ou( :groups ).limit( 5 )
+# => #<Treequel::Branchset:0x1264908 base_dn='ou=groups,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=5, timeout=0.000>
+irb> fivegroups.all.length
+# => 5
+irb> fivegroups.without_limit.all.length
+# => 99
+<?end ?>
+
+h3(#select). Select
+
+If you should want to limit the attributes that are returned in the entries fetched by the query, you can do so by specifying which ones should be returned with the @#select@ method:
+
+<?example { language: ruby, caption: "Fetch only employee first and last names" } ?>
+irb> dir.ou( :people ).select( :sn, :givenName ).limit( 5 ).collect {|b| b.entry }
+# => [{"dn"=>["ou=People,dc=acme,dc=com"]}, {"givenName"=>["Reed"], "sn"=>["Slimlocke"], "dn"=>["uid=rslim,ou=People,dc=acme,dc=com"]}, {"givenName"=>["Jim"], "sn"=>["Tran"], "dn"=>["uid=jtran,ou=People,dc=acme,dc=com"]}, {"givenName"=>["Michael"], "sn"=>["Granger"], "dn"=>["uid=mgranger,ou=People,dc=acme,dc=com"]}, {"givenName"=>["Harken"], "sn"=>["Farkselstein"], "dn"=>["uid=hfarkselstein,ou=People,dc=acme,dc=com"]}]
+<?end?>
+
+
+* select_more/select_all
+* timeout
+* without_timeout
+
+For example, this one-liner finds the first name of all @inetOrgPerson@ classes within the @People@ organizational unit that have a @uid@ that starts with the string "ma":
+
+<?example { language: ruby, caption: "Chaining filter methods" } ?>
+irb> dir.ou( :people ).filter( :objectClass => 'inetOrgPerson' ).filter( :uid => 'ma*' ).collect {|branch| branch[:givenName].first }.sort
+# => ["Mahlon", "Margaret", "Margaret", "Mark", "Marlon", "Matt", "Mike", "Mimi"]
+<?end ?>
+
+
+
+* map
+
+<?example { language: ruby, caption: "Mapping branch attributes" } ?>
+irb> dir.ou( :hosts ).filter( :ipHostNumber ).map( :ipHostNumber ).flatten
+=> ["192.168.1.253", "192.168.1.14", "192.168.1.21", "192.168.1.22", "192.168.1.23"]
+<?end?>
+
+h2. Branch Collections
+
+Yay!
+
+
+h2(#schema-introspection). Schema Introspection
+
+The information about the structure of the directory comes from its schema, and Treequel provides instrospection tools for accessing it in an object-oriented manner. You can get the <?api Treequel::Schema ?> from the directory by calling its @#schema@ method:
 
 <?example { language: ruby, caption: "Fetching the schema for a Directory." } ?>
 irb> dir.schema
@@ -335,7 +504,7 @@ irb> dir.schema
 <?end ?>
 
 
-h3(#schema-objectclasses). objectClasses
+h3(#schema-objectclasses). Object Classes
 
 You can fetch information about the "objectClasses":http://tools.ietf.org/html/rfc4512#section-2.4 the directory knows about through the schema's @#object_classes@ Hash:
 
@@ -415,154 +584,12 @@ irb> base = dir.base
 irb> base.may_oids
 # => [:userPassword, :searchGuide, :seeAlso, :businessCategory, :x121Address, :registeredAddress, :destinationIndicator, :preferredDeliveryMethod, :telexNumber, :teletexTerminalIdentifier, :telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber, :street, :postOfficeBox, :postalCode, :postalAddress, :physicalDeliveryOfficeName, :st, :l, :description]
 irb> base.may_attribute_types
-# => [#<Treequel::Schema::AttributeType:0x69e1af userPassword(2.5.4.35) "RFC4519/2307: password of user" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.40" (length: 128)>, #<Treequel::Schema::AttributeType:0x6968ce searchGuide(2.5.4.14) "RFC2256: search guide, deprecated by enhancedSearchGuide" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.25" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x69dfa7 seeAlso(2.5.4.34) "RFC4519: DN of related object" SYNTAX: nil (length: unlimited)>, #<Treequel::Schema::AttributeType:0x69681f businessCategory(2.5.4.15) "RFC2256: business category" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.15" (length: 128)>, #<Treequel::Schema::AttributeType:0x6961d0 x121Address(2.5.4.24) "RFC2256: X.121 Address" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.36" (length: 15)>, #<Treequel::Schema::AttributeType:0x69606d registeredAddress(2.5.4.26) "RFC2256: registered postal address" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.41" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x695fbe destinationIndicator(2.5.4.27) "RFC2256: destination indicator" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.44" (length: 128)>, #<Treequel::Schema::AttributeType:0x695f0f preferredDeliveryMethod(2.5.4.28) "RFC2256: preferred delivery method" (SINGLE) SYNTAX: "1.3.6.1.4.1.1466.115.121.1.14" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x6963f6 telexNumber(2.5.4.21) "RFC2256: Telex Number" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.52" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x696351 teletexTerminalIdentifier(2.5.4.22) "RFC2256: Teletex Terminal Identifier" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.51" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x6964a0 telephoneNumber(2.5.4.20) "RFC2256: Telephone Number" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.50" (length: 32)>, #<Treequel::Schema::AttributeType:0x69611c internationaliSDNNumber(2.5.4.25) "RFC2256: international ISDN number" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.36" (length: 16)>, #<Treequel::Schema::AttributeType:0x696284 facsimileTelephoneNumber(2.5.4.23) "RFC2256: Facsimile (Fax) Telephone Number" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.22" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x696b3f street(2.5.4.9) "RFC2256: street address of this object" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.15" (length: 128)>, #<Treequel::Schema::AttributeType:0x696608 postOfficeBox(2.5.4.18) "RFC2256: Post Office Box" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.15" (length: 40)>, #<Treequel::Schema::AttributeType:0x6966bc postalCode(2.5.4.17) "RFC2256: postal code" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.15" (length: 40)>, #<Treequel::Schema::AttributeType:0x69676b postalAddress(2.5.4.16) "RFC2256: postal address" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.41" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x696554 physicalDeliveryOfficeName(2.5.4.19) "RFC2256: Physical Delivery Office Name" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.15" (length: 128)>, #<Treequel::Schema::AttributeType:0x696bee st(2.5.4.8) "RFC2256: state or province which this object resides in" SYNTAX: nil (length: unlimited)>, #<Treequel::Schema::AttributeType:0x696c93 l(2.5.4.7) "RFC2256: locality which this object resides in" SYNTAX: nil (length: unlimited)>, #<Treequel::Schema::AttributeType:0x69e051 description(2.5.4.13) "RFC4519: descriptive information" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.15" (length: 1024)>]
+# => [#<Treequel::Schema::AttributeType:0x69e1af userPassword(2.5.4.35) "RFC4519/2307: password of user" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.40" (length: 128)>, #<Treequel::Schema::AttributeType:0x6968ce searchGuide(2.5.4.14) "RFC2256: search guide, deprecated by enhancedSearchGuide" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.25" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x69dfa7 seeAlso(2.5.4.34) "RFC4519: DN of related object" SYNTAX: nil (length: unlimited)>, ...]
 <?end?>
 
-h2. Branchsets and Filters
+h3(#schema-otherinfo). Other Schema Information
 
-If you know exactly which entries you need, it's pretty easy to fetch the corresponding @Branch@ objects, but what if you need to search for entries matching several criteria?
-
-Searching is implemented in Treequel via <?api "Treequel::Branchsets":Treequel::Branchset ?>. Much like Datasets from the _Sequel_ library which inspired Treequel, a @Branchset@ is an object which represents an abstract set of records returned by a search. The results of the search are returned on demand, so a @Branchset@ can be kept around and reused indefinitely.
-
-You can construct a new @Branchset@ via the usual constructor; it takes the @Branch@ for the base DN of the search:
-
-<?example { language: ruby, caption: "Creating a new Branchset." } ?>
-irb> Treequel::Branchset.new( dir.base )
-# => #<Treequel::Branchset:0x1a418ec base_dn='dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
-<?end?>
-
-There are also several convenience methods on @Branch@ and @Directory@ that can create a new @Branchset@ relative to themselves, as well:
-
-<?example { language: ruby, caption: "Creating new Branchsets relative to the base DN and ou=Hosts." } ?>
-irb> dir.branchset
-# => #<Treequel::Branchset:0x1a3fc54 base_dn='dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
-irb> dir.ou(:hosts).branchset
-# => #<Treequel::Branchset:0x1998314 base_dn='ou=hosts,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
-<?end?>
-
-Like _Sequel_ Datasets, Branchsets are meant to be chainable, so you can refine what entries a @Branchset@ will find by calling one of its mutators. Each branchset mutator method returns a new @Branchset@ with the new criteria set. This allows you to build up a query for what you need gradually, in a concise and flexible manner.
-
-h3(#branchset-filter). Filter
-
-The first of these mutators is @#filter@.
-
-You can narrow the results of that search by adding one or more filter statements. Each call to @#filter@ adds a clause to the LDAP filter string that is eventually sent to the server.
-
-With no modifications, a @Branchset@ will find every entry below its base using a filter of @(objectClass=*)@ (which will match every entry). 
-
-The @#filter@ method expects one or more expressions which are transformed into an "LDAP filter":http://tools.ietf.org/html/rfc4515, and can be a literal filter String, a Hash or an Array of criteria, or a Ruby expression.
-
-The simplest of these, of course, is a literal LDAP filter in a @String@:
-
-<?example { language: ruby, caption: "Literal string filter expression" } ?>
-irb> dir.ou( :people ).filter( '(objectClass=room)' )
-=> #<Treequel::Branchset:0x12b7c48 base_dn='ou=people,dc=acme,dc=com', filter=(objectClass=room), scope=subtree, select=*, order="", limit=0, timeout=0.000>
-<?end ?>
-
-You can see what the equivalent filter of a @Branchset@ is at any time using its @#filter_string@ method:
-
-<?example { language: ruby, caption: "Literal string filter expression" } ?>
-irb> dir.ou( :people ).filter( '(objectClass=room)' ).filter_string
-# => "(objectClass=room)"
-<?end ?>
-
-You can also use a @Hash@ to do simple @attribute=value@ matching:
-
-<?example { language: ruby, caption: "Hash filter expression" } ?>
-irb> dir.ou( :people ).filter( :givenName => 'Michael' ).filter_string
-# => "(givenName=Michael)"
-<?end ?>
-
-Multiple criteria in a Hash will be ANDed together:
-
-<?example { language: ruby, caption: "Multi-value Hash filter expression" } ?>
-irb> dir.ou( :people ).filter( :givenName => 'Michael', :sn => 'Granger' )
-# => "(&(givenName=Michael)(sn=Granger))"
-<?end ?>
-
-You can include an OR in a filter by passing @:or@ as the first element:
-
-<?example { language: ruby, caption: "An ORed filter" } ?>
-irb> dir.ou( :people ).filter( :or, [:sn, 'Granger'], [:sn, 'Smith'] ).filter_string
-# => "(|(sn=Granger)(sn=Smith))"
-<?end ?>
-
-You can do the same with @:and@ and @:not@, and combine them, too:
-
-<?example { language: ruby, caption: "Negation (NOT) of an explicit AND" } ?>
-irb> dir.ou( :people ).filter( :and, [:sn, 'Granger'], [:sn, 'Smith'] ).filter_string
-# => "(&(sn=Granger)(sn=Smith))"
-irb> dir.ou( :people ).filter( :not, [:and, [:sn, 'Granger'], [:sn, 'Smith']] ).filter_string
-# => "(!(&(sn=Granger)(sn=Smith)))"
-<?end ?>
-
-Of course, you can always chain them together instead of using an explicit @:and@.
-
-h3(#branchset-scope). Scope
-
-You can also create a @Branchset@ that will search using a different scope by passing @:onelevel@, @:base@, or @:subtree@ (the default) to the @#scope@ method of the original @Branchset@:
-
-Setting the scope to @:onelevel@ (as you might expect) means that it will only descend one level when searching:
-
-<?example { language: ruby, caption: "Find all the top-level OUs" } ?>
-irb> dir.filter( :objectClass => :organizationalUnit ).scope( :one ).collect {|branch| branch[:ou].first }
-=> ["Hosts", "Groups", "Lists", "Resources", "People", "Departments", "Netgroups"]
-<?end ?>
-
-Setting it to @:subtree@ (which is the default) means that it will descend infinitely, and setting it to @:base@ means that it will only consider the base entry, either returning it if it matches, or returning @nil@ if it does not.
-
-h3(#limit). Limit
-
-Setting a Branchset's @#limit@ will limit the number of results the search will return:
-
-<?example { language: ruby, caption: "Return the first 5 groups in the directory" } ?>
-irb> dir.ou( :groups ).limit( 5 ).collect {|b| b.dn }
-# => ["ou=Groups,dc=acme,dc=com", "cn=anim,ou=Groups,dc=acme,dc=com", "cn=acct,ou=Groups,dc=acme,dc=com", "cn=mailuser,ou=Groups,dc=acme,dc=com", "cn=producer,ou=Groups,dc=acme,dc=com"]
-<?end ?>
-
-If you already have a @Branchset@ with a limit, and want a new one that won't have any limits imposed on it, you can get one via the @#without_limit@ method.
-
-<?example { language: ruby, caption: "Making a Branchset without the limits of the original" } ?>
-irb> fivegroups = dir.ou( :groups ).limit( 5 )
-# => #<Treequel::Branchset:0x1264908 base_dn='ou=groups,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=5, timeout=0.000>
-irb> fivegroups.all.length
-# => 5
-irb> fivegroups.without_limit.all.length
-# => 99
-<?end ?>
-
-h3(#select). Select
-
-If you should want to limit the attributes that are returned in the entries fetched by the query, you can do so by specifying which ones should be returned with the @#select@ method:
-
-<?example { language: ruby, caption: "Fetch only employee first and last names" } ?>
-irb> dir.ou( :people ).select( :sn, :givenName ).limit( 5 ).collect {|b| b.entry }
-# => [{"dn"=>["ou=People,dc=acme,dc=com"]}, {"givenName"=>["Reed"], "sn"=>["Slimlocke"], "dn"=>["uid=rslim,ou=People,dc=acme,dc=com"]}, {"givenName"=>["Jim"], "sn"=>["Tran"], "dn"=>["uid=jtran,ou=People,dc=acme,dc=com"]}, {"givenName"=>["Michael"], "sn"=>["Granger"], "dn"=>["uid=mgranger,ou=People,dc=acme,dc=com"]}, {"givenName"=>["Harken"], "sn"=>["Farkselstein"], "dn"=>["uid=hfarkselstein,ou=People,dc=acme,dc=com"]}]
-<?end?>
-
-
-* select_more/select_all
-* timeout
-* without_timeout
-
-For example, this one-liner finds the first name of all @inetOrgPerson@ classes within the @People@ organizational unit that have a @uid@ that starts with the string "ma":
-
-<?example { language: ruby, caption: "Chaining filter methods" } ?>
-irb> dir.ou( :people ).filter( :objectClass => 'inetOrgPerson' ).filter( :uid => 'ma*' ).collect {|branch| branch[:givenName].first }.sort
-# => ["Mahlon", "Margaret", "Margaret", "Mark", "Marlon", "Matt", "Mike", "Mimi"]
-<?end ?>
-
-
-
-* map
-
-<?example { language: ruby, caption: "Mapping branch attributes" } ?>
-irb> dir.ou( :hosts ).filter( :ipHostNumber ).map( :ipHostNumber ).flatten
-=> ["192.168.1.253", "192.168.1.14", "192.168.1.21", "192.168.1.22", "192.168.1.23"]
-<?end?>
-
-h2. Branch Collections
-
+The Schema object also facilitates access to the directory's "syntaxes and matching rules":http://tools.ietf.org/html/rfc4517 via the <?api Treequel::Schema::LDAPSyntax ?>, <?api Treequel::Schema::MatchingRule ?>, and <?api Treequel::Schema::MatchingRuleUse ?> classes. They are accessed via the @#ldap_syntaxes@, @#matching_rules@, and @#matching_rule_uses@ attributes of the @Schema@, respectively. They, like @#object_classes@ and @#attribute_types@, are Hashes keyed both by OID and names as Symbols.
 
 
 h2. Authors
