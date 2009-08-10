@@ -34,6 +34,10 @@ include Treequel::Constants
 describe Treequel::Branchset do
 	include Treequel::SpecHelpers
 
+	class << self
+		alias_method :they, :it
+	end
+
 	DEFAULT_PARAMS = {
 		:limit       => 0,
 		:selectattrs => [],
@@ -55,7 +59,43 @@ describe Treequel::Branchset do
 	end
 
 
-	describe "an instance with no filter, options, or scope set" do
+	describe "instances" do
+		before( :each ) do
+			@branchset = Treequel::Branchset.new( @branch )
+		end
+
+		they "are Enumerable" do
+			resultbranch = mock( "Result Branch" )
+
+			@branch.should_receive( :directory ).and_return( @directory )
+			@directory.should_receive( :search ).
+				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, @params ).
+				and_yield( resultbranch )
+			resultbranch.should_receive( :dn ).and_return( :its_dn )
+
+			@branchset.all? {|b| b.dn }
+		end
+
+		# 
+		# #map
+		# 
+		they "can be mapped into an Array of attribute values" do
+			resultbranch = mock( "Result Branch" )
+			resultbranch2 = mock( "Result Branch 2" )
+
+			@branch.should_receive( :directory ).and_return( @directory )
+			@directory.should_receive( :search ).
+				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, @params ).
+				and_yield( resultbranch ).and_yield( resultbranch2 )
+			resultbranch.should_receive( :[] ).with( :cn ).and_return( :first_cn )
+			resultbranch2.should_receive( :[] ).with( :cn ).and_return( :second_cn )
+
+			@branchset.map( :cn ).should == [:first_cn, :second_cn]
+		end
+
+	end
+
+	describe "instance with no filter, options, or scope set" do
 
 		before( :each ) do
 			@branchset = Treequel::Branchset.new( @branch )
@@ -88,7 +128,8 @@ describe Treequel::Branchset do
 			@branchset.all.should == [ :matching_branches ]
 		end
 
-		it "performs a search using the default filter and scope when the first record is requested" do
+		it "performs a search using the default filter, scope, and a limit of 1 when the first " +
+		   "record is requested" do
 			@branch.should_receive( :directory ).and_return( @directory )
 			@directory.should_receive( :search ).
 				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter,
@@ -257,7 +298,7 @@ describe Treequel::Branchset do
 
 	end
 
-	describe "an instance with no filter, and scope set to 'onelevel'" do
+	describe "instance with no filter, and scope set to 'onelevel'" do
 
 		before( :each ) do
 			@branchset = Treequel::Branchset.new( @branch, :scope => :onelevel )
