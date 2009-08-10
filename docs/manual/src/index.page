@@ -335,16 +335,16 @@ You can construct a new @Branchset@ via the usual constructor; it takes the @Bra
 
 <?example { language: ruby, caption: "Creating a new Branchset." } ?>
 irb> Treequel::Branchset.new( dir.ou(:people) )
-# => #<Treequel::Branchset:0x1a418ec base_dn='ou=people,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
+# => #<Treequel::Branchset:0x1a418ec base_dn='ou=people,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, limit=0, timeout=0.000>
 <?end?>
 
 There are also several convenience methods on @Branch@ and @Directory@ that can create a new @Branchset@ relative to themselves, as well:
 
 <?example { language: ruby, caption: "Creating new Branchsets relative to the base DN and ou=Hosts." } ?>
 irb> dir.branchset
-# => #<Treequel::Branchset:0x1a3fc54 base_dn='dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
+# => #<Treequel::Branchset:0x1a3fc54 base_dn='dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, limit=0, timeout=0.000>
 irb> dir.ou(:people).branchset
-# => #<Treequel::Branchset:0x1998314 base_dn='ou=people,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=0, timeout=0.000>
+# => #<Treequel::Branchset:0x1998314 base_dn='ou=people,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, limit=0, timeout=0.000>
 <?end?>
 
 Like _Sequel_ Datasets, Branchsets are meant to be chainable, so you can refine what entries it will find by calling one of its mutators. Each mutator method returns a new @Branchset@ with the new criteria set. This allows you to build up a query for what you need gradually, in a concise and flexible manner.
@@ -363,7 +363,7 @@ The simplest of these, of course, is a literal LDAP filter in a @String@:
 
 <?example { language: ruby, caption: "Literal string filter expression" } ?>
 irb> dir.ou( :people ).filter( '(objectClass=room)' )
-=> #<Treequel::Branchset:0x12b7c48 base_dn='ou=people,dc=acme,dc=com', filter=(objectClass=room), scope=subtree, select=*, order="", limit=0, timeout=0.000>
+=> #<Treequel::Branchset:0x12b7c48 base_dn='ou=people,dc=acme,dc=com', filter=(objectClass=room), scope=subtree, select=*, limit=0, timeout=0.000>
 <?end ?>
 
 You can see what the equivalent filter of a @Branchset@ is at any time using its @#filter_string@ method:
@@ -394,6 +394,13 @@ irb> dir.ou( :people ).filter( :or, [:sn, 'Granger'], [:sn, 'Smith'] ).filter_st
 # => "(|(sn=Granger)(sn=Smith))"
 <?end ?>
 
+or by specifying more than one value for a single attribute:
+
+<?example { language: ruby, caption: "ORing with a Hash" } ?>
+# => #<Treequel::Directory:0x4e45d5 localhost:389 (connected) base_dn="dc=acme,dc=com", bound as=anonymous, schema=(schema not loaded)>
+irb> dir.ou( :people ).filter( :uid => [:mahlon, :mgranger, :jtran] ).filter_string
+<?end ?>
+
 You can do the same with @:and@ and @:not@, and combine them, too:
 
 <?example { language: ruby, caption: "Negation (NOT) of an explicit AND" } ?>
@@ -413,6 +420,7 @@ irb> dir.ou( :people ).filter( :objectClass => 'inetOrgPerson' ).filter( :sn => 
 We're experimenting with support for Sequel expressions for more-complex filter expressions, too:
 
 <?example { language: ruby, caption: "Advanced expressions" } ?>
+# Negative 
 irb> dir.ou( :people ).filter( ~:photo ).filter_string
 # => "(!(photo=*))"
 irb> dir.ou( :people ).filter( :employeeNumber <= 1000 ).filter_string
@@ -441,23 +449,29 @@ Setting it to @:subtree@ (which is the default) means that it will descend infin
 
 h3(#limit). Limit
 
-Setting a Branchset's @#limit@ will limit the number of results the search will return:
+Setting a Branchset's @#limit@ will limit the number of results the search will return.
 
 <?example { language: ruby, caption: "Return the first 5 groups in the directory" } ?>
 irb> dir.ou( :groups ).limit( 5 ).collect {|b| b.dn }
 # => ["ou=Groups,dc=acme,dc=com", "cn=anim,ou=Groups,dc=acme,dc=com", "cn=acct,ou=Groups,dc=acme,dc=com", "cn=mailuser,ou=Groups,dc=acme,dc=com", "cn=producer,ou=Groups,dc=acme,dc=com"]
 <?end ?>
 
+<div class="callout caution-callout">
+*Note* that the results will be returned in _directory order_ (at least in OpenLDAP). Until Treequel supports "server-side ordering":http://tools.ietf.org/html/rfc2891, this means that @#limit@ is of limited usefulness; to do real paged results you need both server-side ordering and "the paged results control":http://tools.ietf.org/html/rfc2696.
+
+We're planning on adding a convenient way to use "controls":http://tools.ietf.org/html/rfc4511#page-14 in a future release.
+</div>
+
 If you already have a @Branchset@ with a limit, and want a new one that won't have any limits imposed on it, you can get one via the @#without_limit@ method.
 
 <?example { language: ruby, caption: "Making a Branchset without the limits of the original" } ?>
 irb> fivegroups = dir.ou( :groups ).limit( 5 )
-# => #<Treequel::Branchset:0x1264908 base_dn='ou=groups,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, order="", limit=5, timeout=0.000>
+# => #<Treequel::Branchset:0x1264908 base_dn='ou=groups,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, limit=5, timeout=0.000>
 irb> fivegroups.all.length
 # => 5
 irb> fivegroups.without_limit.all.length
 # => 99
-<?end ?>
+<?end?>
 
 h3(#select). Select
 
@@ -466,6 +480,12 @@ If you should want to limit the attributes that are returned in the entries fetc
 <?example { language: ruby, caption: "Fetch only employee first and last names" } ?>
 irb> dir.ou( :people ).select( :sn, :givenName ).limit( 5 ).collect {|b| b.entry }
 # => [{"dn"=>["ou=People,dc=acme,dc=com"]}, {"givenName"=>["Reed"], "sn"=>["Slimlocke"], "dn"=>["uid=rslim,ou=People,dc=acme,dc=com"]}, {"givenName"=>["Jim"], "sn"=>["Tran"], "dn"=>["uid=jtran,ou=People,dc=acme,dc=com"]}, {"givenName"=>["Michael"], "sn"=>["Granger"], "dn"=>["uid=mgranger,ou=People,dc=acme,dc=com"]}, {"givenName"=>["Harken"], "sn"=>["Farkselstein"], "dn"=>["uid=hfarkselstein,ou=People,dc=acme,dc=com"]}]
+<?end?>
+
+You can get a copy of a Branchset with additional attributes by passing the additional attributes to @#select_more@:
+
+<?example { language: ruby, caption: "Selecting additional attributes" } ?>
+
 <?end?>
 
 
@@ -580,7 +600,7 @@ Branches also know how to fetch the attribute types that are allowed by their ob
 
 <?example { language: ruby, caption: "Fetching an AttributeType object for the 'inetOrgPerson' objectClass." } ?>
 irb> base = dir.base
-# => #<Treequel::Branch:0x1a7f8cc dc=laika,dc=com @ localhost:389 (dc=laika,dc=com, tls, anonymous) entry=nil>
+# => #<Treequel::Branch:0x1a7f8cc dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> base.may_oids
 # => [:userPassword, :searchGuide, :seeAlso, :businessCategory, :x121Address, :registeredAddress, :destinationIndicator, :preferredDeliveryMethod, :telexNumber, :teletexTerminalIdentifier, :telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber, :street, :postOfficeBox, :postalCode, :postalAddress, :physicalDeliveryOfficeName, :st, :l, :description]
 irb> base.may_attribute_types

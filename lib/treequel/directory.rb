@@ -62,9 +62,13 @@ class Treequel::Directory
 		OIDS::INTEGER_SYNTAX          => lambda {|string| Integer(string) },
 	}
 
-
 	# The order in which hash arguments should be extracted from Hash parameters to 
 	# #search
+	# :NOTE: the docs for #search_ext2 lie. The method signature is actually:
+	# rb_scan_args (argc, argv, "39",
+	#               &base, &scope, &filter, &attrs, &attrsonly,
+	#               &serverctrls, &clientctrls, &sec, &usec, &limit,
+	#               &s_attr, &s_proc)
 	SEARCH_PARAMETER_ORDER = [
 		:selectattrs,
 		:attrsonly,
@@ -79,11 +83,6 @@ class Treequel::Directory
 
 	# Default values to pass to LDAP::Conn#search_ext2; they'll be passed in the order 
 	# specified by SEARCH_PARAMETER_ORDER.
-	# :NOTE: the docs for #search_ext2 lie. The method signature is actually:
-	# rb_scan_args (argc, argv, "39",
-	#               &base, &scope, &filter, &attrs, &attrsonly,
-	#               &serverctrls, &clientctrls, &sec, &usec, &limit,
-	#               &s_attr, &s_proc)
 	SEARCH_DEFAULTS = {
 		:selectattrs     => ['*'],
 		:attrsonly       => false,
@@ -322,6 +321,9 @@ class Treequel::Directory
 		parameters = searchparams.values_at( *SEARCH_PARAMETER_ORDER )
 
 		# Wrap each result in the class derived from the 'base' argument
+		self.log.debug "Searching via search_ext2 with arguments: %p" % [[
+			base, scope, filter, *parameters
+		]]
 		if block_given?
 			self.conn.search_ext2( base, scope, filter, *parameters ).each do |entry|
 				yield collectclass.new_from_entry( entry, self )
@@ -519,16 +521,12 @@ class Treequel::Directory
 		search_paramhash[:timeout_s] = timeout.truncate
 		search_paramhash[:timeout_us] = Integer((timeout - timeout.truncate) * 1_000_000)
 
-		# Assign the 'sortby' parameter to either the sort proc or the sorting attribute, depending
-		# on whether it's something that can be turned into a Proc or not.
-		sortby = search_paramhash.delete( :sortby )
+		### Sorting in Ruby-LDAP is not significantly more useful than just sorting
+		### the returned entries from Ruby, as it happens client-side anyway (i.e., entries
+		### are still returned from the server in arbitrary/insertion order, and then the client
+		### sorts those 
 		search_paramhash[:sort_func] = nil
 		search_paramhash[:sort_attribute] = ''
-		if sortby.respond_to?( :to_proc )
-			search_paramhash[:sort_func] = sortby.to_proc
-		elsif !sortby.nil?
-			search_paramhash[:sort_attribute] = sortby.to_s
-		end
 
 		return base, scope, filter, search_paramhash
 	end
