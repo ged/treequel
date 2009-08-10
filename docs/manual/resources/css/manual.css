@@ -282,16 +282,16 @@ td, th {
 }
 #footer .copyright {
 	position: absolute;
-	left: 0;
+	left: 1em;
 	top: 0.5em;
 }
-#footer .svnid {
+#footer .vcsrev {
 	margin: 0.5em auto;
 	text-align: center;
 }
 #footer .timestamp {
 	position: absolute;
-	right: 0;
+	right: 1em;
 	top: 0.5em;
 }
 
