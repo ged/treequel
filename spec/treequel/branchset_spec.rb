@@ -38,7 +38,6 @@ describe Treequel::Branchset do
 		:limit       => 0,
 		:selectattrs => [],
 		:timeout     => 0,
-		:sortby      => "",
 	}
 
 	before( :all ) do
@@ -200,37 +199,37 @@ describe Treequel::Branchset do
 		# #order
 		# 
 
-		it "can create a new branchset cloned from itself with a sort-order attribute" do
-			newset = @branchset.order( :uid )
-			newset.order.should == :uid
-		end
-
-		it "converts a string sort-order attribute to a Symbol" do
-			newset = @branchset.order( 'uid' )
-			newset.order.should == :uid
-		end
-
-		it "can set a sorting function instead of an attribute" do
-			newset = @branchset.order {|branch| branch.uid }
-			newset.order.should be_a( Proc )
-		end
-
-		it "can create a new branchset cloned from itself without a sort-order attribute" do
-			@branchset.options[:order] = :uid
-			newset = @branchset.order( nil )
-			newset.order.should == nil
-		end
-
-		it "uses its timeout as the timeout values when searching" do
-			@branchset.options[:timeout] = 5.375
-			@branch.should_receive( :directory ).and_return( @directory )
-			@directory.should_receive( :search ).
-				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter,
-				      @params.merge(:timeout => 5.375) ).
-				and_yield( :matching_branches )
-
-			@branchset.all.should == [:matching_branches]
-		end
+		# it "can create a new branchset cloned from itself with a sort-order attribute" do
+		# 	newset = @branchset.order( :uid )
+		# 	newset.order.should == :uid
+		# end
+		# 
+		# it "converts a string sort-order attribute to a Symbol" do
+		# 	newset = @branchset.order( 'uid' )
+		# 	newset.order.should == :uid
+		# end
+		# 
+		# it "can set a sorting function instead of an attribute" do
+		# 	newset = @branchset.order {|branch| branch.uid }
+		# 	newset.order.should be_a( Proc )
+		# end
+		# 
+		# it "can create a new branchset cloned from itself without a sort-order attribute" do
+		# 	@branchset.options[:order] = :uid
+		# 	newset = @branchset.order( nil )
+		# 	newset.order.should == nil
+		# end
+		# 
+		# it "uses its order attribute list when searching" do
+		# 	@branchset.options[:order] = [ :uid ]
+		# 	@branch.should_receive( :directory ).and_return( @directory )
+		# 	@directory.should_receive( :search ).
+		# 		with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter,
+		# 		      @params.merge(:sortby => ['uid']) ).
+		# 		and_yield( :matching_branches )
+		# 
+		# 	@branchset.all.should == [:matching_branches]
+		# end
 
 		# 
 		# #limit

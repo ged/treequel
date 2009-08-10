@@ -155,14 +155,13 @@ class Treequel::Branchset
 
 	### Return a human-readable string representation of the object suitable for debugging.
 	def inspect
-		"#<%s:0x%0x base_dn='%s', filter=%s, scope=%s, select=%s, order=%p, limit=%d, timeout=%0.3f>" % [
+		"#<%s:0x%0x base_dn='%s', filter=%s, scope=%s, select=%s, limit=%d, timeout=%0.3f>" % [
 			self.class.name,
 			self.object_id * 2,
 			self.base_dn,
 			self.filter_string,
 			self.scope,
 			self.select.empty? ? '*' : self.select.join(','),
-			self.order,
 			self.limit,
 			self.timeout,
 		]
@@ -190,7 +189,7 @@ class Treequel::Branchset
 		directory.search( self.branch, self.scope, self.filter,
 			:selectattrs => self.select,
 			:timeout => self.timeout,
-			:sortby => self.order,
+			# :sortby => self.order,
 			:limit => self.limit,
 			&block
 		  )
@@ -202,7 +201,7 @@ class Treequel::Branchset
 		self.branch.directory.search( self.branch, self.scope, self.filter,
 			:selectattrs => self.select,
 			:timeout => self.timeout,
-			:sortby => self.order,
+			# :sortby => self.order,
 			:limit => 1
 		  ).first
 	end
@@ -326,9 +325,12 @@ class Treequel::Branchset
 	end
 
 
+	# Hiding this until we figure out how to do server-side ordering (i.e., 
+	# http://tools.ietf.org/html/rfc2891)
+
 	### Return a clone of the receiving Branchsest that will order its results by the
 	### +attributes+ specified.
-	def order( attribute=:__default__ )
+	def __order( attribute=:__default__ ) # :nodoc:
 		if attribute == :__default__
 			if block_given?
 				sort_func = Proc.new

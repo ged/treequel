@@ -9,9 +9,6 @@
  *  
  */
 
-/* Import the code-highlighting styles derived from the 'deveiate' TextMate theme */
-@import url(deveiate.css);
-
 /* Uses the "Brazilian Red Cap" Palette from COLOURlovers:
  *   http://www.colourlovers.com/palette/91529/Brazilian_Red_Cap
  * 
@@ -364,94 +361,29 @@ pre.console-output {
 /* @end Examples */
 
 
-
-/* @group Template node-display classes */
-.node-tree {
-    border: 1px dotted #333;
-    margin: 2px;
-    padding: 4px;
-    background: #999;
+/* @group Callouts */
+div.callout {
+	margin: 2em 0;
+	padding: 1em;
+	padding-left: 45px;
+	border: 2px solid #787890;
+	background: #cfcff8 url(../images/dialog-information.png) no-repeat 5px 1em;
+}
+div.callout p {
+	margin: 0;
+}
+div.callout p + p {
+	margin-top: 1em;
 }
 
-.node-subtree {
-    border: 1px dotted #666;
-    padding: 4px 8px;
-    margin: 1px 4px;
-    background: #CCC;
+div.callout.caution-callout {
+	background-image: url(../images/dialog-warning.png);
+	background-color: #fdffcc;
+	border-color: #d5d96d;
 }
 
-.node-subtree-head {
-    color: #333;
-}
+/* @end Callouts */
 
-.node {
-    border: 1px solid black;
-    margin-bottom: 4px;
-}
-
-.node-head {
-    border-bottom: 1px solid black;
-    font-weight: bold;
-    font-variant: small-caps;
-    padding: 2px;
-    color: black;
-    background: #f3f3f3;
-}
-
-.node-body {
-    background: #e3e3e3;
-    padding: 2px 4px 4px 4px;
-}
-
-.node-subtemplate {
-    background: #999;
-    border: 1px dotted #333;
-    margin: 2px;
-    padding: 4px;
-}
-
-.text-node-body {
-    background: #CCC;
-    font-family: "Andale Mono", "ProFont", "Monotype.com", fixed;
-}
-.call-directive-node-body,
-.attr-directive-node-body { background: #CDC; }
-.escape-directive-node-body { background: #DCC; }
-.yield-directive-node-body { background: #DDC; }
-.if-directive-node-body,
-.else-directive-node-body,
-.elsif-directive-node-body { background: #BCD; }
-/* @end */
-
-/* @group Template syntax-highlighted html classes */
-.highlighted-source {
-    border: 1px dotted #333;
-    margin: 2px;
-    padding: 10px;
-    background: #ccc;
-}
-
-.token {
-    font-family: "Vera Sans Mono", "Andale Mono", fixed;
-    color: #333;
-}
-
-.text-token { color: #666; }
-.comment-token { color: #666; background: #cdc; }
-.doc-type-token { color: #226; background: #ccd; }
-
-.tag-token { color: #242; background: #b9b9b9; }
-.tag-token-name { color: #272; }
-.tag-token-attr-name { color: #262; }
-.tag-token-attr-value { color: #333; }
-
-.processing-instruction-token,
-.tag-attr-directive {
-    color: #933;
-    background: #dcc;
-    font-weight: bold;
-}
-/* @end */
 
 /* @group Syntax Highlighter */
 

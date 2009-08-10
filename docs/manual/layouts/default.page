@@ -32,7 +32,7 @@
  
 	<div id="footer">
 		<div class="copyright">Copyright &copy; 2008-<%= Time.now.year %> Michael Granger.</div>
-		<div class="svnid">$Id$</div>
+		<div class="vcsrev">Rev: <%= `hg id` %></div>
 		<div class="timestamp">Built: <%= Time.now.strftime("%Y%m%d %H:%M:%S %Z") %></div>
 	</div>
 	
