@@ -186,19 +186,19 @@ describe Treequel::BranchCollection do
 			filtered_collection.should include( filtered_branchset1, filtered_branchset2 )
 		end
 
-		it "can create a clone of itself with ordered branchsets" do
-			ordered_branchset1 = stub( "branchset 3", :dn => 'cn=example3,dc=acme,dc=com', :each => 1 )
-			ordered_branchset2 = stub( "branchset 4", :dn => 'cn=example4,dc=acme,dc=com', :each => 1 )
-			@branchset1.should_receive( :order ).with( :cn ).
-				and_return( ordered_branchset1 )
-			@branchset2.should_receive( :order ).with( :cn ).
-				and_return( ordered_branchset2 )
-
-			ordered_collection = @collection.order( :cn )
-			ordered_collection.should_not be_equal( @collection )
-			ordered_collection.should include( ordered_branchset1, ordered_branchset2 )
-		end
-
+		# it "can create a clone of itself with ordered branchsets" do
+		# 	ordered_branchset1 = stub( "branchset 3", :dn => 'cn=example3,dc=acme,dc=com', :each => 1 )
+		# 	ordered_branchset2 = stub( "branchset 4", :dn => 'cn=example4,dc=acme,dc=com', :each => 1 )
+		# 	@branchset1.should_receive( :order ).with( :cn ).
+		# 		and_return( ordered_branchset1 )
+		# 	@branchset2.should_receive( :order ).with( :cn ).
+		# 		and_return( ordered_branchset2 )
+		# 
+		# 	ordered_collection = @collection.order( :cn )
+		# 	ordered_collection.should_not be_equal( @collection )
+		# 	ordered_collection.should include( ordered_branchset1, ordered_branchset2 )
+		# end
+		# 
 		it "can return the base DNs of all of its branchsets" do
 			@branchset1.should_receive( :base_dn ).and_return( :branchset1_basedn )
 			@branchset2.should_receive( :base_dn ).and_return( :branchset2_basedn )

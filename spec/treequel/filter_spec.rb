@@ -115,6 +115,13 @@ describe Treequel::Filter do
 			should == '(|(uid=lar)(uid=bin)(uid=fon)(uid=guh))'
 	end
 
+	it "correctly includes OR subfilters in a Hash if the value is an Array" do
+		fstr = Treequel::Filter.new( :objectClass => 'inetOrgPerson', :uid => %w[lar bin fon guh] ).to_s
+
+		fstr.should include('(|(uid=lar)(uid=bin)(uid=fon)(uid=guh))')
+		fstr.should include('(objectClass=inetOrgPerson)')
+		fstr.should =~ /^\(&/
+	end
 
 	it "parses a NOT expression with only a single clause" do
 		Treequel::Filter.new( [:'!', [:uid, 'kunglung']] ).to_s.should == '(!(uid=kunglung))'

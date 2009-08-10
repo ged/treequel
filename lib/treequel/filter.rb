@@ -491,7 +491,7 @@ class Treequel::Filter
 				Treequel.logger.debug "    ORing together %d subfilters since %p has indices" %
 					[ expr.length, expr ]
 				subfilters = expr.collect {|val| Treequel::Filter.new(key, val) }
-				Treequel::Filter::OrComponent.new( *subfilters )
+				Treequel::Filter.new( :or, subfilters )
 			else
 				Treequel.logger.debug "    value is a scalar; creating a single filter"
 				Treequel::Filter.new( key, expr )

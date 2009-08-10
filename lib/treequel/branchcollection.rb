@@ -99,7 +99,7 @@ class Treequel::BranchCollection
 	### Declare some delegator methods that clone the receiver with the results of mapping
 	### the branchsets with the delegated method.
 	def_cloning_delegators :filter, :scope, :select, :select_all, :select_more, :timeout,
-		:without_timeout, :order
+		:without_timeout
 
 	### Delegate some methods through the collection directly
 	def_method_delegators :branchsets, :include?
@@ -146,6 +146,19 @@ class Treequel::BranchCollection
 		end
 
 		return branch
+	end
+
+	### Overridden to support Branchset#map
+	def map( attribute=nil, &block )
+		if attribute
+			if block
+				super() {|branch| block.call(branch[attribute]) }
+			else
+				super() {|branch| branch[attribute] }
+			end
+		else
+			super( &block )
+		end
 	end
 
 

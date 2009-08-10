@@ -89,6 +89,25 @@ IRB.conf[:PROMPT][:manual] = {
 }
 IRB.conf[:PROMPT_MODE] = :manual
 
+# class FilteringOutputMethod < IRB::OutputMethod
+# 
+# 	REPLACEMENTS = {
+# 		/\blaika\b/i   => 'acme',
+# 		/\bljc\b/i     => 'sales',
+# 		/\badtech2\b/i => 'marketing',
+# 	}
+# 
+# 	def print( *opts )
+# 		opts.each do |opt|
+# 			REPLACEMENTS.each do |pat, repl|
+# 				opt.gsub!( pat, repl )
+# 			end
+# 			$stdout.print( opt )
+# 		end
+# 	end
+# end
+# IRB.conf[:OUTPUT_MODE]
+
 
 begin
 	$stderr.puts "Loading Treequel..."
