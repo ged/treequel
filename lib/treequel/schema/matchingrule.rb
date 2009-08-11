@@ -10,10 +10,6 @@ require 'treequel/exceptions'
 
 # This is a class for representing matchingRule declarations in a Treequel::Schema.
 # 
-# == Subversion Id
-#
-#  $Id$
-# 
 # == Authors
 # 
 # * Michael Granger <ged@FaerieMUD.org>

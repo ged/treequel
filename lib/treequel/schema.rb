@@ -10,10 +10,6 @@ require 'treequel/mixins'
 
 # This is an object that is used to parse and query a directory's schema
 # 
-# == Subversion Id
-#
-#  $Id$
-# 
 # == Authors
 # 
 # * Michael Granger <ged@FaerieMUD.org>

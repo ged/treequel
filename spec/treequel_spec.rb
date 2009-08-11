@@ -53,7 +53,7 @@ describe Treequel do
 
 
 	it "returns a version string with a build number if asked" do
-		Treequel.version_string(true).should =~ /\w+ [\d.]+ \(build \d+\)/
+		Treequel.version_string(true).should =~ /\w+ [\d.]+ \(build \S+\)/
 	end
 
 

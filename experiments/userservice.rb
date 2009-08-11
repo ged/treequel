@@ -9,21 +9,11 @@ require 'arrow/service'
 # 
 # An experimental user service.
 # 
-# == Subversion Id
-# 
-# $Id$
-# 
 # == Authors
 # 
 # * Michael Granger <ged@FaerieMUD.org>
 # 
 class UserService < Arrow::Service
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 	# Applet signature
     applet_name "DevEiate Blog Service"

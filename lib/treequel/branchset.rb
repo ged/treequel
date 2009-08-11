@@ -42,10 +42,6 @@ require 'treequel/sequel_integration'
 # Branchsets are Enumerable objects, so they can be manipulated using any of the 
 # Enumerable methods, such as map, inject, etc.
 # 
-# == Subversion Id
-#
-#  $Id$
-# 
 # == Authors
 # 
 # * Michael Granger <ged@FaerieMUD.org>
@@ -60,12 +56,6 @@ class Treequel::Branchset
 	include Enumerable,
 	        Treequel::Loggable,
 	        Treequel::Constants
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 	# The default scope to use when searching if none is specified
 	DEFAULT_SCOPE = :subtree

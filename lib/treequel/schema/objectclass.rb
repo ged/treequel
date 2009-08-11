@@ -9,10 +9,6 @@ require 'treequel/exceptions'
 
 # This is a collection of classes for representing objectClasses in a Treequel::Schema.
 # 
-# == Subversion Id
-#
-#  $Id$
-# 
 # == Authors
 # 
 # * Michael Granger <ged@FaerieMUD.org>

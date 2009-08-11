@@ -18,10 +18,6 @@ end
 
 # A library for interacting with LDAP modelled after Sequel.
 #
-# == Subversion Id
-#
-#  $Id$
-#
 # == Authors
 #
 # * Michael Granger <ged@FaerieMUD.org>
@@ -35,14 +31,11 @@ end
 #
 module Treequel
 
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
-
 	# Library version
 	VERSION = '0.0.1'
+
+	# VCS revision
+	REVISION = %q$rev: c8c4db6916f1 $
 
 	# Load the logformatters and some other stuff first
 	require 'treequel/constants'
@@ -93,7 +86,7 @@ module Treequel
 	### Return the library's version string
 	def self::version_string( include_buildnum=false )
 		vstring = "%s %s" % [ self.name, VERSION ]
-		vstring << " (build %d)" % [ SVNRev[/\d+/].to_i ] if include_buildnum
+		vstring << " (build %s)" % [ REVISION ] if include_buildnum
 		return vstring
 	end
 

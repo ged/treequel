@@ -30,10 +30,6 @@ require 'treequel/branch'
 # Note that you could accomplish most of what BranchCollection does
 # using filters, but some people might find this a bit more readable.
 # 
-# == Subversion Id
-#
-#  $Id$
-# 
 # == Authors
 # 
 # * Michael Granger <ged@FaerieMUD.org>
@@ -50,12 +46,6 @@ class Treequel::BranchCollection
 	        Treequel::Constants
 
 	extend Treequel::Delegation
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 
 	#################################################################
