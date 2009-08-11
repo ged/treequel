@@ -1,0 +1,16 @@
+<h2>Server Connections</h2>
+
+<p><%= subsystem[:description ]%></p>
+
+<p><%= current[:monitorCount] %> current connection/s, <%= total[:monitorCount] %> since startup.</p>
+
+<h3>Current Connections</h3>
+
+<dl>
+	<% conninfo.each do |conn| %>
+	<dt><%= conn.dn %></dt>
+	<dd><code><%= conn.entry.inspect %></code></dd>
+	<% end %>
+</dl>
+
+

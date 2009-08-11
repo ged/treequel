@@ -494,13 +494,14 @@ describe Treequel::Branch do
 				@branch[ :glumpy ].should == 'glumpa1'
 			end
 
-			it "returns nil if there is no such attribute in the schema" do
+			it "returns the entry without conversion if there is no such attribute in the schema" do
 				@schema.should_receive( :attribute_types ).and_return({})
-				@branch[ :glumpy ].should == nil
+				@entry.should_receive( :[] ).with( 'glumpy' ).at_least( :once ).
+					and_return([ 'glumpa1' ])
+				@branch[ :glumpy ].should == [ 'glumpa1' ]
 			end
 
 			it "returns nil if record doesn't have the attribute set" do
-				@schema.should_receive( :attribute_types ).and_return({ :glumpy => @attribute_type })
 				@entry.should_receive( :[] ).with( 'glumpy' ).and_return( nil )
 				@branch[ :glumpy ].should == nil
 			end

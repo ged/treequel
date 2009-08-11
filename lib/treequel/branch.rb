@@ -376,30 +376,31 @@ class Treequel::Branch
 
 		unless @values.key?( attrsym )
 			directory = self.directory
-
-			self.log.debug "  value is not cached; checking its attributeType"
-			unless attribute = directory.schema.attribute_types[ attrsym ]
-				self.log.info "no attributeType for %p" % [ attrsym ]
-				return nil
-			end
-
-			self.log.debug "  attribute exists; checking the entry for a value"
 			entry = self.entry or return nil
 			return nil unless (( value = entry[attrsym.to_s] ))
 
-			syntax_oid = attribute.syntax_oid
+			self.log.debug "  value is not cached; checking its attributeType"
+			if attribute = directory.schema.attribute_types[ attrsym ]
+				self.log.debug "  attribute exists; checking the entry for a value"
 
-			if attribute.single?
-				self.log.debug "    attributeType is SINGLE; unwrapping the Array"
-				@values[ attrsym ] = directory.convert_syntax_value( syntax_oid, value.first )
-			else
-				self.log.debug "    attributeType is not SINGLE; keeping the Array"
-				@values[ attrsym ] = value.collect do |raw|
-					directory.convert_syntax_value( syntax_oid, raw )
+				syntax_oid = attribute.syntax_oid
+
+				if attribute.single?
+					self.log.debug "    attributeType is SINGLE; unwrapping the Array"
+					@values[ attrsym ] = directory.convert_syntax_value( syntax_oid, value.first )
+				else
+					self.log.debug "    attributeType is not SINGLE; keeping the Array"
+					@values[ attrsym ] = value.collect do |raw|
+						directory.convert_syntax_value( syntax_oid, raw )
+					end
+					@values[ attrsym ].freeze if @values[ attrsym ].is_a?( Array )
 				end
-				@values[ attrsym ].freeze if @values[ attrsym ].is_a?( Array )
-			end
 
+			else
+				self.log.info "no attributeType for %p" % [ attrsym ]
+				@values[ attrsym ] = value
+				@values[ attrsym ].freeze
+			end
 		else
 			self.log.debug "  value is cached."
 		end

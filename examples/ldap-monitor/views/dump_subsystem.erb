@@ -1,0 +1,12 @@
+<h2>The <%= h subsystem[:cn] %> Subsystem</h2>
+
+<p><%= subsystem[:description].join(' ') %></p>
+
+<dl>
+	<% subsystem.entry.keys.sort.each do |attrname| %>
+	<dt><%= attrname %></dt>
+	<dd><code><%= subsystem[attrname].inspect %></code></dd>
+	<% end %>
+</dl>
+
+
