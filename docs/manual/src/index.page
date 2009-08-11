@@ -42,7 +42,7 @@ irb> dir = Treequel.directory( 'ldap://ldap.andrew.cmu.edu/dc=cmu,dc=edu' )
 # => #<Treequel::Directory:0x4f052e ldap.andrew.cmu.edu:389 (not connected) base="dc=cmu,dc=edu", bound as=anonymous, schema=(schema not loaded)>
 <?end?>
 
-You may omit the base DN in the URL if your environment only has one top level base (or you don't know it!) Treequel will use the first base DN it finds from the server's advertised "namingContexts":http://tools.ietf.org/html/rfc2251#section-3.4 by default.
+You may omit the base DN in the URL if your environment only has one top level base (or you don't know it!) Treequel will use the first base DN it finds from the server's advertised "namingContexts":http://tools.ietf.org/html/rfc4512#section-5.1 by default.
 
 It will also use the user and password from a ==<code>user:pass@host</code>==-style URL, if present, and use them to immediately bind to the directory. See "the section on binding":#binding for details.
 

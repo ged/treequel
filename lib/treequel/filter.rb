@@ -37,10 +37,6 @@ require 'treequel/sequel_integration'
 #   value      = AttributeValue from Section 4.1.6 of [1]
 # 
 # 
-# == Subversion Id
-#
-#  $Id$
-# 
 # == Authors
 # 
 # * Michael Granger <ged@FaerieMUD.org>

@@ -14,10 +14,6 @@ require 'treequel/branchcollection'
 # The object in Treequel that wraps an entry. It knows how to construct other branches
 # for the entries below itself, and how to search for those entries.
 #
-# == Subversion Id
-#
-#  $Id$
-#
 # == Authors
 #
 # * Michael Granger <ged@FaerieMUD.org>
@@ -37,12 +33,6 @@ class Treequel::Branch
 	extend Treequel::Delegation,
 	       Treequel::AttributeDeclarations
 
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 
 	#################################################################

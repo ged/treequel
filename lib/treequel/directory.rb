@@ -14,10 +14,6 @@ require 'treequel/constants'
 # The object in Treequel that represents a connection to a directory, the
 # binding to that directory, and the base from which all DNs start.
 #
-# == Subversion Id
-#
-#  $Id$
-#
 # == Authors
 #
 # * Michael Granger <ged@FaerieMUD.org>
@@ -35,12 +31,6 @@ class Treequel::Directory
 	        Treequel::HashUtilities
 
 	extend Treequel::Delegation
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 	# The default directory options
 	DEFAULT_OPTIONS = {

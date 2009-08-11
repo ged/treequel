@@ -5,10 +5,6 @@ require 'treequel'
 
 # A collection of exceptions for Treequel.
 # 
-# == Subversion Id
-#
-#  $Id$
-# 
 # == Authors
 # 
 # * Michael Granger <ged@FaerieMUD.org>
