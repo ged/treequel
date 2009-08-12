@@ -45,8 +45,8 @@ class Treequel::Directory
 	# Default mapping of SYNTAX OIDs to conversions. See #add_syntax_mapping for more
 	# information on what a valid conversion is.
 	DEFAULT_SYNTAX_MAPPING = {
-		OIDS::BIT_STRING_SYNTAX       => lambda { |bs| bs[0..-1].to_i(2) },
-		OIDS::BOOLEAN_SYNTAX          => { 'true' => true, 'false' => false },
+		OIDS::BIT_STRING_SYNTAX       => lambda {|bs| bs[0..-1].to_i(2) },
+		OIDS::BOOLEAN_SYNTAX          => { 'TRUE' => true, 'FALSE' => false },
 		OIDS::GENERALIZED_TIME_SYNTAX => lambda {|string| Time.parse(string) },
 		OIDS::UTC_TIME_SYNTAX         => lambda {|string| Time.parse(string) },
 		OIDS::INTEGER_SYNTAX          => lambda {|string| Integer(string) },
@@ -82,6 +82,14 @@ class Treequel::Directory
 		:limit           => 0,
 		:sortby          => nil,
 	}.freeze
+
+
+	require 'treequel/branch'
+
+	# The methods that get delegated to the directory's #base branch.
+	DELEGATED_BRANCH_METHODS =
+		Treequel::Branch.instance_methods(false).collect {|m| m.to_sym }
+
 
 
 	#################################################################
@@ -130,7 +138,7 @@ class Treequel::Directory
 	######
 
 	# Delegate some methods to the #base Branch.
-	def_method_delegators :base, :children, :branchset, :filter, :scope, :select
+	def_method_delegators :base, *DELEGATED_BRANCH_METHODS
 
 	# The host to connect to.
 	attr_accessor :host
@@ -417,7 +425,13 @@ class Treequel::Directory
 	### Map the specified +value+ to its Ruby datatype if one is registered for the given 
 	### syntax +oid+. If there is no conversion registered, just return the +value+ as-is.
 	def convert_syntax_value( oid, value )
-		return value unless conversion = @syntax_mapping[ oid ]
+		self.log.debug "Converting value %p using the syntax rule for %p" % [ value, oid ]
+		unless conversion = @syntax_mapping[ oid ]
+			self.log.debug "  ...no conversion, returning it as-is."
+			return value
+		end
+
+		self.log.debug "  ...found conversion: %p" % [ conversion ]
 		return conversion[ value ]
 	end
 

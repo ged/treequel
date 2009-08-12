@@ -17,13 +17,13 @@ example_prelude: |-
 
 <div id="auto-toc"></div>
 
-This is a manual for *Treequel*, a Ruby library that is intended to make interacting with an LDAP directory natural and easy. It's built on top of "Ruby-LDAP":http://ruby-ldap.sourceforge.net/, so if you don't already have that installed you'll need to install it, and you'll need to have access to an LDAP server, of course. 
+This is a manual for *Treequel*, a Ruby library that is intended to make interacting with an LDAP directory natural and easy without trying to make it behave like a relational database. It's built on top of "Ruby-LDAP":http://ruby-ldap.sourceforge.net/, so if you don't already have that installed you'll need to install it (<code>gem install ruby-ldap</code> should work for modern versions of Ruby), and you'll need to have access to an LDAP server, of course. 
 
 h2(#connecting). Connecting to a Directory
 
 Once those things are done, you can fire Treequel up via IRb and get a <?api Treequel::Directory ?> object to play around with:
 
-<?example { language: ruby, caption: "Fetching a directory." } ?>
+<?example { language: irb, caption: "Fetching a directory." } ?>
 $ irb -rtreequel -rubygems
 irb> dir = Treequel.directory
 # => #<Treequel::Directory:0x69cbac localhost:389 (not connected) base="dc=acme,dc=com", bound as=anonymous, schema=(schema not loaded)>
@@ -37,12 +37,12 @@ h3(#connect-ldap-url). Connecting With an LDAP URL
 
 The LDAP URL format can contain quite a lot of information, but @Treequel::Directory@ only uses the _scheme_, _host_, _port_, and _base DN_ parts:
 
-<?example { language: ruby, caption: "Fetching a directory by URL." } ?>
+<?example { language: irb, caption: "Fetching a directory by URL." } ?>
 irb> dir = Treequel.directory( 'ldap://ldap.andrew.cmu.edu/dc=cmu,dc=edu' )
 # => #<Treequel::Directory:0x4f052e ldap.andrew.cmu.edu:389 (not connected) base="dc=cmu,dc=edu", bound as=anonymous, schema=(schema not loaded)>
 <?end?>
 
-You may omit the base DN in the URL if your environment only has one top level base (or you don't know it!) Treequel will use the first base DN it finds from the server's advertised "namingContexts":http://tools.ietf.org/html/rfc4512#section-5.1 by default.
+You may omit the base <abbr title="Distingished Name">DN</abbr> in the URL if your environment only has one top level base (or you don't know it!) Treequel will use the first base DN it finds from the server's advertised "namingContexts":http://tools.ietf.org/html/rfc4512#section-5.1 by default.
 
 It will also use the user and password from a ==<code>user:pass@host</code>==-style URL, if present, and use them to immediately bind to the directory. See "the section on binding":#binding for details.
 
@@ -59,7 +59,7 @@ Creating a directory with an options hash allows more fine-grained control over 
 
 Any values which you don't provide will default to the values in @Treequel::Directory::DEFAULT_OPTIONS@.
 
-<?example { language: ruby, caption: "Fetching a directory with an options hash." } ?>
+<?example { language: irb, caption: "Fetching a directory with an options hash." } ?>
 irb> dir = Treequel.directory( :host => 'localhost', :base_dn => 'dc=acme,dc=com' )
 # => => #<Treequel::Directory:0x4f2586 localhost:389 (not connected) base="dc=acme,dc=com",    bound as=anonymous, schema=(schema not loaded)>
 <?end?>
@@ -68,7 +68,7 @@ h3(#mixing-url-and-options-hash). Connecting with a URL and an Options Hash
 
 You can also mix the two connection styles, allowing you to still use a compact URL, but set the @connection_type@ explicitly, e.g.:
 
-<?example { language: ruby, caption: "Using both a URL and options." } ?>
+<?example { language: irb, caption: "Using both a URL and options." } ?>
 irb> dir = Treequel.directory( 'ldap://localhost/dc=acme,dc=com', :connect_type => :plain )
 # => #<Treequel::Directory:0x4a0844 localhost:389 (not connected) base="dc=acme,dc=com",    bound as=anonymous, schema=(schema not loaded)>
 <?end?>
@@ -76,15 +76,16 @@ irb> dir = Treequel.directory( 'ldap://localhost/dc=acme,dc=com', :connect_type 
 
 h2(#binding). Binding to the Directory
 
-If you don't specify a user @DN@ and password, a new @Directory@ object will be bound anonymously, which is usually sufficient for reading the public attributes of records, but it's likely that you'll need to bind as a particular user to write to the directory or access protected attributes:
+If you don't specify a user <abbr title="Distingished Name">DN</abbr> and password, a new @Directory@ object will be bound anonymously, which is usually sufficient for reading the public attributes of records, but it's likely that you'll need to bind as a particular user to write to the directory or access protected attributes:
 
-<?example { language: ruby, caption: "Binding to the directory as a particular entry." } ?>
+<?example { language: irb, caption: "Binding to the directory." } ?>
 irb> dir.bind( 'uid=mgranger,ou=people,dc=acme,dc=com', 'my_password' )
+# => "uid=mgranger,ou=people,dc=laika,dc=com"
 <?end?>
 
-You can also bind to the directory using a URL that contains _authority_ information; this is not recommended for production use, as it requires that the password be in plain text in the connection information, but it's supported for convenience's sake:
+You can also bind to the directory by creating it using a URL that contains _authority_ information; this is not recommended for production use, as it requires that the password be in plain text in the connection information, but it's supported for convenience's sake:
 
-<?example { language: ruby, caption: "Fetching a directory by URL with automatic binding." } ?>
+<?example { language: irb, caption: "Fetching a directory by URL with automatic binding." } ?>
 irb> url = 'ldap://cn=user,dc=acme,dc=com:my_password@localhost/dc=acme,dc=com'
 irb> dir = Treequel.directory( url )
 # => #<Treequel::Directory:0x4f052e localhost:389 (not connected) base="dc=acme,dc=com", bound as="cn=user,dc=acme,dc=com", schema=(schema not loaded)>
@@ -96,9 +97,9 @@ You can also revert back to an anonymous binding by calling @#unbind@.
 
 h3(#rebinding). Binding With A Block
 
-If you want to rebind as a different user for just a few operations, you can do that by calling the @#bound_as@ method and passing it a block that contains the operations which require more privileges:
+If you want to rebind as a different user for just a few operations, you can do that by calling the @#bound_as@ method with a block that contains the operations which require more privileges:
 
-<?example { language: ruby, caption: "Executing a block with a different binding." } ?>
+<?example { language: irb, caption: "Executing a block with a different binding." } ?>
 irb> dir.bound_as( 'cn=admin,dc=acme,dc=com', 's00per:sekrit' ) { dir }
 # => #<Treequel::Directory:0x4f052e localhost:389 (not connected) base="dc=acme,dc=com", bound as="cn=admin,dc=acme,dc=com", schema=(schema not loaded)>
 <?end?>
@@ -115,7 +116,7 @@ You can get a Branch for a DN in several ways. The easiest, once you have a @Dir
 
 For instance, my company's directory has people organized under a top-level <abbr title="Organizational Unit">OU</abbr> called "people", so I can fetch a @Branch@ for it like so:
 
-<?example { language: ruby, caption: "Fetching a branch ou=people." } ?>
+<?example { language: irb, caption: "Fetching a branch ou=people." } ?>
 irb> people = dir.ou( :people )
 # => #<Treequel::Branch:0x19a76d4 ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> people.dn
@@ -124,7 +125,7 @@ irb> people.dn
 
 Then you can fetch branches for individuals under @ou=People@ by calling their @RDN@ method, too. Since I happen to know that all of my company's People are keyed by @uid@, everyone's @RDN@ from @ou=People@ will be @uid=«something»@:
 
-<?example { language: ruby, caption: "Fetching a branch for uid=mgranger,ou=people." } ?>
+<?example { language: irb, caption: "Fetching a branch for uid=mgranger,ou=people." } ?>
 irb> me = people.uid( :mgranger )
 # => #<Treequel::Branch:0x19a4970 uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> me.dn
@@ -133,33 +134,44 @@ irb> me.dn
 
 You can pass any additional attributes in the @RDN@ (if you have entries with multi-value @RDNs@) as a Hash:
 
-<?example { language: ruby, caption: "Fetching a branch for an entry with a multi-value RDN." } ?>
+<?example { language: irb, caption: "Fetching a branch for an entry with a multi-value RDN." } ?>
 irb> hosts = dir.ou( :hosts )
 # => #<Treequel::Branch:0x19a76d4 ou=hosts,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> hosts.cn( :ns1, :l => 'newyork' ).dn
 # => "cn=ns1+l=newyork,ou=hosts,dc=acme,dc=com"
 <?end?>
 
-You can also create a Branch from its full DN:
+You can also create a Branch from the directory that contains it and its full DN:
 
-<?example { language: ruby, caption: "Fetching a branch using its DN." } ?>
+<?example { language: irb, caption: "Fetching a branch using its DN." } ?>
 irb> me = Treequel::Branch.new( dir, 'uid=mgranger,ou=people,dc=acme,dc=com' )
 # => #<Treequel::Branch:0x12b676c uid=mgranger,ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 <?end?>
 
 or from a raw @LDAP::Entry@ object:
 
-<?example { language: ruby, caption: "Fetching a branch using its DN." } ?>
-irb> entries = dir.conn.search2( 'ou=people,dc=acme,dc=com', LDAP::LDAP_SCOPE_SUBTREE, '(uid=mgranger)' )
+<?example { language: irb, caption: "Fetching a branch using its DN." } ?>
+irb> conn = LDAP::SSLConn.new( 'localhost', 389, true )
+# => #<LDAP::SSLConn:0x58bd94>
+irb> entries = conn.search2( 'ou=people,dc=acme,dc=com', LDAP::LDAP_SCOPE_SUBTREE, '(uid=mgranger)' )
+# => [{"gidNumber"=>["200"], "cn"=>["Michael Granger"], [...], "dn"=>["uid=mgranger,ou=People,dc=acme,dc=com"]}]
 irb> me = Treequel::Branch.new_from_entry( entries.first, dir )
 # => #<Treequel::Branch:0x129dd70 uid=mgranger,ou=People,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry={...}>
 <?end?>
 
-The directory also provides a special @Branch@ object for its base DN:
+The directory also provides a special @Branch@ object for its base DN that's used to respond to any Branch methods called on it:
 
-<?example { language: ruby, caption: "Fetching the directory's base branch." } ?>
+<?example { language: irb, caption: "Fetching the directory's base branch." } ?>
 irb> dir.base
 # => #<Treequel::Branch:0x1368548 dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
+irb> dir.base.dn
+# => "dc=laika,dc=com"
+irb> dir.dn
+# => "dc=laika,dc=com"
+irb> dir.base.ou( :people )
+# => #<Treequel::Branch:0x117f45c ou=people,dc=laika,dc=com @ localhost:389 (dc=laika,dc=com, tls, anonymous) entry=nil>
+irb> dir.ou( :people )
+# => #<Treequel::Branch:0x11850f0 ou=people,dc=laika,dc=com @ localhost:389 (dc=laika,dc=com, tls, anonymous) entry=nil>
 <?end?>
 
 
@@ -169,28 +181,28 @@ h3(#entries). The Branch's Entry
 
 Once you have a Branch, you can fetch its corresponding entry from the directory via the @#entry@ method. If the entry doesn't exist, @#entry@ will return @nil@. You can test to see whether an entry for a branch exists via its @#exists?@ predicate method:
 
-<?example { language: ruby, caption: "Examining a Branch's entry." } ?>
+<?example { language: irb, caption: "Examining a Branch's entry." } ?>
 irb> www = dir.ou( :hosts ).cn( :www )
 # => #<Treequel::Branch:0x1932f8c cn=www,ou=hosts,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, cn=admin,dc=acme,dc=com) entry=nil>
 irb> www.exists?
-=> true
+# => true
 irb> www.entry
 # => {"cn"=>["www"], "ipHostNumber"=>["127.0.0.1"], "objectClass"=>["device", "ipHost"], "dn"=>["cn=www,ou=hosts,dc=acme,dc=com"]}
-
+<?end?>
 
 h3(#attributes). Attributes
 
 Once you have a the Branch for the entry you need, you can also fetch its attributes just like a Hash:
 
-<?example { language: ruby, caption: "Fetching an attribute." } ?>
+<?example { language: irb, caption: "Fetching an attribute." } ?>
+irb> me = people.uid( :mgranger )
 irb> me[:gecos]
 # => "Michael Granger"
 <?end?>
 
 If you have write privileges on the entry, you can set attributes the same way:
 
-<?example { language: ruby, caption: "Setting an attribute." } ?>
-irb> me = people.uid( :mgranger )
+<?example { language: irb, caption: "Setting an attribute." } ?>
 irb> dir.bound_as( me, 'password' ) { me[:gecos] = "Pasoquod Singular" }
 irb> me[:gecos] 
 # => "Pasoquod Singular"
@@ -200,17 +212,22 @@ Changes to the branch are written to the directory as soon as they're made, so i
 
 You can do that with the @#merge@ method:
 
-<?example { language: ruby, caption: "Merging attributes." } ?>
+<?example { language: irb, caption: "Merging attributes." } ?>
 irb> me.merge( :gecos => 'Michael Granger', :uidNumber => 514 )
 <?end?>
 
 h3(#attribute-datatypes). Attribute Datatypes
 
-Attribute values are cast to Ruby objects based on the "syntax rule":http://tools.ietf.org/html/rfc4517#section-3.3 that corresponds to its attribute type. By default, all values are mapped to Strings except those contained in @Treequel::Directory::DEFAULT_SYNTAX_MAPPING@, which is a mapping of syntax rule @OID@s to an object which converts the @String@ value from the directory into a Ruby object. The value can be any object which responds to @#[]@ with a @String@ argument, e.g., a @Proc@, a @Hash@, a @Method@, etc.
+Attribute values are cast to Ruby objects based on the "syntax rule":http://tools.ietf.org/html/rfc4517#section-3.3 that corresponds to its attribute type. By default, all values are mapped to <code>String</code>s except those contained in <var>Treequel::Directory::DEFAULT_SYNTAX_MAPPING</var>, which is a mapping of syntax rule <code>OID</code>s to an object which converts the @String@ value from the directory into a Ruby object. This object can be of any type which responds to @#[]@ with a @String@ argument, e.g., a @Proc@, a @Hash@, a @Method@, etc.:
 
-You can use this to, for example, return every attribute that's a @DN@ as a @Treequel::Branch@ instead of the DN string:
+<?example { language: irb, caption: "Convert integer values to Ruby Integers" } ?>
+irb> dir.add_syntax_mapping( Treequel::Constants::OIDS::INTEGER_SYNTAX ) {|string| Integer(string) }
+# => #<Proc:0x00507080@(irb):3>
+<?end ?>
 
-<?example { language: ruby, caption: "Mapping DNs to Treequel::Branches by default" } ?>
+You can use this, for example, to return every attribute that's a <abbr title="Distingished Name">DN</abbr> as a @Treequel::Branch@ instead of the DN string:
+
+<?example { language: irb, caption: "Mapping DNs to Treequel::Branches by default" } ?>
 irb> dir = Treequel.directory 
 # => #<Treequel::Directory:0x665783 localhost:389 (connected) base_dn="dc=acme,dc=com", bound as=anonymous, schema=(schema not loaded)>
 irb> dir.add_syntax_mapping( Treequel::Constants::OIDS::DISTINGUISHED_NAME_SYNTAX ) {|dn| Treequel::Branch.new(dir, dn) }
@@ -221,11 +238,16 @@ irb> isdept['supervisor']
 # => #<Treequel::Branch:0x18db228 uid=mahlon,ou=People,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 <?end?>
 
+<div class="callout note-callout">
+Syntax mappings are per-directory, so you can establish different conversion rules for different directories. We're planning on adding a way to add or replace the default rules, too, but for now you'll have to either modify <var>Treequel::Directory::DEFAULT_SYNTAX_MAPPING</var> directly or
+install custom mappings for each @Directory@ individually if you want the same rules for every one.
+</div>
+
 h3(#operational-attributes). Operational Attributes
 
-In addition to its user-settable attributes, each entry in the directory also has a set of "operational attributes":http://tools.ietf.org/html/rfc4512#section-3.4 which are maintained by the server. These attributes are not normally visible, but you can enable them either for individual @Branch@ objects, or for all newly-created Branches:
+In addition to its user-settable attributes, each entry in the directory also has a set of "operational attributes":http://tools.ietf.org/html/rfc4512#section-3.4 which are maintained by the server. These attributes are not normally visible, but you can enable them either for individual @Branch@ objects, or for all newly-created <code>Branch</code>es:
 
-<?example { language: ruby, caption: "Enabling the inclusion of operational attributes." } ?>
+<?example { language: irb, caption: "Enabling the inclusion of operational attributes." } ?>
 irb> dir.base.entry.keys.sort
 # => ["dc", "description", "dn", "o", "objectClass"]
 irb> dir.base.include_operational_attrs = true
@@ -243,38 +265,38 @@ h3(#branch-ldif). Getting a Branch's LDIF
 
 A convenient way to look at all of a branch's attributes is via its "LDIF":http://en.wikipedia.org/wiki/LDAP_Data_Interchange_Format string:
 
-<?example { language: ruby, caption: "Displaying a branch's LDIF." } ?>
+<?example { language: irb, caption: "Displaying a branch's LDIF." } ?>
 irb> puts me.to_ldif
-# dn: uid=mgranger,ou=people,dc=acme,dc=com
-# gidNumber: 200
-# cn: Michael Granger
-# l: Portland, OR
-# givenName: Michael
-# title: Lead Software Developer
-# gecos: Michael Granger
-# homeDirectory: /home/m/mgranger
-# uid: mgranger
-# mail: mgranger@acme.com
-# sn: Granger
-# mobile: +1 9075551212
-# loginShell: /bin/base
-# uidNumber: 2053
-# objectClass: inetOrgPerson
-# objectClass: organizationalPerson
-# objectClass: person
-# objectClass: top
-# objectClass: posixAccount
-# objectClass: shadowAccount
-# objectClass: apple-user
-# homePhone: +1 9075551212
-# departmentNumber: 18
+dn: uid=mgranger,ou=people,dc=acme,dc=com
+gidNumber: 200
+cn: Michael Granger
+l: Portland, OR
+givenName: Michael
+title: Lead Software Developer
+gecos: Michael Granger
+homeDirectory: /home/m/mgranger
+uid: mgranger
+mail: mgranger@acme.com
+sn: Granger
+mobile: +1 9075551212
+loginShell: /bin/base
+uidNumber: 2053
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+objectClass: posixAccount
+objectClass: shadowAccount
+objectClass: apple-user
+homePhone: +1 9075551212
+departmentNumber: 18
 <?end?>
 
 h3(#heirarchical-traversal). Parents and Children
 
 Each branch can also fetch its parent and its children:
 
-<?example { language: ruby, caption: "Fetching a branch's parent and its children." } ?>
+<?example { language: irb, caption: "Fetching a branch's parent and its children." } ?>
 irb> marketing_hosts = dir.dc( :marketing ).ou( :hosts )
 # => #<Treequel::Branch:0x135ad94 ou=hosts,dc=marketing,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> marketing_hosts.parent
@@ -287,7 +309,7 @@ h3(#create-copy-delete-move). Creating, Copying, Deleting, and Moving Entries
 
 If you have a @Branch@ object for an entry which doesn't exist in the directory, you can create it via the @#create@ method. It takes any attributes that should be set when creating it, and requires at least that you provide a "structural objectClass":http://tools.ietf.org/html/rfc4512#page-18.
 
-<?example { language: ruby, caption: "Creating a new entry." } ?>
+<?example { language: irb, caption: "Creating a new entry." } ?>
 irb> mahlon_things = dir.ou( :people ).uid( :mahlon ).ou( :things )
 # => #<Treequel::Branch:0xfb7b9e954 ou=things,uid=mahlon,ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> mahlon_things.create( :objectClass => [ 'top', 'organizationalUnit' ] )
@@ -300,7 +322,7 @@ Some objectClasses require that the entry contain values for particular attribut
 
 You can also copy an existing entry:
 
-<?example { language: ruby, caption: "Copying an entry." } ?>
+<?example { language: irb, caption: "Copying an entry." } ?>
 irb> dir.bind( 'cn=admin,dc=acme,dc=com', 'the_password' )
 # => "cn=admin,dc=acme,dc=com"
 irb> jtran = dir.ou( :people ).uid( :mahlon ).copy( 'uid=jtran', :givenName => 'Jim', :sn => 'Tran' )
@@ -311,17 +333,17 @@ irb> jtran['sn']
 
 or move (rename) it:
 
-<?example { language: ruby, caption: "Moving an entry." } ?>
+<?example { language: irb, caption: "Moving an entry." } ?>
 # Rename 'Miriam Robson' to 'Miriam Price' when she gets married.
 irb> user = dir.ou( :people ).uid( :mrobson ).move( 'uid=mprice', :sn => 'Price' )
 # => #<Treequel::Branch:0x12bff60 uid=mprice,ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, cn=admin,dc=acme,dc=com) entry=nil>
 <?end?>
 
-<?ed fixme:"Treequel currently doesn't support moving an entry to a new parent, only renaming it under its current parent, but you can always copy it to the new @DN@ and delete the original. This will be corrected in a future version." ?>
+<?ed fixme:"Treequel currently doesn't support moving an entry to a new parent, only renaming it under its current parent, but you can always copy it to the new DN and delete the original. This will be corrected in a future version." ?>
 
 Finally, you can delete an entry from its @Branch@, as well:
 
-<?example { language: ruby, caption: "Deleting an entry." } ?>
+<?example { language: irb, caption: "Deleting an entry." } ?>
 irb> dir.ou( :hosts ).cn( :ns1 ).delete
 # => true
 <?end?>
@@ -330,18 +352,18 @@ h2(#searching-with-branchsets). Searching With Branchsets
 
 If you know exactly which entries you need, it's pretty easy to fetch the corresponding @Branch@ objects, but what if you need to search for entries matching one or more criteria?
 
-Searching is implemented in Treequel via <?api "Treequel::Branchsets":Treequel::Branchset ?>. Much like @Datasets@ from the _Sequel_ library which inspired Treequel, a @Branchset@ is an object which represents an abstract set of records returned by a search. The results of the search are returned on demand, so a @Branchset@ can be kept around and reused indefinitely.
+Searching is implemented in Treequel via <?api "Treequel::Branchsets":Treequel::Branchset ?>. Much like "Datasets":http://sequel.rubyforge.org/rdoc/classes/Sequel/Dataset.html from the "Sequel library":http://sequel.rubyforge.org/ which inspired Treequel, a @Branchset@ is an object which represents an abstract set of records returned by a search. The results of the search are returned on demand, so a @Branchset@ can be kept around and reused indefinitely.
 
 You can construct a new @Branchset@ via the usual constructor; it takes the @Branch@ for the base DN of the search:
 
-<?example { language: ruby, caption: "Creating a new Branchset." } ?>
+<?example { language: irb, caption: "Creating a new Branchset." } ?>
 irb> Treequel::Branchset.new( dir.ou(:people) )
 # => #<Treequel::Branchset:0x1a418ec base_dn='ou=people,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, limit=0, timeout=0.000>
 <?end?>
 
 There are also several convenience methods on @Branch@ and @Directory@ that can create a new @Branchset@ relative to themselves, as well:
 
-<?example { language: ruby, caption: "Creating new Branchsets relative to the base DN and ou=Hosts." } ?>
+<?example { language: irb, caption: "Creating new Branchsets relative to the base DN and ou=Hosts." } ?>
 irb> dir.branchset
 # => #<Treequel::Branchset:0x1a3fc54 base_dn='dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, limit=0, timeout=0.000>
 irb> dir.ou(:people).branchset
@@ -362,49 +384,49 @@ The @#filter@ method expects one or more expressions which are transformed into 
 
 The simplest of these, of course, is a literal LDAP filter in a @String@:
 
-<?example { language: ruby, caption: "Literal string filter expression" } ?>
+<?example { language: irb, caption: "Literal string filter expression" } ?>
 irb> dir.ou( :people ).filter( '(objectClass=room)' )
 => #<Treequel::Branchset:0x12b7c48 base_dn='ou=people,dc=acme,dc=com', filter=(objectClass=room), scope=subtree, select=*, limit=0, timeout=0.000>
 <?end?>
 
 You can see what the equivalent filter of a @Branchset@ is at any time using its @#filter_string@ method:
 
-<?example { language: ruby, caption: "Literal string filter expression" } ?>
+<?example { language: irb, caption: "Literal string filter expression" } ?>
 irb> dir.ou( :people ).filter( '(objectClass=room)' ).filter_string
 # => "(objectClass=room)"
 <?end?>
 
 You can also use a @Hash@ to do simple @attribute=value@ matching:
 
-<?example { language: ruby, caption: "Hash filter expression" } ?>
+<?example { language: irb, caption: "Hash filter expression" } ?>
 irb> dir.ou( :people ).filter( :givenName => 'Michael' ).filter_string
 # => "(givenName=Michael)"
 <?end?>
 
 Multiple criteria in a Hash will be ANDed together:
 
-<?example { language: ruby, caption: "Multi-value Hash filter expression" } ?>
+<?example { language: irb, caption: "Multi-value Hash filter expression" } ?>
 irb> dir.ou( :people ).filter( :givenName => 'Michael', :sn => 'Granger' )
 # => "(&(givenName=Michael)(sn=Granger))"
 <?end?>
 
 You can include an OR in a filter by passing @:or@ as the first element:
 
-<?example { language: ruby, caption: "An ORed filter" } ?>
+<?example { language: irb, caption: "An ORed filter" } ?>
 irb> dir.ou( :people ).filter( :or, [:sn, 'Granger'], [:sn, 'Smith'] ).filter_string
 # => "(|(sn=Granger)(sn=Smith))"
 <?end?>
 
 or by specifying more than one value for a single attribute:
 
-<?example { language: ruby, caption: "ORing with a Hash" } ?>
+<?example { language: irb, caption: "ORing with a Hash" } ?>
 # => #<Treequel::Directory:0x4e45d5 localhost:389 (connected) base_dn="dc=acme,dc=com", bound as=anonymous, schema=(schema not loaded)>
 irb> dir.ou( :people ).filter( :uid => [:mahlon, :mgranger, :jtran] ).filter_string
 <?end?>
 
 You can do the same with @:and@ and @:not@, and combine them, too:
 
-<?example { language: ruby, caption: "Negation (NOT) of an explicit AND" } ?>
+<?example { language: irb, caption: "Negation (NOT) of an explicit AND" } ?>
 irb> dir.ou( :people ).filter( :and, [:sn, 'Granger'], [:sn, 'Smith'] ).filter_string
 # => "(&(sn=Granger)(sn=Smith))"
 irb> dir.ou( :people ).filter( :not, [:and, [:sn, 'Granger'], [:sn, 'Smith']] ).filter_string
@@ -413,14 +435,14 @@ irb> dir.ou( :people ).filter( :not, [:and, [:sn, 'Granger'], [:sn, 'Smith']] ).
 
 Because @filter@ returns the mutated branchset, you can always chain them together instead of using an explicit @:and@.
 
-<?example { language: ruby, caption: "Chaining filter expressions ANDs them, too." } ?>
+<?example { language: irb, caption: "Chaining filter expressions ANDs them, too." } ?>
 irb> dir.ou( :people ).filter( :objectClass => 'inetOrgPerson' ).filter( :sn => 'Smith' ).filter_string
 # => "(&(objectClass=inetOrgPerson)(sn=Smith))"
 <?end?>
 
 We're experimenting with support for Sequel expressions for more-complex filter expressions, too:
 
-<?example { language: ruby, caption: "Advanced expressions" } ?>
+<?example { language: irb, caption: "Advanced expressions" } ?>
 # Negative 
 irb> dir.ou( :people ).filter( ~:photo ).filter_string
 # => "(!(photo=*))"
@@ -441,7 +463,7 @@ You can also create a @Branchset@ that will search using a different scope by pa
 
 Setting the scope to @:onelevel@ (as you might expect) means that it will only descend one level when searching:
 
-<?example { language: ruby, caption: "Find all the top-level OUs" } ?>
+<?example { language: irb, caption: "Find all the top-level OUs" } ?>
 irb> dir.filter( :objectClass => :organizationalUnit ).scope( :one ).collect {|branch| branch[:ou].first }
 => ["Hosts", "Groups", "Lists", "Resources", "People", "Departments", "Netgroups"]
 <?end?>
@@ -452,7 +474,7 @@ h3(#branchset-limit). Limit
 
 Setting a Branchset's @#limit@ will limit the number of results the search will return.
 
-<?example { language: ruby, caption: "Return the first 5 groups in the directory" } ?>
+<?example { language: irb, caption: "Return the first 5 groups in the directory" } ?>
 irb> dir.ou( :groups ).limit( 5 ).collect {|b| b.dn }
 # => ["ou=Groups,dc=acme,dc=com", "cn=anim,ou=Groups,dc=acme,dc=com", "cn=acct,ou=Groups,dc=acme,dc=com", "cn=mailuser,ou=Groups,dc=acme,dc=com", "cn=producer,ou=Groups,dc=acme,dc=com"]
 <?end?>
@@ -465,7 +487,7 @@ We're planning on adding a convenient way to use "controls":http://tools.ietf.or
 
 If you already have a @Branchset@ with a limit, and want a new one that won't have any limits imposed on it, you can get one via the @#without_limit@ method.
 
-<?example { language: ruby, caption: "Making a Branchset without the limits of the original" } ?>
+<?example { language: irb, caption: "Making a Branchset without the limits of the original" } ?>
 irb> fivegroups = dir.ou( :groups ).limit( 5 )
 # => #<Treequel::Branchset:0x1264908 base_dn='ou=groups,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, limit=5, timeout=0.000>
 irb> fivegroups.all.length
@@ -478,14 +500,14 @@ h3(#branchset-select). Select
 
 If you should want to limit the attributes that are returned in the entries fetched by the query, you can do so by specifying which ones should be returned with the @#select@ method:
 
-<?example { language: ruby, caption: "Fetch only employee first and last names" } ?>
+<?example { language: irb, caption: "Fetch only employee first and last names" } ?>
 irb> dir.ou( :people ).select( :sn, :givenName ).limit( 5 ).collect {|b| b.entry }
 # => [{"dn"=>["ou=People,dc=acme,dc=com"]}, {"givenName"=>["Reed"], "sn"=>["Slimlocke"], "dn"=>["uid=rslim,ou=People,dc=acme,dc=com"]}, {"givenName"=>["Jim"], "sn"=>["Tran"], "dn"=>["uid=jtran,ou=People,dc=acme,dc=com"]}, {"givenName"=>["Michael"], "sn"=>["Granger"], "dn"=>["uid=mgranger,ou=People,dc=acme,dc=com"]}, {"givenName"=>["Harken"], "sn"=>["Farkselstein"], "dn"=>["uid=hfarkselstein,ou=People,dc=acme,dc=com"]}]
 <?end?>
 
 You can get a copy of a Branchset with additional attributes by passing the additional attributes to @#select_more@:
 
-<?example { language: ruby, caption: "Selecting additional attributes" } ?>
+<?example { language: irb, caption: "Selecting additional attributes" } ?>
 irb> people_uids = dir.ou( :people ).select( :uid )
 # => #<Treequel::Branchset:0x1181644 base_dn='ou=people,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=uid, limit=0, timeout=0.000>
 irb> people_uids_and_names = people_uids.select_more( :gecos )
@@ -496,7 +518,7 @@ irb> people_uids_names_and_addresses = people_uids.select_more( :gecos, :homePos
 
 You can also get a copy with the select-list removed:
 
-<?example { language: ruby, caption: "Removing the selection from a branchset" } ?>
+<?example { language: irb, caption: "Removing the selection from a branchset" } ?>
 irb> people_uids.select_all
 # => #<Treequel::Branchset:0x10da308 base_dn='ou=people,dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, limit=0, timeout=0.000>
 <?end ?>
@@ -505,7 +527,7 @@ h3(#branchset-timeout). Timeout
 
 To avoid unintentional resource consumption on the server, you can specify an explicit timeout for queries.  This is useful when searching with user submitted input or other untrusted sources.  Note that this can only be reliably used to _decrease_ the timeout, as the server might have a maximum timeout configured that can't be exceeded.
 
-<?example { language: ruby, caption: "A long running query" } ?>
+<?example { language: irb, caption: "A long running query" } ?>
 irb> dir.filter('objectClass=*').timeout( 1 ).all
 LDAP::ResultError: Timed out
 	from ./treequel/directory.rb:328:in `search_ext2'
@@ -518,7 +540,7 @@ LDAP::ResultError: Timed out
 
 If you have a canned query that includes a timeout, you can copy it without the restriction.
 
-<?example { language: ruby, caption: "A long running query with timeout disabled" } ?>
+<?example { language: irb, caption: "A long running query with timeout disabled" } ?>
 irb> slow_query = dir.filter('objectClass=*').timeout( 1 )
 # => #<Treequel::Branchset:0x1d5c554 base_dn='dc=acme,dc=com', filter=(objectClass=*), scope=subtree, select=*, limit=0, timeout=1.000>
 irb> slow_query.all
@@ -540,7 +562,7 @@ h3. Branchset Enumeration
 
 Branchsets are also @Enumerable@, so you can slice and dice results with its interface:
 
-<?example { language: ruby, caption: "Enumerating resulting Branches" } ?>
+<?example { language: irb, caption: "Enumerating resulting Branches" } ?>
 irb> people = dir.ou( :people )
 # => #<Treequel::Branch:0x11857d0 ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> people.all? {|person| File.directory?(person[:homeDirectory]) }
@@ -555,7 +577,7 @@ irb> people.filter( :homeDirectory ).find_all {|person| File.exist?(person[:home
 
 For convenience, the @Branchset#map@ method is overriden to facilitate fetching single attributes from the resulting branches:
 
-<?example { language: ruby, caption: "Mapping branch attributes" } ?>
+<?example { language: irb, caption: "Mapping branch attributes" } ?>
 irb> dir.ou( :hosts ).filter( :ipHostNumber ).map( :ipHostNumber ).flatten
 => ["192.168.1.253", "192.168.1.14", "192.168.1.21", "192.168.1.22", "192.168.1.23"]
 <?end?>
@@ -567,35 +589,35 @@ So far we've been searching from a single base DN, but sometimes what you want i
 
 For example, hosts might be listed under different domainComponents under the base that correspond to subdomains:
 
-<?example { language: ruby, caption: "" } ?>
+<?example { language: irb, caption: "" } ?>
 irb> dir.filter( :objectClass => 'dcObject' ).scope( :one ).map( :dc )
 # => ["sales", "marketing", "admin", "it", "vpn"]
 <?end ?>
 
 <?api Treequel::BranchCollection ?>s can be used to form searches from multiple bases. They can be constructed from one or more Branchsets:
 
-<?example { language: ruby, caption: "Creating a collection from explicit Branchsets" } ?>
+<?example { language: irb, caption: "Creating a collection from explicit Branchsets" } ?>
 irb> collection = Treequel::BranchCollection.new( dir.dc(:marketing).branchset, dir.dc(:sales).branchset )
 # => #<Treequel::BranchCollection:0x10ef8c0 2 branchsets: ["dc=marketing,dc=acme,dc=com/(objectClass=*)", "dc=sales,dc=acme,dc=com/(objectClass=*)"]>
 <?end?>
 
 or directly from Branches, which will be converted to Branchsets:
 
-<?example { language: ruby, caption: "Creating BranchCollection based on the results of a search" } ?>
+<?example { language: irb, caption: "Creating BranchCollection based on the results of a search" } ?>
 irb> collection = Treequel::BranchCollection.new( dir.dc(:marketing), dir.dc(:sales) )
 # => #<Treequel::BranchCollection:0x10c2dfc 2 branchsets: ["dc=marketing,dc=acme,dc=com/(objectClass=*)", "dc=sales,dc=acme,dc=com/(objectClass=*)"]>
 <?end ?>
 
 or via @Treequel::Branchset@'s @#collection@ method:
 
-<?example { language: ruby, caption: "A more-convenient way to turn the results returned by a Branchset into a collection." } ?>
+<?example { language: irb, caption: "A more-convenient way to turn the results returned by a Branchset into a collection." } ?>
 irb> collection = dir.scope(:one).filter(:objectClass => 'dcObject', :dc => ['sales', 'marketing']).collection
 # => #<Treequel::BranchCollection:0x50b644 2 branchsets: ["dc=marketing,dc=acme,dc=com/(objectClass=*)", "dc=sales,dc=acme,dc=com/(objectClass=*)"]>
 <?end ?>
 
 You can also compose BranchCollections by appending new Branchsets:
 
-<?example { language: ruby, caption: "Building up a BranchCollection gradually" } ?>
+<?example { language: irb, caption: "Building up a BranchCollection gradually" } ?>
 irb> coll = Treequel::BranchCollection.new
 # => #<Treequel::BranchCollection:0x1021420 0 branchsets: []>
 irb> coll << dir.dc( :sales )
@@ -606,7 +628,7 @@ irb> coll << dir.dc( :marketing )
 
 or by adding one BranchCollection to another:
 
-<?example { language: ruby, caption: "Combining two BranchCollections into one" } ?>
+<?example { language: irb, caption: "Combining two BranchCollections into one" } ?>
 irb> east_coast = dir.filter( :dc => [:admin, :it] ).collection
 # => #<Treequel::BranchCollection:0x594aac 2 branchsets: ["dc=it,dc=acme,dc=com/(objectClass=*)", "dc=admin,dc=acme,dc=com/(objectClass=*)"]>
 irb> west_coast = dir.filter( :dc => [:sales, :marketing] ).collection
@@ -617,7 +639,7 @@ irb> national = east_coast + west_coast
 
 BranchCollections work via delegation to their Branchsets, so all of the mutator methods on Branchset are supported by BranchCollection. This means that you can chain collections and filters together, with collections serving as the base for further finer-grained searches:
 
-<?example { language: ruby, caption: "Find all hosts named 'www' under all @ou=hosts@ branches" } ?>
+<?example { language: irb, caption: "Find all hosts named 'www' under all @ou=hosts@ branches" } ?>
 dir.filter( :ou => 'hosts' ).collection.filter( :cn => 'www' )
 <?end ?>
 
@@ -626,7 +648,7 @@ h2(#schema-introspection). Schema Introspection
 
 The information about the structure of the directory comes from its schema, and Treequel provides instrospection tools for accessing it in an object-oriented manner. You can get the <?api Treequel::Schema ?> from the directory by calling its @#schema@ method:
 
-<?example { language: ruby, caption: "Fetching the schema for a Directory." } ?>
+<?example { language: irb, caption: "Fetching the schema for a Directory." } ?>
 irb> dir.schema
 # => #<Treequel::Schema:0x66511b 1119 attribute types, 31 ldap syntaxes, 54 matching rule uses, 72 matching rules, 310 object classes>
 <?end?>
@@ -636,14 +658,14 @@ h3(#schema-objectclasses). Object Classes
 
 You can fetch information about the "objectClasses":http://tools.ietf.org/html/rfc4512#section-2.4 the directory knows about through the schema's @#object_classes@ Hash:
 
-<?example { language: ruby, caption: "Fetching  an ObjectClass object for the 'inetOrgPerson' objectClass." } ?>
+<?example { language: irb, caption: "Fetching  an ObjectClass object for the 'inetOrgPerson' objectClass." } ?>
 irb> dir.schema.object_classes[:inetOrgPerson] 
 # => #<Treequel::Schema::StructuralObjectClass:0x65d91b inetOrgPerson(2.16.840.1.113730.3.2.2) < "organizationalPerson" "RFC2798: Internet Organizational Person" MUST: [], MAY: [:audio, :businessCategory, :carLicense, :departmentNumber, :displayName, :employeeNumber, :employeeType, :givenName, :homePhone, :homePostalAddress, :initials, :jpegPhoto, :labeledURI, :mail, :manager, :mobile, :o, :pager, :photo, :roomNumber, :secretary, :uid, :userCertificate, :x500uniqueIdentifier, :preferredLanguage, :userSMIMECertificate, :userPKCS12]>
 <?end?>
 
 This hash is keyed by both OID and any associated names (as Symbols), and the value is a <?api Treequel::Schema::ObjectClass ?> object that contains the information about that objectClass parsed from the schema.
 
-<?example { language: ruby, caption: "Introspection on the inetOrgPerson objectClass." } ?>
+<?example { language: irb, caption: "Introspection on the inetOrgPerson objectClass." } ?>
 irb> inetOrgPerson = dir.schema.object_classes[:inetOrgPerson] 
 # => #<Treequel::Schema::StructuralObjectClass ...>
 irb> inetOrgPerson.oid
@@ -660,7 +682,7 @@ irb> inetOrgPerson.sup
 
 Treequel::Branch objects provide a shortcut for looking up the @Treequel::ObjectClass@ objects that correspond to its @objectClass@ properties:
 
-<?example { language: ruby, caption: "Fetching the objectClasses for an entry through its Branch." } ?>
+<?example { language: irb, caption: "Fetching the objectClasses for an entry through its Branch." } ?>
 irb> dir.base.object_classes
 # => [#<Treequel::Schema::AuxiliaryObjectClass:0x68b168 dcObject(1.3.6.1.4.1.1466.344) < #<Treequel::Schema::AbstractObjectClass:0x690555 top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2247: domain component object" MUST: [:dc], MAY: []>, #<Treequel::Schema::StructuralObjectClass:0x68d02b organization(2.5.6.4) < #<Treequel::Schema::AbstractObjectClass:0x690555 top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2256: an organization" MUST: [:o], MAY: [:userPassword, :searchGuide, :seeAlso, :businessCategory, :x121Address, :registeredAddress, :destinationIndicator, :preferredDeliveryMethod, :telexNumber, :teletexTerminalIdentifier, :telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber, :street, :postOfficeBox, :postalCode, :postalAddress, :physicalDeliveryOfficeName, :st, :l, :description]>]
 <?end?>
@@ -669,14 +691,14 @@ h3(#schema-attributetypes). Attribute Types
 
 You can also fetch introspection information on entry "attributeTypes":http://tools.ietf.org/html/rfc4512#section-2.5.1 via the schema's @#attribute_types@ Hash:
 
-<?example { language: ruby, caption: "Fetching an AttributeType object for the 'surname' attribute." } ?>
+<?example { language: irb, caption: "Fetching an AttributeType object for the 'surname' attribute." } ?>
 irb> dir.schema.attribute_types[:surname]
 # => #<Treequel::Schema::AttributeType:0x146abd sn(2.5.4.4) "RFC2256: last (family) name(s) for which the entity is known by" SYNTAX: nil (length: unlimited)>
 <?end?>
 
 Like with objectClasses, they are keyed both by numeric OID strings and their associated names (as Symbols), and the values are instances of <?api Treequel::Schema::AttributeType ?>.
 
-<?example { language: ruby, caption: "Fetching an AttributeType object for the 'inetOrgPerson' objectClass." } ?>
+<?example { language: irb, caption: "Fetching an AttributeType object for the 'inetOrgPerson' objectClass." } ?>
 irb> sn = dir.schema.attribute_types[:surname]
 # => #<Treequel::Schema::AttributeType:0x696ec8 sn(2.5.4.4) "RFC2256: last (family) name(s) for which the entity is known by" SYNTAX: nil (length: unlimited)>
 irb> sn.oid
@@ -706,7 +728,7 @@ irb> sn.user_modifiable?
 
 Branches also know how to fetch the attribute types that are allowed by their objectClasses' _MUST_ and _MAY_ OIDs:
 
-<?example { language: ruby, caption: "Fetching an AttributeType object for the 'inetOrgPerson' objectClass." } ?>
+<?example { language: irb, caption: "Fetching an AttributeType object for the 'inetOrgPerson' objectClass." } ?>
 irb> base = dir.base
 # => #<Treequel::Branch:0x1a7f8cc dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> base.may_oids
@@ -727,7 +749,7 @@ h3. Cross-directory Searches
 
 For example, this one-liner finds the first name of all @inetOrgPerson@ classes within the @People@ organizational unit that have a @uid@ that starts with the string "ma":
 
-<?example { language: ruby, caption: "Chaining filter methods" } ?>
+<?example { language: irb, caption: "Chaining filter methods" } ?>
 irb> dir.ou( :people ).filter( :objectClass => 'inetOrgPerson' ).filter( :uid => 'ma*' ).collect {|branch| branch[:givenName].first }.sort
 # => ["Mahlon", "Margaret", "Margaret", "Mark", "Marlon", "Matt", "Mike", "Mimi"]
 <?end?>

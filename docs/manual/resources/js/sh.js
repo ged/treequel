@@ -122,3 +122,17 @@ SyntaxHighlighter.brushes.Ruby = function()
 
 SyntaxHighlighter.brushes.Ruby.prototype	= new SyntaxHighlighter.Highlighter();
 SyntaxHighlighter.brushes.Ruby.aliases		= ['ruby', 'rails', 'ror'];
+
+/**
+ * A SyntaxHighlighter brush for IRB sessions. Based on the Ruby brush by Erik Peterson.
+ */
+SyntaxHighlighter.brushes.IRb = function()
+{
+	this.regexList = [
+		{ regex: /irb&gt;/gm,     css: 'color2 bold' },	// prompt
+		{ regex: /^# =&gt;.*$/gm,  css: 'comments' },		// results
+		];
+};
+
+SyntaxHighlighter.brushes.IRb.prototype	= new SyntaxHighlighter.Highlighter();
+SyntaxHighlighter.brushes.IRb.aliases		= ['irb', 'IRb', 'IRB'];
