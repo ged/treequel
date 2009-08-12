@@ -2,11 +2,13 @@
 
 <p><%= subsystem[:description].join(' ') %></p>
 
+<h3>Subsystem</h3>
+<pre><%= subsystem.to_ldif %></pre>
+
+<h3>Contents</h3>
 <dl>
-	<% subsystem.entry.keys.sort.each do |attrname| %>
-	<dt><%= attrname %></dt>
-	<dd><code><%= subsystem[attrname].inspect %></code></dd>
-	<% end %>
+<% contents.each do |branch| %>
+	<dt><%= branch.dn %></dt>
+	<dd><pre><%= branch.to_ldif %></pre></dd>
+<% end %>
 </dl>
-
-

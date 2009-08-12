@@ -1,3 +1,5 @@
+/* @override http://gont.ljc.laika.com:9191/css/master.css */
+
 /*
  *	LDAP Web Monitor Stylesheet
  *  
@@ -15,11 +17,11 @@ html {
 	line-height: 1.5em;
 	border-left: 2px solid #908558;
 	min-height: 100%;
-	background-color: #616253;
+	background-color: #a8a8a9;
 }
 
 body {
-	background: #F2EDDE;
+	background: #f0f0f2;
 	margin: 0;
 	min-width: 620px;
 }
@@ -36,7 +38,8 @@ h1 {
 	font-size: 340%;
 	text-shadow: 1px 1px 2px #666;
 	padding-bottom: 0.25em;
-	border-bottom: 1px solid #6694b2;
+	border-bottom: 1px solid #3f6217;
+	margin-top: 0;
 }
 
 h2 {
@@ -133,7 +136,7 @@ fieldset.nodisplay legend {
 }
 
 a {
-	color: #3a3a2b;
+	color: #3f6217;
 	font-weight: bold;
 	text-decoration: none;
 	border-bottom: 1px dotted;
@@ -174,6 +177,53 @@ table caption {
 	padding: 5px 0 2px;
 }
 
+table {
+	border-collapse: collapse;
+	margin: 1em 0;
+	-webkit-box-shadow: 1px 1px 5px rgba(25,25,25,0.7);
+	box-shadow: 1px 1px 5px #333;
+}
+table thead,
+table tbody {
+	border: 1px solid #c1c1c1;
+}
+table th {
+	vertical-align: bottom;
+	text-align: center;
+}
+table td {
+	padding: 2px 0.5em;
+}
+table td.numeric {
+	text-align: right;
+}
+table td, th {
+	font-size: 0.8em;
+}
+
+table th {
+	padding: 1px 0.5em;
+}
+table th.odd {
+	background-color: #f6f6f6;
+}
+table th.even {
+	background-color: #e5e5e5;
+}
+
+table tr.odd td.odd {
+	background-color: #f6ecbf;
+}
+table tr.odd td.even {
+	background-color: #e6ddb2;
+}
+table tr.even td.odd {
+	background-color: #decda8;
+}
+table tr.even td.even {
+	background-color: #c8b897;
+}
+
 dl {
 	
 }
@@ -181,6 +231,12 @@ dl {
 dt {
 	font-weight: bold;
 	border-bottom: 1px solid #999;
+	color: #3f6217;
+}
+
+dt a {
+	border: none;
+	color: inherit;
 }
 
 dd {
@@ -213,6 +269,12 @@ pre code {
 	padding: 4em;
 }
 
+#homelink {
+	position: absolute;
+	top: 4em;
+	right: 4em;
+}
+
 #footer {
 	font-size: 0.8em;
 	background: url(../images/shadows/large-30-down.png) repeat-x 0 bottom;
@@ -227,3 +289,12 @@ pre code {
 /* @end */
 
 
+/* @group classed page elements */
+
+.oid, .dn {
+	font: 12px/1.2em "Vera Sans Mono", monospace;
+	border: 1px dotted #666;
+	background: #d4bb86;
+}
+
+/* @end */
