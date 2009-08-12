@@ -2,15 +2,73 @@
 
 <p><%= subsystem[:description ]%></p>
 
-<p><%= current[:monitorCount] %> current connection/s, <%= total[:monitorCount] %> since startup.</p>
+<p><%= current[:monitorCounter] %> current connection/s, <%= total[:monitorCounter] %> since startup.</p>
 
 <h3>Current Connections</h3>
 
-<dl>
-	<% conninfo.each do |conn| %>
-	<dt><%= conn.dn %></dt>
-	<dd><code><%= conn.entry.inspect %></code></dd>
+<table id="connection-list">
+	<thead>
+	<tr>
+		<th class="odd" rowspan="2">#</th>
+		<th class="even" rowspan="2">Proto</th>
+		<th class="odd" colspan="4">Ops</th>
+		<!-- Ops Exec -->
+		<!-- Ops Pend -->
+		<!-- Ops Fin -->
+		<th class="even" colspan="3">Conn</th>
+		<!-- Conn Read -->
+		<!-- Conn Write -->
+		<th class="odd" rowspan="2">Mask</th>
+		<th class="even" rowspan="2">Authz DN</th>
+		<th class="odd" rowspan="2">Sockets</th>
+		<th class="even" rowspan="2">Age</th>
+		<th class="odd" rowspan="2">Activity</th>
+	</tr>
+	<tr>
+		<!-- # -->
+		<!-- Proto -->
+		<th class="odd">Recd</th><!-- Ops -->
+		<th class="odd">Exec</th>
+		<th class="odd">Pend</th>
+		<th class="odd">Fin</th>
+		<th class="even">Get</th><!-- Conn -->
+		<th class="even">Read</th>
+		<th class="even">Write</th>
+		<!-- Mask -->
+		<!-- Authz DN -->
+		<!-- Sockets -->
+		<!-- Age -->
+		<!-- Activity -->
+	</tr>
+
+	</thead>
+	<tbody>
+
+	<% connections.each_with_index do |conn, i| %>
+	<% rowclass = i.divmod(2).last.zero? ? "odd" : "even" %>
+	<tr class="<%= rowclass %>">
+		<td class="numeric odd"><%= conn[:monitorConnectionNumber].first %></td>
+		<td class="numeric even"><%= conn[:monitorConnectionProtocol].first %></td>
+		<td class="numeric odd"><%= conn[:monitorConnectionOpsReceived].first %></td>
+		<td class="numeric even"><%= conn[:monitorConnectionOpsExecuting].first %></td>
+		<td class="numeric odd"><%= conn[:monitorConnectionOpsPending].first %></td>
+		<td class="numeric even"><%= conn[:monitorConnectionOpsCompleted].first %></td>
+		<td class="numeric odd"><%= conn[:monitorConnectionGet].first %></td>
+		<td class="numeric even"><%= conn[:monitorConnectionRead].first %></td>
+		<td class="numeric odd"><%= conn[:monitorConnectionWrite].first %></td>
+		<td class="even"><%= conn[:monitorConnectionMask].first %></td>
+		<td class="odd"><%= conn[:monitorConnectionAuthzDN].first %></td>
+		<td class="diagram even">
+			<span class="socket local-socket"><%=
+			 	conn[:monitorConnectionLocalAddress].first[/IP=(.*)/, 1] %></span>
+			&#x2190;&#x2192;
+			<span class="socket peer-socket"><%=
+			 	conn[:monitorConnectionPeerAddress].first[/IP=(.*)/, 1] %></span>
+		</td>
+		<td class="time odd"><%= time_delta_string(conn[:monitorConnectionStartTime].first) %></td>
+		<td class="time even"><%= time_delta_string(conn[:monitorConnectionActivityTime].first) %> ago</td>
+	</tr>
 	<% end %>
+	</tbody>
+	</table>
 </dl>
-
-
