@@ -191,14 +191,23 @@ table th {
 	vertical-align: bottom;
 	text-align: center;
 }
+table.horizontal tbody th {
+	vertical-align: top;
+	text-align: right;
+}
 table td {
 	padding: 2px 0.5em;
+	vertical-align: top;
 }
 table td.numeric {
 	text-align: right;
 }
-table td, th {
-	font-size: 0.8em;
+table td.icon {
+	vertical-align: top;
+	text-align: center;
+}
+table td.icon img {
+	margin: 0 auto;
 }
 
 table th {
@@ -211,13 +220,13 @@ table th.even {
 	background-color: #e5e5e5;
 }
 
-table tr.odd td.odd {
+table tr.odd {
 	background-color: #f6ecbf;
 }
 table tr.odd td.even {
 	background-color: #e6ddb2;
 }
-table tr.even td.odd {
+table tr.even {
 	background-color: #decda8;
 }
 table tr.even td.even {
@@ -286,15 +295,27 @@ pre code {
 	margin: 0;
 }
 
+table#connection-list {
+	font-size: 0.9em;
+}
+
 /* @end */
 
 
 /* @group classed page elements */
 
-.oid, .dn {
-	font: 12px/1.2em "Vera Sans Mono", monospace;
-	border: 1px dotted #666;
-	background: #d4bb86;
+span.dn, span.oid {
+	padding-left: 18px;
+	padding-right: 0.2em;
+	background-color: #e8d9b7;
+	border: 1px solid #a38e2b;
+	-webkit-border-radius: 5px;
+}
+span.dn {
+	background: url(../images/chain_small.png) no-repeat 2px;
+}
+span.oid {
+	background: url(../images/card_small.png) no-repeat 2px;
 }
 
 /* @end */
