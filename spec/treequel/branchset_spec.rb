@@ -87,12 +87,62 @@ describe Treequel::Branchset do
 			@directory.should_receive( :search ).
 				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, @params ).
 				and_yield( resultbranch ).and_yield( resultbranch2 )
-			resultbranch.should_receive( :[] ).with( :cn ).and_return( :first_cn )
-			resultbranch2.should_receive( :[] ).with( :cn ).and_return( :second_cn )
+			resultbranch.should_receive( :[] ).with( :cn ).and_return([ :first_cn ])
+			resultbranch2.should_receive( :[] ).with( :cn ).and_return([ :second_cn ])
 
-			@branchset.map( :cn ).should == [:first_cn, :second_cn]
+			@branchset.map( :cn ).should == [[:first_cn], [:second_cn]]
 		end
 
+
+		# 
+		# #to_hash
+		# 
+		they "can be mapped into a Hash of entries keyed by one of their attributes" do
+			resultbranch = mock( "Result Branch" )
+			resultbranch2 = mock( "Result Branch 2" )
+
+			@branch.should_receive( :directory ).and_return( @directory )
+			@directory.should_receive( :search ).
+				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, @params ).
+				and_yield( resultbranch ).and_yield( resultbranch2 )
+
+			resultbranch.should_receive( :[] ).with( :email ).
+				and_return([ :first_email ])
+			resultbranch.should_receive( :entry ).and_return( :entry1 )
+			resultbranch2.should_receive( :[] ).with( :email ).
+				and_return([ :second_email, :second_second_email ])
+			resultbranch2.should_receive( :entry ).and_return( :entry2 )
+
+			@branchset.to_hash( :email ).should == {
+				:first_email => :entry1,
+				:second_email => :entry2,
+			}
+		end
+
+
+		they "can be mapped into a Hash of tuples using two attributes" do
+			resultbranch = mock( "Result Branch" )
+			resultbranch2 = mock( "Result Branch 2" )
+
+			@branch.should_receive( :directory ).and_return( @directory )
+			@directory.should_receive( :search ).
+				with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, @params ).
+				and_yield( resultbranch ).and_yield( resultbranch2 )
+
+			resultbranch.should_receive( :[] ).with( :email ).
+				and_return([ :first_email ])
+			resultbranch.should_receive( :[] ).with( :cn ).
+				and_return([ :first_cn ])
+			resultbranch2.should_receive( :[] ).with( :email ).
+				and_return([ :second_email, :second_second_email ])
+			resultbranch2.should_receive( :[] ).with( :cn ).
+				and_return([ :second_cn, :second_second_cn ])
+
+			@branchset.to_hash( :email, :cn ).should == {
+				:first_email => :first_cn,
+				:second_email => :second_cn,
+			}
+		end
 	end
 
 	describe "instance with no filter, options, or scope set" do

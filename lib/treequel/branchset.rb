@@ -214,6 +214,23 @@ class Treequel::Branchset
 	end
 
 
+	### Map the results returned by the search into a hash keyed by the first value of +keyattr+
+	### in the entry. If the optional +valueattr+ argument is given, the values will be the 
+	### first corresponding attribute, else the value will be the whole entry.
+	def to_hash( keyattr, valueattr=nil )
+		return self.inject({}) do |hash, branch|
+			key = branch[ keyattr ]
+			key = key.first if key.respond_to?( :first )
+
+			value = valueattr ? branch[ valueattr ] : branch.entry
+			value = value.first if value.respond_to?( :first )
+
+			hash[ key ] = value
+			hash
+		end
+	end
+
+
 	### 
 	### Mutators
 	### 
