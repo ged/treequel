@@ -26,7 +26,7 @@ get '/' do
 	# Get every entry under ou=people that has an email address and sort them
 	# by last name, first name, and UID.
 	people = @ldap.ou( :people ).filter( :mail ).sort_by do |person|
-		[ person[:sn], person[:cn], person[:uid] ]
+		[ person[:sn], person[:givenName], person[:uid] ]
 	end
 
 	erb :index,
@@ -84,20 +84,18 @@ __END__
 <table>
 <thead>
 	<tr>
-		<th class="odd">Last Name</th>
-		<th class="even">First Name</th>
-		<th class="odd">Email</th>
-		<th class="even">Badge #</th>
+		<th class="odd">Name</th>
+		<th class="even">Email</th>
+		<th class="odd">Badge #</th>
 	</tr>
 </thead>
 <tbody>
 <% people.each_with_index do |person, i| %>
 <% rowclass = i.divmod(2).last.zero? ? "even" : "odd" %>
 	<tr class="<%= rowclass %>">
-		<td class="odd"><a href="/<%= person[:uid] %>"><%= person[:sn] %></a></td>
-		<td class="even"><a href="/<%= person[:uid] %>"><%= person[:cn] %></p></td>
-		<td class="odd"><a href="/<%= person[:uid] %>"><%= person[:mail] %></a></td>
-		<td class="even"><%= person[:employeeNumber] %></td>
+		<td class="odd"><a href="/<%= person[:uid] %>"><%= person[:cn] %></p></td>
+		<td class="even"><a href="/<%= person[:uid] %>"><%= person[:mail] %></a></td>
+		<td class="odd"><%= person[:employeeNumber] %></td>
 	</tr>
 <% end %>
 </tbody>
