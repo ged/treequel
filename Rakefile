@@ -197,19 +197,16 @@ DEPENDENCIES = {
 
 # Developer Gem dependencies: gemname => version
 DEVELOPMENT_DEPENDENCIES = {
-	'amatch'      => '>= 0.2.3',
-	'rake'        => '>= 0.8.1',
+	'rake'        => '>= 0.8.7',
 	'rcodetools'  => '>= 0.7.0.0',
-	'rcov'        => '>= 0',
+	'rcov'        => '>= 0.8.1.2.0',
+	'rdoc'        => '>= 2.4.3',
 	'RedCloth'    => '>= 4.0.3',
-	'rspec'       => '>= 0',
+	'rspec'       => '>= 1.2.6',
 	'rubyforge'   => '>= 0',
 	'termios'     => '>= 0',
 	'text-format' => '>= 1.0.0',
 	'tmail'       => '>= 1.2.3.1',
-	'ultraviolet' => '>= 0.10.2',
-	'libxml-ruby' => '>= 0.8.3',
-	'rdoc'        => '>= 2.4.3',
 }
 
 # Non-gem requirements: packagename => version
@@ -230,7 +227,7 @@ GEMSPEC   = Gem::Specification.new do |gem|
   	  ].join( "\n" )
 
 	gem.authors           = "Michael Granger, Mahlon E. Smith"
-	gem.email             = ["mahlon@martini.nu", "ged@FaerieMUD.org"]
+	gem.email             = ["ged@FaerieMUD.org", "mahlon@martini.nu"]
 	gem.homepage          = 'http://deveiate.org/projects/Treequel'
 	gem.rubyforge_project = RUBYFORGE_PROJECT
 
@@ -255,14 +252,14 @@ GEMSPEC   = Gem::Specification.new do |gem|
 		gem.add_runtime_dependency( name, version )
 	end
 
-	# Developmental dependencies don't work as of RubyGems 1.2.0
-	unless Gem::Version.new( Gem::RubyGemsVersion ) <= Gem::Version.new( "1.2.0" )
-		DEVELOPMENT_DEPENDENCIES.each do |name, version|
-			version = '>= 0' if version.length.zero?
-			gem.add_development_dependency( name, version )
-		end
-	end
-
+	# # Developmental dependencies don't work as of RubyGems 1.2.0
+	# unless Gem::Version.new( Gem::RubyGemsVersion ) <= Gem::Version.new( "1.2.0" )
+	# 	DEVELOPMENT_DEPENDENCIES.each do |name, version|
+	# 		version = '>= 0' if version.length.zero?
+	# 		gem.add_development_dependency( name, version )
+	# 	end
+	# end
+	
 	REQUIREMENTS.each do |name, version|
 		gem.requirements << [ name, version ].compact.join(' ')
 	end
