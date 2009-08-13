@@ -129,7 +129,7 @@ SyntaxHighlighter.brushes.Ruby.aliases		= ['ruby', 'rails', 'ror'];
 SyntaxHighlighter.brushes.IRb = function()
 {
 	this.regexList = [
-		{ regex: /irb&gt;/gm,     css: 'color2 bold' },	// prompt
+		{ regex: /irb&gt;/gm,      css: 'color2 bold' },	// prompt
 		{ regex: /^# =&gt;.*$/gm,  css: 'comments' },		// results
 		];
 };

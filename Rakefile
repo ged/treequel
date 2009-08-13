@@ -154,7 +154,7 @@ require RAKE_TASKDIR + 'helpers.rb'
 
 # Define some constants that depend on the 'svn' tasklib
 if hg = which( 'hg' )
-	id = IO.read('|-') or exec hg, 'id', '-q'
+	id = IO.read('|-') or exec hg.to_s, 'id', '-q'
 	PKG_BUILD = id.chomp
 else
 	PKG_BUILD = 0

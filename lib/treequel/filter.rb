@@ -483,7 +483,7 @@ class Treequel::Filter
 
 		filterlist = expression.collect do |key, expr|
 			Treequel.logger.debug "  adding %p => %p to the filter list" % [ key, expr ]
-			if expr.respond_to?( :indices )
+			if expr.respond_to?( :fetch )
 				Treequel.logger.debug "    ORing together %d subfilters since %p has indices" %
 					[ expr.length, expr ]
 				subfilters = expr.collect {|val| Treequel::Filter.new(key, val) }
