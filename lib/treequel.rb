@@ -32,10 +32,10 @@ end
 module Treequel
 
 	# Library version
-	VERSION = '0.0.1'
+	VERSION = '1.0.0'
 
 	# VCS revision
-	REVISION = %q$rev: c8c4db6916f1 $
+	REVISION = %q$rev: e352bc86498a $
 
 	# Load the logformatters and some other stuff first
 	require 'treequel/constants'
