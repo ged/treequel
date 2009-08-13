@@ -304,18 +304,25 @@ table#connection-list {
 
 /* @group classed page elements */
 
-span.dn, span.oid {
+.dn, .oid, .uri, .socket {
 	padding-left: 18px;
 	padding-right: 0.2em;
 	background-color: #e8d9b7;
 	border: 1px solid #a38e2b;
 	-webkit-border-radius: 5px;
 }
-span.dn {
+.dn {
 	background: url(../images/chain_small.png) no-repeat 2px;
 }
-span.oid {
+.oid {
 	background: url(../images/card_small.png) no-repeat 2px;
+}
+.uri {
+	background: url(../images/globe_small_green.png) no-repeat 2px;
+}
+.socket {
+	padding-left: 22px;
+	background: url(../images/plug.png) no-repeat 4px;
 }
 
 /* @end */

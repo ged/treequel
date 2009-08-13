@@ -1,0 +1,30 @@
+<h2>Listeners</h2>
+
+<p><%= subsystem[:description ]%></p>
+
+<table id="listener-list" class="horizontal">
+	<thead>
+	<tr>
+		<th></th>
+		<th class="odd">URI</th>
+		<th class="even">Socket</th>
+	</tr>
+	</thead>
+	<tbody>
+	<% listeners.each_with_index do |listener, i| %>
+	<% rowclass = i.divmod(2).last.zero? ? "even" : "odd" %>
+	<tr class="<%= rowclass %>">
+		<th><%= listener[:monitoredInfo] %></th>
+		<td class="even icon">
+			<span class="uri"><%= listener[:labeledURI].first.gsub(/[^\x20-\x7f]/, '') %></span>
+		</td>
+		<td class="odd list">
+			<span class="socket"><%= 
+				listener[:monitorConnectionLocalAddress].first[/IP=(.*)/, 1] %></span>
+		</td>
+	</tr>
+	<% end %>
+	</tbody>
+</table>
+
+

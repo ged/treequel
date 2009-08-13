@@ -97,6 +97,34 @@ get '/connections' do
 end
 
 
+get '/databases' do
+	subsystem = @monitor.cn( :databases )
+	databases = subsystem.
+		filter( :objectClass => :monitoredObject ).
+		select( :+, :* )
+
+	erb :databases,
+		:locals => {
+			:subsystem => subsystem,
+			:databases => databases,
+		}
+end
+
+
+get '/listeners' do
+	subsystem = @monitor.cn( :listeners )
+	listeners = subsystem.
+		filter( :objectClass => :monitoredObject ).
+		select( :+, :* )
+
+	erb :listeners,
+		:locals => {
+			:subsystem => subsystem,
+			:listeners => listeners,
+		}
+end
+
+
 ### Fallback handler for subsystems
 get '/:subsystem' do
 	subsystem = @monitor.cn( params[:subsystem] )
