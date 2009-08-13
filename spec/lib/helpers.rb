@@ -28,6 +28,12 @@ end
 module Treequel::SpecHelpers
 	include Treequel::TestConstants
 
+	### Make an easily-comparable version vector out of +ver+ and return it.
+	def vvec( ver )
+		return ver.split('.').collect {|char| char.to_i }.pack('N*')
+	end
+
+
 	class ArrayLogger
 		### Create a new ArrayLogger that will append content to +array+.
 		def initialize( array )
@@ -86,33 +92,6 @@ module Treequel::SpecHelpers
 			Treequel.logger.formatter = Treequel::HtmlLogFormatter.new( logger )
 		end
 	end
-
-
-	### Load the test config if it exists and return the specified +section+ of the config 
-	### as a Hash. If the file doesn't exist, or the specified section doesn't exist, an
-	### empty Hash will be returned.
-	def get_test_config( section )
-		return {} unless TESTING_CONFIG_FILE.exist?
-
-		Treequel.logger.debug "Trying to load test config: %s" % [ TESTING_CONFIG_FILE ]
-
-		begin
-			config = YAML.load_file( TESTING_CONFIG_FILE )
-			if config[ section ]
-				Treequel.logger.debug "Loaded the config, returning the %p section: %p." %
-					[ section, config[section] ]
-				return config[ section ]
-			else
-				Treequel.logger.debug "No %p section in the config (%p)." % [ section, config ]
-				return {}
-			end
-		rescue => err
-			Treequel.logger.error "Test config failed to load: %s: %s: %s" %
-				[ err.class.name, err.message, err.backtrace.first ]
-			return {}
-		end
-	end
-
 
 end
 
