@@ -22,6 +22,6 @@ additional_pkgfiles:
 dev_dependencies: {}
 
 authors: 
-  Michael Granger: ged@FaerieMUD.org
   Mahlon E. Smith: mahlon@martini.nu
+  Michael Granger: ged@FaerieMUD.org
 post_install_message: ""
