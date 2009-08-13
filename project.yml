@@ -1,4 +1,6 @@
 --- 
+excluded_pkgfiles: []
+
 rubyforge_project: treequel
 project_requirements: 
   ldap: ">=0"
@@ -15,11 +17,11 @@ project_dependencies:
 project_summary: An honest LDAP library
 project_name: Treequel
 version_file: treequel.rb
-additional_pkgfiles: []
-
+additional_pkgfiles: 
+- examples/**/*.{rb,erb,css,png}
 dev_dependencies: {}
 
 authors: 
-  Mahlon E. Smith: mahlon@martini.nu
   Michael Granger: ged@FaerieMUD.org
+  Mahlon E. Smith: mahlon@martini.nu
 post_install_message: ""

@@ -1,18 +1,27 @@
-= Treequel
+= Treequel - an honest LDAP library
 
-Treequel is an honest LDAP library. It is an attempt to remove the impedence
-mismatch of trying to treat LDAP as if it's a relational database, and instead
-embrace its hierarchical, free-form nature. Its philosophy is modeled after
-Sequel (http://sequel.rubyforge.org/), which does the same thing for relational
-databases.
+Treequel is an LDAP toolkit for Ruby. It is intended to allow quick, easy
+access to LDAP directories in a manner consistent with LDAP's hierarchical,
+free-form nature. 
 
-You can check out the current development source with Subversion from the
+It's inspired by and modeled after Sequel (http://sequel.rubyforge.org/), a
+kick-ass database library.
+
+== Examples
+
+Here are a few short examples to whet your appetite:
+
+  «paste some stuff from examples/»
+
+== Contributing
+
+You can check out the current development source with Mercurial from the
 following URL:
 
-    svn://deveiate.org/Treequel/trunk
+    http://repo.deveiate.org/Treequel
 
-You can submit bug reports, suggestions, and read more about future plans at the
-project page:
+You can submit bug reports, suggestions, and read more about future plans at
+the project page:
 
     http://deveiate.org/projects/Treequel
 
