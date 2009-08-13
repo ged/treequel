@@ -7,3 +7,4 @@ coverage/
 coverage\\.info
 ^coverage\.info$
 \.DS_Store
+~$

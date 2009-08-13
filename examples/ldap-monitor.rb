@@ -18,8 +18,9 @@ include ERB::Util
 # The real data is all in operational attributes, so fetch them by default
 Treequel::Branch.include_operational_attrs = true
 
-set :root, Pathname( __FILE__ ).dirname + 'ldap-monitor'
-
+configure do
+	set :root, Pathname( __FILE__ ).dirname + 'ldap-monitor'
+end
 
 before do
 	@monitor ||= Treequel.directory( 'ldap://localhost/cn=Monitor',
