@@ -52,13 +52,14 @@ class Treequel::Directory
 		OIDS::INTEGER_SYNTAX          => lambda {|string| Integer(string) },
 	}
 
-	# The order in which hash arguments should be extracted from Hash parameters to 
-	# #search
 	# :NOTE: the docs for #search_ext2 lie. The method signature is actually:
 	# rb_scan_args (argc, argv, "39",
 	#               &base, &scope, &filter, &attrs, &attrsonly,
 	#               &serverctrls, &clientctrls, &sec, &usec, &limit,
 	#               &s_attr, &s_proc)
+
+	# The order in which hash arguments should be extracted from Hash parameters to 
+	# #search
 	SEARCH_PARAMETER_ORDER = [
 		:selectattrs,
 		:attrsonly,
@@ -99,17 +100,17 @@ class Treequel::Directory
 	### Create a new Treequel::Directory with the given +options+. Options is a hash with one
 	### or more of the following key-value pairs:
 	###
-	### [host]::
+	### [:host]
 	###   The LDAP host to connect to.
-	### [port]::
+	### [:port]
 	###   The port to connect to.
-	### [connect_type]::
+	### [:connect_type]
 	###   The type of connection to establish. Must be one of +:plain+, +:tls+, or +:ssl+.
-	### [base_dn]::
+	### [:base_dn]
 	###   The base DN of the directory.
-	### [bind_dn]::
+	### [:bind_dn]
 	###   The DN of the user to bind as.
-	### [pass]::
+	### [:pass]
 	###   The password to use when binding.
 	def initialize( options={} )
 		options         = DEFAULT_OPTIONS.merge( options )

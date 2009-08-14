@@ -24,8 +24,8 @@ Here are a few short examples to whet your appetite:
   dir.filter( :ou => :hosts ).collection.filter( :ipHostNumber ).
     map( :ipHostNumber ).flatten
 
-  # Get all people in the directory in the form of a hash of email 
-  # addresses to names
+  # Get all people in the directory in the form of a hash of names 
+  # keyed by email addresses
   dir.ou( :people ).filter( :mail ).to_hash( :mail, :cn )
 
 More elaborate examples of real-world usage can be found in the examples/ 
