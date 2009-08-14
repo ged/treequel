@@ -79,6 +79,7 @@ COMMIT_MSG_FILE = 'commit-msg.txt'
 FILE_INDENT     = " " * 12
 LOG_INDENT      = " " * 3
 
+CHANGELOG     = BASEDIR + 'ChangeLog'
 EXTCONF       = EXTDIR + 'extconf.rb'
 
 ARTIFACTS_DIR = Pathname.new( CC_BUILD_ARTIFACTS )
@@ -306,7 +307,7 @@ CLEAN.include 'coverage'
 CLOBBER.include 'artifacts', 'coverage.info', PKGDIR
 
 ### Task: changelog
-file 'ChangeLog' do |task|
+file CHANGELOG do |task|
 	log "Updating #{task.name}"
 
 	changelog = make_changelog()
