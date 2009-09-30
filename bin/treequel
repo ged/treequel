@@ -1,21 +1,83 @@
 #!/usr/bin/env ruby
 
 require 'rubygems'
-require 'readline'
+
+require 'abbrev'
+require 'columnize'
+require 'digest/sha1'
 require 'logger'
+require 'open3'
+require 'optparse'
+require 'pathname'
+require 'readline'
 require 'shellwords'
 require 'tempfile'
-require 'digest/sha1'
-require 'abbrev'
+require 'terminfo'
+require 'termios'
+require 'uri'
+
 require 'treequel'
 require 'treequel/mixins'
 require 'treequel/constants'
 
 
 class Shell
-	include Treequel::Loggable,
+	include Readline,
+	        Columnize,
+	        Treequel::Loggable,
 	        Treequel::Constants::Patterns
 
+	# Set some ANSI escape code constants (Shamelessly stolen from Perl's
+	# Term::ANSIColor by Russ Allbery <rra@stanford.edu> and Zenin <zenin@best.com>
+	ANSI_ATTRIBUTES = {
+		'clear'      => 0,
+		'reset'      => 0,
+		'bold'       => 1,
+		'dark'       => 2,
+		'underline'  => 4,
+		'underscore' => 4,
+		'blink'      => 5,
+		'reverse'    => 7,
+		'concealed'  => 8,
+
+		'black'      => 30,   'on_black'   => 40, 
+		'red'        => 31,   'on_red'     => 41, 
+		'green'      => 32,   'on_green'   => 42, 
+		'yellow'     => 33,   'on_yellow'  => 43, 
+		'blue'       => 34,   'on_blue'    => 44, 
+		'magenta'    => 35,   'on_magenta' => 45, 
+		'cyan'       => 36,   'on_cyan'    => 46, 
+		'white'      => 37,   'on_white'   => 47
+	}
+
+
+	# Prompt text for #prompt_for_multiple_values
+	MULTILINE_PROMPT = <<-'EOF'
+	Enter one or more values for '%s'.
+	A blank line finishes input.
+	EOF
+
+	# Some ANSI codes for fancier stuff
+	CLEAR_TO_EOL       = "\e[K"
+	CLEAR_CURRENT_LINE = "\e[2K"
+
+	# Log levels
+	LOG_LEVELS = {
+		'debug' => Logger::DEBUG,
+		'info'  => Logger::INFO,
+		'warn'  => Logger::WARN,
+		'error' => Logger::ERROR,
+		'fatal' => Logger::FATAL,
+	}.freeze
+	LOG_LEVEL_NAMES = LOG_LEVELS.invert.freeze
+
+	# Command option parsers
+	OPTION_PARSERS = {}
+
+
+	#################################################################
+	###	I N S T A N C E   M E T H O D S
+	#################################################################
 
 	### Create a new shell that will traverse the directory at the specified +uri+.
 	def initialize( uri )
@@ -25,6 +87,8 @@ class Shell
 		@quit       = false
 		@dir        = Treequel.directory( @uri )
 		@currbranch = @dir
+		@columns    = TermInfo.screen_width
+		@rows       = TermInfo.screen_height
 
 		@commands = self.find_commands
 		@completions = @commands.abbrev
@@ -39,7 +103,9 @@ class Shell
 		self.setup_completion
 
 		until @quit
-			input = Readline.readline( @currbranch.dn + '> ', true )
+			$stderr.puts
+			prompt = make_prompt_string( @currbranch.dn + '> ' )
+			input = Readline.readline( prompt, true )
 			self.log.debug "Input is: %p" % [ input ]
 
 			# EOL makes the shell quit
@@ -83,13 +149,24 @@ class Shell
 	end
 
 
+	### Show the completions hash
+	def show_completions_command
+		$stderr.puts "Completions:", @completions.inspect
+	end
+
+
 	### Handle completion requests from Readline.
 	def completion_callback( input )
+		self.log.debug "Input completion: %p" % [ input ]
 		if command = @completions[ input ]
 			return []
 		end
 	end
 
+
+	#################################################################
+	###	C O M M A N D S
+	#################################################################
 
 	### Quit the shell.
 	def quit_command( *args )
@@ -97,15 +174,6 @@ class Shell
 		@quit = true
 	end
 
-
-	LOG_LEVELS = {
-		'debug' => Logger::DEBUG,
-		'info'  => Logger::INFO,
-		'warn'  => Logger::WARN,
-		'error' => Logger::ERROR,
-		'fatal' => Logger::FATAL,
-	}.freeze
-	LOG_LEVEL_NAMES = LOG_LEVELS.invert.freeze
 
 	### Set the logging level (if invoked with an argument) or display the current
 	### level (with no argument).
@@ -126,34 +194,64 @@ class Shell
 	end
 
 
-	### Show the completions hash
-	def show_completions_command
-		$stderr.puts "Completions:",
-			@completions.inspect
-	end
-
-
 	### Display LDIF for the specified RDNs.
 	def cat_command( *args )
 		args.each do |rdn|
-			branch = rdn.split( /\s*,\s*/ ).inject( @currbranch ) do |branch, dnpair|
-				attribute, value = dnpair.split( /\s*=\s*/, 2 )
-				branch.send( attribute, value )
-			end
-
-			$stdout.puts( branch.to_ldif )
+			branch = @currbranch.get_child( rdn )
+			$stderr.puts( format_ldif(branch.to_ldif) )
 		end
 	end
 
 
-	### List the children of the current branch.
+	### List the children of the branch specified by the given +rdn+, or the current branch if none
+	### are specified.
 	def ls_command( *args )
-		$stdout.puts *@currbranch.children.collect {|b| b.rdn }.sort
+		output = []
+
+		# No argument, just use the current branch
+		if args.empty?
+			output << [ @currbranch, @currbranch.children ]
+
+		# Otherwise, list each one specified
+		else
+			args.each do |rdn|
+				if branch = @currbranch.get_child( rdn )
+					output << [ branch, branch.children ]
+				else
+					error_message( "cannot access #{rdn}: no such entry" )
+				end
+			end
+		end
+
+		# Fetch each branch's children, sort them, format them in columns, and highlight them
+		output.each do |branch, children|
+			$stderr.puts '', colorize( :cyan ) { branch.dn }
+
+			entries = children.
+				collect {|b| b.rdn }.
+				sort_by {|rdn| rdn.downcase }
+			rows = columnize( entries, @columns, '  ' ).collect do |row|
+				row.gsub( /#{ATTRIBUTE_TYPE}=\s*\S+/ ) do |rdn|
+					format_rdn( rdn )
+				end
+			end
+
+			$stderr.puts( *rows )
+		end
+	end
+	OPTION_PARSERS[:ls] = OptionParser.new do |opts|
+		opts.banner = "Usage: ls [options] [DN]"
+
+		opts.on( "-l", "--long", FalseClass, "List in long format." ) do
+			options[:verbose] = v
+		end
 	end
 
 
 	### Change the current working DN to +rdn+.
 	def cdn_command( rdn, *args )
+		return self.parent_command if rdn == '..'
+
 		raise "invalid RDN %p" % [ rdn ] unless RELATIVE_DISTINGUISHED_NAME.match( rdn )
 
 		pairs = rdn.split( /\s*,\s*/ )
@@ -178,11 +276,43 @@ class Shell
 	### Edit the entry specified by +rdn+.
 	def edit_command( rdn, *args )
 		branch = @currbranch.get_child( rdn )
+		entryhash = nil
 
-		fn = Digest::SHA1.hexdigest( rdn )
-		tf = Tempfile.new( fn )
 		if branch.exists?
-			tf.print(  )
+			entryhash = branch.entry
+			newhash = edit_in_yaml( entryhash )
+			branch.merge( entryhash )
+		else
+			object_classes = prompt_for_multiple_values( "Entry objectClasses:" )
+			entryhash = branch.valid_attributes_hash( *object_classes )
+			newhash = edit_in_yaml( entryhash )
+			args = object_classes + [newhash]
+			branch.create( *args )
+		end
+
+		$stderr.puts "Saved #{rdn}."
+	end
+
+
+	### Bind as a user.
+	def bind_command( *args )
+		binddn = (args.first || prompt( "Bind DN" )) or
+			raise "Cancelled."
+		password = prompt_for_password()
+
+		# Try to turn a non-DN into a DN
+		user = nil
+		if binddn.index( '=' )
+			user = Treequel::Branch.new( @dir, binddn )
+		else
+			user = @dir.filter( :uid => binddn ).first
+		end
+
+		raise "No user found for %p" % [ binddn ] unless user.exists?
+
+		@dir.bind( user, password )
+
+		$stderr.puts "Bound as #{user}"
 	end
 
 
@@ -207,6 +337,29 @@ class Shell
 	private
 	#######
 
+	### Dump the specified +object+ to a file as YAML, invoke an editor on it, then undump the 
+	### result. If the file has changed, return the updated object, else returns +nil+.
+	def edit_in_yaml( object )
+		yaml = object.to_yaml
+
+		fn = Digest::SHA1.hexdigest( yaml )
+		tf = Tempfile.new( fn )
+
+		# $stderr.puts "Object as YAML is: ", yaml
+		tf.print( yaml )
+		tf.close
+
+		new_yaml = edit( tf.path )
+
+		if new_yaml == yaml
+			$stderr.puts "Unchanged."
+			return nil
+		else
+			return YAML.load( new_yaml )
+		end
+	end
+
+
 	### Create a command table that maps command abbreviations to the Method object that
 	### implements it.
 	def make_command_table( commands )
@@ -217,6 +370,347 @@ class Shell
 		end
 
 		return table
+	end
+
+
+	### Return the specified args as a string, quoting any that have a space.
+	def quotelist( *args )
+		return args.flatten.collect {|part| part =~ /\s/ ? part.inspect : part}
+	end
+
+
+	### Run the specified command +cmd+ with system(), failing if the execution
+	### fails.
+	def run_command( *cmd )
+		cmd.flatten!
+
+		if cmd.length > 1
+			self.log.debug( quotelist(*cmd) )
+		else
+			self.log.debug( cmd )
+		end
+
+		if $dryrun
+			self.log.error "(dry run mode)"
+		else
+			system( *cmd )
+			unless $?.success?
+				raise "Command failed: [%s]" % [cmd.join(' ')]
+			end
+		end
+	end
+
+
+	### Run the given +cmd+ with the specified +args+ without interpolation by the shell and
+	### return anything written to its STDOUT.
+	def read_command_output( cmd, *args )
+		self.log.debug "Reading output from: %s" % [ cmd, quotelist(cmd, *args) ]
+		output = IO.read( '|-' ) or exec cmd, *args
+		return output
+	end
+
+
+	### Run a subordinate Rake process with the same options and the specified +targets+.
+	def rake( *targets )
+		opts = ARGV.select {|arg| arg[0,1] == '-' }
+		args = opts + targets.map {|t| t.to_s }
+		run 'rake', '-N', *args
+	end
+
+
+	### Open a pipe to a process running the given +cmd+ and call the given block with it.
+	def pipeto( *cmd )
+		$DEBUG = true
+
+		cmd.flatten!
+		self.log.info( "Opening a pipe to: ", cmd.collect {|part| part =~ /\s/ ? part.inspect : part} ) 
+		if $dryrun
+			$stderr.puts "(dry run mode)"
+		else
+			open( '|-', 'w+' ) do |io|
+
+				# Parent
+				if io
+					yield( io )
+
+				# Child
+				else
+					exec( *cmd )
+					raise "Command failed: [%s]" % [cmd.join(' ')]
+				end
+			end
+		end
+	end
+
+
+	### Return the fully-qualified path to the specified +program+ in the PATH.
+	def which( program )
+		ENV['PATH'].split(/:/).
+			collect {|dir| Pathname.new(dir) + program }.
+			find {|path| path.exist? && path.executable? }
+	end
+
+
+	### Create a string that contains the ANSI codes specified and return it
+	def ansi_code( *attributes )
+		attributes.flatten!
+		attributes.collect! {|at| at.to_s }
+		# $stderr.puts "Returning ansicode for TERM = %p: %p" %
+		# 	[ ENV['TERM'], attributes ]
+		return '' unless /(?:vt10[03]|xterm(?:-color)?|linux|screen)/i =~ ENV['TERM']
+		attributes = ANSI_ATTRIBUTES.values_at( *attributes ).compact.join(';')
+
+		# $stderr.puts "  attr is: %p" % [attributes]
+		if attributes.empty? 
+			return ''
+		else
+			return "\e[%sm" % attributes
+		end
+	end
+
+
+	### Colorize the given +string+ with the specified +attributes+ and return it, handling 
+	### line-endings, color reset, etc.
+	def colorize( *args )
+		string = ''
+
+		if block_given?
+			string = yield
+		else
+			string = args.shift
+		end
+
+		ending = string[/(\s)$/] || ''
+		string = string.rstrip
+
+		return ansi_code( args.flatten ) + string + ansi_code( 'reset' ) + ending
+	end
+
+
+	### Output the specified <tt>msg</tt> as an ANSI-colored error message
+	### (white on red).
+	def error_message( msg, details='' )
+		$stderr.puts colorize( 'bold', 'white', 'on_red' ) { msg } + details
+	end
+	alias :error :error_message
+
+
+	### Highlight and embed a prompt control character in the given +string+ and return it.
+	def make_prompt_string( string )
+		return CLEAR_CURRENT_LINE + colorize( 'bold', 'yellow' ) { string + ' ' }
+	end
+
+
+	### Output the specified <tt>prompt_string</tt> as a prompt (in green) and
+	### return the user's input with leading and trailing spaces removed.  If a
+	### test is provided, the prompt will repeat until the test returns true.
+	### An optional failure message can also be passed in.
+	def prompt( prompt_string, failure_msg="Try again." ) # :yields: response
+		prompt_string.chomp!
+		prompt_string << ":" unless /\W$/.match( prompt_string )
+		response = nil
+
+		begin
+			prompt = make_prompt_string( prompt_string )
+			response = readline( prompt ) || ''
+			response.strip!
+			if block_given? && ! yield( response ) 
+				error_message( failure_msg + "\n\n" )
+				response = nil
+			end
+		end while response.nil?
+
+		return response
+	end
+
+
+	### Prompt the user with the given <tt>prompt_string</tt> via #prompt,
+	### substituting the given <tt>default</tt> if the user doesn't input
+	### anything.  If a test is provided, the prompt will repeat until the test
+	### returns true.  An optional failure message can also be passed in.
+	def prompt_with_default( prompt_string, default, failure_msg="Try again." )
+		response = nil
+
+		begin
+			default ||= '~'
+			response = prompt( "%s [%s]" % [ prompt_string, default ] )
+			response = default.to_s if !response.nil? && response.empty? 
+
+			self.log.debug "Validating response %p" % [ response ]
+
+			# the block is a validator.  We need to make sure that the user didn't
+			# enter '~', because if they did, it's nil and we should move on.  If
+			# they didn't, then call the block.
+			if block_given? && response != '~' && ! yield( response )
+				error_message( failure_msg + "\n\n" )
+				response = nil
+			end
+		end while response.nil?
+
+		return nil if response == '~'
+		return response
+	end
+
+
+	### Prompt for an array of values
+	def prompt_for_multiple_values( label, default=nil )
+	    $stderr.puts( MULTILINE_PROMPT % [label] )
+	    if default
+			$stderr.puts "Enter a single blank line to keep the default:\n  %p" % [ default ]
+		end
+
+	    results = []
+	    result = nil
+
+	    begin
+	        result = readline( make_prompt_string("> ") )
+			if result.nil? || result.empty?
+				results << default if default && results.empty?
+			else
+	        	results << result 
+			end
+	    end until result.nil? || result.empty?
+
+	    return results.flatten
+	end
+
+
+	### Turn echo and masking of input on/off. 
+	def noecho( masked=false )
+		rval = nil
+		term = Termios.getattr( $stdin )
+
+		begin
+			newt = term.dup
+			newt.c_lflag &= ~Termios::ECHO
+			newt.c_lflag &= ~Termios::ICANON if masked
+
+			Termios.tcsetattr( $stdin, Termios::TCSANOW, newt )
+
+			rval = yield
+		ensure
+			Termios.tcsetattr( $stdin, Termios::TCSANOW, term )
+		end
+
+		return rval
+	end
+
+
+	### Prompt the user for her password, turning off echo if the 'termios' module is
+	### available.
+	def prompt_for_password( prompt="Password: " )
+		rval = nil
+		noecho( true ) do
+			$stderr.print( prompt )
+			rval = ($stdin.gets || '').chomp
+		end
+		$stderr.puts
+		return rval
+	end
+
+
+	### Display a description of a potentially-dangerous task, and prompt
+	### for confirmation. If the user answers with anything that begins
+	### with 'y', yield to the block. If +abort_on_decline+ is +true+,
+	### any non-'y' answer will fail with an error message.
+	def ask_for_confirmation( description, abort_on_decline=true )
+		puts description
+
+		answer = prompt_with_default( "Continue?", 'n' ) do |input|
+			input =~ /^[yn]/i
+		end
+
+		if answer =~ /^y/i
+			return yield
+		elsif abort_on_decline
+			error "Aborted."
+			fail
+		end
+
+		return false
+	end
+	alias :prompt_for_confirmation :ask_for_confirmation
+
+
+	### Search line-by-line in the specified +file+ for the given +regexp+, returning the
+	### first match, or nil if no match was found. If the +regexp+ has any capture groups,
+	### those will be returned in an Array, else the whole matching line is returned.
+	def find_pattern_in_file( regexp, file )
+		rval = nil
+
+		File.open( file, 'r' ).each do |line|
+			if (( match = regexp.match(line) ))
+				rval = match.captures.empty? ? match[0] : match.captures
+				break
+			end
+		end
+
+		return rval
+	end
+
+
+	### Search line-by-line in the output of the specified +cmd+ for the given +regexp+,
+	### returning the first match, or nil if no match was found. If the +regexp+ has any 
+	### capture groups, those will be returned in an Array, else the whole matching line
+	### is returned.
+	def find_pattern_in_pipe( regexp, *cmd )
+		output = []
+
+		self.log.info( cmd.collect {|part| part =~ /\s/ ? part.inspect : part} ) 
+		Open3.popen3( *cmd ) do |stdin, stdout, stderr|
+			stdin.close
+
+			output << stdout.gets until stdout.eof?
+			output << stderr.gets until stderr.eof?
+		end
+
+		result = output.find { |line| regexp.match(line) } 
+		return $1 || result
+	end
+
+
+	### Invoke the user's editor on the given +filename+ and return the exit code
+	### from doing so.
+	def edit( filename )
+		editor = ENV['EDITOR'] || ENV['VISUAL'] || DEFAULT_EDITOR
+		system editor, filename.to_s
+		unless $?.success? || editor =~ /vim/i
+			raise "Editor exited with an error status (%d)" % [ $?.exitstatus ]
+		end
+		return File.read( filename )
+	end
+
+
+	### Make an easily-comparable version vector out of +ver+ and return it.
+	def vvec( ver )
+		return ver.split('.').collect {|char| char.to_i }.pack('N*')
+	end
+
+
+	### Return an ANSI-colored version of the given +rdn+ string.
+	def format_rdn( rdn )
+		rdn.split( /,/ ).collect do |rdn|
+			key, val = rdn.split( /\s*=\s*/, 2 )
+			colorize( :white ) { key } +
+				colorize( :bold, :black ) { '=' } +
+				colorize( :bold, :white ) { val }
+		end.join( colorize(',', :green) )
+	end
+
+
+	### Highlight LDIF and return it.
+	def format_ldif( ldif )
+		return ldif.gsub( /^([^:]*)(::?)\s*(.*)$/ ) do
+			key, sep, val = $1, $2, $3
+			case sep
+			when '::'
+				colorize( :cyan ) { key } + ':: ' + colorize( :dark, :white ) { val }
+			when ':'
+				colorize( :bold, :cyan ) { key } + ': ' + colorize( :dark, :white ) { val }
+			else
+				key + sep + ' ' + val
+			end
+		end
 	end
 
 end

@@ -207,9 +207,7 @@ class Treequel::Directory
 	end
 
 
-	### Bind as the specified +user_dn+ and +password+. If the optional +block+ is given,
-	### it will be executed with the receiver bound, then returned to its previous state when
-	### the block exits.
+	### Bind as the specified +user_dn+ and +password+.
 	def bind( user_dn, password )
 		user_dn = user_dn.dn if user_dn.respond_to?( :dn )
 
