@@ -23,7 +23,6 @@ require 'treequel/constants'
 
 class Shell
 	include Readline,
-	        Columnize,
 	        Treequel::Loggable,
 	        Treequel::Constants::Patterns
 
@@ -76,6 +75,20 @@ class Shell
 
 
 	#################################################################
+	###	C L A S S   M E T H O D S
+	#################################################################
+
+	### Create an option parser from the specified +block+ for the given +command+ and register
+	### it.
+	def self::set_options( command, &block )
+		oparser = OptionParser.new( "Help for #{command}", &block )
+		oparser.default_argv = []
+
+		OPTION_PARSERS[ command.to_sym ] = oparser
+	end
+
+
+	#################################################################
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
@@ -98,10 +111,12 @@ class Shell
 
 	### The command loop: run the shell until the user wants to quit
 	def run
-		$stderr.puts "Connected to %s" % [ @uri ]
+		message "Connected to %s" % [ @uri ]
 
+		# Set up the completion callback
 		self.setup_completion
 
+		# Run until something sets the quit flag
 		until @quit
 			$stderr.puts
 			prompt = make_prompt_string( @currbranch.dn + '> ' )
@@ -110,31 +125,57 @@ class Shell
 
 			# EOL makes the shell quit
 			if input.nil?
+				self.log.debug "EOL: setting quit flag"
 				@quit = true
 
+			# Blank input -- just reprompt
 			elsif input == ''
 				self.log.debug "No command. Re-displaying the prompt."
 
 			# Parse everything else into command + everything else
 			else
-				command, *args = Shellwords.shellwords( input )
-
-				begin
-					if meth = @command_table[ command ]
-						meth.call( *args )
-					else
-						self.handle_missing_command( command )
-					end
-				rescue => err
-					$stderr.puts "Error: %s" % [ err.message ]
-					err.backtrace.each do |frame|
-						self.log.debug "  " + frame
-					end
-				end
+				self.log.debug "Dispatching input: %p" % [ input ]
+				self.dispatch_command( input )
 			end
 		end
 
-		$stderr.puts "done."
+		message "done."
+	end
+
+
+	### Parse the specified +input+ into a command, options, and arguments and dispatch them
+	### to the appropriate command method.
+	def dispatch_command( input )
+		command, *args = Shellwords.shellwords( input )
+
+		# If it's a valid command, run it
+		if meth = @command_table[ command ]
+			full_command = @completions[ command ]
+
+			# If there's a registered optionparser for the command, use it to 
+			# split out options and arguments, then pass those to the command.
+			if oparser = OPTION_PARSERS[ full_command ]
+				self.log.debug "Got an option-parser for #{full_command}."
+				options, args = oparser.parse( args )
+				self.log.debug "  options=%p, args=%p" % [ options, args ]
+
+				meth.call( options, *args )
+
+			# ...otherwise just call it with all the args.
+			else
+				meth.call( *args )
+			end
+
+		# ...otherwise call the fallback handler
+		else
+			self.handle_missing_command( command )
+		end
+
+	rescue => err
+		error_message( err.class.name, err.message )
+		err.backtrace.each do |frame|
+			self.log.debug "  " + frame
+		end
 	end
 
 
@@ -149,17 +190,16 @@ class Shell
 	end
 
 
-	### Show the completions hash
-	def show_completions_command
-		$stderr.puts "Completions:", @completions.inspect
-	end
-
-
 	### Handle completion requests from Readline.
 	def completion_callback( input )
 		self.log.debug "Input completion: %p" % [ input ]
 		if command = @completions[ input ]
-			return []
+			self.log.debug "  completion: %p" % [ command ]
+			return [ command ]
+		else
+			possible_completions = @commands.grep( /^#{Regexp.quote(input)}/ ).sort
+			self.log.debug "  possible completions: %p" % [ possible_completions ]
+			return possible_completions
 		end
 	end
 
@@ -168,9 +208,40 @@ class Shell
 	###	C O M M A N D S
 	#################################################################
 
+	### Show the completions hash
+	def show_completions_command
+		message "Completions:", @completions.inspect
+	end
+
+
+	### Show help text for the specified command, or a list of all available commands 
+	### if none is specified.
+	def help_command( *args )
+		if args.empty?
+			$stderr.puts
+			message colorize( "Available commands", :bold, :white ),
+				*columnize(@commands)
+		else
+			cmd = args.shift.to_sym
+			if oparser = OPTION_PARSERS[ cmd ]
+				self.log.debug "Setting summary width to: %p" % [ @columns ]
+				oparser.summary_width = @columns
+				output = oparser.to_s.sub( /^(.*?)\n/ ) do |match|
+					colorize( :bold, :white ) { match }
+				end
+
+				$stderr.puts
+				message( output )
+			else
+				error_message( "No help for '#{cmd}'" )
+			end
+		end
+	end
+
+
 	### Quit the shell.
 	def quit_command( *args )
-		$stderr.puts "Okay, exiting."
+		message "Okay, exiting."
 		@quit = true
 	end
 
@@ -182,13 +253,13 @@ class Shell
 		if newlevel
 			if LOG_LEVELS.key?( newlevel )
 				Treequel.logger.level = LOG_LEVELS[ newlevel ]
-				$stderr.puts "Set log level to: %s" % [ newlevel ]
+				message "Set log level to: %s" % [ newlevel ]
 			else
 				levelnames = LOG_LEVEL_NAMES.keys.sort.join(', ')
 				raise "Invalid log level %p: valid values are:\n   %s" % [ newlevel, levelnames ]
 			end
 		else
-			$stderr.puts "Log level is currently: %s" %
+			message "Log level is currently: %s" %
 				[ LOG_LEVEL_NAMES[Treequel.logger.level] ]
 		end
 	end
@@ -198,7 +269,7 @@ class Shell
 	def cat_command( *args )
 		args.each do |rdn|
 			branch = @currbranch.get_child( rdn )
-			$stderr.puts( format_ldif(branch.to_ldif) )
+			message( format_ldif(branch.to_ldif) )
 		end
 	end
 
@@ -225,26 +296,27 @@ class Shell
 
 		# Fetch each branch's children, sort them, format them in columns, and highlight them
 		output.each do |branch, children|
-			$stderr.puts '', colorize( :cyan ) { branch.dn }
+			message '', colorize( :cyan ) { branch.dn }
 
 			entries = children.
 				collect {|b| b.rdn }.
 				sort_by {|rdn| rdn.downcase }
-			rows = columnize( entries, @columns, '  ' ).collect do |row|
+			rows = columnize( entries ).collect do |row|
 				row.gsub( /#{ATTRIBUTE_TYPE}=\s*\S+/ ) do |rdn|
 					format_rdn( rdn )
 				end
 			end
 
-			$stderr.puts( *rows )
+			message( *rows )
 		end
 	end
-	OPTION_PARSERS[:ls] = OptionParser.new do |opts|
-		opts.banner = "Usage: ls [options] [DN]"
+	set_options :ls do |opts|
+		opts.banner = "ls [OPTIONS] [DNs]"
 
 		opts.on( "-l", "--long", FalseClass, "List in long format." ) do
 			options[:verbose] = v
 		end
+
 	end
 
 
@@ -290,7 +362,7 @@ class Shell
 			branch.create( *args )
 		end
 
-		$stderr.puts "Saved #{rdn}."
+		message "Saved #{rdn}."
 	end
 
 
@@ -312,21 +384,22 @@ class Shell
 
 		@dir.bind( user, password )
 
-		$stderr.puts "Bound as #{user}"
+		message "Bound as #{user}"
 	end
 
 
 	### Handle a command from the user that doesn't exist.
 	def handle_missing_command( *args )
 		command = args.shift || '(testing?)'
-		$stderr.puts "Unknown command %p" % [ command ]
-		$stderr.puts "Known commands: ", '  ' + @commands.join(', ')
+		message "Unknown command %p" % [ command ]
+		message "Known commands: ", '  ' + @commands.join(', ')
 	end
 
 
 	### Find methods that implement commands and return them in a sorted Array.
 	def find_commands
 		return self.methods.
+			collect {|mname| mname.to_s }.
 			grep( /^(\w+)_command$/ ).
 			collect {|mname| mname[/^(\w+)_command$/, 1] }.
 			sort
@@ -345,14 +418,14 @@ class Shell
 		fn = Digest::SHA1.hexdigest( yaml )
 		tf = Tempfile.new( fn )
 
-		# $stderr.puts "Object as YAML is: ", yaml
+		# message "Object as YAML is: ", yaml
 		tf.print( yaml )
 		tf.close
 
 		new_yaml = edit( tf.path )
 
 		if new_yaml == yaml
-			$stderr.puts "Unchanged."
+			message "Unchanged."
 			return nil
 		else
 			return YAML.load( new_yaml )
@@ -425,7 +498,7 @@ class Shell
 		cmd.flatten!
 		self.log.info( "Opening a pipe to: ", cmd.collect {|part| part =~ /\s/ ? part.inspect : part} ) 
 		if $dryrun
-			$stderr.puts "(dry run mode)"
+			message "(dry run mode)"
 		else
 			open( '|-', 'w+' ) do |io|
 
@@ -455,12 +528,12 @@ class Shell
 	def ansi_code( *attributes )
 		attributes.flatten!
 		attributes.collect! {|at| at.to_s }
-		# $stderr.puts "Returning ansicode for TERM = %p: %p" %
+		# message "Returning ansicode for TERM = %p: %p" %
 		# 	[ ENV['TERM'], attributes ]
 		return '' unless /(?:vt10[03]|xterm(?:-color)?|linux|screen)/i =~ ENV['TERM']
 		attributes = ANSI_ATTRIBUTES.values_at( *attributes ).compact.join(';')
 
-		# $stderr.puts "  attr is: %p" % [attributes]
+		# message "  attr is: %p" % [attributes]
 		if attributes.empty? 
 			return ''
 		else
@@ -484,6 +557,12 @@ class Shell
 		string = string.rstrip
 
 		return ansi_code( args.flatten ) + string + ansi_code( 'reset' ) + ending
+	end
+
+
+	### Output the specified message +parts+.
+	def message( *parts )
+		$stderr.puts( *parts )
 	end
 
 
@@ -554,9 +633,9 @@ class Shell
 
 	### Prompt for an array of values
 	def prompt_for_multiple_values( label, default=nil )
-	    $stderr.puts( MULTILINE_PROMPT % [label] )
+	    message( MULTILINE_PROMPT % [label] )
 	    if default
-			$stderr.puts "Enter a single blank line to keep the default:\n  %p" % [ default ]
+			message "Enter a single blank line to keep the default:\n  %p" % [ default ]
 		end
 
 	    results = []
@@ -713,6 +792,12 @@ class Shell
 		end
 	end
 
+
+	### Return the specified +entries+ as an Array of span-sorted columns fit to the
+	### current terminal width.
+	def columnize( *entries )
+		return Columnize.columnize( entries.flatten, @columns, '  ' )
+	end
 end
 
 
