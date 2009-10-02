@@ -8,6 +8,7 @@ require 'digest/sha1'
 require 'logger'
 require 'open3'
 require 'optparse'
+require 'ostruct'
 require 'pathname'
 require 'readline'
 require 'shellwords'
@@ -150,16 +151,18 @@ class Shell
 
 		# If it's a valid command, run it
 		if meth = @command_table[ command ]
-			full_command = @completions[ command ]
+			full_command = @completions[ command ].to_sym
 
 			# If there's a registered optionparser for the command, use it to 
 			# split out options and arguments, then pass those to the command.
 			if oparser = OPTION_PARSERS[ full_command ]
 				self.log.debug "Got an option-parser for #{full_command}."
-				options, args = oparser.parse( args )
-				self.log.debug "  options=%p, args=%p" % [ options, args ]
 
-				meth.call( options, *args )
+				options = OpenStruct.new
+				cmdargs = oparser.parse( args )
+				self.log.debug "  options=%p, args=%p" % [ options, cmdargs ]
+
+				meth.call( options, *cmdargs )
 
 			# ...otherwise just call it with all the args.
 			else
@@ -276,7 +279,7 @@ class Shell
 
 	### List the children of the branch specified by the given +rdn+, or the current branch if none
 	### are specified.
-	def ls_command( *args )
+	def ls_command( options, *args )
 		output = []
 
 		# No argument, just use the current branch
@@ -298,14 +301,17 @@ class Shell
 		output.each do |branch, children|
 			message '', colorize( :cyan ) { branch.dn }
 
-			entries = children.
-				collect {|b| b.rdn }.
-				sort_by {|rdn| rdn.downcase }
-			rows = columnize( entries ).collect do |row|
-				row.gsub( /#{ATTRIBUTE_TYPE}=\s*\S+/ ) do |rdn|
-					format_rdn( rdn )
+			if options.longform
+
+			else
+				entries = children.
+					collect {|b| b.rdn }.
+					sort_by {|rdn| rdn.downcase }
+				rows = columnize( entries ).collect do |row|
+					row.gsub( /#{ATTRIBUTE_TYPE}=\s*\S+/ ) do |rdn|
+						format_rdn( rdn )
+					end
 				end
-			end
 
 			message( *rows )
 		end
@@ -314,7 +320,7 @@ class Shell
 		opts.banner = "ls [OPTIONS] [DNs]"
 
 		opts.on( "-l", "--long", FalseClass, "List in long format." ) do
-			options[:verbose] = v
+			options.longform = true
 		end
 
 	end
