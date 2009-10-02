@@ -22,7 +22,24 @@ require 'treequel/mixins'
 require 'treequel/constants'
 
 
-class Shell
+### Monkeypatch the option parser to allow it to be used to set values in an object that doesn't
+### exist when the parser options are defined.
+class OptionParser
+
+	### Parse the given args and return an OpenStruct and an array of arguments
+	def parse_split( *args )
+		options = OpenStruct.new
+		optfunc = lambda {|name,val| options[name] = val }
+		nonopts = []
+		parse_in_order( args, optfunc ) {|arg| nonopts << arg }
+		return options, nonopts
+	end
+
+end
+
+
+### The Treequel shell.
+class Treequel::Shell
 	include Readline,
 	        Treequel::Loggable,
 	        Treequel::Constants::Patterns
@@ -40,13 +57,13 @@ class Shell
 		'reverse'    => 7,
 		'concealed'  => 8,
 
-		'black'      => 30,   'on_black'   => 40, 
-		'red'        => 31,   'on_red'     => 41, 
-		'green'      => 32,   'on_green'   => 42, 
-		'yellow'     => 33,   'on_yellow'  => 43, 
-		'blue'       => 34,   'on_blue'    => 44, 
-		'magenta'    => 35,   'on_magenta' => 45, 
-		'cyan'       => 36,   'on_cyan'    => 46, 
+		'black'      => 30,   'on_black'   => 40,
+		'red'        => 31,   'on_red'     => 41,
+		'green'      => 32,   'on_green'   => 42,
+		'yellow'     => 33,   'on_yellow'  => 43,
+		'blue'       => 34,   'on_blue'    => 44,
+		'magenta'    => 35,   'on_magenta' => 45,
+		'cyan'       => 36,   'on_cyan'    => 46,
 		'white'      => 37,   'on_white'   => 47
 	}
 
@@ -158,8 +175,7 @@ class Shell
 			if oparser = OPTION_PARSERS[ full_command ]
 				self.log.debug "Got an option-parser for #{full_command}."
 
-				options = OpenStruct.new
-				cmdargs = oparser.parse( args )
+				options, cmdargs = oparser.parse_split( args )
 				self.log.debug "  options=%p, args=%p" % [ options, cmdargs ]
 
 				meth.call( options, *cmdargs )
@@ -302,7 +318,7 @@ class Shell
 			message '', colorize( :cyan ) { branch.dn }
 
 			if options.longform
-
+				error_message "Long form not yet implemented."
 			else
 				entries = children.
 					collect {|b| b.rdn }.
@@ -312,6 +328,7 @@ class Shell
 						format_rdn( rdn )
 					end
 				end
+			end
 
 			message( *rows )
 		end
@@ -804,11 +821,12 @@ class Shell
 	def columnize( *entries )
 		return Columnize.columnize( entries.flatten, @columns, '  ' )
 	end
-end
+
+end # class Treequel::Shell
 
 
 if __FILE__ == $0
 	ldapuri = URI( ARGV.shift || 'ldap://localhost' )
-	Shell.new( ldapuri ).run
+	Treequel::Shell.new( ldapuri ).run
 end
 
