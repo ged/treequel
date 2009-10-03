@@ -22,23 +22,18 @@ require 'treequel/mixins'
 require 'treequel/constants'
 
 
-### Monkeypatch the option parser to allow it to be used to set values in an object that doesn't
-### exist when the parser options are defined.
-class OptionParser
+### Monkeypatch for resetting an OpenStruct's state.
+class OpenStruct
 
-	### Parse the given args and return an OpenStruct and an array of arguments
-	def parse_split( *args )
-		options = OpenStruct.new
-		optfunc = lambda {|name,val| options[name] = val }
-		nonopts = []
-		parse_in_order( args, optfunc ) {|arg| nonopts << arg }
-		return options, nonopts
+	### Clear all defined fields and values.
+	def clear
+		@table.clear
 	end
 
 end
 
 
-### The Treequel shell.
+# The Treequel shell.
 class Treequel::Shell
 	include Readline,
 	        Treequel::Loggable,
@@ -97,12 +92,15 @@ class Treequel::Shell
 	#################################################################
 
 	### Create an option parser from the specified +block+ for the given +command+ and register
-	### it.
+	### it. Many thanks to apeiros and dominikh on #Ruby-Pro for the ideas behind this.
 	def self::set_options( command, &block )
-		oparser = OptionParser.new( "Help for #{command}", &block )
+	    options = OpenStruct.new
+		oparser = OptionParser.new( "Help for #{command}" ) do |o|
+			yield( o, options )
+		end
 		oparser.default_argv = []
 
-		OPTION_PARSERS[ command.to_sym ] = oparser
+		OPTION_PARSERS[command.to_sym] = [oparser, options]
 	end
 
 
@@ -113,6 +111,7 @@ class Treequel::Shell
 	### Create a new shell that will traverse the directory at the specified +uri+.
 	def initialize( uri )
 		Treequel.logger.level = Logger::WARN
+		Treequel::Branch.include_operational_attrs = true
 
 		@uri        = uri
 		@quit       = false
@@ -153,7 +152,7 @@ class Treequel::Shell
 			# Parse everything else into command + everything else
 			else
 				self.log.debug "Dispatching input: %p" % [ input ]
-				self.dispatch_command( input )
+				self.dispatch_cmd( input )
 			end
 		end
 
@@ -163,7 +162,7 @@ class Treequel::Shell
 
 	### Parse the specified +input+ into a command, options, and arguments and dispatch them
 	### to the appropriate command method.
-	def dispatch_command( input )
+	def dispatch_cmd( input )
 		command, *args = Shellwords.shellwords( input )
 
 		# If it's a valid command, run it
@@ -172,13 +171,15 @@ class Treequel::Shell
 
 			# If there's a registered optionparser for the command, use it to 
 			# split out options and arguments, then pass those to the command.
-			if oparser = OPTION_PARSERS[ full_command ]
+			if OPTION_PARSERS.key?( full_command )
+				oparser, options = OPTION_PARSERS[ full_command ]
 				self.log.debug "Got an option-parser for #{full_command}."
 
-				options, cmdargs = oparser.parse_split( args )
+				cmdargs = oparser.parse( args )
 				self.log.debug "  options=%p, args=%p" % [ options, cmdargs ]
-
 				meth.call( options, *cmdargs )
+
+				options.clear
 
 			# ...otherwise just call it with all the args.
 			else
@@ -187,7 +188,7 @@ class Treequel::Shell
 
 		# ...otherwise call the fallback handler
 		else
-			self.handle_missing_command( command )
+			self.handle_missing_cmd( command )
 		end
 
 	rescue => err
@@ -242,7 +243,8 @@ class Treequel::Shell
 				*columnize(@commands)
 		else
 			cmd = args.shift.to_sym
-			if oparser = OPTION_PARSERS[ cmd ]
+			if OPTION_PARSERS.key?( cmd )
+				oparser, _ = OPTION_PARSERS[ cmd ]
 				self.log.debug "Setting summary width to: %p" % [ @columns ]
 				oparser.summary_width = @columns
 				output = oparser.to_s.sub( /^(.*?)\n/ ) do |match|
@@ -315,10 +317,35 @@ class Treequel::Shell
 
 		# Fetch each branch's children, sort them, format them in columns, and highlight them
 		output.each do |branch, children|
-			message '', colorize( :cyan ) { branch.dn }
+			rows = nil
+			message colorize( :underscore, :cyan ) { "total %d" % [children.length] }
 
+			# -rw-r--r--   2 mgranger staff   979 2009-07-27 11:55 Rakefile.local
+			# 
+			# modifiersName: cn=admin,dc=laika,dc=com
+			# hasSubordinates: TRUE
+			# modifyTimestamp: 20090520232650Z
+			# structuralObjectClass: organizationalUnit
 			if options.longform
-				error_message "Long form not yet implemented."
+				oclen = children.map do |branch|
+					branch.include_operational_attrs = true
+					branch[:structuralObjectClass].length
+				end.max
+				moddnlen = children.map do |branch|
+					branch[:modifiersName].length
+				end.max
+
+				rows = children.
+					sort_by {|branch| branch.rdn.downcase }.
+					collect do |branch|
+						"%#{oclen}s  %-#{moddnlen}s  %s  %s%s" % [
+							branch[:structuralObjectClass],
+							branch[:modifiersName],
+							branch[:modifyTimestamp].strftime('%Y-%m-%d %H:%M'),
+							format_rdn( branch.rdn ),
+							branch[:hasSubordinates] ? '/' : ''
+						]
+					end
 			else
 				entries = children.
 					collect {|b| b.rdn }.
@@ -333,10 +360,10 @@ class Treequel::Shell
 			message( *rows )
 		end
 	end
-	set_options :ls do |opts|
-		opts.banner = "ls [OPTIONS] [DNs]"
+	set_options :ls do |oparser, options|
+		oparser.banner = "ls [OPTIONS] [DNs]"
 
-		opts.on( "-l", "--long", FalseClass, "List in long format." ) do
+		oparser.on( "-l", "--long", FalseClass, "List in long format." ) do 
 			options.longform = true
 		end
 
@@ -344,7 +371,12 @@ class Treequel::Shell
 
 
 	### Change the current working DN to +rdn+.
-	def cdn_command( rdn, *args )
+	def cdn_command( rdn=nil, *args )
+		if rdn.nil?
+			@currbranch = @dir.base
+			return
+		end
+
 		return self.parent_command if rdn == '..'
 
 		raise "invalid RDN %p" % [ rdn ] unless RELATIVE_DISTINGUISHED_NAME.match( rdn )
@@ -412,7 +444,7 @@ class Treequel::Shell
 
 
 	### Handle a command from the user that doesn't exist.
-	def handle_missing_command( *args )
+	def handle_missing_cmd( *args )
 		command = args.shift || '(testing?)'
 		message "Unknown command %p" % [ command ]
 		message "Known commands: ", '  ' + @commands.join(', ')
@@ -592,7 +624,7 @@ class Treequel::Shell
 	### Output the specified <tt>msg</tt> as an ANSI-colored error message
 	### (white on red).
 	def error_message( msg, details='' )
-		$stderr.puts colorize( 'bold', 'white', 'on_red' ) { msg } + details
+		$stderr.puts colorize( 'bold', 'white', 'on_red' ) { msg } + ' ' + details
 	end
 	alias :error :error_message
 

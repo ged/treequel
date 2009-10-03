@@ -35,7 +35,7 @@ module Treequel
 	VERSION = '1.0.0'
 
 	# VCS revision
-	REVISION = %q$rev: e352bc86498a $
+	REVISION = %q$rev$
 
 	# Load the logformatters and some other stuff first
 	require 'treequel/constants'

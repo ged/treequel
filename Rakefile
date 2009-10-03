@@ -38,6 +38,8 @@ require 'rake'
 require 'rake/testtask'
 require 'rake/packagetask'
 require 'rake/clean'
+
+# require 'metric_fu'
 # require 'rake/191_compat.rb'
 
 $dryrun = false
