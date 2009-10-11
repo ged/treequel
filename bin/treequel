@@ -137,6 +137,7 @@ class Treequel::Shell
 		until @quit
 			$stderr.puts
 			prompt = make_prompt_string( @currbranch.dn + '> ' )
+			Readline.basic_word_break_characters = ''
 			input = Readline.readline( prompt, true )
 			self.log.debug "Input is: %p" % [ input ]
 
@@ -298,17 +299,17 @@ class Treequel::Shell
 	### List the children of the branch specified by the given +rdn+, or the current branch if none
 	### are specified.
 	def ls_command( options, *args )
-		output = []
+		targets = []
 
 		# No argument, just use the current branch
 		if args.empty?
-			output << [ @currbranch, @currbranch.children ]
+			targets << @currbranch
 
 		# Otherwise, list each one specified
 		else
 			args.each do |rdn|
 				if branch = @currbranch.get_child( rdn )
-					output << [ branch, branch.children ]
+					targets << branch
 				else
 					error_message( "cannot access #{rdn}: no such entry" )
 				end
@@ -316,48 +317,12 @@ class Treequel::Shell
 		end
 
 		# Fetch each branch's children, sort them, format them in columns, and highlight them
-		output.each do |branch, children|
-			rows = nil
-			message colorize( :underscore, :cyan ) { "total %d" % [children.length] }
-
-			# -rw-r--r--   2 mgranger staff   979 2009-07-27 11:55 Rakefile.local
-			# 
-			# modifiersName: cn=admin,dc=laika,dc=com
-			# hasSubordinates: TRUE
-			# modifyTimestamp: 20090520232650Z
-			# structuralObjectClass: organizationalUnit
+		targets.each do |branch|
 			if options.longform
-				oclen = children.map do |branch|
-					branch.include_operational_attrs = true
-					branch[:structuralObjectClass].length
-				end.max
-				moddnlen = children.map do |branch|
-					branch[:modifiersName].length
-				end.max
-
-				rows = children.
-					sort_by {|branch| branch.rdn.downcase }.
-					collect do |branch|
-						"%#{oclen}s  %-#{moddnlen}s  %s  %s%s" % [
-							branch[:structuralObjectClass],
-							branch[:modifiersName],
-							branch[:modifyTimestamp].strftime('%Y-%m-%d %H:%M'),
-							format_rdn( branch.rdn ),
-							branch[:hasSubordinates] ? '/' : ''
-						]
-					end
+				message self.make_longform_ls_output( branch, options )
 			else
-				entries = children.
-					collect {|b| b.rdn }.
-					sort_by {|rdn| rdn.downcase }
-				rows = columnize( entries ).collect do |row|
-					row.gsub( /#{ATTRIBUTE_TYPE}=\s*\S+/ ) do |rdn|
-						format_rdn( rdn )
-					end
-				end
+				message self.make_shortform_ls_output( branch, options )
 			end
-
-			message( *rows )
 		end
 	end
 	set_options :ls do |oparser, options|
@@ -367,6 +332,57 @@ class Treequel::Shell
 			options.longform = true
 		end
 
+	end
+
+
+	### Generate long-form output lines for the 'ls' command for the given +branch+.
+	def make_longform_ls_output( branch, options )
+		rows = []
+		children = branch.children
+		rows << colorize( :underscore, :cyan ) { "total %d" % [children.length] }
+
+		# Calcuate column widths
+		oclen = children.map do |branch|
+			branch.include_operational_attrs = true
+			branch[:structuralObjectClass].length
+		end.max
+		moddnlen = children.map do |branch|
+			branch[:modifiersName].length
+		end.max
+
+		children.
+			sort_by {|branch| branch.rdn.downcase }.
+			each do |branch|
+				# -rw-r--r--   2 mgranger staff   979 2009-07-27 11:55 Rakefile.local
+				# 
+				# modifiersName: cn=admin,dc=laika,dc=com
+				# hasSubordinates: TRUE
+				# modifyTimestamp: 20090520232650Z
+				# structuralObjectClass: organizationalUnit
+				rows << "%#{oclen}s  %#{moddnlen}s  %s  %s%s" % [
+					branch[:structuralObjectClass],
+					branch[:modifiersName],
+					branch[:modifyTimestamp].strftime('%Y-%m-%d %H:%M'),
+					format_rdn( branch.rdn ),
+					branch[:hasSubordinates] ? '/' : ''
+				]
+			end
+
+		return rows
+	end
+
+
+	### Generate short-form 'ls' output for the given +branch+ and return it.
+	def make_shortform_ls_output( branch, options )
+		entries = branch.children.
+			collect {|b| b.rdn }.
+			sort_by {|rdn| rdn.downcase }
+		return columnize( entries ).
+			collect do |row|
+				row.gsub( /#{ATTRIBUTE_TYPE}=\s*\S+/ ) do |rdn|
+					format_rdn( rdn )
+				end
+			end
 	end
 
 
