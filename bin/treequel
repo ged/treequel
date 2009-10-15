@@ -86,6 +86,12 @@ class Treequel::Shell
 	# Command option parsers
 	OPTION_PARSERS = {}
 
+	# Path to the default history file
+	HISTORY_FILE = Pathname( "~/.treequel.history" )
+
+	# Number of items to store in history by default
+	DEFAULT_HISTORY_SIZE = 100
+
 
 	#################################################################
 	###	C L A S S   M E T H O D S
@@ -133,6 +139,9 @@ class Treequel::Shell
 		# Set up the completion callback
 		self.setup_completion
 
+		# Load saved command-line history
+		self.read_history
+
 		# Run until something sets the quit flag
 		until @quit
 			$stderr.puts
@@ -156,6 +165,9 @@ class Treequel::Shell
 				self.dispatch_cmd( input )
 			end
 		end
+
+		message "\nSaving history...\n"
+		self.save_history
 
 		message "done."
 	end
@@ -211,16 +223,55 @@ class Treequel::Shell
 	end
 
 
+	### Read command line history from HISTORY_FILE
+	def read_history
+		histfile = HISTORY_FILE.expand_path
+
+		if histfile.exist?
+			lines = histfile.readlines.collect {|line| line.chomp }
+			self.log.debug "Read %d saved history commands from %s." % [ lines.nitems, histfile ]
+			Readline::HISTORY.push( *lines )
+		else
+			self.log.debug "History file '%s' was empty or non-existant." % [ histfile ]
+		end
+	end
+
+
+	### Save command line history to HISTORY_FILE
+	def save_history
+		histfile = HISTORY_FILE.expand_path
+
+		lines = Readline::HISTORY.to_a.reverse.uniq.reverse
+		lines = lines[ -DEFAULT_HISTORY_SIZE, DEFAULT_HISTORY_SIZE ] if
+			lines.nitems > DEFAULT_HISTORY_SIZE
+
+		self.log.debug "Saving %d history lines to %s." % [ lines.length, histfile ]
+
+		histfile.open( File::WRONLY|File::CREAT|File::TRUNC ) do |ofh|
+			ofh.puts( *lines )
+		end
+	end
+
+
 	### Handle completion requests from Readline.
 	def completion_callback( input )
 		self.log.debug "Input completion: %p" % [ input ]
-		if command = @completions[ input ]
-			self.log.debug "  completion: %p" % [ command ]
-			return [ command ]
-		else
+		parts = Shellwords.shellwords( input )
+
+		# If there aren't any arguments, it's command completion
+		if parts.length == 1
+			# One completion means it's an unambiguous match, so just complete it.
 			possible_completions = @commands.grep( /^#{Regexp.quote(input)}/ ).sort
 			self.log.debug "  possible completions: %p" % [ possible_completions ]
 			return possible_completions
+		else
+			incomplete = parts.pop
+			possible_completions = @currbranch.children.
+				collect {|br| br.rdn }.grep( /^#{Regexp.quote(incomplete)}/ ).sort
+
+			return possible_completions.map do |lastpart|
+				parts.join( ' ' ) + ' ' + lastpart
+			end
 		end
 	end
 
@@ -437,9 +488,54 @@ class Treequel::Shell
 	end
 
 
+	### Remove the entry specified by +rdn+.
+	def rm_command( options, *rdns )
+		branches = rdns.collect {|rdn| @currbranch.get_child(rdn) }
+		if missing = branches.find {|br| !br.exists? }
+			error_message "Entry #{missing.dn} does not exist."
+			return
+		end
+
+		msg = "About to delete the following entries:\n" +
+			branches.collect {|br| "  #{br.dn}" }.join("\n")
+
+		ask_for_confirmation( msg ) do
+			branches.each do |branch|
+				branch.delete
+				message "Deleted #{branch.dn}." 
+			end
+		end
+	end
+	set_options :rm do |oparser, options|
+		oparser.banner = "rm [DNs]"
+	end
+
+
+	### Find entries that match the given filter_clauses.
+	def grep_command( options, *filter_clauses )
+		branchset = filter_clauses.inject( @currbranch ) do |branch, clause|
+			branch.filter( clause )
+		end
+
+		message "Searching for entries that match '#{branchset.to_s}'"
+
+		entries = branchset.all
+		output = columnize( entries ).
+			collect do |row|
+				row.gsub( /#{ATTRIBUTE_TYPE}=\s*\S+/ ) do |rdn|
+					format_rdn( rdn )
+				end
+			end
+		message( output )
+	end
+	set_options :grep do |oparser, options|
+		oparser.banner = "grep [OPTIONS] FILTER"
+	end
+
+
 	### Bind as a user.
-	def bind_command( *args )
-		binddn = (args.first || prompt( "Bind DN" )) or
+	def bind_command( options, *args )
+		binddn = (args.first || prompt( "Bind DN/UID" )) or
 			raise "Cancelled."
 		password = prompt_for_password()
 
@@ -450,12 +546,14 @@ class Treequel::Shell
 		else
 			user = @dir.filter( :uid => binddn ).first
 		end
-
 		raise "No user found for %p" % [ binddn ] unless user.exists?
 
 		@dir.bind( user, password )
-
 		message "Bound as #{user}"
+	end
+	set_options :bind do |oparser, options|
+		oparser.banner = "bind [BIND_DN or UID]"
+		oparser.separator "If you don't specify a BIND_DN, you will be prompted for it."
 	end
 
 
