@@ -38,8 +38,6 @@ require 'rake'
 require 'rake/testtask'
 require 'rake/packagetask'
 require 'rake/clean'
-
-# require 'metric_fu'
 # require 'rake/191_compat.rb'
 
 $dryrun = false
@@ -81,7 +79,6 @@ COMMIT_MSG_FILE = 'commit-msg.txt'
 FILE_INDENT     = " " * 12
 LOG_INDENT      = " " * 3
 
-CHANGELOG     = BASEDIR + 'ChangeLog'
 EXTCONF       = EXTDIR + 'extconf.rb'
 
 ARTIFACTS_DIR = Pathname.new( CC_BUILD_ARTIFACTS )
@@ -159,8 +156,8 @@ require RAKE_TASKDIR + 'helpers.rb'
 
 # Define some constants that depend on the 'svn' tasklib
 if hg = which( 'hg' )
-	id = IO.read('|-') or exec hg, 'id', '-q'
-	PKG_BUILD = id.chomp
+	id = IO.read('|-') or exec hg, 'id', '-n'
+	PKG_BUILD = id.chomp[ /^[[:xdigit:]]+/ ]
 else
 	PKG_BUILD = 0
 end
@@ -255,14 +252,6 @@ GEMSPEC   = Gem::Specification.new do |gem|
 		gem.add_runtime_dependency( name, version )
 	end
 
-	# # Developmental dependencies don't work as of RubyGems 1.2.0
-	# unless Gem::Version.new( Gem::RubyGemsVersion ) <= Gem::Version.new( "1.2.0" )
-	# 	DEVELOPMENT_DEPENDENCIES.each do |name, version|
-	# 		version = '>= 0' if version.length.zero?
-	# 		gem.add_development_dependency( name, version )
-	# 	end
-	# end
-	
 	REQUIREMENTS.each do |name, version|
 		gem.requirements << [ name, version ].compact.join(' ')
 	end
@@ -270,7 +259,7 @@ end
 
 $trace = Rake.application.options.trace ? true : false
 $dryrun = Rake.application.options.dryrun ? true : false
-
+$include_dev_dependencies = false
 
 # Load any remaining task libraries
 RAKE_TASKLIBS.each do |tasklib|
@@ -303,13 +292,12 @@ task :default  => [:clean, :local, :spec, :rdoc, :package]
 ### Task the local Rakefile can append to -- no-op by default
 task :local
 
-
 ### Task: clean
 CLEAN.include 'coverage'
 CLOBBER.include 'artifacts', 'coverage.info', PKGDIR
 
 ### Task: changelog
-file CHANGELOG do |task|
+file 'ChangeLog' do |task|
 	log "Updating #{task.name}"
 
 	changelog = make_changelog()

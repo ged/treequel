@@ -971,8 +971,6 @@ class Treequel::Shell
 end # class Treequel::Shell
 
 
-if __FILE__ == $0
-	ldapuri = URI( ARGV.shift || 'ldap://localhost' )
-	Treequel::Shell.new( ldapuri ).run
-end
+ldapuri = URI( ARGV.shift || 'ldap://localhost' )
+Treequel::Shell.new( ldapuri ).run
 
