@@ -948,7 +948,7 @@ class Treequel::Shell
 
 	### Highlight LDIF and return it.
 	def format_ldif( ldif )
-		return ldif.gsub( /^([^:]*)(::?)\s*(.*)$/ ) do
+		return ldif.gsub( /^(\S[^:]*)(::?)\s*(.*)$/ ) do
 			key, sep, val = $1, $2, $3
 			case sep
 			when '::'
