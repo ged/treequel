@@ -490,7 +490,7 @@ class Treequel::Filter
 				Treequel::Filter.new( :or, subfilters )
 			else
 				Treequel.logger.debug "    value is a scalar; creating a single filter"
-				Treequel::Filter.new( key, expr )
+				Treequel::Filter.new([ key.to_sym, expr ])
 			end
 		end
 

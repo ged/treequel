@@ -71,6 +71,10 @@ describe Treequel::Filter do
 		Treequel::Filter.new( :uid, 'bigthung' ).to_s.should == '(uid=bigthung)'
 	end
 
+	it "parses a String+value hash as a simple item equal filter" do
+		Treequel::Filter.new( 'uid' => 'bigthung' ).to_s.should == '(uid=bigthung)'
+	end
+
 	it "parses a single-item Symbol+value hash as a simple item equal filter" do
 		Treequel::Filter.new({ :uidNumber => 3036 }).to_s.should == '(uidNumber=3036)'
 	end
