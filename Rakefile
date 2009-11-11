@@ -187,8 +187,7 @@ PROJECT_SCPPUBURL = "#{PROJECT_HOST}:#{PROJECT_PUBDIR}"
 PROJECT_SCPDOCURL = "#{PROJECT_HOST}:#{PROJECT_DOCDIR}"
 
 # Rubyforge stuff
-RUBYFORGE_GROUP = 'deveiate'
-RUBYFORGE_PROJECT = 'treequel'
+RUBYFORGE_PROJECT = 'deveiate'
 
 # Gem dependencies: gemname => version
 DEPENDENCIES = {

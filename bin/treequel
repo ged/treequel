@@ -37,31 +37,8 @@ end
 class Treequel::Shell
 	include Readline,
 	        Treequel::Loggable,
+	        Treequel::ANSIColorUtilities,
 	        Treequel::Constants::Patterns
-
-	# Set some ANSI escape code constants (Shamelessly stolen from Perl's
-	# Term::ANSIColor by Russ Allbery <rra@stanford.edu> and Zenin <zenin@best.com>
-	ANSI_ATTRIBUTES = {
-		'clear'      => 0,
-		'reset'      => 0,
-		'bold'       => 1,
-		'dark'       => 2,
-		'underline'  => 4,
-		'underscore' => 4,
-		'blink'      => 5,
-		'reverse'    => 7,
-		'concealed'  => 8,
-
-		'black'      => 30,   'on_black'   => 40,
-		'red'        => 31,   'on_red'     => 41,
-		'green'      => 32,   'on_green'   => 42,
-		'yellow'     => 33,   'on_yellow'  => 43,
-		'blue'       => 34,   'on_blue'    => 44,
-		'magenta'    => 35,   'on_magenta' => 45,
-		'cyan'       => 36,   'on_cyan'    => 46,
-		'white'      => 37,   'on_white'   => 47
-	}
-
 
 	# Prompt text for #prompt_for_multiple_values
 	MULTILINE_PROMPT = <<-'EOF'
@@ -117,6 +94,7 @@ class Treequel::Shell
 	### Create a new shell that will traverse the directory at the specified +uri+.
 	def initialize( uri )
 		Treequel.logger.level = Logger::WARN
+		Treequel.logger.formatter = Treequel::ColorLogFormatter.new( Treequel.logger )
 		Treequel::Branch.include_operational_attrs = true
 
 		@uri        = uri
@@ -134,6 +112,7 @@ class Treequel::Shell
 
 	### The command loop: run the shell until the user wants to quit
 	def run
+		@original_tty_settings = IO.read( '|-' ) or exec 'stty', '-g'
 		message "Connected to %s" % [ @uri ]
 
 		# Set up the completion callback
@@ -146,7 +125,6 @@ class Treequel::Shell
 		until @quit
 			$stderr.puts
 			prompt = make_prompt_string( @currbranch.dn + '> ' )
-			Readline.basic_word_break_characters = ''
 			input = Readline.readline( prompt, true )
 			self.log.debug "Input is: %p" % [ input ]
 
@@ -170,6 +148,8 @@ class Treequel::Shell
 		self.save_history
 
 		message "done."
+	ensure
+		system( 'stty', @original_tty_settings )
 	end
 
 
@@ -220,6 +200,7 @@ class Treequel::Shell
 	def setup_completion
 		Readline.completion_proc = self.method( :completion_callback ).to_proc
 		Readline.completer_word_break_characters = ''
+		Readline.basic_word_break_characters = ''
 	end
 
 
@@ -266,12 +247,16 @@ class Treequel::Shell
 			return possible_completions
 		else
 			incomplete = parts.pop
+			self.log.debug "  the incomplete bit is: %p" % [ incomplete ]
 			possible_completions = @currbranch.children.
-				collect {|br| br.rdn }.grep( /^#{Regexp.quote(incomplete)}/ ).sort
+				collect {|br| br.rdn }.grep( /^#{Regexp.quote(incomplete)}/i ).sort
 
-			return possible_completions.map do |lastpart|
+			possible_completions.map! do |lastpart|
 				parts.join( ' ' ) + ' ' + lastpart
 			end
+
+			self.log.debug "  possible (argument) completions: %p" % [ possible_completions ]
+			return possible_completions
 		end
 	end
 
@@ -468,33 +453,57 @@ class Treequel::Shell
 
 
 	### Edit the entry specified by +rdn+.
-	def edit_command( rdn, *args )
+	def edit_command( options, rdn )
 		branch = @currbranch.get_child( rdn )
 		entryhash = nil
 
-		if branch.exists?
-			entryhash = branch.entry
-			newhash = edit_in_yaml( entryhash )
-			branch.merge( entryhash )
-		else
+		if options.newentry
+			raise "#{branch.dn} already exists." if branch.exists?
 			object_classes = prompt_for_multiple_values( "Entry objectClasses:" )
 			entryhash = branch.valid_attributes_hash( *object_classes )
 			newhash = edit_in_yaml( entryhash )
 			args = object_classes + [newhash]
 			branch.create( *args )
+		else
+			raise "#{branch.dn}: no such entry. Did you mean to create it with -n?" unless
+			 	branch.exists?
+			entryhash = branch.entry
+			newhash = edit_in_yaml( entryhash )
+			branch.merge( entryhash )
 		end
 
 		message "Saved #{rdn}."
+	end
+	set_options :edit do |oparser, options|
+		oparser.banner = "edit [OPTIONS] DN"
+
+		oparser.on( "-n", "--new", FalseClass, 
+			"Create a new entry instead of editing an existing one." ) do 
+			options.newentry = true
+		end
+
+	end
+
+
+	### Convert the given +patterns+ to branchsets relative to the current branch and return
+	### them. This is used to map shell arguments like 'cn=*', 'Hosts', 'cn=dav*' into
+	### branchsets that will find matching entries.
+	def convert_to_branchsets( *patterns )
+		self.log.debug "Turning %d patterns into branchsets." % [ patterns.length ]
+		return patterns.collect do |pat|
+			key, val = pat.split( /\s*=\s*/, 2 )
+			self.log.debug "  making a filter out of %p => %p" % [ key, val ]
+			@currbranch.filter( key => val )
+		end
 	end
 
 
 	### Remove the entry specified by +rdn+.
 	def rm_command( options, *rdns )
-		branches = rdns.collect {|rdn| @currbranch.get_child(rdn) }
-		if missing = branches.find {|br| !br.exists? }
-			error_message "Entry #{missing.dn} does not exist."
-			return
-		end
+		branchsets = self.convert_to_branchsets( *rdns )
+		coll = Treequel::BranchCollection.new( *branchsets )
+
+		branches = coll.all
 
 		msg = "About to delete the following entries:\n" +
 			branches.collect {|br| "  #{br.dn}" }.join("\n")
@@ -582,16 +591,15 @@ class Treequel::Shell
 	### Dump the specified +object+ to a file as YAML, invoke an editor on it, then undump the 
 	### result. If the file has changed, return the updated object, else returns +nil+.
 	def edit_in_yaml( object )
-		yaml = object.to_yaml
+		yaml = object.to_yaml.gsub( /^\s*$/, '' )
+		filename = Digest::SHA1.hexdigest( yaml )
+		tempfile = Tempfile.new( filename )
 
-		fn = Digest::SHA1.hexdigest( yaml )
-		tf = Tempfile.new( fn )
+		message "Object as YAML is: ", yaml
+		tempfile.print( yaml )
+		tempfile.close
 
-		# message "Object as YAML is: ", yaml
-		tf.print( yaml )
-		tf.close
-
-		new_yaml = edit( tf.path )
+		new_yaml = edit( tempfile.path )
 
 		if new_yaml == yaml
 			message "Unchanged."
@@ -690,42 +698,6 @@ class Treequel::Shell
 		ENV['PATH'].split(/:/).
 			collect {|dir| Pathname.new(dir) + program }.
 			find {|path| path.exist? && path.executable? }
-	end
-
-
-	### Create a string that contains the ANSI codes specified and return it
-	def ansi_code( *attributes )
-		attributes.flatten!
-		attributes.collect! {|at| at.to_s }
-		# message "Returning ansicode for TERM = %p: %p" %
-		# 	[ ENV['TERM'], attributes ]
-		return '' unless /(?:vt10[03]|xterm(?:-color)?|linux|screen)/i =~ ENV['TERM']
-		attributes = ANSI_ATTRIBUTES.values_at( *attributes ).compact.join(';')
-
-		# message "  attr is: %p" % [attributes]
-		if attributes.empty? 
-			return ''
-		else
-			return "\e[%sm" % attributes
-		end
-	end
-
-
-	### Colorize the given +string+ with the specified +attributes+ and return it, handling 
-	### line-endings, color reset, etc.
-	def colorize( *args )
-		string = ''
-
-		if block_given?
-			string = yield
-		else
-			string = args.shift
-		end
-
-		ending = string[/(\s)$/] || ''
-		string = string.rstrip
-
-		return ansi_code( args.flatten ) + string + ansi_code( 'reset' ) + ending
 	end
 
 

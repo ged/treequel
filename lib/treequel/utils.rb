@@ -6,7 +6,7 @@ require 'bigdecimal'
 require 'date'
 
 require 'treequel'
-# require 'treequel/constants'
+require 'treequel/mixins'
 
 
 module Treequel # :nodoc:
@@ -86,6 +86,81 @@ module Treequel # :nodoc:
 		end
 	end # class LogFormatter
 
+
+	# 
+	# A ANSI-colorized formatter for Logger instances.
+	# 
+	# == Usage
+	# 
+	#   require 'treequel/utils'
+	#   Treequel.logger.formatter = Treequel::ColorLogFormatter.new( Treequel.logger )
+	# 
+	# == Version
+	#
+	#  $Id$
+	#
+	# == Authors
+	#
+	# * Michael Granger <ged@FaerieMUD.org>
+	#
+	# :include: LICENSE
+	#
+	#--
+	#
+	# Please see the file LICENSE in the 'docs' directory for licensing details.
+	#
+	class ColorLogFormatter < Logger::Formatter
+		extend Treequel::ANSIColorUtilities
+
+		# Color settings
+		LEVEL_FORMATS = {
+			:debug => colorize( :bold, :black ) {"[%1$s.%2$06d %3$d/%4$s] %5$5s {%6$s} -- %7$s\n"},
+			:info  => colorize( :normal ) {"[%1$s.%2$06d %3$d/%4$s] %5$5s -- %7$s\n"},
+			:warn  => colorize( :bold, :yellow ) {"[%1$s.%2$06d %3$d/%4$s] %5$5s -- %7$s\n"},
+			:error => colorize( :red ) {"[%1$s.%2$06d %3$d/%4$s] %5$5s -- %7$s\n"},
+			:fatal => colorize( :bold, :red, :on_white ) {"[%1$s.%2$06d %3$d/%4$s] %5$5s -- %7$s\n"},
+		}
+
+
+		### Initialize the formatter with a reference to the logger so it can check for log level.
+		def initialize( logger, settings={} ) # :notnew:
+			settings = LEVEL_FORMATS.merge( settings )
+
+			@logger   = logger
+			@settings = settings
+
+			super()
+		end
+
+		######
+		public
+		######
+
+		# The Logger object associated with the formatter
+		attr_accessor :logger
+
+		# The formats, by level
+		attr_accessor :settings
+
+
+		### Log using the format associated with the severity
+		def call( severity, time, progname, msg )
+			args = [
+				time.strftime( '%Y-%m-%d %H:%M:%S' ),                         # %1$s
+				time.usec,                                                    # %2$d
+				Process.pid,                                                  # %3$d
+				Thread.current == Thread.main ? 'main' : Thread.object_id,    # %4$s
+				severity,                                                     # %5$s
+				progname,                                                     # %6$s
+				msg                                                           # %7$s
+			]
+
+			return self.settings[ severity.downcase.to_sym ] % args
+		end
+	end # class LogFormatter
+
+
+	
 
 	# 
 	# An alternate formatter for Logger instances that outputs +div+ HTML
