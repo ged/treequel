@@ -14,6 +14,9 @@ project_pubhost: deveiate
 project_homepage: http://deveiate.org/projects/Treequel
 project_dependencies: 
   ruby-ldap: ">= 0.9.9"
+  columnize: ">= 0.3.1"
+  ruby-terminfo: ">= 0.1.1"
+  termios: ">= 0.9.4"
 project_summary: An honest LDAP library
 project_name: Treequel
 version_file: treequel.rb

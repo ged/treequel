@@ -33,6 +33,14 @@ rescue LoadError
 	end
 end
 
+begin
+	require 'rubyfems'
+rescue LoadError
+	module Gem
+		class Specification; end
+	end
+end
+
 require 'rbconfig'
 require 'rake'
 require 'rake/testtask'
@@ -156,7 +164,7 @@ require RAKE_TASKDIR + 'helpers.rb'
 
 # Define some constants that depend on the 'svn' tasklib
 if hg = which( 'hg' )
-	id = IO.read('|-') or exec hg, 'id', '-n'
+	id = IO.read('|-') or exec hg.to_s, 'id', '-n'
 	PKG_BUILD = id.chomp[ /^[[:xdigit:]]+/ ]
 else
 	PKG_BUILD = 0
@@ -187,10 +195,14 @@ PROJECT_SCPPUBURL = "#{PROJECT_HOST}:#{PROJECT_PUBDIR}"
 PROJECT_SCPDOCURL = "#{PROJECT_HOST}:#{PROJECT_DOCDIR}"
 
 # Rubyforge stuff
-RUBYFORGE_PROJECT = 'deveiate'
+RUBYFORGE_GROUP = 'deveiate'
+RUBYFORGE_PROJECT = 'treequel'
 
 # Gem dependencies: gemname => version
 DEPENDENCIES = {
+	'termios' => '>= 0.9.4',
+	'columnize' => '>= 0.3.1',
+	'ruby-terminfo' => '>= 0.1.1',
 	'ruby-ldap' => '>= 0.9.9',
 }
 
@@ -206,6 +218,7 @@ DEVELOPMENT_DEPENDENCIES = {
 	'termios'     => '>= 0',
 	'text-format' => '>= 1.0.0',
 	'tmail'       => '>= 1.2.3.1',
+	'diff-lcs'    => '>= 1.1.2',
 }
 
 # Non-gem requirements: packagename => version
@@ -226,9 +239,11 @@ GEMSPEC   = Gem::Specification.new do |gem|
   	  ].join( "\n" )
 
 	gem.authors           = "Michael Granger, Mahlon E. Smith"
-	gem.email             = ["ged@FaerieMUD.org", "mahlon@martini.nu"]
+	gem.email             = ["mahlon@martini.nu", "ged@FaerieMUD.org"]
 	gem.homepage          = 'http://deveiate.org/projects/Treequel'
-	gem.rubyforge_project = RUBYFORGE_PROJECT
+
+	# Apparently this isn't actually the 'project'?
+	gem.rubyforge_project = RUBYFORGE_GROUP
 
 	gem.has_rdoc          = true
 	gem.rdoc_options      = RDOC_OPTIONS
