@@ -332,6 +332,17 @@ class Treequel::Branchset
 	end
 
 
+	### Return a clone of the receiving Branchset that will return instances of the
+	### give +branchclass+ instead of Treequel::Branch objects. This may be a subclass
+	### of Treequel::Branch, but it doesn't need to be as long as they duck-type the 
+	### same.
+	def as( branchclass )
+		newset = self.clone
+		newset.branch = branchclass.new( self.branch.directory, self.branch.dn )
+		return newset
+	end
+	
+
 	# Hiding this until we figure out how to do server-side ordering (i.e., 
 	# http://tools.ietf.org/html/rfc2891)
 

@@ -346,6 +346,17 @@ describe Treequel::Branchset do
 			@branchset.all.should == [:matching_branches]
 		end
 
+		# 
+		# #as
+		# 
+		it "can create a new branchset cloned from itself that will return instances of a different branch class" do
+			subclass = Class.new( Treequel::Branch )
+			@branch.stub!( :directory ).and_return( :the_directory )
+			@branch.stub!( :dn ).and_return( TEST_HOSTS_DN )
+			newset = @branchset.as( subclass )
+			newset.branch.should be_an_instance_of( subclass )
+		end
+
 	end
 
 	describe "instance with no filter, and scope set to 'onelevel'" do

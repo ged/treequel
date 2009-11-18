@@ -38,7 +38,8 @@ class Treequel::Shell
 	include Readline,
 	        Treequel::Loggable,
 	        Treequel::ANSIColorUtilities,
-	        Treequel::Constants::Patterns
+	        Treequel::Constants::Patterns,
+	        Treequel::HashUtilities
 
 	# Prompt text for #prompt_for_multiple_values
 	MULTILINE_PROMPT = <<-'EOF'
@@ -95,7 +96,6 @@ class Treequel::Shell
 	def initialize( uri )
 		Treequel.logger.level = Logger::WARN
 		Treequel.logger.formatter = Treequel::ColorLogFormatter.new( Treequel.logger )
-		Treequel::Branch.include_operational_attrs = true
 
 		@uri        = uri
 		@quit       = false
@@ -149,7 +149,7 @@ class Treequel::Shell
 
 		message "done."
 	ensure
-		system( 'stty', @original_tty_settings )
+		system( 'stty', @original_tty_settings.chomp )
 	end
 
 
@@ -332,6 +332,15 @@ class Treequel::Shell
 	end
 
 
+	### Display YAML for the specified RDNs.
+	def yaml_command( *args )
+		args.each do |rdn|
+			branch = @currbranch.get_child( rdn )
+			message( branch_as_yaml(branch) )
+		end
+	end
+
+
 	### List the children of the branch specified by the given +rdn+, or the current branch if none
 	### are specified.
 	def ls_command( options, *args )
@@ -453,36 +462,36 @@ class Treequel::Shell
 
 
 	### Edit the entry specified by +rdn+.
-	def edit_command( options, rdn )
-		branch = @currbranch.get_child( rdn )
-		entryhash = nil
-
-		if options.newentry
-			raise "#{branch.dn} already exists." if branch.exists?
-			object_classes = prompt_for_multiple_values( "Entry objectClasses:" )
-			entryhash = branch.valid_attributes_hash( *object_classes )
-			newhash = edit_in_yaml( entryhash )
-			args = object_classes + [newhash]
-			branch.create( *args )
-		else
-			raise "#{branch.dn}: no such entry. Did you mean to create it with -n?" unless
-			 	branch.exists?
-			entryhash = branch.entry
-			newhash = edit_in_yaml( entryhash )
-			branch.merge( entryhash )
-		end
-
-		message "Saved #{rdn}."
-	end
-	set_options :edit do |oparser, options|
-		oparser.banner = "edit [OPTIONS] DN"
-
-		oparser.on( "-n", "--new", FalseClass, 
-			"Create a new entry instead of editing an existing one." ) do 
-			options.newentry = true
-		end
-
-	end
+	#def edit_command( options, rdn )
+	#	branch = @currbranch.get_child( rdn )
+	#	entryhash = nil
+	#
+	#	if options.newentry
+	#		raise "#{branch.dn} already exists." if branch.exists?
+	#		object_classes = prompt_for_multiple_values( "Entry objectClasses:" )
+	#		entryhash = branch.valid_attributes_hash( *object_classes )
+	#		newhash = edit_in_yaml( entryhash )
+	#		args = object_classes + [newhash]
+	#		branch.create( *args )
+	#	else
+	#		raise "#{branch.dn}: no such entry. Did you mean to create it with -n?" unless
+	#		 	branch.exists?
+	#		entryhash = branch.entry
+	#		newhash = edit_in_yaml( entryhash )
+	#		branch.merge( entryhash )
+	#	end
+	#
+	#	message "Saved #{rdn}."
+	#end
+	#set_options :edit do |oparser, options|
+	#	oparser.banner = "edit [OPTIONS] DN"
+	#
+	#	oparser.on( "-n", "--new", FalseClass, 
+	#		"Create a new entry instead of editing an existing one." ) do 
+	#		options.newentry = true
+	#	end
+	#
+	#end
 
 
 	### Convert the given +patterns+ to branchsets relative to the current branch and return
@@ -591,7 +600,7 @@ class Treequel::Shell
 	### Dump the specified +object+ to a file as YAML, invoke an editor on it, then undump the 
 	### result. If the file has changed, return the updated object, else returns +nil+.
 	def edit_in_yaml( object )
-		yaml = object.to_yaml.gsub( /^\s*$/, '' )
+		yaml = branch_as_yaml( object )
 		filename = Digest::SHA1.hexdigest( yaml )
 		tempfile = Tempfile.new( filename )
 
@@ -607,6 +616,29 @@ class Treequel::Shell
 		else
 			return YAML.load( new_yaml )
 		end
+	end
+
+
+	### Return the specified Treequel::Branch object as YAML. If +include_operational+ is true,
+	### include the entry's operational attributes.
+	def branch_as_yaml( object, include_operational=false )
+		object.include_operational_attrs = include_operational
+
+		# Make sure the displayed entry has the MUST attributes
+		entryhash = stringify_keys( object.must_attributes_hash )
+		entryhash.merge!( object.entry )
+		dn = entryhash.delete( 'dn' )
+		
+		yaml = entryhash.to_yaml
+		yaml[ 5, 0 ] = "# #{dn}\n"
+		
+		# Make comments out of MAY attributes that are unset
+		mayhash = stringify_keys( object.may_attributes_hash )
+		self.log.debug "MAY hash is: %p" % [ mayhash ]
+		mayhash.delete_if {|attrname,val| entryhash.key?(attrname) }
+		yaml << mayhash.to_yaml[5..-1].gsub( /\n\n/, "\n" ).gsub( /^/, '# ' )
+
+		return yaml
 	end
 
 
