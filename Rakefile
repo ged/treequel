@@ -34,7 +34,7 @@ rescue LoadError
 end
 
 begin
-	require 'rubyfems'
+	require 'rubygems'
 rescue LoadError
 	module Gem
 		class Specification; end
