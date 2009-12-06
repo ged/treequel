@@ -101,7 +101,7 @@ module Treequel
 			when Hash
 				options.merge!( arg )
 			else
-				raise ArgumentError, "unknown directory option %p: expected URL or Hash"
+				raise ArgumentError, "unknown directory option %p: expected URL or Hash" % [ arg ]
 			end
 		end
 
