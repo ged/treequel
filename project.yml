@@ -1,30 +1,37 @@
 --- 
 excluded_pkgfiles: []
 
-rubyforge_project: treequel
+project_pubdir: /usr/local/www/public/code
+project_pubhost: deveiate
+project_homepage: http://deveiate.org/projects/Treequel
 project_requirements: 
   ldap: ">=0"
-project_pubdir: /usr/local/www/public/code
+release_smtphost: mail.faeriemud.org
 project_description: |-
   A library for interacting with LDAP (modeled after Sequel). It is an attempt to remove
   the impedence mismatch of trying to treat LDAP as if it's a relational database, and
   instead embrace its hierarchical, free-form nature.
-rubyforge_group: deveiate
-project_pubhost: deveiate
-project_homepage: http://deveiate.org/projects/Treequel
+release_mailto: Ruby-Talk List <ruby-talk@ruby-lang.org>
 project_dependencies: 
   ruby-ldap: ">= 0.9.9"
-  columnize: ">= 0.3.1"
-  ruby-terminfo: ">= 0.1.1"
-  termios: ">= 0.9.4"
 project_summary: An honest LDAP library
-project_name: Treequel
 version_file: treequel.rb
 additional_pkgfiles: 
 - examples/**/*.{rb,erb,css,png}
-dev_dependencies: {}
+dev_dependencies: 
+  columnize: ">= 0.3.1"
+  termios: ">= 0.9.4"
+  ruby-terminfo: ">= 0.1.1"
+  diff-lcs: ">= 1.1.2"
 
 authors: 
   Mahlon E. Smith: mahlon@martini.nu
   Michael Granger: ged@FaerieMUD.org
-post_install_message: ""
+post_install_message: |-
+  If you want to use the included 'treequel' LDAP shell, you'll need to install
+  the following libraries as well:
+      - termios
+      - ruby-terminfo
+      - columnize
+      - diff-lcs
+project_name: Treequel

@@ -1,5 +1,6 @@
 #!/usr/bin/ruby
 
+require 'uri'
 require 'ldap'
 require 'treequel'
 
@@ -593,6 +594,96 @@ module Treequel::Constants
 				#{RELATIVE_DISTINGUISHED_NAME}
 			)*
 		}x
+
+
+		# 
+		# LDIF (RFC 2849)
+		# 
+
+		# attr-type-chars          = ALPHA / DIGIT / "-"
+		# opt-char                 = attr-type-chars
+		#   same as KEYCHAR
+		LDIF_ATTR_TYPE_CHARS = KEYCHAR
+		LDIF_OPT_CHAR = KEYCHAR
+
+		# option                   = 1*opt-char
+		LDIF_ATTRTYPE_OPTION = %r{ #{LDIF_OPT_CHAR}+ }x
+
+		# options                  = option / (option ";" options)
+		LDIF_ATTRTYPE_OPTIONS = %r{
+			#{LDIF_ATTRTYPE_OPTION}
+			(?: ; #{LDIF_ATTRTYPE_OPTION} )*
+		}x
+
+		# AttributeType            = ldap-oid / (ALPHA *(attr-type-chars))
+		LDIF_ATTRIBUTE_TYPE = %r{
+			#{NUMERICOID}
+			|
+			[#{ALPHA}] #{LDIF_ATTR_TYPE_CHARS}*
+		}x
+
+		# AttributeDescription     = AttributeType [";" options]
+		#                            ; Definition taken from [4]
+		LDIF_ATTRIBUTE_DESCRIPTION = %r{
+			#{LDIF_ATTRIBUTE_TYPE}
+			(?: ; #{LDIF_ATTRTYPE_OPTIONS} )?
+		}x
+
+		# SPACE                    = %x20  ; ASCII SP, space
+		# FILL                     = *SPACE
+		FILL = '\x20'
+
+		# SAFE-CHAR                = %x01-09 / %x0B-0C / %x0E-7F
+		#                            ; any value <= 127 decimal except NUL, LF,
+		#                            ; and CR
+		LDIF_SAFE_CHAR = %r{[\x01-\x09\x0b-\x0c\x0e-\x7f]}
+
+		# SAFE-INIT-CHAR           = %x01-09 / %x0B-0C / %x0E-1F /
+		#                            %x21-39 / %x3B / %x3D-7F
+		#                            ; any value <= 127 except NUL, LF, CR,
+		#                            ; SPACE, colon (":", ASCII 58 decimal)
+		#                            ; and less-than ("<" , ASCII 60 decimal)
+		LDIF_SAFE_INIT_CHAR = %r{[\x01-\x09\x0B-\x0C\x0E-\x1F\x21-\x39\x3B\x3D-\x7F]}
+
+		# SAFE-STRING              = [SAFE-INIT-CHAR *SAFE-CHAR]
+		LDIF_SAFE_STRING = %r{
+			#{LDIF_SAFE_INIT_CHAR}
+			#{LDIF_SAFE_CHAR}*
+		}x
+
+
+		# BASE64-CHAR              = %x2B / %x2F / %x30-39 / %x3D / %x41-5A /
+		#                            %x61-7A
+		#                            ; +, /, 0-9, =, A-Z, and a-z
+		#                            ; as specified in [5]
+		BASE64_CHAR = %r{[\x2B\x2F\x30-\x39\x3D\x41-\x5A\x61-\x7A]}
+
+		# BASE64-STRING            = [*(BASE64-CHAR)]
+		BASE64_STRING = %r{ #{BASE64_CHAR}* }x
+
+		# value-spec               = ":" (    FILL 0*1(SAFE-STRING) /
+		#                                 ":" FILL (BASE64-STRING) /
+		#                                 "<" FILL url)
+		LDIF_VALUE_SPEC = %r{
+			:
+			(
+				#{FILL} #{LDIF_SAFE_STRING}+
+				|
+				: #{FILL} #{BASE64_STRING}
+				|
+				< #{FILL} #{URI::REGEXP::URI_REF}
+			)
+		}x
+
+		# SEP                      = (CR LF / LF)
+		SEP = %r{\r?\n}
+
+		# attrval-spec             = AttributeDescription value-spec SEP
+		LDIF_ATTRVAL_SPEC = %r{
+			(#{LDIF_ATTRIBUTE_DESCRIPTION})
+			#{LDIF_VALUE_SPEC}
+			#{SEP}
+		}xm
 
 
 	end # module Patterns

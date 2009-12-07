@@ -4,6 +4,7 @@ require 'rubygems'
 
 require 'abbrev'
 require 'columnize'
+require 'diff/lcs'
 require 'digest/sha1'
 require 'logger'
 require 'open3'
@@ -335,8 +336,10 @@ class Treequel::Shell
 
 			branch = @currbranch.get_child( rdn )
 			branch.include_operational_attrs = true if extended
+			ldifstring = branch.to_ldif
+			self.log.debug "LDIF: #{ldifstring.dump}"
 
-			message( format_ldif(branch.to_ldif) )
+			message( format_ldif(ldifstring) )
 		end
 	end
 
@@ -470,37 +473,34 @@ class Treequel::Shell
 	end
 
 
+	# ### Create the entry specified by +rdn+.
+	# def create_command( options, rdn )
+	# 	branch = @currbranch.get_child( rdn )
+	# 
+	# 	raise "#{branch.dn}: already exists." if branch.exists?
+	# 	create_new_entry( branch )
+	# 	message "Saved #{rdn}."
+	# end
+	# set_options :create do |oparser, options|
+	# 	oparser.banner = "create DN"
+	# end
+
+
 	### Edit the entry specified by +rdn+.
-	#def edit_command( options, rdn )
-	#	branch = @currbranch.get_child( rdn )
-	#	entryhash = nil
-	#
-	#	if options.newentry
-	#		raise "#{branch.dn} already exists." if branch.exists?
-	#		object_classes = prompt_for_multiple_values( "Entry objectClasses:" )
-	#		entryhash = branch.valid_attributes_hash( *object_classes )
-	#		newhash = edit_in_yaml( entryhash )
-	#		args = object_classes + [newhash]
-	#		branch.create( *args )
-	#	else
-	#		raise "#{branch.dn}: no such entry. Did you mean to create it with -n?" unless
-	#		 	branch.exists?
-	#		entryhash = branch.entry
-	#		newhash = edit_in_yaml( entryhash )
-	#		branch.merge( entryhash )
-	#	end
-	#
-	#	message "Saved #{rdn}."
-	#end
-	#set_options :edit do |oparser, options|
-	#	oparser.banner = "edit [OPTIONS] DN"
-	#
-	#	oparser.on( "-n", "--new", FalseClass, 
-	#		"Create a new entry instead of editing an existing one." ) do 
-	#		options.newentry = true
-	#	end
-	#
-	#end
+	def edit_command( options, rdn )
+		branch = @currbranch.get_child( rdn )
+
+		raise "#{branch.dn}: no such entry. Did you mean to 'create' it instead?" unless
+		 	branch.exists?
+		if entryhash = edit_in_yaml( branch )
+			branch.merge( entryhash )
+		end
+
+		message "Saved #{rdn}."
+	end
+	set_options :edit do |oparser, options|
+		oparser.banner = "edit DN"
+	end
 
 
 	### Convert the given +patterns+ to branchsets relative to the current branch and return
@@ -613,7 +613,7 @@ class Treequel::Shell
 		filename = Digest::SHA1.hexdigest( yaml )
 		tempfile = Tempfile.new( filename )
 
-		message "Object as YAML is: ", yaml
+		self.log.debug "Object as YAML is: %p" % [ yaml ]
 		tempfile.print( yaml )
 		tempfile.close
 
@@ -628,6 +628,23 @@ class Treequel::Shell
 	end
 
 
+	### Create a new entry in the directory for the specified +branch+.
+	def create_new_entry( branch )
+		raise "#{branch.dn} already exists." if branch.exists?
+
+		# Prompt for the list of included objectClasses and build the appropriate
+		# blank entry with them in mind.
+		object_classes = prompt_for_multiple_values( "Entry objectClasses:" )
+		entryhash = branch.valid_attributes_hash( *object_classes )
+
+		# Edit the entry
+		if newhash = edit_in_yaml( branch )
+			args = object_classes + [newhash]
+			branch.create( *args )
+		end
+	end
+
+
 	### Return the specified Treequel::Branch object as YAML. If +include_operational+ is true,
 	### include the entry's operational attributes.
 	def branch_as_yaml( object, include_operational=false )
@@ -637,10 +654,10 @@ class Treequel::Shell
 		entryhash = stringify_keys( object.must_attributes_hash )
 		entryhash.merge!( object.entry )
 		dn = entryhash.delete( 'dn' )
-		
+
 		yaml = entryhash.to_yaml
 		yaml[ 5, 0 ] = "# #{dn}\n"
-		
+
 		# Make comments out of MAY attributes that are unset
 		mayhash = stringify_keys( object.may_attributes_hash )
 		self.log.debug "MAY hash is: %p" % [ mayhash ]
@@ -961,15 +978,30 @@ class Treequel::Shell
 
 	### Highlight LDIF and return it.
 	def format_ldif( ldif )
-		return ldif.gsub( /^(\S[^:]*)(::?)\s*(.*)$/ ) do
-			key, sep, val = $1, $2, $3
-			case sep
-			when '::'
-				colorize( :cyan ) { key } + ':: ' + colorize( :dark, :white ) { val }
-			when ':'
-				colorize( :bold, :cyan ) { key } + ': ' + colorize( :dark, :white ) { val }
+		self.log.debug "Formatting LDIF: %p" % [ ldif ]
+		return ldif.gsub( LDIF_ATTRVAL_SPEC ) do
+			key, val = $1, $2.strip
+			self.log.debug "  formatting attribute: [ %p, %p ], remainder: %p" %
+				[ key, val, $POSTMATCH ]
+
+			case val
+
+			# Base64-encoded value
+			when /^:/
+				val = val[1..-1].strip
+				colorize( :green ) { key } + ':: ' +
+					colorize( :dark, :white ) { val } + "\n"
+
+			# URL
+			when /^</
+				val = val[1..-1].strip
+				colorize( :yellow ) { key } + ':< ' +
+					colorize( :dark, :white ) { val } + "\n"
+
+			# Regular attribute
 			else
-				key + sep + ' ' + val
+				colorize( :bold, :cyan ) { key } + ': ' +
+					colorize( :dark, :white ) { val } + "\n"
 			end
 		end
 	end

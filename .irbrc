@@ -56,13 +56,13 @@ end
 ### line-endings, color reset, etc.
 def colorize( *args )
 	string = ''
-	
+
 	if block_given?
 		string = yield
 	else
 		string = args.shift
 	end
-	
+
 	ending = string[/(\s)$/] || ''
 	string = string.rstrip
 
