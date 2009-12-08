@@ -311,7 +311,7 @@ task :default  => [:clean, :local, :spec, :rdoc, :package]
 task :local
 
 ### Task: clean
-CLEAN.include 'coverage'
+CLEAN.include 'coverage', '**/*.orig'
 CLOBBER.include 'artifacts', 'coverage.info', PKGDIR
 
 ### Task: changelog

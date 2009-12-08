@@ -174,9 +174,15 @@ class Treequel::Branch
 	end
 
 
+	### Perform a search with the specified +args+ using the receiver as the base.
+	def search( *args, &block )
+		return self.directory.search( self, *args, &block )
+	end
+
+
 	### Return the Branch's immediate children as Treeque::Branch objects.
 	def children
-		return self.directory.search( self, :one, '(objectClass=*)' )
+		return self.search( :one, '(objectClass=*)' )
 	end
 
 

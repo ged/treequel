@@ -174,9 +174,8 @@ class Treequel::Branchset
 	### as Treequel::Branch objects to the supplied block.
 	def each( &block )
 		raise LocalJumpError, "no block given" unless block
-		directory = self.branch.directory
 
-		directory.search( self.branch, self.scope, self.filter,
+		self.branch.search( self.scope, self.filter,
 			:selectattrs => self.select,
 			:timeout => self.timeout,
 			# :sortby => self.order,
@@ -185,10 +184,11 @@ class Treequel::Branchset
 		  )
 	end
 
+
 	### Fetch the first entry which matches the current criteria and return it as an instance of
 	### the object that is set as the +branch+ (e.g., Treequel::Branch).
 	def first
-		self.branch.directory.search( self.branch, self.scope, self.filter,
+		self.branch.search( self.scope, self.filter,
 			:selectattrs => self.select,
 			:timeout => self.timeout,
 			# :sortby => self.order,
@@ -341,7 +341,7 @@ class Treequel::Branchset
 		newset.branch = branchclass.new( self.branch.directory, self.branch.dn )
 		return newset
 	end
-	
+
 
 	# Hiding this until we figure out how to do server-side ordering (i.e., 
 	# http://tools.ietf.org/html/rfc2891)

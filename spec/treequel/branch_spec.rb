@@ -150,6 +150,22 @@ describe Treequel::Branch do
 			@branch.entry.should == :the_extended_entry
 		end
 
+		it "can search its directory for values using itself as a base" do
+			@directory.should_receive( :search ).with( @branch, :one, '(objectClass=*)' ).
+				and_return( :entries )
+			@branch.search( :one, '(objectClass=*)' ).should == :entries
+		end
+
+		it "can search its directory for values with a block" do
+			@directory.should_receive( :search ).with( @branch, :one, '(objectClass=*)' ).
+				and_yield( :an_entry )
+			yielded_val = nil
+			@branch.search( :one, '(objectClass=*)' ) do |val|
+				yielded_val = val
+			end
+			yielded_val.should == :an_entry
+		end
+
 		it "clears any cached values if its include_operational_attrs attribute is changed" do
 			@directory.should_receive( :get_entry ).with( @branch ).exactly( :once ).
 				and_return( :the_entry )
