@@ -685,6 +685,10 @@ module Treequel::Constants
 			#{SEP}
 		}xm
 
+		# Freeze all the pattern constants so they don't get clobbered
+		constants.each do |const|
+			const_get( const ).freeze
+		end
 
 	end # module Patterns
 

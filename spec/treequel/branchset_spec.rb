@@ -9,20 +9,12 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-begin
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
 
-	require 'treequel/branchset'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
+require 'treequel/branchset'
+require 'treequel/control'
 
 include Treequel::TestConstants
 include Treequel::Constants
@@ -39,9 +31,11 @@ describe Treequel::Branchset do
 	end
 
 	DEFAULT_PARAMS = {
-		:limit       => 0,
-		:selectattrs => [],
-		:timeout     => 0,
+		:limit           => 0,
+		:selectattrs     => [],
+		:timeout         => 0,
+		:client_controls => [],
+		:server_controls => [],
 	}
 
 	before( :all ) do
@@ -53,8 +47,9 @@ describe Treequel::Branchset do
 	end
 
 	before( :each ) do
-		@directory = mock( "treequel directory ")
+		@directory = mock( "treequel directory ", :registered_controls => [] )
 		@branch = mock( "treequel branch", :dn => 'thedn' )
+		@branch.stub!( :directory ).and_return( @directory )
 		@params = DEFAULT_PARAMS.dup
 	end
 
@@ -175,9 +170,9 @@ describe Treequel::Branchset do
 
 		it "performs a search using the default filter, scope, and a limit of 1 when the first " +
 		   "record is requested" do
+			params = @params.merge( :limit => 1 )
 			@branch.should_receive( :search ).
-				with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter,
-				      @params.merge(:limit => 1) ).
+				with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, params ).
 				and_return( [:first_matching_branch, :other_branches] )
 
 			@branchset.first.should == :first_matching_branch
@@ -366,6 +361,44 @@ describe Treequel::Branchset do
 				and_yield( :matching_branches )
 
 			@branchset.all.should == [:matching_branches]
+		end
+
+	end
+
+	describe "created for a directory with registered controls" do
+
+		before( :all ) do
+			@control = Module.new {
+				include Treequel::Control
+				OID = '3.1.4.1.5.926'
+
+				def yep; end
+				def get_client_controls; [:client_control]; end
+				def get_server_controls; [:server_control]; end
+			}
+		end
+
+		before( :each ) do
+			@directory.stub!( :registered_controls ).and_return([ @control ])
+		end
+
+		it "extends instances of itself with any controls registered with its Branch's Directory" do
+			set = Treequel::Branchset.new( @branch )
+			set.should respond_to( :yep )
+		end
+
+		it "appends client controls to search arguments" do
+			resultbranch = mock( "Result Branch" )
+			set = Treequel::Branchset.new( @branch )
+
+			@params[:server_controls] = [:server_control]
+			@params[:client_controls] = [:client_control]
+
+			@branch.should_receive( :search ).
+				with( Treequel::Branchset::DEFAULT_SCOPE, set.filter, @params ).
+				and_yield( resultbranch )
+
+			set.all.should == [ resultbranch ]
 		end
 
 	end

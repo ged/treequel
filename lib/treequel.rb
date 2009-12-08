@@ -1,6 +1,11 @@
 #!/usr/bin/env ruby
 
+require 'ldap'
+require 'ldap/schema'
+require 'ldap/control'
+
 require 'logger'
+
 require 'uri'
 require 'uri/ldap'
 

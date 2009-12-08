@@ -9,20 +9,13 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-begin
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
 
-	require 'treequel/directory'
-	require 'treequel/branch'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'treequel/directory'
+require 'treequel/branch'
+require 'treequel/control'
 
 
 include Treequel::TestConstants
@@ -480,6 +473,36 @@ describe Treequel::Directory do
 			@dir.convert_syntax_value( OIDS::BOOLEAN_SYNTAX, 'true' ).should == 'true'
 		end
 
+
+		### Controls support
+		describe "controls support" do
+			before( :each ) do
+				@control = Module.new { include Treequel::Control }
+				@conn.should_receive( :root_dse ).and_return( TEST_DSE )
+			end
+
+
+			it "allows the registration of one or more Treequel::Control modules" do
+				@control.const_set( :OID, TEST_DSE.first['supportedControl'].first )
+				@dir.register_controls( @control )
+				@dir.registered_controls.should == [ @control ]
+			end
+
+			it "raises an exception if the directory doesn't support registered controls" do
+				@control.const_set( :OID, '8.6.7.5.309' )
+				expect {
+					@dir.register_controls( @control )
+				}.to raise_error( Treequel::UnsupportedControl, /not supported/i )
+
+				@dir.registered_controls.should == []
+			end
+
+			it "raises an exception if a registered control doesn't define an OID" do
+				expect {
+					@dir.register_controls( @control )
+				}.to raise_error( NotImplementedError, /doesn't define/i )
+			end
+		end
 	end
 end
 

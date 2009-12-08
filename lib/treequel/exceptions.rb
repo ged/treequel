@@ -27,6 +27,10 @@ module Treequel
 	### arguments given to Treequel::Filter.new
 	class ExpressionError < Treequel::Error; end
 
+	### Exception type for a requested Control type that is nonexistent or
+	### unsupoorted on the current server.
+	class UnsupportedControl < Treequel::Error; end
+
 end # module Treequel
 
 

@@ -113,19 +113,21 @@ class Treequel::Directory
 	### [:pass]
 	###   The password to use when binding.
 	def initialize( options={} )
-		options         = DEFAULT_OPTIONS.merge( options )
+		options       = DEFAULT_OPTIONS.merge( options )
 
-		@host           = options[:host]
-		@port           = options[:port]
-		@connect_type   = options[:connect_type]
+		@host         = options[:host]
+		@port         = options[:port]
+		@connect_type = options[:connect_type]
 
-		@conn           = nil
-		@bound_as       = nil
+		@conn         = nil
+		@bound_as     = nil
 
-		@base_dn        = options[:base_dn] || self.get_default_base_dn
-		@syntax_mapping = DEFAULT_SYNTAX_MAPPING.dup
+		@base_dn      = options[:base_dn] || self.get_default_base_dn
 
-		@base           = nil
+		@base         = nil
+
+		@syntax_mapping      = DEFAULT_SYNTAX_MAPPING.dup
+		@registered_controls = []
 
 		# Immediately bind if credentials are passed to the initializer.
 		if ( options[:bind_dn] && options[:pass] )
@@ -141,6 +143,10 @@ class Treequel::Directory
 	# Delegate some methods to the #base Branch.
 	def_method_delegators :base, *DELEGATED_BRANCH_METHODS
 
+	# Delegate some methods to the connection via the #conn method
+	def_method_delegators :conn, :controls, :referrals
+
+
 	# The host to connect to.
 	attr_accessor :host
 
@@ -152,6 +158,9 @@ class Treequel::Directory
 
 	# The base DN of the directory
 	attr_accessor :base_dn
+
+	# The control modules that are registered with the directory
+	attr_reader :registered_controls
 
 
 	### Fetch the Branch for the base node of the directory.
@@ -418,6 +427,25 @@ class Treequel::Directory
 	def add_syntax_mapping( oid, conversion=nil )
 		conversion = Proc.new if block_given?
 		@syntax_mapping[ oid ] = conversion
+	end
+
+
+	### Register the specified +modules+
+	def register_controls( *modules )
+		dse = self.conn.root_dse.first
+		supported_controls = dse['supportedControl']
+
+		modules.each do |mod|
+			oid = mod.const_get( :OID ) if mod.const_defined?( :OID )
+			raise NotImplementedError, "%s doesn't define an OID" % [ mod.name ] if oid.nil?
+
+			if supported_controls.include?( oid )
+				@registered_controls << mod
+			else
+				raise Treequel::UnsupportedControl,
+					"%s is not supported by %s" % [ mod.name, self.uri ]
+			end
+		end
 	end
 
 

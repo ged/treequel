@@ -10,6 +10,7 @@ require 'treequel/constants'
 require 'treequel/branch'
 require 'treequel/filter'
 require 'treequel/sequel_integration'
+require 'treequel/control'
 
 
 # A branchset represents an abstract set of LDAP records returned by
@@ -55,7 +56,8 @@ require 'treequel/sequel_integration'
 class Treequel::Branchset
 	include Enumerable,
 	        Treequel::Loggable,
-	        Treequel::Constants
+	        Treequel::Constants,
+	        Treequel::Control
 
 	# The default scope to use when searching if none is specified
 	DEFAULT_SCOPE = :subtree
@@ -87,6 +89,9 @@ class Treequel::Branchset
 		super()
 		@branch = branch
 		@options = DEFAULT_OPTIONS.merge( options )
+
+		self.extend( *@branch.directory.registered_controls ) unless
+			@branch.directory.registered_controls.empty?
 	end
 
 
@@ -180,6 +185,8 @@ class Treequel::Branchset
 			:timeout => self.timeout,
 			# :sortby => self.order,
 			:limit => self.limit,
+			:client_controls => self.get_client_controls,
+			:server_controls => self.get_server_controls,
 			&block
 		  )
 	end
@@ -192,6 +199,8 @@ class Treequel::Branchset
 			:selectattrs => self.select,
 			:timeout => self.timeout,
 			# :sortby => self.order,
+			:client_controls => self.get_client_controls,
+			:server_controls => self.get_server_controls,
 			:limit => 1
 		  ).first
 	end

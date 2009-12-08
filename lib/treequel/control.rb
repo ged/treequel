@@ -1,6 +1,8 @@
 #!/usr/bin/ruby
 
 require 'ldap'
+require 'ldap/control'
+
 require 'treequel'
 
 
@@ -15,6 +17,7 @@ module Treequel::Control
 	def get_client_controls
 		return []
 	end
+
 
 	### Control API interface method
 	###

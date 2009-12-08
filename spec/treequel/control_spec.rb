@@ -22,13 +22,18 @@ include Treequel::Constants
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
+module TestControl
+	OID = 'an OID'
+	include Treequel::Control
+end
 
 describe Treequel, "control" do
 	include Treequel::SpecHelpers
 
 	before( :each ) do
-		@testclass = Class.new { include Treequel::Control }
+		@testclass = Class.new
 		@obj = @testclass.new
+		@obj.extend( TestControl )
 	end
 
 	it "provides a empty client control list by default" do

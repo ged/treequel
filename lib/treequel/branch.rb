@@ -83,6 +83,9 @@ class Treequel::Branch
 	# Delegate some other methods to a new Branchset via the #branchset method
 	def_method_delegators :branchset, :filter, :scope, :select, :limit, :timeout, :order
 
+	# Delegate some methods to the underlying entry via its accessor
+	def_method_delegators :directory, :controls, :referrals
+
 
 	# The directory the branch's entry lives in
 	attr_reader :directory
