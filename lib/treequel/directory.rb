@@ -330,15 +330,19 @@ class Treequel::Directory
 		self.log.debug "Searching via search_ext2 with arguments: %p" % [[
 			base, scope, filter, *parameters
 		]]
-		if block_given?
-			self.conn.search_ext2( base, scope, filter, *parameters ).each do |entry|
-				yield collectclass.new_from_entry( entry, self )
+
+		results = []
+
+		self.conn.search_ext2( base, scope, filter, *parameters ).each do |entry|
+			branch = collectclass.new_from_entry( entry, self )
+			if block_given?
+				results << yield( branch )
+			else
+				results << branch
 			end
-		else
-			return self.conn.search_ext2( base, scope, filter, *parameters ).
-				collect {|entry| collectclass.new_from_entry(entry, self) }
 		end
 
+		return results
 	rescue RuntimeError => err
 		conn = self.conn
 

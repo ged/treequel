@@ -22,27 +22,26 @@ include Treequel::Constants
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
-module TestControl
-	OID = 'an OID'
-	include Treequel::Control
-end
-
-describe Treequel::Control do
+describe "A Treequel::Control", :shared => true do
 	include Treequel::SpecHelpers
 
 	before( :each ) do
-		@testclass = Class.new
-		@obj = @testclass.new
-		@obj.extend( TestControl )
+		raise "Spec doesn't set @control before the Control shared behavior" unless @control
+
+		@object = Object.new
+		@object.extend( @control )
 	end
 
-	it "provides a empty client control list by default" do
-		@obj.get_client_controls.should == []
+	it "implements one of either #get_client_controls or #get_server_controls" do
+		methods = [
+			'get_client_controls',		# 1.8.x
+			'get_server_controls',
+			:get_client_controls,		# 1.9.x
+			:get_server_controls
+		]
+		(@control.instance_methods( false ) | methods).should_not be_empty()
 	end
 
-	it "provides a empty server control list by default" do
-		@obj.get_server_controls.should == []
-	end
 end
 
-# vim: set nosta noet ts=4 sw=4:
+

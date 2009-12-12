@@ -40,4 +40,23 @@ task :check_manual => MANUAL_PAGES do
 	end
 end
 
+namespace :spec do
+	desc "Run specs under gdb"
+	task :gdb do |task|
+		require 'tempfile'
+
+	    cmd_parts = ['run']
+	    cmd_parts << '-Ilib:ext'
+	    cmd_parts << '/usr/bin/spec'
+	    cmd_parts += SPEC_FILES.collect { |fn| %["#{fn}"] }
+	    cmd_parts += COMMON_SPEC_OPTS + ['-f', 's', '-c']
+
+		script = Tempfile.new( 'spec-gdbscript' )
+		script.puts( cmd_parts.join(' ') )
+		script.flush
+
+		run 'gdb', '-x', script.path, RUBY
+	end
+end
+
 

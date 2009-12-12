@@ -292,7 +292,8 @@ module Treequel # :nodoc:
 		def predicate_attr( *symbols )
 			symbols.each do |attrname|
 				define_method( "#{attrname}?" ) do
-					instance_variable_get( "@#{attrname}" ) ? true : false
+					instance_variable_defined?( "@#{attrname}" ) &&
+						instance_variable_get( "@#{attrname}" ) ? true : false
 				end
 				define_method( "#{attrname}=" ) do |newval|
 					instance_variable_set( "@#{attrname}", newval ? true : false )

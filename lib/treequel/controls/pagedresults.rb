@@ -71,9 +71,16 @@ module Treequel::PagedResultsControl
 	# The number of results per page
 	attr_accessor :paged_results_setsize
 
+	# The (opaque) cookie value that will be sent to the server on the next search.
+	attr_reader :paged_results_cookie
+
 
 	### Clone the Branchset with a paged results control added and return it.
 	def with_paged_results( setsize )
+		self.log.warn "This control will likely not work in ruby-ldap versions " +
+			" <= 0.9.9. See http://code.google.com/p/ruby-activeldap/issues/" +
+			"detail?id=38 for details." if LDAP::PATCH_VERSION < 10
+
 		newset = self.clone
 		newset.paged_results_setsize = setsize
 
@@ -84,22 +91,21 @@ module Treequel::PagedResultsControl
 	### Returns +true+ if the first page of results has been fetched and there are
 	### more pages remaining.
 	def has_more_results?
-		return true unless @paged_results_cookie == ''
+		return true unless self.paged_results_cookie == ''
 	end
 
 
-	### Override the Enumerable method to update the cookie value each time through.
+	### Override the Enumerable method to update the cookie value each time a page 
+	### is fetched.
 	def each( &block )
 		super do |branch|
-			controls = branch.directory.conn.instance_variable_get( :@controls )
-			self.log.debug "Controls are: %p" % [ controls ]
-			if paged_control = controls.find {|control| control.oid == OID }
+			if paged_control = branch.controls.find {|control| control.oid == OID }
 				returned_size, cookie = paged_control.decode
 				self.log.debug "Paged control in result with size = %p, cookie = %p" %
 					[ returned_size, cookie ]
 				@paged_results_cookie = cookie
 			else
-				self.log.info "No paged control in results. Setting cookie to ''."
+				self.log.debug "No paged control in results. Setting cookie to ''."
 				@paged_results_cookie = ''
 			end
 
@@ -116,7 +122,7 @@ module Treequel::PagedResultsControl
 	### Branchset.
 	def get_server_controls
 		controls = super
-		value = LDAP::Control.encode( Integer(@paged_results_setsize), @paged_results_cookie.to_s )
+		value = LDAP::Control.encode( @paged_results_setsize.to_i, @paged_results_cookie.to_s )
 		return controls << LDAP::Control.new( OID, value, true )
 	end
 

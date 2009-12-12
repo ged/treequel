@@ -12,9 +12,10 @@ BEGIN {
 require 'spec'
 require 'spec/lib/constants'
 require 'spec/lib/helpers'
+require 'spec/lib/control_behavior'
 
 require 'treequel'
-require 'treequel/control'
+require 'treequel/controls/pagedresults'
 
 include Treequel::TestConstants
 include Treequel::Constants
@@ -22,27 +23,16 @@ include Treequel::Constants
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
-module TestControl
-	OID = 'an OID'
-	include Treequel::Control
-end
-
-describe Treequel::Control do
+describe Treequel::PagedResultsControl do
 	include Treequel::SpecHelpers
 
 	before( :each ) do
-		@testclass = Class.new
-		@obj = @testclass.new
-		@obj.extend( TestControl )
+		# Used by the shared behavior
+		@control = Treequel::PagedResultsControl
 	end
 
-	it "provides a empty client control list by default" do
-		@obj.get_client_controls.should == []
-	end
+	it_should_behave_like "A Treequel::Control"
 
-	it "provides a empty server control list by default" do
-		@obj.get_server_controls.should == []
-	end
 end
 
 # vim: set nosta noet ts=4 sw=4:
