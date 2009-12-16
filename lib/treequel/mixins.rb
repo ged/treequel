@@ -13,8 +13,8 @@ require 'treequel'
 #
 module Treequel # :nodoc:
 
-	# A collection of various delegation code-generators that can be used to define
-	# delegation through other methods, to instance variables, etc.
+	### A collection of various delegation code-generators that can be used to define
+	### delegation through other methods, to instance variables, etc.
 	module Delegation
 
 		#######
@@ -116,7 +116,7 @@ module Treequel # :nodoc:
 	end # module Delegation
 
 
-	# Add logging to a Treequel class. Including classes get #log and #log_debug methods.
+	### Add logging to a Treequel class. Including classes get #log and #log_debug methods.
 	module Loggable
 
 		LEVEL = {
