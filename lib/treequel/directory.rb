@@ -467,6 +467,15 @@ class Treequel::Directory
 	end
 
 
+	### Return an Array of Symbols for the controls supported by the Directory, as listed
+	### in the directory's root DSE.
+	def supported_controls
+		control_oids = self.conn.root_dse.first['supportedControl']
+		controlnames = []
+		return control_oids.collect {|oid| CONTROL_NAMES[oid] || oid }
+	end
+
+
 
 	#########
 	protected

@@ -28,6 +28,33 @@ module Treequel::Constants
 		LDAP::LDAP_SCOPE_SUBTREE  => 'subtree',
 	}
 
+	### Names and OIDs of various controls
+	CONTROL_OIDS = {
+		:sortrequest         => '1.2.840.113556.1.4.473',
+		:sortresult          => '1.2.840.113556.1.4.474',
+		:vlvrequest          => '2.16.840.1.113730.3.4.9',
+		:vlvresponse         => '2.16.840.1.113730.3.4.10',
+		:proxyauthentication => '2.16.840.1.113730.3.4.18',
+		:paged               => '1.2.840.113556.1.4.319',
+		:tree_delete         => '1.2.840.113556.1.4.805',
+		:matchedvals         => '1.2.826.0.1.3344810.2.2',
+		:matchedvalues       => '1.2.826.0.1.3344810.2.3',
+		:managedsait         => '2.16.840.1.113730.3.4.2',
+		:persistentsearch    => '2.16.840.1.113730.3.4.3',
+		:entrychange         => '2.16.840.1.113730.3.4.7',
+		:pwexpired           => '2.16.840.1.113730.3.4.4',
+		:pwexpiring          => '2.16.840.1.113730.3.4.5',
+		:referrals           => '1.2.840.113556.1.4.616',
+		:passwordpolicy      => '1.3.6.1.4.1.42.2.27.8.5.1',
+		:preread             => '1.3.6.1.1.13.1',
+		:postread            => '1.3.6.1.1.13.2',
+		:assertion           => '1.3.6.1.1.12',
+		:sync                => '1.3.6.1.4.1.4203.1.9.1.1',
+		:sync_state          => '1.3.6.1.4.1.4203.1.9.1.2',
+		:sync_done           => '1.3.6.1.4.1.4203.1.9.1.3',
+	}.freeze
+	CONTROL_NAMES = CONTROL_OIDS.invert.freeze
+
 
 	### OIDs of RFC values
 	module OIDS

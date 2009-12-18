@@ -1,0 +1,10 @@
+1.2.826.0.1.3344810.2.3   -- Values Return Filter
+1.2.826.0.1.334810.2.3    -- Return Matched Values Control (http://tools.ietf.org/html/rfc3876)
+1.2.840.113556.1.4.319    -- Simple Paged Results Control (http://tools.ietf.org/html/rfc2696)
+1.3.6.1.1.12              -- Assertion Control (http://tools.ietf.org/html/rfc4528)
+1.3.6.1.1.13.1            -- (Pre-Read) Read Entry Control (http://tools.ietf.org/html/rfc4527)
+1.3.6.1.1.13.2            -- (Post-Read) Read Entry Control (http://tools.ietf.org/html/rfc4527)
+1.3.6.1.4.1.4203.1.10.1   -- Subentries (http://tools.ietf.org/html/rfc3672)
+1.3.6.1.4.1.4203.1.9.1.1  -- LDAP Content Synchronization Control (http://www.watersprings.org/pub/id/draft-zeilenga-ldup-sync-06.txt)
+2.16.840.1.113730.3.4.18  -- Proxied Authorization (version 2) Control ftp://www.ietf.org/internet-drafts/draft-weltman-ldapv3-proxy-06.txt
+2.16.840.1.113730.3.4.2   -- Manage DSA IT LDAPv3 control
