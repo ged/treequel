@@ -152,7 +152,7 @@ if !RAKE_TASKDIR.exist?
 
 	if ans =~ /^y/i
 		$stderr.puts "Okay, fetching #{RAKE_TASKLIBS_URL} into #{RAKE_TASKDIR}..."
-		system 'hg', 'clone', RAKE_TASKLIBS_URL, RAKE_TASKDIR
+		system 'hg', 'clone', RAKE_TASKLIBS_URL, "./#{RAKE_TASKDIR}"
 		if ! $?.success?
 			fail "Damn. That didn't work. Giving up; maybe try manually fetching?"
 		end
@@ -168,10 +168,10 @@ require RAKE_TASKDIR + 'helpers.rb'
 
 # Set the build ID if the mercurial executable is available
 if hg = which( 'hg' )
-	id = IO.read('|-') or exec hg.to_s, 'id', '-i'
-	PKG_BUILD = id.chomp[ /^[[:xdigit:]]+/ ]
+	id = IO.read('|-') or exec hg.to_s, 'id', '-n'
+	PKG_BUILD = 'pre' + id.chomp[ /^[[:xdigit:]]+/ ]
 else
-	PKG_BUILD = 'b'
+	PKG_BUILD = 'pre0'
 end
 SNAPSHOT_PKG_NAME = "#{PKG_FILE_NAME}.#{PKG_BUILD}"
 SNAPSHOT_GEM_NAME = "#{SNAPSHOT_PKG_NAME}.gem"
@@ -217,6 +217,7 @@ DEVELOPMENT_DEPENDENCIES = {
 	'diff-lcs'    => '>= 1.1.2',
 	'termios' => '>= 0.9.4',
 	'columnize' => '>= 0.3.1',
+	'diff-lcs' => '>= 1.1.2',
 	'ruby-terminfo' => '>= 0.1.1',
 }
 
@@ -311,7 +312,7 @@ task :default  => [:clean, :local, :spec, :rdoc, :package]
 task :local
 
 ### Task: clean
-CLEAN.include 'coverage', '**/*.orig'
+CLEAN.include 'coverage', '**/*.orig', '**/*.rej'
 CLOBBER.include 'artifacts', 'coverage.info', PKGDIR
 
 ### Task: changelog
