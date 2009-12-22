@@ -1008,19 +1008,22 @@ class Treequel::Shell
 			# Base64-encoded value
 			when /^:/
 				val = val[1..-1].strip
-				colorize( :green ) { key } + ':: ' +
+				colorize( :green ) { key } + 
+					colorize( :dark, :white ) { ':: ' } +
 					colorize( :dark, :white ) { val } + "\n"
 
 			# URL
 			when /^</
 				val = val[1..-1].strip
-				colorize( :yellow ) { key } + ':< ' +
+				colorize( :yellow ) { key } + 
+					colorize( :dark, :white ) { ':< ' } +
 					colorize( :dark, :white ) { val } + "\n"
 
 			# Regular attribute
 			else
-				colorize( :bold, :cyan ) { key } + ': ' +
-					colorize( :dark, :white ) { val } + "\n"
+				key + 
+					colorize( :dark, :white ) { ': ' } +
+					colorize( :bold, :white ) { val } + "\n"
 			end
 		end
 	end
