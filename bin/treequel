@@ -573,7 +573,6 @@ class Treequel::Shell
 		else
 			user = @dir.filter( :uid => binddn ).first
 		end
-		raise "No user found for %p" % [ binddn ] unless user.exists?
 
 		@dir.bind( user, password )
 		message "Bound as #{user}"
