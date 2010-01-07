@@ -381,7 +381,7 @@ class Treequel::Directory
 		# Merge RDN attributes with existing ones, combining any that exist in both
 		self.log.debug "Smushing rdn attributes %p into %p" % [ branch.rdn_attributes, newdn ]
 		newattrs.merge!( branch.rdn_attributes ) do |key, *values|
-			values.flatten
+			values.flatten.uniq
 		end
 
 		normattrs = self.normalize_attributes( newattrs )
