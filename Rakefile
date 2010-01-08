@@ -4,7 +4,7 @@
 #
 # Based on various other Rakefiles, especially one by Ben Bleything
 #
-# Copyright (c) 2007-2009 The FaerieMUD Consortium
+# Copyright (c) 2007-2010 The FaerieMUD Consortium
 #
 # Authors:
 #  * Michael Granger <ged@FaerieMUD.org>
@@ -169,7 +169,7 @@ require RAKE_TASKDIR + 'helpers.rb'
 # Set the build ID if the mercurial executable is available
 if hg = which( 'hg' )
 	id = IO.read('|-') or exec hg.to_s, 'id', '-n'
-	PKG_BUILD = 'pre' + id.chomp[ /^[[:xdigit:]]+/ ]
+	PKG_BUILD = 'pre' + (id.chomp[ /^[[:xdigit:]]+/ ] || '1')
 else
 	PKG_BUILD = 'pre0'
 end
@@ -313,7 +313,7 @@ task :local
 
 ### Task: clean
 CLEAN.include 'coverage', '**/*.orig', '**/*.rej'
-CLOBBER.include 'artifacts', 'coverage.info', PKGDIR
+CLOBBER.include 'artifacts', 'coverage.info', 'ChangeLog', PKGDIR
 
 ### Task: changelog
 file 'ChangeLog' do |task|
