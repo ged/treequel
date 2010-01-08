@@ -160,8 +160,6 @@ module Treequel # :nodoc:
 	end # class LogFormatter
 
 
-	
-
 	# 
 	# An alternate formatter for Logger instances that outputs +div+ HTML
 	# fragments.

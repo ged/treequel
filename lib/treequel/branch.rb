@@ -201,13 +201,18 @@ class Treequel::Branch
 	def object_classes( *additional_classes )
 		schema = self.directory.schema
 
-		object_classes = self[:objectClass] || []
-		object_classes |= additional_classes.collect {|str| str.to_sym }
-		object_classes << :top if object_classes.empty?
+		oc_oids = self[:objectClass] || []
+		oc_oids |= additional_classes.collect {|str| str.to_sym }
+		oc_oids << :top if oc_oids.empty?
 
-		return object_classes.
-			collect {|oid| schema.object_classes[oid.to_sym] }.
-			uniq
+		oclasses = []
+		oc_oids.each do |oid|
+			oc = schema.object_classes[ oid.to_sym ] or
+				raise Treequel::Error, "schema doesn't have a %p objectClass" % [ oid ]
+			oclasses << oc
+		end
+
+		return oclasses.uniq
 	end
 
 
@@ -219,7 +224,8 @@ class Treequel::Branch
 	def must_attribute_types( *additional_object_classes )
 		types = []
 		oclasses = self.object_classes( *additional_object_classes )
-		self.log.debug "Gathering MUST attribute types for %d objectClasses" % [ oclasses.length ]
+		self.log.debug "Gathering MUST attribute types for objectClasses: %p" % [ oclasses ]
+
 		oclasses.each do |oc|
 			self.log.debug "  adding %p from %p" % [ oc.must, oc ]
 			types |= oc.must
@@ -324,8 +330,11 @@ class Treequel::Branch
 	### any +additional_object_classes+ are given, include the attributes that would be
 	### available for the entry if it had them.
 	def valid_attributes_hash( *additional_object_classes )
+		self.log.debug "Gathering a hash of all valid attributes:"
 		must = self.must_attributes_hash( *additional_object_classes )
+		self.log.debug "  MUST attributes: %p" % [ must ]
 		may  = self.may_attributes_hash( *additional_object_classes )
+		self.log.debug "  MAY attributes: %p" % [ may ]
 
 		return may.merge( must )
 	end

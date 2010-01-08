@@ -108,6 +108,16 @@ module Treequel::Constants
 	### A collection of Regexps to match various LDAP values
 	module Patterns
 
+		# Steal the URIREF regexp from the URI library. We have to look in
+		# both places to support both 1.9.1 and 1.8.x.
+		URI_REF = if URI::REGEXP.const_defined?( :PATTERN )
+				/#{URI::REGEXP::PATTERN::URI_REF}/
+			elsif URI::REGEXP.const_defined?( :URI_REF )
+				/#{URI::REGEXP::URI_REF}/
+			else
+				raise "Couldn't find the URI_REF constant in the URI library!"
+			end
+
 		# :stopdoc:
 
 		# Schema-parsing patterns based on the BNF in 
@@ -658,7 +668,7 @@ module Treequel::Constants
 
 		# SPACE                    = %x20  ; ASCII SP, space
 		# FILL                     = *SPACE
-		FILL = '\x20'
+		FILL = '\x20+'
 
 		# SAFE-CHAR                = %x01-09 / %x0B-0C / %x0E-7F
 		#                            ; any value <= 127 decimal except NUL, LF,
@@ -698,7 +708,7 @@ module Treequel::Constants
 				|
 				: #{FILL} #{BASE64_STRING}
 				|
-				< #{FILL} #{URI::REGEXP::URI_REF}
+				< #{FILL} #{URI_REF}
 			)
 		}x
 

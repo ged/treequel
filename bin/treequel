@@ -17,6 +17,7 @@ require 'tempfile'
 require 'terminfo'
 require 'termios'
 require 'uri'
+require 'yaml'
 
 require 'treequel'
 require 'treequel/mixins'
@@ -211,7 +212,7 @@ class Treequel::Shell
 
 		if histfile.exist?
 			lines = histfile.readlines.collect {|line| line.chomp }
-			self.log.debug "Read %d saved history commands from %s." % [ lines.nitems, histfile ]
+			self.log.debug "Read %d saved history commands from %s." % [ lines.length, histfile ]
 			Readline::HISTORY.push( *lines )
 		else
 			self.log.debug "History file '%s' was empty or non-existant." % [ histfile ]
@@ -225,7 +226,7 @@ class Treequel::Shell
 
 		lines = Readline::HISTORY.to_a.reverse.uniq.reverse
 		lines = lines[ -DEFAULT_HISTORY_SIZE, DEFAULT_HISTORY_SIZE ] if
-			lines.nitems > DEFAULT_HISTORY_SIZE
+			lines.length > DEFAULT_HISTORY_SIZE
 
 		self.log.debug "Saving %d history lines to %s." % [ lines.length, histfile ]
 
@@ -399,17 +400,17 @@ class Treequel::Shell
 		rows << colorize( :underscore, :cyan ) { "total %d" % [children.length] }
 
 		# Calcuate column widths
-		oclen = children.map do |branch|
-			branch.include_operational_attrs = true
-			branch[:structuralObjectClass].length
+		oclen = children.map do |subbranch|
+			subbranch.include_operational_attrs = true
+			subbranch[:structuralObjectClass].length
 		end.max
-		moddnlen = children.map do |branch|
-			branch[:modifiersName].length
+		moddnlen = children.map do |subbranch|
+			subbranch[:modifiersName].length
 		end.max
 
 		children.
-			sort_by {|branch| branch.rdn.downcase }.
-			each do |branch|
+			sort_by {|subbranch| subbranch.rdn.downcase }.
+			each do |subbranch|
 				# -rw-r--r--   2 mgranger staff   979 2009-07-27 11:55 Rakefile.local
 				# 
 				# modifiersName: cn=admin,dc=laika,dc=com
@@ -417,11 +418,11 @@ class Treequel::Shell
 				# modifyTimestamp: 20090520232650Z
 				# structuralObjectClass: organizationalUnit
 				rows << "%#{oclen}s  %#{moddnlen}s  %s  %s%s" % [
-					branch[:structuralObjectClass],
-					branch[:modifiersName],
-					branch[:modifyTimestamp].strftime('%Y-%m-%d %H:%M'),
-					format_rdn( branch.rdn ),
-					branch[:hasSubordinates] ? '/' : ''
+					subbranch[:structuralObjectClass],
+					subbranch[:modifiersName],
+					subbranch[:modifyTimestamp].strftime('%Y-%m-%d %H:%M'),
+					format_rdn( subbranch.rdn ),
+					subbranch[:hasSubordinates] ? '/' : ''
 				]
 			end
 
@@ -434,12 +435,11 @@ class Treequel::Shell
 		entries = branch.children.
 			collect {|b| b.rdn }.
 			sort_by {|rdn| rdn.downcase }
-		return columnize( entries ).
-			collect do |row|
-				row.gsub( /#{ATTRIBUTE_TYPE}=\s*\S+/ ) do |rdn|
-					format_rdn( rdn )
-				end
-			end
+		self.log.debug "Displaying %d entries in short form." % [ entries.length ]
+
+		return columnize( entries ).gsub( /#{ATTRIBUTE_TYPE}=\s*\S+/ ) do |rdn|
+			format_rdn( rdn )
+		end
 	end
 
 
@@ -474,16 +474,15 @@ class Treequel::Shell
 
 
 	# ### Create the entry specified by +rdn+.
-	# def create_command( options, rdn )
-	# 	branch = @currbranch.get_child( rdn )
-	# 
-	# 	raise "#{branch.dn}: already exists." if branch.exists?
-	# 	create_new_entry( branch )
-	# 	message "Saved #{rdn}."
-	# end
-	# set_options :create do |oparser, options|
-	# 	oparser.banner = "create DN"
-	# end
+	def create_command( options, rdn )
+		branch = @currbranch.get_child( rdn )
+
+		raise "#{branch.dn}: already exists." if branch.exists?
+		create_new_entry( branch )
+	end
+	set_options :create do |oparser, options|
+		oparser.banner = "create DN"
+	end
 
 
 	### Edit the entry specified by +rdn+.
@@ -605,10 +604,34 @@ class Treequel::Shell
 	private
 	#######
 
+
+	### Create a new entry in the directory for the specified +branch+.
+	def create_new_entry( branch )
+		raise "#{branch.dn} already exists." if branch.exists?
+
+		# Prompt for the list of included objectClasses and build the appropriate
+		# blank entry with them in mind.
+		completions = branch.directory.schema.object_classes.keys.collect {|oid| oid.to_s }
+		self.log.debug "Prompting for new entry object classes with %d completions." %
+			[ completions.length ]
+		object_classes = prompt_for_multiple_values( "Entry objectClasses:", nil, completions ).
+			collect {|arg| arg.strip }.compact
+		self.log.debug "  user wants %d objectclasses: %p" % [ object_classes.length, object_classes ]
+
+		# Edit the entry
+		if newhash = edit_in_yaml( branch, object_classes )
+			branch.create( newhash )
+			message "Saved #{branch.dn}."
+		else
+			error_message "#{branch.dn} not saved."
+		end
+	end
+
+
 	### Dump the specified +object+ to a file as YAML, invoke an editor on it, then undump the 
 	### result. If the file has changed, return the updated object, else returns +nil+.
-	def edit_in_yaml( object )
-		yaml = branch_as_yaml( object )
+	def edit_in_yaml( object, object_classes=[] )
+		yaml = branch_as_yaml( object, false, object_classes )
 		filename = Digest::SHA1.hexdigest( yaml )
 		tempfile = Tempfile.new( filename )
 
@@ -627,38 +650,27 @@ class Treequel::Shell
 	end
 
 
-	### Create a new entry in the directory for the specified +branch+.
-	def create_new_entry( branch )
-		raise "#{branch.dn} already exists." if branch.exists?
-
-		# Prompt for the list of included objectClasses and build the appropriate
-		# blank entry with them in mind.
-		object_classes = prompt_for_multiple_values( "Entry objectClasses:" )
-		entryhash = branch.valid_attributes_hash( *object_classes )
-
-		# Edit the entry
-		if newhash = edit_in_yaml( branch )
-			args = object_classes + [newhash]
-			branch.create( *args )
-		end
-	end
-
-
 	### Return the specified Treequel::Branch object as YAML. If +include_operational+ is true,
-	### include the entry's operational attributes.
-	def branch_as_yaml( object, include_operational=false )
+	### include the entry's operational attributes. If +extra_objectclasses+ contains
+	### one or more objectClass OIDs, include their MUST and MAY attributes when building the 
+	### YAML representation of the branch.
+	def branch_as_yaml( object, include_operational=false, extra_objectclasses=[] )
 		object.include_operational_attrs = include_operational
 
 		# Make sure the displayed entry has the MUST attributes
-		entryhash = stringify_keys( object.must_attributes_hash )
-		entryhash.merge!( object.entry )
-		dn = entryhash.delete( 'dn' )
+		entryhash = stringify_keys( object.must_attributes_hash(*extra_objectclasses) )
+		entryhash.merge!( object.entry || {} )
+		entryhash.merge!( object.rdn_attributes )
+		entryhash['objectClass'] ||= []
+		entryhash['objectClass'] |= extra_objectclasses
+
+		entryhash.delete( 'dn' ) # Special attribute, can't be edited
 
 		yaml = entryhash.to_yaml
-		yaml[ 5, 0 ] = "# #{dn}\n"
+		yaml[ 5, 0 ] = "# #{object.dn}\n"
 
 		# Make comments out of MAY attributes that are unset
-		mayhash = stringify_keys( object.may_attributes_hash )
+		mayhash = stringify_keys( object.may_attributes_hash(*extra_objectclasses) )
 		self.log.debug "MAY hash is: %p" % [ mayhash ]
 		mayhash.delete_if {|attrname,val| entryhash.key?(attrname) }
 		yaml << mayhash.to_yaml[5..-1].gsub( /\n\n/, "\n" ).gsub( /^/, '# ' )
@@ -830,25 +842,37 @@ class Treequel::Shell
 
 
 	### Prompt for an array of values
-	def prompt_for_multiple_values( label, default=nil )
-	    message( MULTILINE_PROMPT % [label] )
-	    if default
+	def prompt_for_multiple_values( label, default=nil, completions=[] )
+		old_completion_proc = nil
+
+		message( MULTILINE_PROMPT % [label] )
+		if default
 			message "Enter a single blank line to keep the default:\n  %p" % [ default ]
 		end
 
-	    results = []
-	    result = nil
+		results = []
+		result = nil
 
-	    begin
-	        result = readline( make_prompt_string("> ") )
+		if !completions.empty?
+			self.log.debug "Prompting with %d completions." % [ completions.length ]
+			old_completion_proc = Readline.completion_proc
+			Readline.completion_proc = Proc.new do |input|
+				completions.flatten.grep( /^#{Regexp.quote(input)}/i ).sort
+			end
+		end
+
+		begin
+			result = readline( make_prompt_string("> ") )
 			if result.nil? || result.empty?
 				results << default if default && results.empty?
 			else
-	        	results << result 
+				results << result 
 			end
-	    end until result.nil? || result.empty?
+		end until result.nil? || result.empty?
 
-	    return results.flatten
+		return results.flatten
+	ensure
+		Readline.completion_proc = old_completion_proc if old_completion_proc
 	end
 
 
@@ -966,8 +990,8 @@ class Treequel::Shell
 
 	### Return an ANSI-colored version of the given +rdn+ string.
 	def format_rdn( rdn )
-		rdn.split( /,/ ).collect do |rdn|
-			key, val = rdn.split( /\s*=\s*/, 2 )
+		rdn.split( /,/ ).collect do |rdn_part|
+			key, val = rdn_part.split( /\s*=\s*/, 2 )
 			colorize( :white ) { key } +
 				colorize( :bold, :black ) { '=' } +
 				colorize( :bold, :white ) { val }
