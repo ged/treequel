@@ -101,7 +101,7 @@ class Treequel::Shell
 
 		@uri        = uri
 		@quit       = false
-		@dir        = Treequel.directory( @uri )
+		@dir        = self.get_ldap_directory( @uri )
 		@currbranch = @dir
 		@columns    = TermInfo.screen_width
 		@rows       = TermInfo.screen_height
@@ -197,6 +197,26 @@ class Treequel::Shell
 	#########
 	protected
 	#########
+
+	### Fetch a Treequel::Directory object for the directory at the given +uri+, or
+	### quit with an error if unable to do so.
+	def get_ldap_directory( uri )
+		Treequel.directory( uri )
+	rescue LDAP::ResultError => err
+		self.log.info "Error trying to connect using TLS (%s), falling back to cleartext..." % [ err.message ]
+		begin
+			dir = Treequel.directory( uri, :connect_type => plain )
+		rescue
+			# re-raise the original error
+			self.log.error "%s while connecting to %s: tried TLS and plaintext connections" %
+				[ err.class.name, uri ]
+			raise( err )
+		end
+
+		self.log.warn "secure connection failed, falling back to plaintext"
+		return dir
+	end
+
 
 	### Set up Readline completion
 	def setup_completion
@@ -1012,19 +1032,22 @@ class Treequel::Shell
 			# Base64-encoded value
 			when /^:/
 				val = val[1..-1].strip
-				colorize( :green ) { key } + ':: ' +
+				colorize( :green ) { key } + 
+					colorize( :dark, :white ) { ':: ' } +
 					colorize( :dark, :white ) { val } + "\n"
 
 			# URL
 			when /^</
 				val = val[1..-1].strip
-				colorize( :yellow ) { key } + ':< ' +
+				colorize( :yellow ) { key } + 
+					colorize( :dark, :white ) { ':< ' } +
 					colorize( :dark, :white ) { val } + "\n"
 
 			# Regular attribute
 			else
-				colorize( :bold, :cyan ) { key } + ': ' +
-					colorize( :dark, :white ) { val } + "\n"
+				key + 
+					colorize( :dark, :white ) { ': ' } +
+					colorize( :bold, :white ) { val } + "\n"
 			end
 		end
 	end
