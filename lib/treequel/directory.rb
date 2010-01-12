@@ -313,7 +313,7 @@ class Treequel::Directory
 		end
 
 		# Format the arguments in the way #search_ext2 expects them
-		base, scope, filter, searchparams =
+		base_dn, scope, filter, searchparams =
 			self.normalize_search_parameters( base, scope, filter, parameters )
 
 		# Unwrap the search parameters from the hash in the correct order
@@ -322,19 +322,22 @@ class Treequel::Directory
 				list << "%s: %p" % [ param, searchparams[param] ]
 			end
 			"searching with base: %p, scope: %p, filter: %p, %s" %
-				[ base, scope, filter, attrlist.join(', ') ]
+				[ base_dn, scope, filter, attrlist.join(', ') ]
 		}
 		parameters = searchparams.values_at( *SEARCH_PARAMETER_ORDER )
 
 		# Wrap each result in the class derived from the 'base' argument
 		self.log.debug "Searching via search_ext2 with arguments: %p" % [[
-			base, scope, filter, *parameters
+			base_dn, scope, filter, *parameters
 		]]
 
 		results = []
 
-		self.conn.search_ext2( base, scope, filter, *parameters ).each do |entry|
+		self.conn.search_ext2( base_dn, scope, filter, *parameters ).each do |entry|
 			branch = collectclass.new_from_entry( entry, self )
+			branch.include_operational_attrs = base.include_operational_attrs? if
+				base.respond_to?( :include_operational_attrs? )
+
 			if block_given?
 				results << yield( branch )
 			else

@@ -99,3 +99,5 @@ module LdapAuthentification
 		end
 
 	end # class BindAuth
+end
+

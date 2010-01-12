@@ -47,6 +47,9 @@ module Treequel::ContentSyncControl
 	# The control's OID
 	OID = '1.3.6.1.4.1.4203.1.9.1.1'
 
+	# Sync mode constants (from RFC4533, section 2.2)
+	SYNC_MODE_REFRESH = 1
+	SYNC_MODE_REFRESH_AND_PERSIST = 3
 
 	### Extension callback -- add the requisite instance variables to including Branchsets.
 	def self::extend_object( branchset )
@@ -78,7 +81,10 @@ module Treequel::ContentSyncControl
 		super do |branch|
 			self.log.debug "Looking for the sync control in controls: %p" % [ branch.controls ]
 			branch.controls.each do |control|
-				self.log.debug "  got a %s control" % [ CONTROL_NAMES[control.oid] ]
+				self.log.debug "  got a %s control: %p" % [
+					CONTROL_NAMES[control.oid],
+					control.decode,
+				]
 
 				case control.oid
 				when CONTROL_OIDS[:sync_state]
@@ -102,10 +108,19 @@ module Treequel::ContentSyncControl
 	### Make the ASN.1 string for the control value out of the given +mode+, 
 	### +cookie+, +reload_hint+.
 	def make_control_value( mode, cookie, reload_hint )
+		# (http://tools.ietf.org/html/rfc4533#section-2.2):
+		# syncRequestValue ::= SEQUENCE {
+		#     mode ENUMERATED {
+		#         -- 0 unused
+		#         refreshOnly       (1),
+		#         -- 2 reserved
+		#         refreshAndPersist (3)
+		#     },
+		#     cookie     syncCookie OPTIONAL,
+		#     reloadHint BOOLEAN DEFAULT FALSE
+		# }
 		encoded_vals = [
-			OpenSSL::ASN1::Integer.new( mode ),
-			OpenSSL::ASN1::Null.new( nil ),
-			OpenSSL::ASN1::Boolean.new( reload_hint ),
+			OpenSSL::ASN1::Enumerated.new( SYNC_MODE_REFRESH_AND_PERSIST )
 		]
 		return OpenSSL::ASN1::Sequence.new( encoded_vals ).to_der
 	end

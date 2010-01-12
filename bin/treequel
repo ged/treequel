@@ -452,8 +452,9 @@ class Treequel::Shell
 
 	### Generate short-form 'ls' output for the given +branch+ and return it.
 	def make_shortform_ls_output( branch, options )
+		branch.include_operational_attrs = true
 		entries = branch.children.
-			collect {|b| b.rdn }.
+			collect {|b| b.rdn + (b[:hasSubordinates] ? '/' : '') }.
 			sort_by {|rdn| rdn.downcase }
 		self.log.debug "Displaying %d entries in short form." % [ entries.length ]
 
@@ -522,19 +523,6 @@ class Treequel::Shell
 	end
 
 
-	### Convert the given +patterns+ to branchsets relative to the current branch and return
-	### them. This is used to map shell arguments like 'cn=*', 'Hosts', 'cn=dav*' into
-	### branchsets that will find matching entries.
-	def convert_to_branchsets( *patterns )
-		self.log.debug "Turning %d patterns into branchsets." % [ patterns.length ]
-		return patterns.collect do |pat|
-			key, val = pat.split( /\s*=\s*/, 2 )
-			self.log.debug "  making a filter out of %p => %p" % [ key, val ]
-			@currbranch.filter( key => val )
-		end
-	end
-
-
 	### Remove the entry specified by +rdn+.
 	def rm_command( options, *rdns )
 		branchsets = self.convert_to_branchsets( *rdns )
@@ -543,20 +531,25 @@ class Treequel::Shell
 		branches = coll.all
 
 		msg = "About to delete the following entries:\n" +
-			branches.collect {|br| "  #{br.dn}" }.join("\n")
+			columnize( branches.collect {|br| br.dn } )
 
-		ask_for_confirmation( msg ) do
-			branches.each do |branch|
-				branch.delete
-				message "Deleted #{branch.dn}." 
+		if options.force
+			branches.each {|br| br.delete }
+		else
+			ask_for_confirmation( msg ) do
+				branches.each {|br| br.delete }
 			end
 		end
 	end
 	set_options :rm do |oparser, options|
 		oparser.banner = "rm [DNs]"
+		
+		oparser.on( '-f', '--force', TrueClass, "Force -- remove without confirmation." ) do
+			options.force = true
+		end
 	end
-
-
+	
+	
 	### Find entries that match the given filter_clauses.
 	def grep_command( options, *filter_clauses )
 		branchset = filter_clauses.inject( @currbranch ) do |branch, clause|
@@ -619,6 +612,19 @@ class Treequel::Shell
 			sort
 	end
 
+	
+	### Convert the given +patterns+ to branchsets relative to the current branch and return
+	### them. This is used to map shell arguments like 'cn=*', 'Hosts', 'cn=dav*' into
+	### branchsets that will find matching entries.
+	def convert_to_branchsets( *patterns )
+		self.log.debug "Turning %d patterns into branchsets." % [ patterns.length ]
+		return patterns.collect do |pat|
+			key, val = pat.split( /\s*=\s*/, 2 )
+			self.log.debug "  making a filter out of %p => %p" % [ key, val ]
+			@currbranch.filter( key => val )
+		end
+	end
+	
 
 	#######
 	private
@@ -709,84 +715,6 @@ class Treequel::Shell
 		end
 
 		return table
-	end
-
-
-	### Return the specified args as a string, quoting any that have a space.
-	def quotelist( *args )
-		return args.flatten.collect {|part| part =~ /\s/ ? part.inspect : part}
-	end
-
-
-	### Run the specified command +cmd+ with system(), failing if the execution
-	### fails.
-	def run_command( *cmd )
-		cmd.flatten!
-
-		if cmd.length > 1
-			self.log.debug( quotelist(*cmd) )
-		else
-			self.log.debug( cmd )
-		end
-
-		if $dryrun
-			self.log.error "(dry run mode)"
-		else
-			system( *cmd )
-			unless $?.success?
-				raise "Command failed: [%s]" % [cmd.join(' ')]
-			end
-		end
-	end
-
-
-	### Run the given +cmd+ with the specified +args+ without interpolation by the shell and
-	### return anything written to its STDOUT.
-	def read_command_output( cmd, *args )
-		self.log.debug "Reading output from: %s" % [ cmd, quotelist(cmd, *args) ]
-		output = IO.read( '|-' ) or exec cmd, *args
-		return output
-	end
-
-
-	### Run a subordinate Rake process with the same options and the specified +targets+.
-	def rake( *targets )
-		opts = ARGV.select {|arg| arg[0,1] == '-' }
-		args = opts + targets.map {|t| t.to_s }
-		run 'rake', '-N', *args
-	end
-
-
-	### Open a pipe to a process running the given +cmd+ and call the given block with it.
-	def pipeto( *cmd )
-		$DEBUG = true
-
-		cmd.flatten!
-		self.log.info( "Opening a pipe to: ", cmd.collect {|part| part =~ /\s/ ? part.inspect : part} ) 
-		if $dryrun
-			message "(dry run mode)"
-		else
-			open( '|-', 'w+' ) do |io|
-
-				# Parent
-				if io
-					yield( io )
-
-				# Child
-				else
-					exec( *cmd )
-					raise "Command failed: [%s]" % [cmd.join(' ')]
-				end
-			end
-		end
-	end
-
-
-	### Return the fully-qualified path to the specified +program+ in the PATH.
-	def which( program )
-		ENV['PATH'].split(/:/).
-			collect {|dir| Pathname.new(dir) + program }.
-			find {|path| path.exist? && path.executable? }
 	end
 
 
@@ -951,43 +879,6 @@ class Treequel::Shell
 		return false
 	end
 	alias :prompt_for_confirmation :ask_for_confirmation
-
-
-	### Search line-by-line in the specified +file+ for the given +regexp+, returning the
-	### first match, or nil if no match was found. If the +regexp+ has any capture groups,
-	### those will be returned in an Array, else the whole matching line is returned.
-	def find_pattern_in_file( regexp, file )
-		rval = nil
-
-		File.open( file, 'r' ).each do |line|
-			if (( match = regexp.match(line) ))
-				rval = match.captures.empty? ? match[0] : match.captures
-				break
-			end
-		end
-
-		return rval
-	end
-
-
-	### Search line-by-line in the output of the specified +cmd+ for the given +regexp+,
-	### returning the first match, or nil if no match was found. If the +regexp+ has any 
-	### capture groups, those will be returned in an Array, else the whole matching line
-	### is returned.
-	def find_pattern_in_pipe( regexp, *cmd )
-		output = []
-
-		self.log.info( cmd.collect {|part| part =~ /\s/ ? part.inspect : part} ) 
-		Open3.popen3( *cmd ) do |stdin, stdout, stderr|
-			stdin.close
-
-			output << stdout.gets until stdout.eof?
-			output << stderr.gets until stderr.eof?
-		end
-
-		result = output.find { |line| regexp.match(line) } 
-		return $1 || result
-	end
 
 
 	### Invoke the user's editor on the given +filename+ and return the exit code

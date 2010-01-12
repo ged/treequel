@@ -275,6 +275,48 @@ describe Treequel::Directory do
 		end
 
 
+		it "returns branches with operational attributes enabled if the base is a branch with " +
+		   "operational attributes enabled" do
+			base = TEST_PEOPLE_DN
+			filter = '(|(uid=jonlong)(uid=margento))'
+
+			branch = mock( "branch", :dn => TEST_PEOPLE_DN )
+			branch.should_receive( :respond_to? ).with( :include_operational_attrs? ).
+				at_least( :once ).
+				and_return( true )
+			branch.should_receive( :respond_to? ).with( :dn ).
+				and_return( true )
+		   	branch.stub!( :include_operational_attrs? ).and_return( true )
+
+			found_branch1 = stub( "entry1 branch" )
+			found_branch2 = stub( "entry2 branch" )
+
+			# Do the search
+			entries = [
+				{ 'dn' => ["uid=jonlong,#{TEST_PEOPLE_DN}"] },
+				{ 'dn' => ["uid=margento,#{TEST_PEOPLE_DN}"] },
+			]
+			@conn.should_receive( :search_ext2 ).
+				with( base, LDAP::LDAP_SCOPE_BASE, filter, ['*'], false, nil, nil, 0, 0, 0, '', nil ).
+				and_return( entries )
+
+			# Turn found entries into Branch objects
+			Treequel::Branch.should_receive( :new_from_entry ).with( entries[0], @dir ).
+				and_return( found_branch1 )
+			found_branch1.should_receive( :include_operational_attrs= ).with( true )
+			Treequel::Branch.should_receive( :new_from_entry ).with( entries[1], @dir ).
+				and_return( found_branch2 )
+			found_branch2.should_receive( :include_operational_attrs= ).with( true )
+
+			results = []
+			@dir.search( branch, :base, filter ) do |branch|
+				results << branch
+			end
+
+			results.should == [ found_branch1, found_branch2 ]
+		end
+
+
 		it "catches plain RuntimeErrors raised by #search2 and re-casts them as " +
 		   "more-interesting errors" do
 			@conn.should_receive( :search_ext2 ).
