@@ -559,12 +559,9 @@ class Treequel::Shell
 		message "Searching for entries that match '#{branchset.to_s}'"
 
 		entries = branchset.all
-		output = columnize( entries ).
-			collect do |row|
-				row.gsub( /#{ATTRIBUTE_TYPE}=\s*\S+/ ) do |rdn|
-					format_rdn( rdn )
-				end
-			end
+		output = columnize( entries ).gsub( /#{ATTRIBUTE_TYPE}=\s*\S+/ ) do |rdn|
+			format_rdn( rdn )
+		end
 		message( output )
 	end
 	set_options :grep do |oparser, options|
