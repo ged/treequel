@@ -45,7 +45,7 @@ module Treequel::ContentSyncControl
 	        Treequel::Constants
 
 	# The control's OID
-	OID = '1.3.6.1.4.1.4203.1.9.1.1'
+	OID = CONTROL_OIDS[:sync]
 
 	# Sync mode constants (from RFC4533, section 2.2)
 	SYNC_MODE_REFRESH = 1
@@ -107,7 +107,7 @@ module Treequel::ContentSyncControl
 
 	### Make the ASN.1 string for the control value out of the given +mode+, 
 	### +cookie+, +reload_hint+.
-	def make_control_value( mode, cookie, reload_hint )
+	def make_sync_control_value( mode, cookie, reload_hint )
 		# (http://tools.ietf.org/html/rfc4533#section-2.2):
 		# syncRequestValue ::= SEQUENCE {
 		#     mode ENUMERATED {
@@ -130,7 +130,7 @@ module Treequel::ContentSyncControl
 	### Branchset.
 	def get_server_controls
 		controls = super
-		value = self.make_control_value( 1, '', false )
+		value = self.make_sync_control_value( 1, '', false )
 		return controls << LDAP::Control.new( OID, value, true )
 	end
 

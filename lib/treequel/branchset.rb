@@ -352,29 +352,6 @@ class Treequel::Branchset
 	end
 
 
-	# Hiding this until we figure out how to do server-side ordering (i.e., 
-	# http://tools.ietf.org/html/rfc2891)
-
-	### Return a clone of the receiving Branchsest that will order its results by the
-	### +attributes+ specified.
-	def __order( attribute=:__default__ ) # :nodoc:
-		if attribute == :__default__
-			if block_given?
-				sort_func = Proc.new
-				return self.clone( :order => sort_func )
-			else
-				return self.options[:order]
-			end
-		elsif attribute.nil?
-			self.log.debug "cloning %p with no order" % [ self ]
-			return self.clone( :order => nil )
-		else
-			self.log.debug "cloning %p with new order: %p" % [ self, attribute ]
-			return self.clone( :order => attribute.to_sym )
-		end
-	end
-
-
 end # class Treequel::Branchset
 
 
