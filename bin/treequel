@@ -348,19 +348,19 @@ class Treequel::Shell
 	### Display LDIF for the specified RDNs.
 	def cat_command( *args )
 		args.each do |rdn|
-			extended = false
-
-			if rdn =~ /\+$/
-				rdn.chomp!( '+' )
-				extended = true
-			end
+			extended = rdn.chomp!( '+' )
 
 			branch = @currbranch.get_child( rdn )
 			branch.include_operational_attrs = true if extended
-			ldifstring = branch.to_ldif
-			self.log.debug "LDIF: #{ldifstring.dump}"
 
-			message( format_ldif(ldifstring) )
+			if branch.exists?
+				ldifstring = branch.to_ldif
+				self.log.debug "LDIF: #{ldifstring.dump}"
+
+				message( format_ldif(ldifstring) )
+			else
+				error_message( "No such entry %s" % [branch.dn] )
+			end
 		end
 	end
 
