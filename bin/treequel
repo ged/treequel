@@ -69,7 +69,7 @@ class Treequel::Shell
 	VALID_CONNECT_TYPES = %w[tls ssl plain]
 
 	# Command option parsers
-	OPTION_PARSERS = {}
+	@@option_parsers = {}
 
 	# Path to the default history file
 	HISTORY_FILE = Pathname( "~/.treequel.history" )
@@ -155,7 +155,7 @@ class Treequel::Shell
 		end
 		oparser.default_argv = []
 
-		OPTION_PARSERS[command.to_sym] = [oparser, options]
+		@@option_parsers[command.to_sym] = [oparser, options]
 	end
 
 
@@ -209,7 +209,7 @@ class Treequel::Shell
 			elsif input == ''
 				self.log.debug "No command. Re-displaying the prompt."
 
-			# Parse everything else into command + everything else
+			# Parse everything else into command + args
 			else
 				self.log.debug "Dispatching input: %p" % [ input ]
 				self.dispatch_cmd( input )
@@ -236,8 +236,8 @@ class Treequel::Shell
 
 			# If there's a registered optionparser for the command, use it to 
 			# split out options and arguments, then pass those to the command.
-			if OPTION_PARSERS.key?( full_command )
-				oparser, options = OPTION_PARSERS[ full_command ]
+			if @@option_parsers.key?( full_command )
+				oparser, options = @@option_parsers[ full_command ]
 				self.log.debug "Got an option-parser for #{full_command}."
 
 				cmdargs = oparser.parse( args )
@@ -367,8 +367,8 @@ class Treequel::Shell
 				*columnize(@commands)
 		else
 			cmd = args.shift.to_sym
-			if OPTION_PARSERS.key?( cmd )
-				oparser, _ = OPTION_PARSERS[ cmd ]
+			if @@option_parsers.key?( cmd )
+				oparser, _ = @@option_parsers[ cmd ]
 				self.log.debug "Setting summary width to: %p" % [ @columns ]
 				oparser.summary_width = @columns
 				output = oparser.to_s.sub( /^(.*?)\n/ ) do |match|
