@@ -43,6 +43,8 @@ class Treequel::Shell
 	        Treequel::Constants::Patterns,
 	        Treequel::HashUtilities
 
+	extend Treequel::ANSIColorUtilities
+
 	# Prompt text for #prompt_for_multiple_values
 	MULTILINE_PROMPT = <<-'EOF'
 	Enter one or more values for '%s'.
@@ -63,6 +65,9 @@ class Treequel::Shell
 	}.freeze
 	LOG_LEVEL_NAMES = LOG_LEVELS.invert.freeze
 
+	# Valid connect-type arguments
+	VALID_CONNECT_TYPES = %w[tls ssl plain]
+
 	# Command option parsers
 	OPTION_PARSERS = {}
 
@@ -76,6 +81,70 @@ class Treequel::Shell
 	#################################################################
 	###	C L A S S   M E T H O D S
 	#################################################################
+
+	### Get an OpenStruct that describes default invocation options.
+	def self::default_options
+		options = OpenStruct.new({
+			:try_tls => true,
+			:bind_as => nil,
+		})
+	end
+
+	### Run the shell.
+	def self::run( args )
+		options, ldapuri = self.parse_options( args )
+		Treequel::Shell.new( ldapuri, options ).run
+	end
+
+
+	### Parse command-line options for shell startup and return an options struct and
+	### the LDAP URI.
+	def self::parse_options( argv )
+		progname = File.basename( $0 )
+		options = self.default_options
+
+		oparser = OptionParser.new( "Usage: #{progname} [OPTIONS] [LDAPURL]" ) do |oparser|
+			loglevels = [:debug, :info, :warn, :error, :fatal]
+			oparser.separator ' '
+			oparser.separator colorize( :bold ) { 'Global runtime options' }
+			oparser.on( '--[no-]tls', '-n', FalseClass, "Don't attempt to use TLS" ) do
+				options.try_tls = false
+			end
+
+			oparser.on( '--binddn=DN', '-b DN', String, "Bind as DN" ) do |dn|
+				options.bind_as = dn
+			end
+
+			oparser.on( '--loglevel=LEVEL', '-l LEVEL', loglevels, 
+				"Set the logging level. Should be one of:",
+				loglevels.collect {|lvl| lvl.to_s } ) do |lvl|
+				$DEBUG = true
+				$trace = true
+				Treequel.logger.level = Treequel::Loggable::LEVEL[ lvl.to_sym ] or
+					raise "Invalid logging level %p" % [ lvl ]
+				options.loglevel = lvl.to_sym
+			end
+
+			oparser.on( '--debug', '-d', FalseClass, "Turn debugging on" ) do
+				$DEBUG = true
+				$trace = true
+				Treequel.logger.level = Logger::DEBUG
+				options.loglevel = :debug
+			end
+
+			oparser.on("-h", "--help", "Show this help message.") do
+				options.helpmode = true
+				$stderr.puts( oparser )
+				exit!
+			end
+		end
+
+		remaining_args = oparser.parse( argv )
+		ldapuri = URI( remaining_args.shift || 'ldap://localhost' )
+
+		return options, ldapuri
+	end
+
 
 	### Create an option parser from the specified +block+ for the given +command+ and register
 	### it. Many thanks to apeiros and dominikh on #Ruby-Pro for the ideas behind this.
@@ -95,13 +164,14 @@ class Treequel::Shell
 	#################################################################
 
 	### Create a new shell that will traverse the directory at the specified +uri+.
-	def initialize( uri )
+	def initialize( uri, options )
 		Treequel.logger.level = Logger::WARN
 		Treequel.logger.formatter = Treequel::ColorLogFormatter.new( Treequel.logger )
 
 		@uri        = uri
+		@options    = options
 		@quit       = false
-		@dir        = self.get_ldap_directory( @uri )
+		@dir        = self.get_ldap_directory( @uri, @options )
 		@currbranch = @dir
 		@columns    = TermInfo.screen_width
 		@rows       = TermInfo.screen_height
@@ -200,21 +270,16 @@ class Treequel::Shell
 
 	### Fetch a Treequel::Directory object for the directory at the given +uri+, or
 	### quit with an error if unable to do so.
-	def get_ldap_directory( uri )
-		Treequel.directory( uri )
-	rescue LDAP::ResultError => err
-		self.log.info "Error trying to connect using TLS (%s), falling back to cleartext..." % [ err.message ]
-		begin
-			dir = Treequel.directory( uri, :connect_type => plain )
-		rescue
-			# re-raise the original error
-			self.log.error "%s while connecting to %s: tried TLS and plaintext connections" %
-				[ err.class.name, uri ]
-			raise( err )
+	def get_ldap_directory( uri, options )
+		if uri.port == LDAP::LDAP_PORT
+			if options.try_tls
+				return Treequel.directory( uri, :connect_type => :tls )
+			else
+				return Treequel.directory( uri, :connect_type => :plain )
+			end
+		else
+			return Treequel.directory( uri, :connect_type => :ssl )
 		end
-
-		self.log.warn "secure connection failed, falling back to plaintext"
-		return dir
 	end
 
 
@@ -479,8 +544,8 @@ class Treequel::Shell
 		pairs.each do |dnpair|
 			self.log.debug "  cd to %p" % [ dnpair ]
 			attribute, value = dnpair.split( /=/, 2 )
-			self.log.debug "  changing to %s( %p )" % [ attribute, value ]
-			@currbranch = @currbranch.send( attribute, value )
+			self.log.debug "  changing to %s( %p )" % [ attribute.downcase, value ]
+			@currbranch = @currbranch.send( attribute.downcase, value )
 		end
 	end
 
@@ -920,16 +985,16 @@ class Treequel::Shell
 			# Base64-encoded value
 			when /^:/
 				val = val[1..-1].strip
-				colorize( :green ) { key } + 
-					colorize( :dark, :white ) { ':: ' } +
-					colorize( :dark, :white ) { val } + "\n"
+				key + 
+					colorize( :dark, :green ) { ':: ' } +
+					colorize( :green ) { val } + "\n"
 
 			# URL
 			when /^</
 				val = val[1..-1].strip
-				colorize( :yellow ) { key } + 
-					colorize( :dark, :white ) { ':< ' } +
-					colorize( :dark, :white ) { val } + "\n"
+				key + 
+					colorize( :dark, :yellow ) { ':< ' } +
+					colorize( :yellow ) { val } + "\n"
 
 			# Regular attribute
 			else
@@ -950,6 +1015,5 @@ class Treequel::Shell
 end # class Treequel::Shell
 
 
-ldapuri = URI( ARGV.shift || 'ldap://localhost' )
-Treequel::Shell.new( ldapuri ).run
+Treequel::Shell.run( ARGV.dup )
 

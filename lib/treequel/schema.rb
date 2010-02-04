@@ -199,6 +199,7 @@ class Treequel::Schema
 	### Parse the given LDAP syntax +descriptions+ into Treequel::Schema::LDAPSyntax objects and
 	### return them as a Hash keyed by numeric OID.
 	def parse_ldap_syntaxes( descriptions )
+		descriptions ||= []
 		return descriptions.inject( {} ) do |hash, desc|
 			syntax = Treequel::Schema::LDAPSyntax.parse( self, desc ) or
 				raise Treequel::Error, "couldn't create an LDAPSyntax from %p" % [ desc ]
@@ -213,6 +214,7 @@ class Treequel::Schema
 	### and return them as a Hash keyed both by numeric OID and by each of its NAME attributes 
 	### (if it has any).
 	def parse_matching_rules( descriptions )
+		descriptions ||= []
 		return descriptions.inject( {} ) do |hash, desc|
 			rule = Treequel::Schema::MatchingRule.parse( self, desc ) or
 				raise Treequel::Error, "couldn't create an matchingRule from %p" % [ desc ]
@@ -229,6 +231,7 @@ class Treequel::Schema
 	### and return them as a Hash keyed both by numeric OID and by each of its NAME attributes 
 	### (if it has any).
 	def parse_matching_rule_uses( descriptions )
+		descriptions ||= []
 		return descriptions.inject( {} ) do |hash, desc|
 			ruleuse = Treequel::Schema::MatchingRuleUse.parse( self, desc ) or
 				raise Treequel::Error, "couldn't create an matchingRuleUse from %p" % [ desc ]

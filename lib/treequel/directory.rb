@@ -471,13 +471,48 @@ class Treequel::Directory
 
 
 	### Return an Array of Symbols for the controls supported by the Directory, as listed
-	### in the directory's root DSE.
+	### in the directory's root DSE. Any controls which aren't known (i.e., don't have an
+	### entry in Treequel::Constants::CONTROL_NAMES), the numeric OID will be returned as-is.
 	def supported_controls
-		control_oids = self.conn.root_dse.first['supportedControl']
-		controlnames = []
-		return control_oids.collect {|oid| CONTROL_NAMES[oid] || oid }
+		return self.supported_control_oids.collect {|oid| CONTROL_NAMES[oid] || oid }
 	end
 
+
+	### Return an Array of OID strings representing the controls supported by the Directory, 
+	### as listed in the directory's root DSE.
+	def supported_control_oids
+		return self.conn.root_dse.first['supportedControl']
+	end
+
+
+	### Return an Array of Symbols for the extensions supported by the Directory, as listed
+	### in the directory's root DSE. Any extensions which aren't known (i.e., don't have an
+	### entry in Treequel::Constants::EXTENSION_NAMES), the numeric OID will be returned as-is.
+	def supported_extensions
+		return self.supported_extension_oids.collect {|oid| EXTENSION_NAMES[oid] || oid }
+	end
+
+
+	### Return an Array of OID strings representing the extensions supported by the Directory, 
+	### as listed in the directory's root DSE.
+	def supported_extension_oids
+		return self.conn.root_dse.first['supportedExtension']
+	end
+
+
+	### Return an Array of Symbols for the features supported by the Directory, as listed
+	### in the directory's root DSE. Any features which aren't known (i.e., don't have an
+	### entry in Treequel::Constants::FEATURE_NAMES), the numeric OID will be returned as-is.
+	def supported_features
+		return self.supported_feature_oids.collect {|oid| FEATURE_NAMES[oid] || oid }
+	end
+
+
+	### Return an Array of OID strings representing the features supported by the Directory, 
+	### as listed in the directory's root DSE.
+	def supported_feature_oids
+		return self.conn.root_dse.first['supportedFeatures']
+	end
 
 
 	#########
@@ -501,10 +536,10 @@ class Treequel::Directory
 			conn = LDAP::SSLConn.new( @host, @port, true )
 		when :ssl
 			self.log.debug "Connecting using SSL to %s:%d" % [ @host, @port ]
-			conn = LDAP::SSLConn.new( host, port )
+			conn = LDAP::SSLConn.new( @host, @port )
 		else
 			self.log.debug "Connecting using an unencrypted connection to %s:%d" % [ @host, @port ]
-			conn = LDAP::Conn.new( host, port )
+			conn = LDAP::Conn.new( @host, @port )
 		end
 
 		conn.set_option( LDAP::LDAP_OPT_PROTOCOL_VERSION, 3 )

@@ -236,14 +236,29 @@ class Treequel::Schema::AttributeType
 	protected
 	#########
 
+	OID_SPLIT_PATTERN = /
+		^
+		#{SQUOTE}?
+		(#{OID})					# OID = $1
+		#{SQUOTE}?
+		(?:
+			#{LCURLY}
+			(#{LEN})				# Length = $2
+			#{RCURLY}
+		)?$
+	/x
+
 	### Split a numeric OID with an optional length qualifier into a numeric OID and length. If
 	### no length qualifier is present, it will be nil.
+	### NOTE: Modified to support ActiveDirectory schemas, which have both quoted numeric OIDs 
+	### and descriptors as syntax OIDs.
 	def split_syntax_oid( noidlen )
-		unless noidlen =~ /^(#{NUMERICOID}) (?:#{LCURLY} (#{LEN}) #{RCURLY})?$/x
-			raise Treequel::ParseError, "invalid numeric syntax OID with length: %p" % [ noidlen ]
+		unless noidlen =~ OID_SPLIT_PATTERN
+			raise Treequel::ParseError, "invalid syntax OID: %p" % [ noidlen ]
 		end
 
-		oid, len = $1, $2
+		oidstring, len = $1, $2
+		oid = Treequel::Schema.parse_oid( oidstring )
 
 		return oid, len ? Integer(len) : nil
 	end

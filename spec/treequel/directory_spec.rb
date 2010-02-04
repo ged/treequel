@@ -549,12 +549,21 @@ describe Treequel::Directory do
 
 
 		### Controls support
-		describe "controls support" do
+		describe "to a server that supports controls introspection" do
 			before( :each ) do
 				@control = Module.new { include Treequel::Control }
 				@conn.should_receive( :root_dse ).and_return( TEST_DSE )
 			end
 
+
+			it "allows one to fetch the list of supported controls as OIDs" do
+				@dir.supported_control_oids.should == TEST_DSE.first['supportedControl']
+			end
+
+			it "allows one to fetch the list of supported controls as control names" do
+				@dir.supported_controls.should == TEST_DSE.first['supportedControl'].
+					collect {|oid| Treequel::Constants::CONTROL_NAMES[oid] }
+			end
 
 			it "allows the registration of one or more Treequel::Control modules" do
 				@control.const_set( :OID, TEST_DSE.first['supportedControl'].first )
@@ -577,6 +586,60 @@ describe Treequel::Directory do
 				}.to raise_error( NotImplementedError, /doesn't define/i )
 			end
 		end
+
+
+		describe "to a server that supports extensions introspection" do
+			before( :each ) do
+				@conn.should_receive( :root_dse ).and_return( TEST_DSE )
+			end
+
+
+			it "allows one to fetch the list of supported extensions as OIDs" do
+				@dir.supported_extension_oids.should == TEST_DSE.first['supportedExtension']
+			end
+
+			it "allows one to fetch the list of supported extensions as extension names" do
+				@dir.supported_extensions.should == TEST_DSE.first['supportedExtension'].
+					collect {|oid| Treequel::Constants::EXTENSION_NAMES[oid] }
+			end
+
+		end
+
+
+		describe "to a server that supports features introspection" do
+			before( :each ) do
+				@conn.should_receive( :root_dse ).and_return( TEST_DSE )
+			end
+
+
+			it "allows one to fetch the list of supported features as OIDs" do
+				@dir.supported_feature_oids.should == TEST_DSE.first['supportedFeatures']
+			end
+
+			it "allows one to fetch the list of supported features as feature names" do
+				@dir.supported_features.should == TEST_DSE.first['supportedFeatures'].
+					collect {|oid| Treequel::Constants::FEATURE_NAMES[oid] }
+			end
+
+		end
+
+		describe "to a server that doesn't support features introspection" do
+			before( :each ) do
+				@conn.should_receive( :root_dse ).and_return( TEST_DSE )
+			end
+
+
+			it "allows one to fetch the list of supported features as OIDs" do
+				@dir.supported_feature_oids.should == TEST_DSE.first['supportedFeatures']
+			end
+
+			it "allows one to fetch the list of supported features as feature names" do
+				@dir.supported_features.should == TEST_DSE.first['supportedFeatures'].
+					collect {|oid| Treequel::Constants::FEATURE_NAMES[oid] }
+			end
+
+		end
+
 	end
 end
 

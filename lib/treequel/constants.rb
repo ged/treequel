@@ -28,34 +28,117 @@ module Treequel::Constants
 		LDAP::LDAP_SCOPE_SUBTREE  => 'subtree',
 	}
 
-	### Names and OIDs of various controls
+	### Names and OIDs of various controls, in OID order
 	CONTROL_OIDS = {
-		:valuesreturnfilter  => '1.2.826.0.1.334810.2.3',
-		:matchedvals         => '1.2.826.0.1.3344810.2.2',
-		:matchedvalues       => '1.2.826.0.1.3344810.2.3',
-		:paged               => '1.2.840.113556.1.4.319',
-		:sortrequest         => '1.2.840.113556.1.4.473',
-		:sortresult          => '1.2.840.113556.1.4.474',
-		:referrals           => '1.2.840.113556.1.4.616',
-		:tree_delete         => '1.2.840.113556.1.4.805',
-		:preread             => '1.3.6.1.1.13.1',
-		:postread            => '1.3.6.1.1.13.2',
-		:assertion           => '1.3.6.1.1.12',
-		:passwordpolicy      => '1.3.6.1.4.1.42.2.27.8.5.1',
-		:sync                => '1.3.6.1.4.1.4203.1.9.1.1',
-		:sync_state          => '1.3.6.1.4.1.4203.1.9.1.2',
-		:sync_done           => '1.3.6.1.4.1.4203.1.9.1.3',
-		:subentries          => '1.3.6.1.4.1.4203.1.10.1',
-		:managedsait         => '2.16.840.1.113730.3.4.2',
-		:persistentsearch    => '2.16.840.1.113730.3.4.3',
-		:pwexpired           => '2.16.840.1.113730.3.4.4',
-		:pwexpiring          => '2.16.840.1.113730.3.4.5',
-		:entrychange         => '2.16.840.1.113730.3.4.7',
-		:vlvrequest          => '2.16.840.1.113730.3.4.9',
-		:vlvresponse         => '2.16.840.1.113730.3.4.10',
-		:proxyauthentication => '2.16.840.1.113730.3.4.18',
+		:valuesreturnfilter    => '1.2.826.0.1.334810.2.3',
+		:matchedvals           => '1.2.826.0.1.3344810.2.2',
+		:matchedvalues         => '1.2.826.0.1.3344810.2.3',
+
+		# MS Active Directory controls, from various MSDN references, most 
+		# notably: 
+		# http://msdn.microsoft.com/en-us/library/cc223320%28PROT.10%29.aspx
+		:paged                 => '1.2.840.113556.1.4.319',
+		:server_show_deleted   => '1.2.840.113556.1.4.417',
+		:sortrequest           => '1.2.840.113556.1.4.473',
+		:sortresult            => '1.2.840.113556.1.4.474',
+		:crossdom_move_target  => '1.2.840.113556.1.4.521',
+		:server_notification   => '1.2.840.113556.1.4.528',
+		:extended_dn           => '1.2.840.113556.1.4.529',
+		:referrals             => '1.2.840.113556.1.4.616',
+		:server_lazy_commit    => '1.2.840.113556.1.4.619',
+		:server_sd_flags       => '1.2.840.113556.1.4.801',
+		:incremental_values    => '1.2.840.113556.1.4.802',
+		:tree_delete           => '1.2.840.113556.1.4.805',
+		:server_dirsync        => '1.2.840.113556.1.4.841',
+		:get_stats             => '1.2.840.113556.1.4.970',
+		:verify_name           => '1.2.840.113556.1.4.1338',
+		:domain_scope          => '1.2.840.113556.1.4.1339',
+		:search_options        => '1.2.840.113556.1.4.1340',
+		:rodc_dcpromo          => '1.2.840.113556.1.4.1341',
+		:permissive_modify     => '1.2.840.113556.1.4.1413',
+		:asq                   => '1.2.840.113556.1.4.1504',
+		:fast_bind             => '1.2.840.113556.1.4.1781',
+		:quota_control         => '1.2.840.113556.1.4.1852',
+		:shutdown_notify       => '1.2.840.113556.1.4.1907',
+		:range_retrieval_noerr => '1.2.840.113556.1.4.1948',
+		:force_update          => '1.2.840.113556.1.4.1974',
+		:input_dn              => '1.2.840.113556.1.4.2026',
+
+		# RFC 4527
+		:preread               => '1.3.6.1.1.13.1',
+		:postread              => '1.3.6.1.1.13.2',
+
+		:assertion             => '1.3.6.1.1.12',
+
+		:passwordpolicy        => '1.3.6.1.4.1.42.2.27.8.5.1',
+
+		:ttl_refresh           => '1.3.6.1.4.1.1466.101.119.1',
+		:start_tls             => '1.3.6.1.4.1.1466.20037',
+
+		:sync                  => '1.3.6.1.4.1.4203.1.9.1.1',
+		:sync_state            => '1.3.6.1.4.1.4203.1.9.1.2',
+		:sync_done             => '1.3.6.1.4.1.4203.1.9.1.3',
+		:subentries            => '1.3.6.1.4.1.4203.1.10.1',
+
+		# OpenLDAP "devil made me do it" OID arc
+		:noop                  => "1.3.6.1.4.1.4203.666.5.2",
+		:no_subordinates       => "1.3.6.1.4.1.4203.666.5.11",
+		:relax                 => "1.3.6.1.4.1.4203.666.5.12",
+		:managedit             => "1.3.6.1.4.1.4203.666.5.12",
+		:slurp                 => "1.3.6.1.4.1.4203.666.5.13",
+		:valsort               => "1.3.6.1.4.1.4203.666.5.14",
+		:dontusecopy           => "1.3.6.1.4.1.4203.666.5.15",
+		:x_deref               => "1.3.6.1.4.1.4203.666.5.16",
+		:x_whatfailed          => "1.3.6.1.4.1.4203.666.5.17",
+		:x_chaining_behavior   => "1.3.6.1.4.1.4203.666.11.3",
+
+		# LDAP Duplicated Entry Control Extension
+		:dupent_request        => '2.16.840.1.113719.1.27.101.1',
+		:dupent_response       => '2.16.840.1.113719.1.27.101.2',
+		:dupent_entry          => '2.16.840.1.113719.1.27.101.3',
+
+		:managedsait           => '2.16.840.1.113730.3.4.2',
+		:persistentsearch      => '2.16.840.1.113730.3.4.3',
+		:pwexpired             => '2.16.840.1.113730.3.4.4',
+		:pwexpiring            => '2.16.840.1.113730.3.4.5',
+		:entrychange           => '2.16.840.1.113730.3.4.7',
+		:vlvrequest            => '2.16.840.1.113730.3.4.9',
+		:vlvresponse           => '2.16.840.1.113730.3.4.10',
+		:proxyauthentication   => '2.16.840.1.113730.3.4.18',
+
 	}.freeze
 	CONTROL_NAMES = CONTROL_OIDS.invert.freeze
+
+
+	### Names and OIDs of LDAP extensions, in OID order
+	EXTENSION_OIDS = {
+		# Borrowed from OpenLDAP's ldap.h
+		:cancel        => '1.3.6.1.1.8',                # RFC 3909
+		:turn          => '1.3.6.1.1.19',               # RFC 4531
+
+		:refresh       => '1.3.6.1.4.1.1466.101.119.1', # RFC 2589
+		:start_tls     => '1.3.6.1.4.1.1466.20037',     # RFC 4511
+
+		:modify_passwd => '1.3.6.1.4.1.4203.1.11.1',    # RFC 3062
+		:who_am_i      => '1.3.6.1.4.1.4203.1.11.3',    # RFC 4532
+	}.freeze
+	EXTENSION_NAMES = EXTENSION_OIDS.invert.freeze
+
+
+	### Names and OIDs of LDAP features, in OID order
+	FEATURE_OIDS = {
+		# Borrowed from OpenLDAP's ldap.h
+		:modify_increment       => '1.3.6.1.1.14',
+
+		:all_op_attrs           => '1.3.6.1.4.1.4203.1.5.1', # RFC 3673
+		:objectclass_attrs      => '1.3.6.1.4.1.4203.1.5.2',
+		:absolute_filters       => '1.3.6.1.4.1.4203.1.5.3',
+		:language_tag_options   => '1.3.6.1.4.1.4203.1.5.4',
+		:language_range_options => '1.3.6.1.4.1.4203.1.5.5',
+
+		:subordinate_scope      => '1.3.6.1.4.1.4203.666.8.1',
+	}.freeze
+	FEATURE_NAMES = FEATURE_OIDS.invert.freeze
 
 
 	### OIDs of RFC values
@@ -268,26 +351,34 @@ module Treequel::Constants
 		#	numericoid = number 1*( DOT number )
 		NUMERICOID = /#{NUMBER}(?: #{DOT} #{NUMBER} )+/x
 
+		# ActiveDirectory quotes its numeric OIDs (sometimes)
+		QUOTED_NUMERICOID = /#{SQUOTE} #{NUMERICOID} #{SQUOTE}/x
 
-		# Short names, also known as ¨iptors, are used as more readable
+		# Short names, also known as descriptors, are used as more readable
 		# aliases for object identifiers.  Short names are case insensitive and
 		# conform to the ABNF:
 
 		#	descr = keystring
 		DESCR = KEYSTRING
 
+		# ActiveDirectory quotes its descriptors (sometimes)
+		QUOTED_DESCR = / #{SQUOTE} #{DESCR} #{SQUOTE} /x
+
 		# Where either an object identifier or a short name may be specified,
 		# the following production is used:
 
 		#    oid = descr / numericoid
-		OID = / #{DESCR} | #{NUMERICOID} /x
+		# NOTE: Added QUOTED_NUMERICOID and QUOTED_DESCR to support ActiveDirectory
+		OID = / #{DESCR} | #{QUOTED_DESCR} | #{NUMERICOID} | #{QUOTED_NUMERICOID} /x
 
 
 		# len = number
 		LEN = NUMBER
 
 		# noidlen = numericoid [ LCURLY len RCURLY ]
-		NOIDLEN = /#{NUMERICOID} (?:#{LCURLY} #{LEN} #{RCURLY})?/x
+		# NOTE: I changed this from NUMERICOID to OID to support ActiveDirectory schema 
+		#       entries
+		NOIDLEN = /#{OID} (?:#{LCURLY} #{LEN} #{RCURLY})?/x
 
 		# oidlist = oid *( WSP DOLLAR WSP oid )
 		OIDLIST = /#{OID} (?: #{WSP} #{DOLLAR} #{WSP} #{OID} )*/x
