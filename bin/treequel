@@ -182,6 +182,17 @@ class Treequel::Shell
 	end
 
 
+	######
+	public
+	######
+
+	# The command-line options the shell was started with
+	attr_reader :options
+
+	# The flag which causes the shell to exit after the current loop
+	attr_accessor :quit
+
+
 	### The command loop: run the shell until the user wants to quit
 	def run
 		@original_tty_settings = IO.read( '|-' ) or exec 'stty', '-g'
@@ -192,6 +203,11 @@ class Treequel::Shell
 
 		# Load saved command-line history
 		self.read_history
+
+		if uid = self.options.bind_as
+			options = OpenStruct.new
+			self.bind_command( options, uid )
+		end
 
 		# Run until something sets the quit flag
 		until @quit
@@ -387,7 +403,7 @@ class Treequel::Shell
 	### Quit the shell.
 	def quit_command( *args )
 		message "Okay, exiting."
-		@quit = true
+		self.quit = true
 	end
 
 
@@ -575,7 +591,7 @@ class Treequel::Shell
 	def edit_command( options, rdn )
 		branch = @currbranch.get_child( rdn )
 
-		raise "#{branch.dn}: no such entry. Did you mean to 'create' it instead?" unless
+		raise "#{branch.dn}: no such entry. Did you mean to 'create' it instead? " unless
 		 	branch.exists?
 		if entryhash = edit_in_yaml( branch )
 			branch.merge( entryhash )
