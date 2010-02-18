@@ -9,21 +9,12 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-begin
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
 
-	require 'treequel'
-	require 'treequel/directory'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
+require 'treequel'
+require 'treequel/directory'
 
 include Treequel::TestConstants
 
@@ -53,7 +44,7 @@ describe Treequel do
 
 
 	it "returns a version string with a build number if asked" do
-		Treequel.version_string(true).should =~ /\w+ [\d.]+ \(build rev.*\)/
+		Treequel.version_string(true).should =~ /\w+ [\d.]+ \(build [[:xdigit:]]+\)/
 	end
 
 

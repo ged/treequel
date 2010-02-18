@@ -40,7 +40,8 @@ module Treequel
 	VERSION = '1.0.2'
 
 	# VCS revision
-	REVISION = %q$rev$
+	REVISION = %q$Revision$
+
 
 	# Load the logformatters and some other stuff first
 	require 'treequel/constants'
@@ -91,9 +92,10 @@ module Treequel
 	### Return the library's version string
 	def self::version_string( include_buildnum=false )
 		vstring = "%s %s" % [ self.name, VERSION ]
-		vstring << " (build %s)" % [ REVISION ] if include_buildnum
+		vstring << " (build %s)" % [ REVISION[/: ([[:xdigit:]]+)/, 1] || '0' ] if include_buildnum
 		return vstring
 	end
+
 
 	### Create a Treequel::Directory object, either from a Hash of options or an LDAP URL.
 	def self::directory( *args )

@@ -6,6 +6,7 @@ require 'abbrev'
 require 'columnize'
 require 'diff/lcs'
 require 'digest/sha1'
+require 'irb'
 require 'logger'
 require 'open3'
 require 'optparse'
@@ -34,6 +35,41 @@ class OpenStruct
 
 end
 
+
+### IRb.start_session, courtesy of Joel VanderWerf in [ruby-talk:42437].
+require 'irb'
+require 'irb/completion'
+
+module IRB # :nodoc:
+	def self.start_session( obj )
+		unless @__initialized
+			args = ARGV
+			ARGV.replace(ARGV.dup)
+			IRB.setup(nil)
+			ARGV.replace(args)
+			@__initialized = true
+		end
+
+		workspace = WorkSpace.new( obj )
+		irb = Irb.new( workspace )
+
+		@CONF[:IRB_RC].call( irb.context ) if @CONF[:IRB_RC]
+		@CONF[:MAIN_CONTEXT] = irb.context
+
+		begin
+			prevhandler = Signal.trap( 'INT' ) do
+				irb.signal_handle
+			end
+
+			catch( :IRB_EXIT ) do
+				irb.eval_input
+			end
+		ensure
+			Signal.trap( 'INT', prevhandler )
+		end
+
+	end
+end
 
 # The Treequel shell.
 class Treequel::Shell
@@ -624,13 +660,13 @@ class Treequel::Shell
 	end
 	set_options :rm do |oparser, options|
 		oparser.banner = "rm [DNs]"
-		
+
 		oparser.on( '-f', '--force', TrueClass, "Force -- remove without confirmation." ) do
 			options.force = true
 		end
 	end
-	
-	
+
+
 	### Find entries that match the given filter_clauses.
 	def grep_command( options, *filter_clauses )
 		branchset = filter_clauses.inject( @currbranch ) do |branch, clause|
@@ -673,6 +709,26 @@ class Treequel::Shell
 	end
 
 
+	### Start an IRB session on either the current branchset, if invoked with no arguments, or
+	### on a branchset for the specified +rdn+ if one is given.
+	def irb_command( options, *args )
+		branch = nil
+		if args.empty?
+			branch = @currbranch
+		else
+			branch = @currbranch.get_child( args.first )
+		end
+
+		self.log.debug "Setting up IRb shell"
+		IRB.start_session( branch )
+	end
+	set_options :irb do |oparser, options|
+		oparser.banner = "irb [RDN]"
+		oparser.separator "Start an IRb shell with either the current branch (if none is " +
+		 	"specified) or a branch for the entry specified by the given RDN."
+	end
+
+
 	### Handle a command from the user that doesn't exist.
 	def handle_missing_cmd( *args )
 		command = args.shift || '(testing?)'
@@ -690,7 +746,7 @@ class Treequel::Shell
 			sort
 	end
 
-	
+
 	### Convert the given +patterns+ to branchsets relative to the current branch and return
 	### them. This is used to map shell arguments like 'cn=*', 'Hosts', 'cn=dav*' into
 	### branchsets that will find matching entries.
@@ -702,7 +758,7 @@ class Treequel::Shell
 			@currbranch.filter( key => val )
 		end
 	end
-	
+
 
 	#######
 	private
