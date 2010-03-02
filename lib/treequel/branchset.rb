@@ -206,6 +206,12 @@ class Treequel::Branchset
 	end
 
 
+	### Return +true+ if no entries match the Branchset's current criteria.
+	def empty?
+		return self.first.nil? ? true : false
+	end
+
+
 	### Either maps entries which match the current criteria into an Array of the given 
 	### +attribute+, or falls back to the block form if no +attribute+ is specified. If both an
 	### +attribute+ and a +block+ are given, the +block+ is called once for each +attribute+ value

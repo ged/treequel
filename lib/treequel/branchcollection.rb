@@ -138,6 +138,13 @@ class Treequel::BranchCollection
 		return branch
 	end
 
+
+	### Return +true+ if none of the collection's branches match any entries.
+	def empty?
+		return self.branchsets.all? {|bs| bs.empty? } ? true : false
+	end
+
+
 	### Overridden to support Branchset#map
 	def map( attribute=nil, &block )
 		if attribute

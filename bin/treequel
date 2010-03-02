@@ -379,7 +379,11 @@ class Treequel::Shell
 		parts = Shellwords.shellwords( input )
 
 		# If there aren't any arguments, it's command completion
-		if parts.length == 1
+		if parts.empty?
+			possible_completions = @commands.sort
+			self.log.debug "  possible completions: %p" % [ possible_completions ]
+			return possible_completions
+		elsif parts.length == 1
 			# One completion means it's an unambiguous match, so just complete it.
 			possible_completions = @commands.grep( /^#{Regexp.quote(input)}/ ).sort
 			self.log.debug "  possible completions: %p" % [ possible_completions ]

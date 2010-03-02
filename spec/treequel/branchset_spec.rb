@@ -26,6 +26,7 @@ include Treequel::Constants
 describe Treequel::Branchset do
 	include Treequel::SpecHelpers
 
+	# Make the specs read more clearly
 	class << self
 		alias_method :they, :it
 	end
@@ -68,6 +69,27 @@ describe Treequel::Branchset do
 			resultbranch.should_receive( :dn ).and_return( :its_dn )
 
 			@branchset.all? {|b| b.dn }
+		end
+
+		# 
+		# #empty?
+		# 
+		they "know that they are empty if they don't match at least one entry" do
+			params = @params.merge( :limit => 1 )
+			@branch.should_receive( :search ).
+				with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, params ).
+				and_return( [] )
+
+			@branchset.should be_empty()
+		end
+
+		they "know that they are empty if they match at least one entry" do
+			params = @params.merge( :limit => 1 )
+			@branch.should_receive( :search ).
+				with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, params ).
+				and_return( [:a_branch] )
+
+			@branchset.should_not be_empty()
 		end
 
 		# 
