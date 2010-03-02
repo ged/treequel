@@ -105,7 +105,19 @@ describe Treequel::BranchCollection do
 			@collection = Treequel::BranchCollection.new( @branchset1, @branchset2 )
 		end
 
-		it "knows that it is empty if all of its branchsets are empty"
+		it "knows that it is empty if all of its branchsets are empty" do
+			@branchset1.should_receive( :empty? ).and_return( true )
+			@branchset2.should_receive( :empty? ).and_return( true )
+
+			@collection.should be_empty()
+		end
+
+		it "knows that it is not empty if one of its branchsets has matching entries" do
+			@branchset1.should_receive( :empty? ).and_return( true )
+			@branchset2.should_receive( :empty? ).and_return( false )
+
+			@collection.should_not be_empty()
+		end
 
 		it "fetches all of the results from each of its branchsets if asked for all results" do
 			@branchset1.should_receive( :each ).and_yield( :bs1_stuff )
