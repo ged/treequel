@@ -342,7 +342,7 @@ module Treequel # :nodoc:
 			return '' unless /(?:vt10[03]|xterm(?:-color)?|linux|screen)/i =~ ENV['TERM']
 			attributes = ANSI_ATTRIBUTES.values_at( *attributes ).compact.join(';')
 
-			if attributes.empty? 
+			if attributes.empty?
 				return ''
 			else
 				return "\e[%sm" % attributes

@@ -224,6 +224,7 @@ class Treequel::Directory
 		self.conn.bind( user_dn.to_s, password )
 		@bound_as = user_dn.to_s
 	end
+	alias_method :bind_as, :bind
 
 
 	### Execute the provided +block+ after binding as +user_dn+ with the given +password+. After

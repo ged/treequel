@@ -25,6 +25,7 @@ class Treequel::Schema
 	include Treequel::Loggable,
 	        Treequel::Constants::Patterns
 
+	require 'treequel/schema/table'
 	require 'treequel/schema/objectclass'
 	require 'treequel/schema/attributetype'
 	require 'treequel/schema/matchingrule'
@@ -168,14 +169,14 @@ class Treequel::Schema
 	### return them as a Hash keyed both by numeric OID and by each of its NAME attributes (if it
 	### has any).
 	def parse_objectclasses( descriptions )
-		return descriptions.inject( {} ) do |hash, desc|
+		return descriptions.inject( Treequel::Schema::Table.new ) do |table, desc|
 			oc = Treequel::Schema::ObjectClass.parse( self, desc ) or
 				raise Treequel::Error, "couldn't create an objectClass from %p" % [ desc ]
 
-			hash[ oc.oid ] = oc
-			oc.names.inject( hash ) {|h, name| h[name] = oc; h }
+			table[ oc.oid ] = oc
+			oc.names.inject( table ) {|h, name| h[name] = oc; h }
 
-			hash
+			table
 		end
 	end
 
@@ -184,14 +185,14 @@ class Treequel::Schema
 	### and return them as a Hash keyed both by numeric OID and by each of its NAME attributes 
 	### (if it has any).
 	def parse_attribute_types( descriptions )
-		return descriptions.inject( {} ) do |hash, desc|
+		return descriptions.inject( Treequel::Schema::Table.new ) do |table, desc|
 			attrtype = Treequel::Schema::AttributeType.parse( self, desc ) or
 				raise Treequel::Error, "couldn't create an attributeType from %p" % [ desc ]
 
-			hash[ attrtype.oid ] = attrtype
-			attrtype.names.inject( hash ) {|h, name| h[name] = attrtype; h }
+			table[ attrtype.oid ] = attrtype
+			attrtype.names.inject( table ) {|h, name| h[name] = attrtype; h }
 
-			hash
+			table
 		end
 	end
 
@@ -200,12 +201,12 @@ class Treequel::Schema
 	### return them as a Hash keyed by numeric OID.
 	def parse_ldap_syntaxes( descriptions )
 		descriptions ||= []
-		return descriptions.inject( {} ) do |hash, desc|
+		return descriptions.inject( Treequel::Schema::Table.new ) do |table, desc|
 			syntax = Treequel::Schema::LDAPSyntax.parse( self, desc ) or
 				raise Treequel::Error, "couldn't create an LDAPSyntax from %p" % [ desc ]
 
-			hash[ syntax.oid ] = syntax
-			hash
+			table[ syntax.oid ] = syntax
+			table
 		end
 	end
 
@@ -215,14 +216,14 @@ class Treequel::Schema
 	### (if it has any).
 	def parse_matching_rules( descriptions )
 		descriptions ||= []
-		return descriptions.inject( {} ) do |hash, desc|
+		return descriptions.inject( Treequel::Schema::Table.new ) do |table, desc|
 			rule = Treequel::Schema::MatchingRule.parse( self, desc ) or
 				raise Treequel::Error, "couldn't create an matchingRule from %p" % [ desc ]
 
-			hash[ rule.oid ] = rule
-			rule.names.inject( hash ) {|h, name| h[name] = rule; h }
+			table[ rule.oid ] = rule
+			rule.names.inject( table ) {|h, name| h[name] = rule; h }
 
-			hash
+			table
 		end
 	end
 
@@ -232,14 +233,14 @@ class Treequel::Schema
 	### (if it has any).
 	def parse_matching_rule_uses( descriptions )
 		descriptions ||= []
-		return descriptions.inject( {} ) do |hash, desc|
+		return descriptions.inject( Treequel::Schema::Table.new ) do |table, desc|
 			ruleuse = Treequel::Schema::MatchingRuleUse.parse( self, desc ) or
 				raise Treequel::Error, "couldn't create an matchingRuleUse from %p" % [ desc ]
 
-			hash[ ruleuse.oid ] = ruleuse
-			ruleuse.names.inject( hash ) {|h, name| h[name] = ruleuse; h }
+			table[ ruleuse.oid ] = ruleuse
+			ruleuse.names.inject( table ) {|h, name| h[name] = ruleuse; h }
 
-			hash
+			table
 		end
 	end
 
