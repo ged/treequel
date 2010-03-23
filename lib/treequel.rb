@@ -209,32 +209,66 @@ module Treequel
 
 	### Read the ldap.conf-style configuration from +configfile+ and return it as a Hash.
 	def self::read_opts_from_config( configfile )
+		Treequel.log.debug "Reading config options from %s..." % [ configfile ]
 		opts = {}
 
+		linecount = 0
 		File.readlines( configfile ) do |line|
+			linecount += 1
 			case line
 
 			# URI <ldap[si]://[name[:port]] ...>
 			# :TODO: Support multiple URIs somehow?
-			when /^\s*URI\s+(\S+)/
+			when /^\s*URI\s+(\S+)/i
+				Treequel.log.debug "  setting options from a URI: %p" % [ line ]
 				uriopts = self.make_options_from_uri( $1 )
 				opts.merge!( uriopts )
 
 			# BASE <base>
-			when /^\s*BASE\s+(\S+)/
+			when /^\s*BASE\s+(\S+)/i
+				Treequel.log.debug "  setting default base DN: %p" % [ line ]
 				opts[:base_dn] = $1
 
 			# BINDDN <dn>
-			when /^\s*BINDDN\s+(\S+)/
+			when /^\s*BINDDN\s+(\S+)/i
+				Treequel.log.debug "  setting bind DN: %p" % [ line ]
 				opts[:bind_dn] = $1
 
+			# bindpw <bindpw> (ldap_nss only)
+			when /^\s*bindpw\s+(\S+)/i
+				Treequel.log.debug "  setting bind password from line %s" % [ linecount ]
+				opts[:pass] = $1
+
 			# HOST <name[:port] ...>
-			when /^\s*HOST\s+(\S+)/
+			when /^\s*HOST\s+(\S+)/i
+				Treequel.log.debug "  setting host: %p" % [ line ]
 				opts[:host] = $1
 
 			# PORT <port>
-			when /^\s*PORT\s+(\S+)/
+			when /^\s*PORT\s+(\S+)/i
+				Treequel.log.debug "  setting port: %p" % [ line ]
 				opts[:port] = $1.to_i
+
+			# SSL <on|off|start_tls>
+			when /^\s*SSL\s+(on|off|start_tls)/i
+				mode = $1.downcase
+				case mode
+				when 'on'
+					Treequel.log.debug "  enabling plain SSL: %p" % [ line ]
+					opts[:port] = 636
+					opts[:connect_type] = :ssl
+				when 'off'
+					Treequel.log.debug "  disabling SSL: %p" % [ line ]
+					opts[:port] = 389
+					opts[:connect_type] = :plain
+				when 'start_tls'
+					Treequel.log.debug "  enabling TLS: %p" % [ line ]
+					opts[:port] = 389
+					opts[:connect_type] = :tls
+				else
+					Treequel.log.error "Unknown 'ssl' setting %p in %s line %d" %
+						[ mode, configfile, linecount ]
+				end
 
 			end
 		end

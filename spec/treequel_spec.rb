@@ -240,6 +240,10 @@ describe Treequel do
 			Treequel.find_configfile.should == pathmocks[ successful_index ]
 		end
 
+		# 
+		# OpenLDAP-style config
+		# 
+
 		it "maps the OpenLDAP URI directive to equivalent options" do
 			File.should_receive( :readlines ).with( :a_configfile ).
 				and_yield( "URI ldap://ldap.acme.com/dc=acme,dc=com" )
@@ -275,8 +279,74 @@ describe Treequel do
 				{ :port => 389 }
 		end
 
+		# 
+		# NSS-style config
+		# 
 
-		it "maps nss-style options correctly"
+		it "maps the nss-style uri directive to equivalent options" do
+			File.should_receive( :readlines ).with( :a_configfile ).
+				and_yield( "uri ldap://ldap.acme.com/dc=acme,dc=com" )
+			Treequel.read_opts_from_config( :a_configfile ).should ==
+				{ :port => 389, :base_dn => "dc=acme,dc=com", :host => "ldap.acme.com" }
+		end
+
+		it "maps the nss-style 'host' option correctly" do
+			File.should_receive( :readlines ).with( :a_configfile ).
+				and_yield( "host ldap.acme.com\n\n" )
+			Treequel.read_opts_from_config( :a_configfile ).should ==
+				{ :host => 'ldap.acme.com' }
+		end
+
+		it "maps the nss-style 'binddn' option correctly" do
+			File.should_receive( :readlines ).with( :a_configfile ).
+				and_yield( "binddn cn=superuser,dc=acme,dc=com" )
+			Treequel.read_opts_from_config( :a_configfile ).should == 
+				{ :bind_dn => "cn=superuser,dc=acme,dc=com" }
+		end
+
+		it "maps the nss-style 'bindpw' option correctly" do
+			File.should_receive( :readlines ).with( :a_configfile ).
+				and_yield( "# My totally awesome password" ).
+				and_yield( "bindpw a:password!" )
+			Treequel.read_opts_from_config( :a_configfile ).should == 
+				{ :pass => "a:password!" }
+		end
+
+		it "maps the nss-style 'base' option correctly" do
+			File.should_receive( :readlines ).with( :a_configfile ).
+				and_yield( "base dc=acme,dc=com" )
+			Treequel.read_opts_from_config( :a_configfile ).should == 
+				{ :base_dn => "dc=acme,dc=com" }
+		end
+
+		it "maps the nss-style 'ssl' option to the correct port and connect_type if it's 'off'" do
+			File.should_receive( :readlines ).with( :a_configfile ).
+				and_yield( "ssl  off" )
+			Treequel.read_opts_from_config( :a_configfile ).should == 
+				{ :port => 389, :connect_type => :plain }
+		end
+
+		it "maps the nss-style 'ssl' option to the correct port and connect_type if " +
+		   "it's 'start_tls'" do
+			File.should_receive( :readlines ).with( :a_configfile ).
+				and_yield( '' ).
+				and_yield( '# Use TLS' ).
+				and_yield( 'ssl start_tls' )
+			Treequel.read_opts_from_config( :a_configfile ).should == 
+				{ :port => 389, :connect_type => :tls }
+		end
+
+		it "maps the nss-style 'ssl' option to the correct port and connect_type if " +
+		   "it's 'on'" do
+			File.should_receive( :readlines ).with( :a_configfile ).
+				and_yield( "\n# Use plain SSL\nssl on\n" )
+			Treequel.read_opts_from_config( :a_configfile ).should == 
+				{ :port => 636, :connect_type => :ssl }
+		end
+
+		# 
+		# Environment
+		# 
 
 		it "maps the OpenLDAP LDAPURI environment variable to equivalent options" do
 			ENV['LDAPURI'] = 'ldaps://quomsohutch.linkerlinlinkin.org/o=linkerlickin'
