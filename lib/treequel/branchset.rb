@@ -42,17 +42,6 @@ require 'treequel/control'
 # 
 # Branchsets are Enumerable objects, so they can be manipulated using any of the 
 # Enumerable methods, such as map, inject, etc.
-# 
-# == Authors
-# 
-# * Michael Granger <ged@FaerieMUD.org>
-# 
-# :include: LICENSE
-#
-#--
-#
-# Please see the file LICENSE in the base directory for licensing details.
-#
 class Treequel::Branchset
 	include Enumerable,
 	        Treequel::Loggable,
@@ -86,12 +75,13 @@ class Treequel::Branchset
 	### Create a new Branchset for a search from the DN of the specified +branch+ (a 
 	### Treequel::Branch), with the given +options+.
 	def initialize( branch, options={} )
-		super()
 		@branch = branch
 		@options = DEFAULT_OPTIONS.merge( options )
 
 		self.extend( *@branch.directory.registered_controls ) unless
 			@branch.directory.registered_controls.empty?
+
+		super()
 	end
 
 
@@ -106,6 +96,17 @@ class Treequel::Branchset
 
 	# The branchset's base branch that will be used when searching as the basedn
 	attr_accessor :branch
+
+
+	### Extend the Branchset with one or more modules. Overridden to also call the modules'
+	### initializers if they have them.
+	def extend( *modules )
+		super
+		modules.each do |mod|
+			mod.instance_method( :initialize ).bind( self ).call if
+				mod.private_instance_methods.map( &:to_sym ).include?( :initialize )
+		end
+	end
 
 
 	### Returns the DN of the Branchset's branch.

@@ -39,7 +39,7 @@ describe Treequel::Schema::Table do
 
 
 	before( :all ) do
-		setup_logging( :debug )
+		setup_logging( :fatal )
 	end
 
 	before( :each ) do

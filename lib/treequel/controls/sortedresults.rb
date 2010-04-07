@@ -28,17 +28,6 @@ require 'treequel/sequel_integration'
 #   people = dir.ou( :People )
 #   sorted_people = people.filter( :objectClass => :person ).
 #       order( :sn, :givenName, :employeeNumber )
-# 
-# == Authors
-# 
-# * Michael Granger <ged@FaerieMUD.org>
-# 
-# :include: LICENSE
-#
-#--
-#
-# Please see the file LICENSE in the base directory for licensing details.
-#
 module Treequel::SortedResultsControl
 	include Treequel::Control,
 	        Treequel::Constants
@@ -49,8 +38,8 @@ module Treequel::SortedResultsControl
 	# The control's response OID
 	RESPONSE_OID = CONTROL_OIDS[:sortresult]
 
-	# Result codes
-	RESPONSE_RESULT_CODES = {
+	# Descriptions of result codes
+	RESPONSE_RESULT_DESCRIPTIONS = {
 		# success                   (0), -- results are sorted
 		0 => 'Success',
 
@@ -94,10 +83,14 @@ module Treequel::SortedResultsControl
 	}
 
 
-	### Extension callback -- add the requisite instance variables to including Branchsets.
-	def self::extend_object( branchset )
-		super
-		branchset.instance_variable_set( :@sort_order_criteria, [] )
+	# A struct for tracking sorting criteria
+	Criterion = Struct.new( 'SortedResultsControlCriterion', :type, :ordering_rule, :reverse_order )
+
+
+	### Add the requisite instance variables to including Branchsets.
+	def initialize
+		self.log.debug "initializing %p" % [ self ]
+		@sort_order_criteria = []
 	end
 
 
@@ -122,10 +115,10 @@ module Treequel::SortedResultsControl
 			criteria = attributes.collect do |attrspec|
 				case attrspec
 				when Symbol
-					[ attrspec.to_s ]
+					Criterion.new( attrspec.to_s )
 
 				when Sequel::SQL::Expression
-					[ attrspec.expression.to_s, nil, attrspec.descending ]
+					Criterion.new( attrspec.expression.to_s, nil, attrspec.descending )
 
 				else
 					raise ArgumentError,
@@ -133,7 +126,7 @@ module Treequel::SortedResultsControl
 				end
 			end
 
-			self.log.debug "cloning %p with order criteria: %p" % [ criteria ]
+			self.log.debug "cloning %p with order criteria: %p" % [ self, criteria ]
 			copy = self.clone
 			copy.sort_order_criteria += criteria
 
@@ -165,8 +158,8 @@ module Treequel::SortedResultsControl
 				sortResult, attributeType = sorted_control.decode
 				if sortResult.nonzero?
 					self.log.error "got non-zero response code for sort: %d (%s)" %
-						[ sortResult, RESPONSE_RESULT_CODES[sortResult] ]
-					raise Treequel::ControlError, RESPONSE_RESULT_CODES[sortResult]
+						[ sortResult, RESPONSE_RESULT_DESCRIPTIONS[sortResult] ]
+					raise Treequel::ControlError, RESPONSE_RESULT_DESCRIPTIONS[sortResult]
 				else
 					self.log.debug "got 'success' sort response code."
 				end
@@ -191,7 +184,11 @@ module Treequel::SortedResultsControl
 	    #              orderingRule    [0] MatchingRuleId OPTIONAL,
 	    #              reverseOrder    [1] BOOLEAN DEFAULT FALSE }
 		encoded_vals = sort_criteria.collect do |criterion|
-			OpenSSL::ASN1::Sequence.new( criterion )
+			seq = []
+			seq << OpenSSL::ASN1::OctetString.new( criterion.type )
+			seq << OpenSSL::ASN1::ObjectId.new( criterion.ordering_rule ) if criterion.ordering_rule
+			seq << OpenSSL::ASN1::Boolean.new( true ) if criterion.reverse_order
+			OpenSSL::ASN1::Sequence.new( seq )
 		end
 
 		return OpenSSL::ASN1::Sequence.new( encoded_vals ).to_der
@@ -202,8 +199,18 @@ module Treequel::SortedResultsControl
 	### Branchset.
 	def get_server_controls
 		controls = super
-		value = self.make_sorted_control_value( self.sort_order_criteria )
-		return controls << LDAP::Control.new( OID, value, true )
+		criteria = self.sort_order_criteria
+
+		if criteria.empty?
+			self.log.debug "No sort order criteria; skipping the server-side sort control"
+		else
+			self.log.debug "Found %d sort order criteria; generating a server-side sort control" %
+				[ criteria.length ]
+			asn1_string = self.make_sorted_control_value( criteria )
+			controls << LDAP::Control.new( OID, asn1_string, true )
+		end
+
+		return controls
 	end
 
 end

@@ -29,17 +29,6 @@ require 'treequel/branch'
 # 
 # Note that you could accomplish most of what BranchCollection does
 # using filters, but some people might find this a bit more readable.
-# 
-# == Authors
-# 
-# * Michael Granger <ged@FaerieMUD.org>
-# 
-# :include: LICENSE
-#
-#--
-#
-# Please see the file LICENSE in the base directory for licensing details.
-#
 class Treequel::BranchCollection
 	include Enumerable,
 	        Treequel::Loggable,
@@ -52,8 +41,10 @@ class Treequel::BranchCollection
 	###	C L A S S   M E T H O D S
 	#################################################################
 
-	### Create a delegator that will return an instance of the receiver created with the results of
-	### iterating over the branchsets and calling the delegated method.
+	### Create a delegator that will return an instance of the receiver
+	### created with the results of iterating over the branchsets and calling
+	### the delegated method.
+	### @param [Array<Symbol>] symbols  The methods to define
 	def self::def_cloning_delegators( *symbols )
 		symbols.each do |methname|
 			# Create the method body
@@ -75,6 +66,8 @@ class Treequel::BranchCollection
 	#################################################################
 
 	### Create a new Treequel::BranchCollection that will operate on the given +branchsets+.
+	### @param [Array<Treequel::Branchset, #each>] branchsets  the objects that will be
+	###       combined in the BranchCollection.
 	def initialize( *branchsets )
 		@branchsets = branchsets.flatten.collect do |obj|
 			if obj.respond_to?( :each )
@@ -107,6 +100,7 @@ class Treequel::BranchCollection
 
 
 	### Return a human-readable string representation of the object suitable for debugging.
+	### @return [String]
 	def inspect
 		"#<%s:0x%0x %d branchsets: %p>" % [
 			self.class.name,
@@ -119,6 +113,7 @@ class Treequel::BranchCollection
 
 	### Iterate over the Treequel::Branches found by each member branchset, yielding each 
 	### one in turn.
+	### @yield [Treequel::Branch]
 	def each( &block )
 		raise LocalJumpError, "no block given" unless block
 		self.branchsets.each do |bs|
@@ -128,6 +123,7 @@ class Treequel::BranchCollection
 
 
 	### Return the first Treequel::Branch that is returned from the collection's branchsets.
+	### @return [Treequel::Branch]
 	def first
 		branch = nil
 
@@ -140,12 +136,14 @@ class Treequel::BranchCollection
 
 
 	### Return +true+ if none of the collection's branches match any entries.
+	### @return [Boolean]
 	def empty?
 		return self.branchsets.all? {|bs| bs.empty? } ? true : false
 	end
 
 
 	### Overridden to support Branchset#map
+	### @param (see Treequel::Branchset#map)
 	def map( attribute=nil, &block )
 		if attribute
 			if block

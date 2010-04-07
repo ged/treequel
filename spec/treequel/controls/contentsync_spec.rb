@@ -12,9 +12,10 @@ BEGIN {
 require 'spec'
 require 'spec/lib/constants'
 require 'spec/lib/helpers'
+require 'spec/lib/control_behavior'
 
 require 'treequel'
-require 'treequel/control'
+require 'treequel/controls/contentsync'
 
 include Treequel::TestConstants
 include Treequel::Constants
@@ -22,23 +23,16 @@ include Treequel::Constants
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
-describe "A Treequel::Control", :shared => true do
+describe Treequel::ContentSyncControl do
 	include Treequel::SpecHelpers
 
 	before( :each ) do
-		raise "Spec doesn't set @control before the Control shared behavior" unless @control
+		# Used by the shared behavior
+		@control = Treequel::ContentSyncControl
 	end
 
-	it "implements one of either #get_client_controls or #get_server_controls" do
-		methods = [
-			'get_client_controls',		# 1.8.x
-			'get_server_controls',
-			:get_client_controls,		# 1.9.x
-			:get_server_controls
-		]
-		(@control.instance_methods( false ) | methods).should_not be_empty()
-	end
+	it_should_behave_like "A Treequel::Control"
 
 end
 
-
+# vim: set nosta noet ts=4 sw=4:

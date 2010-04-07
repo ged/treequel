@@ -34,7 +34,7 @@ describe Treequel::BranchCollection do
 	include Treequel::SpecHelpers
 
 	before( :all ) do
-		setup_logging( :debug )
+		setup_logging( :fatal )
 	end
 
 	after( :all ) do

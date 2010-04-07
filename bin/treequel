@@ -225,6 +225,12 @@ class Treequel::Shell
 	# The command-line options the shell was started with
 	attr_reader :options
 
+	# The number of columns in the current terminal
+	attr_reader :columns
+
+	# The number of rows in the current terminal
+	attr_reader :rows
+
 	# The flag which causes the shell to exit after the current loop
 	attr_accessor :quit
 
@@ -530,44 +536,44 @@ class Treequel::Shell
 		oparser.on( "-l", "--long", FalseClass, "List in long format." ) do 
 			options.longform = true
 		end
+		oparser.on( "-t", "--timesort", FalseClass,
+		            "Sort by time modified (most recently modified first)." ) do 
+			options.timesort = true
+		end
+		oparser.on( "-d", "--dirsort", FalseClass,
+		            "Sort entries with subordinate entries before those without." ) do 
+			options.dirsort = true
+		end
+		oparser.on( "-r", "--reverse", FalseClass, "Reverse the entry sort functions." ) do 
+			options.reversesort = true
+		end
 
 	end
 
 
 	### Generate long-form output lines for the 'ls' command for the given +branch+.
 	def make_longform_ls_output( branch, options )
-		rows = []
 		children = branch.children
-		rows << colorize( :underscore, :cyan ) { "total %d" % [children.length] }
+		header = colorize( :underscore, :cyan ) { "total %d" % [children.length] }
 
 		# Calcuate column widths
 		oclen = children.map do |subbranch|
 			subbranch.include_operational_attrs = true
 			subbranch[:structuralObjectClass].length
 		end.max
-		moddnlen = children.map do |subbranch|
-			subbranch[:modifiersName].length
-		end.max
 
-		children.
-			sort_by {|subbranch| subbranch.rdn.downcase }.
-			each do |subbranch|
-				# -rw-r--r--   2 mgranger staff   979 2009-07-27 11:55 Rakefile.local
-				# 
-				# modifiersName: cn=admin,dc=laika,dc=com
-				# hasSubordinates: TRUE
-				# modifyTimestamp: 20090520232650Z
-				# structuralObjectClass: organizationalUnit
-				rows << "%#{oclen}s  %#{moddnlen}s  %s  %s%s" % [
-					subbranch[:structuralObjectClass],
-					subbranch[:modifiersName],
-					subbranch[:modifyTimestamp].strftime('%Y-%m-%d %H:%M'),
-					format_rdn( subbranch.rdn ),
-					subbranch[:hasSubordinates] ? '/' : ''
-				]
-			end
+		# Set up sorting by collecting all the requested sort criteria as Proc objects which
+		# will be applied
+		sortfuncs = []
+		sortfuncs << lambda {|subbranch| subbranch[:hasSubordinates] ? 0 : 1 } if options.dirsort
+		sortfuncs << lambda {|subbranch| subbranch[:modifyTimestamp] } if options.timesort
+ 		sortfuncs << lambda {|subbranch| subbranch.rdn.downcase }
 
-		return rows
+		rows = children.
+			sort_by {|subbranch| sortfuncs.collect {|func| func.call(subbranch) } }.
+			collect {|subbranch| self.format_description(subbranch, oclen) }
+
+		return [ header ] + (options.reversesort ? rows.reverse : rows)
 	end
 
 
@@ -764,9 +770,38 @@ class Treequel::Shell
 	end
 
 
-	#######
-	private
-	#######
+	#################################################################
+	###	U T I L I T Y   M E T H O D S
+	#################################################################
+
+	### Return the description of the specified +branch+ suitable for displaying in
+	### the directory listing.
+	### @param [Treequel::Branch] branch  the branch to be described
+	### @param [Fixnum] oclen             the length of the largest objectclass that 
+	###                                   will be displayed; used to calculate the 
+	###                                   width of the objectclass column.
+	def format_description( branch, oclen=40 )
+		rdn = format_rdn( branch.rdn )
+		metadatalen = oclen + 16 + 6 # oc + timestamp + whitespace
+		maxdesclen = self.columns - metadatalen - rdn.length - 5
+
+		return "%#{oclen}s  %s  %s%s %s" % [
+			branch[:structuralObjectClass],
+			branch[:modifyTimestamp].strftime('%Y-%m-%d %H:%M'),
+			rdn,
+			branch[:hasSubordinates] ? '/' : '',
+			single_line_description( branch, maxdesclen )
+		]
+	end
+
+
+	### Generate a single-line description from the specified +branch+
+	def single_line_description( branch, maxlen=80 )
+		return '' unless branch[:description] && branch[:description].first
+		desc = branch[:description].join('; ').gsub( /\n+/, '' )
+		desc[ maxlen..desc.length ] = '...' if desc.length > maxlen
+		return '(' + desc + ')'
+	end
 
 
 	### Create a new entry in the directory for the specified +branch+.

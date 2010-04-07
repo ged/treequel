@@ -36,18 +36,6 @@ require 'treequel/sequel_integration'
 #   matchingrule = MatchingRuleId from Section 4.1.9 of [1]
 #   value      = AttributeValue from Section 4.1.6 of [1]
 # 
-# 
-# == Authors
-# 
-# * Michael Granger <ged@FaerieMUD.org>
-# * Mahlon E. Smith <mahlon@martini.nu>
-# 
-# :include: LICENSE
-#
-#--
-#
-# Please see the file LICENSE in the base directory for licensing details.
-#
 class Treequel::Filter
 	include Treequel::Loggable,
 	        Treequel::Constants::Patterns
@@ -78,6 +66,7 @@ class Treequel::Filter
 
 
 	### An abstract class for filter components.
+	### @abstract Subclass and override {#to_s} to implement a custom Component class.
 	class Component
 		include Treequel::Loggable
 

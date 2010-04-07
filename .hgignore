@@ -9,3 +9,5 @@ coverage\\.info
 \.DS_Store
 ~$
 \.orig$
+^\.yardoc/
+docs/.*\.dump$

@@ -13,18 +13,6 @@ require 'treequel/constants'
 
 # The object in Treequel that represents a connection to a directory, the
 # binding to that directory, and the base from which all DNs start.
-#
-# == Authors
-#
-# * Michael Granger <ged@FaerieMUD.org>
-# * Mahlon E. Smith <mahlon@martini.nu>
-#
-# :include: LICENSE
-#
-#--
-#
-# Please see the file LICENSE in the base directory for licensing details.
-#
 class Treequel::Directory
 	include Treequel::Loggable,
 	        Treequel::Constants,
@@ -99,19 +87,15 @@ class Treequel::Directory
 
 	### Create a new Treequel::Directory with the given +options+. Options is a hash with one
 	### or more of the following key-value pairs:
-	###
-	### [:host]
-	###   The LDAP host to connect to.
-	### [:port]
-	###   The port to connect to.
-	### [:connect_type]
-	###   The type of connection to establish. Must be one of +:plain+, +:tls+, or +:ssl+.
-	### [:base_dn]
-	###   The base DN of the directory.
-	### [:bind_dn]
-	###   The DN of the user to bind as.
-	### [:pass]
-	###   The password to use when binding.
+	### 
+	### @param [Hash] options the connection options
+	### @option options [String] :host ('localhost')  The LDAP host to connect to
+	### @option options [Fixnum] :port (LDAP::LDAP_PORT)  The port number to connect to
+	### @option options [Symbol] :connect_type (:tls)  The type of connection to establish; :tls, 
+	###                                                :ssl, or :plain.
+	### @option options [String] :base_dn  The base DN of the directory.
+	### @option options [String] :bind_dn  The DN of the user to bind as.
+	### @option options [String] :pass     The password to use when binding.
 	def initialize( options={} )
 		options       = DEFAULT_OPTIONS.merge( options )
 

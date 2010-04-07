@@ -9,30 +9,10 @@ require 'treequel'
 require 'treequel/mixins'
 
 
-module Treequel # :nodoc:
+module Treequel
 
-	# 
 	# A alternate formatter for Logger instances.
-	# 
-	# == Usage
-	# 
-	#   require 'treequel/utils'
-	#   Treequel.logger.formatter = Treequel::LogFormatter.new( Treequel.logger )
-	# 
-	# == Version
-	#
-	#  $Id$
-	#
-	# == Authors
-	#
-	# * Michael Granger <ged@FaerieMUD.org>
-	#
-	# :include: LICENSE
-	#
-	#--
-	#
-	# Please see the file LICENSE in the 'docs' directory for licensing details.
-	#
+	# @private
 	class LogFormatter < Logger::Formatter
 
 		# The format to output unless debugging is turned on
@@ -87,28 +67,8 @@ module Treequel # :nodoc:
 	end # class LogFormatter
 
 
-	# 
 	# A ANSI-colorized formatter for Logger instances.
-	# 
-	# == Usage
-	# 
-	#   require 'treequel/utils'
-	#   Treequel.logger.formatter = Treequel::ColorLogFormatter.new( Treequel.logger )
-	# 
-	# == Version
-	#
-	#  $Id$
-	#
-	# == Authors
-	#
-	# * Michael Granger <ged@FaerieMUD.org>
-	#
-	# :include: LICENSE
-	#
-	#--
-	#
-	# Please see the file LICENSE in the 'docs' directory for licensing details.
-	#
+	# @private
 	class ColorLogFormatter < Logger::Formatter
 		extend Treequel::ANSIColorUtilities
 
@@ -160,29 +120,9 @@ module Treequel # :nodoc:
 	end # class LogFormatter
 
 
-	# 
 	# An alternate formatter for Logger instances that outputs +div+ HTML
 	# fragments.
-	# 
-	# == Usage
-	# 
-	#   require 'treequel/utils'
-	#   Treequel.logger.formatter = Treequel::HtmlLogFormatter.new( Treequel.logger )
-	# 
-	# == Version
-	#
-	#  $Id$
-	#
-	# == Authors
-	#
-	# * Michael Granger <ged@FaerieMUD.org>
-	#
-	# :include: LICENSE
-	#
-	#--
-	#
-	# Please see the file LICENSE in the 'docs' directory for licensing details.
-	#
+	# @private
 	class HtmlLogFormatter < Logger::Formatter
 		include ERB::Util  # for html_escape()
 

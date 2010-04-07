@@ -12,6 +12,10 @@ require 'treequel/constants'
 # A Treequel::Control module that implements the "Content Sync"
 # control (RFC 4533)
 # 
+# *NOTICE:* This control currently doesn't do anything, as it depends on 
+# Intermediate Responses, which the underlying Ruby-LDAP library doesn't 
+# support (yet). 
+# 
 # == Usage
 # 
 # As with all Controls, you must first register the control with the
@@ -30,16 +34,9 @@ require 'treequel/constants'
 #       # 
 #   end
 # 
-# == Authors
+# @see http://deveiate.org/projects/Treequel/ticket/6  Ticket: Add support for 
+#      the RFC4533 Content Sync operation
 # 
-# * Michael Granger <ged@FaerieMUD.org>
-# 
-# :include: LICENSE
-#
-#--
-#
-# Please see the file LICENSE in the base directory for licensing details.
-#
 module Treequel::ContentSyncControl
 	include Treequel::Control,
 	        Treequel::Constants
@@ -51,10 +48,13 @@ module Treequel::ContentSyncControl
 	SYNC_MODE_REFRESH = 1
 	SYNC_MODE_REFRESH_AND_PERSIST = 3
 
-	### Extension callback -- add the requisite instance variables to including Branchsets.
-	def self::extend_object( branchset )
-		super
-		branchset.instance_variable_set( :@content_sync_callback, nil )
+	### Add the requisite instance variables to including Branchsets.
+	def initialize
+		self.log.notice "The ContentSync control doesn't work yet -- it requires support for " +
+			"IntermediateResponses, which Ruby-LDAP doesn't do yet. " +
+			"See http://deveiate.org/projects/Treequel/ticket/6 for updates on the " +
+			"status of this."
+		@content_sync_callback = nil
 	end
 
 
@@ -134,4 +134,5 @@ module Treequel::ContentSyncControl
 		return controls << LDAP::Control.new( OID, value, true )
 	end
 
-end
+end # module Treequel::ContentSyncControl
+

@@ -177,7 +177,7 @@ describe Treequel, "mixin" do
 
 	describe Treequel::AttributeDeclarations do
 		before( :all ) do
-			setup_logging( :debug )
+			setup_logging( :fatal )
 		end
 		after( :all ) do
 			reset_logging()
@@ -216,7 +216,7 @@ describe Treequel, "mixin" do
 	describe Treequel::Delegation do
 
 		before( :all ) do
-			setup_logging( :debug )
+			setup_logging( :fatal )
 		end
 		after( :all ) do
 			reset_logging()

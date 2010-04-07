@@ -9,22 +9,14 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-begin
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
+require 'spec/lib/matchers'
 
-	require 'treequel/branch'
-	require 'treequel/branchset'
-	require 'treequel/branchcollection'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
+require 'treequel/branch'
+require 'treequel/branchset'
+require 'treequel/branchcollection'
 
 include Treequel::TestConstants
 include Treequel::Constants
@@ -34,7 +26,8 @@ include Treequel::Constants
 #####################################################################
 
 describe Treequel::Branch do
-	include Treequel::SpecHelpers
+	include Treequel::SpecHelpers,
+	        Treequel::Matchers
 
 	before( :all ) do
 		setup_logging( :fatal )
@@ -446,12 +439,44 @@ describe Treequel::Branch do
 		end
 
 
-		it "can delete its entry's individual attributes" do
-			LDAP::Mod.should_receive( :new ).with( LDAP::LDAP_MOD_DELETE, 'displayName' ).
+		it "can delete all values of one of its entry's individual attributes" do
+			LDAP::Mod.should_receive( :new ).with( LDAP::LDAP_MOD_DELETE, 'displayName', [] ).
 				and_return( :mod_delete )
 			@directory.should_receive( :modify ).with( @branch, [:mod_delete] )
 
 			@branch.delete( :displayName )
+		end
+
+		it "can delete all values of more than one of its entry's individual attributes" do
+			LDAP::Mod.should_receive( :new ).with( LDAP::LDAP_MOD_DELETE, 'displayName', [] ).
+				and_return( :first_mod_delete )
+			LDAP::Mod.should_receive( :new ).with( LDAP::LDAP_MOD_DELETE, 'gecos', [] ).
+				and_return( :second_mod_delete )
+			@directory.should_receive( :modify ).
+				with( @branch, [:first_mod_delete, :second_mod_delete] )
+
+			@branch.delete( :displayName, :gecos )
+		end
+
+		it "can delete one particular value of its entry's individual attributes" do
+			LDAP::Mod.should_receive( :new ).
+				with( LDAP::LDAP_MOD_DELETE, 'objectClass', ['apple-user'] ).
+				and_return( :mod_delete )
+			@directory.should_receive( :modify ).with( @branch, [:mod_delete] )
+
+			@branch.delete( :objectClass => 'apple-user' )
+		end
+
+		it "can delete particular values of more than one of its entry's individual attributes" do
+			LDAP::Mod.should_receive( :new ).
+				with( LDAP::LDAP_MOD_DELETE, 'objectClass', ['apple-user', 'inetOrgPerson'] ).
+				and_return( :first_mod_delete )
+			LDAP::Mod.should_receive( :new ).
+				with( LDAP::LDAP_MOD_DELETE, 'cn', [] ).and_return( :second_mod_delete )
+			@directory.should_receive( :modify ).
+				with( @branch, array_including(:first_mod_delete, :second_mod_delete) )
+
+			@branch.delete( :objectClass => ['apple-user',:inetOrgPerson], :cn => [] )
 		end
 
 		it "knows how to represent its DN as an RFC1781-style UFN" do
@@ -579,7 +604,6 @@ describe Treequel::Branch do
 			end
 		end
 
-		
 		it "can fetch multiple values via #values_at" do
 			@branch.should_receive( :[] ).with( :cn ).and_return( :cn_value )
 			@branch.should_receive( :[] ).with( :desc ).and_return( :desc_value )

@@ -9,17 +9,6 @@ require 'treequel/exceptions'
 
 
 # This is a class for representing ldapSyntax declarations in a Treequel::Schema.
-# 
-# == Authors
-# 
-# * Michael Granger <ged@FaerieMUD.org>
-# 
-# :include: LICENSE
-#
-#--
-#
-# Please see the file LICENSE in the base directory for licensing details.
-#
 class Treequel::Schema::LDAPSyntax
 	include Treequel::Loggable,
 	        Treequel::Constants::Patterns
