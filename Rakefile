@@ -181,12 +181,11 @@ SNAPSHOT_GEM_NAME = "#{SNAPSHOT_PKG_NAME}.gem"
 # Documentation constants
 API_DOCSDIR = DOCSDIR + 'api'
 RDOC_OPTIONS = [
-	'-w', '4',
-	'-HN',
-	'-i', '.',
-	'-m', 'README',
-	'-t', PKG_NAME,
-	'-W', 'http://deveiate.org/projects/Treequel/browser/'
+	'--tab-width=4',
+	'--show-hash',
+	'--include', BASEDIR.to_s,
+	'--main=README',
+	"--title=#{PKG_NAME}",
   ]
 YARD_OPTIONS = [
     '--no-private',
