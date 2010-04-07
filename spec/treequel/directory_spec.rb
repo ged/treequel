@@ -441,6 +441,16 @@ describe Treequel::Directory do
 			@dir.modify( branch, 'cn' => ['nomblywob'] )
 		end
 
+		it "can modify the record corresponding to a Branch in the directory via LDAP::Mods" do
+			branch = mock( "branch" )
+			branch.should_receive( :dn ).at_least( :once ).and_return( :the_branches_dn )
+			delmod = LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, 'displayName', ['georgina boots'] )
+
+			@conn.should_receive( :modify ).with( :the_branches_dn, [delmod] )
+
+			@dir.modify( branch, [delmod] )
+		end
+
 		it "can delete the record corresponding to a Branch from the directory" do
 			branch = mock( "branch" )
 			branch.should_receive( :dn ).at_least( :once ).and_return( :the_branches_dn )

@@ -364,9 +364,14 @@ class Treequel::Directory
 	### Modify the entry specified by the given +dn+ with the specified +mods+, which can be
 	### either an Array of LDAP::Mod objects or a Hash of attribute/value pairs.
 	def modify( branch, mods )
-		normattrs = self.normalize_attributes( mods )
-		self.log.debug "Modifying %s with attributes: %p" % [ branch.dn, normattrs ]
-		self.conn.modify( branch.dn, normattrs )
+		if mods.first.respond_to?( :mod_op )
+			self.log.debug "Modifying %s with LDAP mod objects: %p" % [ branch.dn, mods ]
+			self.conn.modify( branch.dn, mods )
+		else
+			normattrs = self.normalize_attributes( mods )
+			self.log.debug "Modifying %s with: %p" % [ branch.dn, normattrs ]
+			self.conn.modify( branch.dn, normattrs )
+		end
 	end
 
 

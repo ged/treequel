@@ -395,12 +395,6 @@ describe Treequel::Branch do
 		end
 
 
-		it "can be deleted from the directory" do
-			@directory.should_receive( :delete ).with( @branch )
-			@branch.delete
-		end
-
-
 		it "can create children under itself" do
 			newattrs = {
 				:ipHostNumber => '127.0.0.1',
@@ -451,6 +445,14 @@ describe Treequel::Branch do
 			@branch.merge( attributes )
 		end
 
+
+		it "can delete its entry's individual attributes" do
+			LDAP::Mod.should_receive( :new ).with( LDAP::LDAP_MOD_DELETE, 'displayName' ).
+				and_return( :mod_delete )
+			@directory.should_receive( :modify ).with( @branch, [:mod_delete] )
+
+			@branch.delete( :displayName )
+		end
 
 		it "knows how to represent its DN as an RFC1781-style UFN" do
 			@branch.to_ufn.should =~ /Hosts, acme\.com/i
@@ -575,6 +577,15 @@ describe Treequel::Branch do
 				@branch[ :glorpy ] = 'chunks'
 				@branch[ :glorpy ].should == :secondval
 			end
+		end
+
+		
+		it "can fetch multiple values via #values_at" do
+			@branch.should_receive( :[] ).with( :cn ).and_return( :cn_value )
+			@branch.should_receive( :[] ).with( :desc ).and_return( :desc_value )
+			@branch.should_receive( :[] ).with( :l ).and_return( :l_value )
+
+			@branch.values_at( :cn, :desc, :l ).should == [ :cn_value, :desc_value, :l_value ]
 		end
 
 	end

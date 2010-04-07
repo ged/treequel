@@ -428,6 +428,16 @@ class Treequel::Branch
 	end
 
 
+	### Fetch one or more values from the entry.
+	### @param [Array<Symbol, String>] attributes  The attributes to fetch values for.
+	### @return [Array<String>]  The values which correspond to +attributes+.
+	def values_at( *attributes )
+		return attributes.collect do |attribute|
+			self[ attribute ]
+		end
+	end
+
+
 	### Set attribute +attrname+ to a new +value+.
 	def []=( attrname, value )
 		value = [ value ] unless value.is_a?( Array )
@@ -449,8 +459,12 @@ class Treequel::Branch
 
 
 	### Delete the entry associated with the branch from the directory.
-	def delete
-		self.directory.delete( self )
+	def delete( *attributes )
+		mods = attributes.flatten.collect do |attribute|
+			LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute.to_s )
+		end
+
+		self.directory.modify( self, mods )
 		self.clear_caches
 
 		return true
