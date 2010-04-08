@@ -116,7 +116,7 @@ class Treequel::Branch
 
 
 	### Return the attribute/s which make up this Branch's RDN.
-	### @return [Hash{Symbol => String}] The Branch's RDN attributes as a Hash.
+	### @return [Hash<Symbol => String>] The Branch's RDN attributes as a Hash.
 	def rdn_attributes
 		return make_rdn_hash( self.rdn )
 	end
@@ -191,11 +191,15 @@ class Treequel::Branch
 	end
 
 
-	### Perform a search with the specified +args+ using the receiver as the base.
-	### @param args (see Trequel::Directory#search)
+	### Perform a search with the specified +scope+, +filter+, and +parameters+ 
+	### using the receiver as the base.
+	### @param scope (see Trequel::Directory#search)
+	### @param filter (see Trequel::Directory#search)
+	### @param parameters (see Trequel::Directory#search)
+	### @param block (see Trequel::Directory#search)
 	### @return [Array<Treequel::Branch>] the search results
-	def search( *args, &block )
-		return self.directory.search( self, *args, &block )
+	def search( scope=:subtree, filter='(objectClass=*)', parameters={}, &block )
+		return self.directory.search( self, scope, filter, parameters, &block )
 	end
 
 
@@ -274,7 +278,7 @@ class Treequel::Branch
 	### any +additional_object_classes+ are given, include the attributes that would be
 	### necessary for the entry to be saved with them.
 	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Hash{String => String}]
+	### @return [Hash<String => String>]
 	def must_attributes_hash( *additional_object_classes )
 		attrhash = {}
 
@@ -324,7 +328,7 @@ class Treequel::Branch
 	### any +additional_object_classes+ are given, include the attributes that would be
 	### available for the entry if it had them.
 	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Hash{String => String}]
+	### @return [Hash<String => String>]
 	def may_attributes_hash( *additional_object_classes )
 		entry = self.entry
 		attrhash = {}
@@ -364,7 +368,7 @@ class Treequel::Branch
 	### any +additional_object_classes+ are given, include the attributes that would be
 	### available for the entry if it had them.
 	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Hash{String => String}]
+	### @return [Hash<String => String>]
 	def valid_attributes_hash( *additional_object_classes )
 		self.log.debug "Gathering a hash of all valid attributes:"
 		must = self.must_attributes_hash( *additional_object_classes )
@@ -502,12 +506,22 @@ class Treequel::Branch
 	alias_method :modify, :merge
 
 
-	### Delete the entry associated with the branch from the directory.
+	### Delete the specified attributes.
+	### 
+	### @param [Array<Hash, #to_s>] attributes  The attributes to delete, either as
+	###     attribute names (in which case all values of the attribute are deleted) or
+	###     Hashes of attributes and the Array of value/s which should be deleted.
+	### 
+	### @example Delete all 'description' attributes
+	###     branch.delete( :description )
+	### @example Delete the 'inetOrgPerson' and 'posixAccount' objectClasses from the entry
+	###     branch.delete( :objectClass => [:inetOrgPerson, :posixAccount] )
+	### @example Delete any blank 'description' or 'cn' attributes:
+	###     branch.delete( :description => '', :cn => '' )
 	def delete( *attributes )
 		self.log.debug "Deleting attributes: %p" % [ attributes ]
 		mods = attributes.flatten.collect do |attribute|
-			case attribute
-			when Hash
+			if attribute.is_a?( Hash )
 				attribute.collect do |key,vals|
 					vals = Array( vals ).collect {|val| val.to_s }
 					LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, key.to_s, vals )
@@ -526,7 +540,7 @@ class Treequel::Branch
 
 	### Create the entry for this Branch with the specified +attributes+. The +attributes+ should,
 	### at a minimum, contain the pair `:objectClass => :someStructuralObjectClass`.
-	### @param [Hash{Symbol,String => Object}] attributes
+	### @param [Hash<Symbol,String => Object>] attributes
 	def create( attributes={} )
 		self.directory.create( self, attributes )
 		return self
@@ -536,7 +550,7 @@ class Treequel::Branch
 	### Copy the entry for this Branch to a new entry with the given +newdn+ and merge in the
 	### specified +attributes+.
 	### @param [String] newdn  the dn of the new entry
-	### @param [Hash{String, Symbol => Object}] attributes  merge attributes
+	### @param [Hash<String, Symbol => Object>] attributes  merge attributes
 	### @return [Treequel::Branch] a Branch for the new entry
 	def copy( newdn, attributes={} )
 
@@ -559,7 +573,7 @@ class Treequel::Branch
 	### any +attributes+ are given, also replace the corresponding attributes on the new
 	### entry with them.
 	### @param [String] rdn  
-	### @param [Hash{String, Symbol => Object}] attributes 
+	### @param [Hash<String, Symbol => Object>] attributes 
 	def move( rdn, attributes={} )
 		self.log.debug "Asking the directory to move me to an entry called %p" % [ rdn ]
 		return self.directory.move( self, rdn, attributes )

@@ -283,9 +283,26 @@ class Treequel::Directory
 	end
 
 
-	### Perform a +scope+ search at +base+ using the specified +filter+. The +scope+ argument
-	### can be one of +:onelevel+, +:base+, or +:subtree+. Results will be returned as instances
-	### of the given +collectclass+.
+	### Perform a +scope+ search at +base+ using the specified +filter+.
+	### 
+	### @param [String, #dn] base  The base DN of the search.
+	### @param [Symbol] scope      The scope to use in the search; can be one of 
+	###                            +:onelevel+, +:base+, or +:subtree+. 
+	### @param [#to_s] filter      The search filter (RFC4515), either as a String 
+	###                            or something that stringifies to an filter string.
+	### @param [Hash] parameters   Search options.
+	### 
+	### @option parameters [Class] :results_class  
+	###    The Class to use when wrapping results; if not specified, defaults to the class 
+	###    of +base+ if it responds to #new_from_entry, or Treequel::Branch 
+	###    if it does not.
+	### @option parameters [Array<String, Symbol>] :selectattrs  
+	###    The attributes to return from the search; defaults to the empty Array, which means 
+	###    to return all attributes.
+	### @option parameters [Boolean] :attrsonly
+	###    If +true, the LDAP::Entry objects returned from the search won't have attribute values.
+	###    This has no real effect on Treequel::Branches, but is provided in case other 
+	###    +results_class+ classes need it.
 	def search( base, scope=:subtree, filter='(objectClass=*)', parameters={} )
 		collectclass = nil
 

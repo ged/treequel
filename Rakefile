@@ -188,12 +188,14 @@ RDOC_OPTIONS = [
 	"--title=#{PKG_NAME}",
   ]
 YARD_OPTIONS = [
-    '--no-private',
-    '--protected',
-    '-r', 'README',
+	'--use-cache',
+	'--no-private',
+	'--protected',
+	'-r', 'README',
 	'--exclude', 'extconf\\.rb',
-    '--files', 'ChangeLog,LICENSE',
+	'--files', 'ChangeLog,LICENSE',
 	'--output-dir', API_DOCSDIR.to_s,
+	'--title', "#{PKG_NAME} #{PKG_VERSION}",
   ]
 
 # Release constants

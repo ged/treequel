@@ -144,13 +144,13 @@ describe Treequel::Branch do
 		end
 
 		it "can search its directory for values using itself as a base" do
-			@directory.should_receive( :search ).with( @branch, :one, '(objectClass=*)' ).
+			@directory.should_receive( :search ).with( @branch, :one, '(objectClass=*)', {} ).
 				and_return( :entries )
 			@branch.search( :one, '(objectClass=*)' ).should == :entries
 		end
 
 		it "can search its directory for values with a block" do
-			@directory.should_receive( :search ).with( @branch, :one, '(objectClass=*)' ).
+			@directory.should_receive( :search ).with( @branch, :one, '(objectClass=*)', {} ).
 				and_yield( :an_entry )
 			yielded_val = nil
 			@branch.search( :one, '(objectClass=*)' ) do |val|
@@ -215,8 +215,7 @@ describe Treequel::Branch do
 
 
 		it "can return all of its immediate children as Branches" do
-			@directory.should_receive( :search ).
-				with( @branch, :one, '(objectClass=*)' ).
+			@directory.should_receive( :search ).with( @branch, :one, '(objectClass=*)', {} ).
 				and_return([ :the_children ])
 			@branch.children.should == [ :the_children ]
 		end
