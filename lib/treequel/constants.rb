@@ -791,22 +791,26 @@ module Treequel::Constants
 		# BASE64-STRING            = [*(BASE64-CHAR)]
 		BASE64_STRING = %r{ #{BASE64_CHAR}* }x
 
+		# SEP                      = (CR LF / LF)
+		SEP = %r{\r?\n}
+
+		# Any non-empty line, including comment lines, in an LDIF file
+		# MAY be folded by inserting a line separator (SEP) and a SPACE.
+		FOLD = %r{ #{SEP} #{SPACE} }x
+
 		# value-spec               = ":" (    FILL 0*1(SAFE-STRING) /
 		#                                 ":" FILL (BASE64-STRING) /
 		#                                 "<" FILL url)
 		LDIF_VALUE_SPEC = %r{
 			:
 			(
-				#{FILL} #{LDIF_SAFE_STRING}+
+				#{FILL} #{LDIF_SAFE_STRING}+ (?: #{FOLD} #{LDIF_SAFE_CHAR}* )*
 				|
-				: #{FILL} #{BASE64_STRING}
+				: #{FILL} #{BASE64_STRING} (?: #{FOLD} #{BASE64_STRING} )*
 				|
 				< #{FILL} #{URI_REF}
 			)
 		}x
-
-		# SEP                      = (CR LF / LF)
-		SEP = %r{\r?\n}
 
 		# attrval-spec             = AttributeDescription value-spec SEP
 		LDIF_ATTRVAL_SPEC = %r{
@@ -814,6 +818,12 @@ module Treequel::Constants
 			#{LDIF_VALUE_SPEC}
 			#{SEP}
 		}xm
+
+		FOLDED_LDIF_ATTRVAL_SPEC = %{
+			(#{LDIF_ATTRIBUTE_DESCRIPTION})
+			(#{LDIF_VALUE_SPEC}(?:#{SEP}\x20)
+			#{SEP}
+		}
 
 		# Freeze all the pattern constants so they don't get clobbered
 		constants.each do |const|

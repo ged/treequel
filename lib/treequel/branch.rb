@@ -16,11 +16,18 @@ require 'treequel/branchcollection'
 class Treequel::Branch
 	include Comparable,
 	        Treequel::Loggable,
-	        Treequel::Constants
+	        Treequel::Constants,
+	        Treequel::Constants::Patterns
 
 	extend Treequel::Delegation,
 	       Treequel::AttributeDeclarations
 
+
+	# The default width of LDIF output
+	DEFAULT_LDIF_WIDTH = 70
+
+	# The characters to use to fold an LDIF line (newline + a space)
+	LDIF_FOLD_SEPARATOR = "\n "
 
 
 	#################################################################
@@ -415,7 +422,7 @@ class Treequel::Branch
 
 	### Return the Branch as an LDAP::LDIF::Entry.
 	### @return [String]
-	def to_ldif
+	def to_ldif( width=DEFAULT_LDIF_WIDTH )
 		ldif = "dn: %s\n" % [ self.dn ]
 
 		entry = self.entry || self.valid_attributes_hash
@@ -423,13 +430,43 @@ class Treequel::Branch
 
 		entry.keys.reject {|k| k == 'dn' }.each do |attribute|
 			entry[ attribute ].each do |val|
-				val = val.to_s.dup
-				frag = LDAP::LDIF.to_ldif( attribute, [val] )
-				ldif << frag
+				ldif << ldif_for_attr( attribute, val, width )
 			end
 		end
 
 		return LDAP::LDIF::Entry.new( ldif )
+	end
+
+
+	### Make LDIF for the given +attribute+ and its +values+, wrapping at the given
+	### +width+.
+	### 
+	### @param [String] attribute  the attribute
+	### @param [Array<String>] values  the values for the given +attribute+
+	### @param [Fixnum] width  the maximum width of the lines to return
+	def ldif_for_attr( attribute, values, width )
+		ldif = ''
+
+		values.each do |val|
+			line = "#{attribute}:"
+
+			if val =~ /^#{LDIF_SAFE_STRING}$/
+				line << ' ' << val.to_s
+			else
+				line << ': ' << [ val ].pack( 'm' ).chomp
+			end
+
+			# calculate how many times the line needs to be split, then add any 
+			# additional splits that need to be added because of the additional
+			# fold characters
+			splits  = ( line.length / width )
+			splits += ( splits * LDIF_FOLD_SEPARATOR.length ) / width
+			splits.times {|i| line[ width * (i+1), 0 ] = LDIF_FOLD_SEPARATOR }
+
+			ldif << line << "\n"
+		end
+
+		return ldif
 	end
 
 

@@ -481,7 +481,7 @@ class Treequel::Shell
 			branch.include_operational_attrs = true if extended
 
 			if branch.exists?
-				ldifstring = branch.to_ldif
+				ldifstring = branch.to_ldif( self.columns - 2 )
 				self.log.debug "LDIF: #{ldifstring.dump}"
 
 				message( format_ldif(ldifstring) )
@@ -1096,20 +1096,20 @@ class Treequel::Shell
 			# Base64-encoded value
 			when /^:/
 				val = val[1..-1].strip
-				key + 
+				key +
 					colorize( :dark, :green ) { ':: ' } +
 					colorize( :green ) { val } + "\n"
 
 			# URL
 			when /^</
 				val = val[1..-1].strip
-				key + 
+				key +
 					colorize( :dark, :yellow ) { ':< ' } +
 					colorize( :yellow ) { val } + "\n"
 
 			# Regular attribute
 			else
-				key + 
+				key +
 					colorize( :dark, :white ) { ': ' } +
 					colorize( :bold, :white ) { val } + "\n"
 			end
