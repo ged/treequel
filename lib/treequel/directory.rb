@@ -89,13 +89,19 @@ class Treequel::Directory
 	### or more of the following key-value pairs:
 	### 
 	### @param [Hash] options the connection options
-	### @option options [String] :host ('localhost')  The LDAP host to connect to
-	### @option options [Fixnum] :port (LDAP::LDAP_PORT)  The port number to connect to
-	### @option options [Symbol] :connect_type (:tls)  The type of connection to establish; :tls, 
-	###                                                :ssl, or :plain.
-	### @option options [String] :base_dn  The base DN of the directory.
-	### @option options [String] :bind_dn  The DN of the user to bind as.
-	### @option options [String] :pass     The password to use when binding.
+	### @option options [String] :host ('localhost')
+	###    The LDAP host to connect to
+	### @option options [Fixnum] :port (LDAP::LDAP_PORT)
+	###    The port number to connect to
+	### @option options [Symbol] :connect_type (:tls)
+	###    The type of connection to establish; :tls, :ssl, or :plain.
+	### @option options [String] :base_dn (nil)
+	###    The base DN of the directory; defaults to the first naming context of
+	###    the directory's root DSE.
+	### @option options [String] :bind_dn (nil)
+	###    The DN of the user to bind as; if unset, binds anonymously.
+	### @option options [String] :pass (nil)
+	###    The password to use when binding.
 	def initialize( options={} )
 		options       = DEFAULT_OPTIONS.merge( options )
 
@@ -132,28 +138,35 @@ class Treequel::Directory
 
 
 	# The host to connect to.
+	# @return [String]
 	attr_accessor :host
 
 	# The port to connect to.
+	# @return [Fixnum]
 	attr_accessor :port
 
 	# The type of connection to establish
+	# @return [Symbol]
 	attr_accessor :connect_type
 
 	# The base DN of the directory
+	# @return [String]
 	attr_accessor :base_dn
 
 	# The control modules that are registered with the directory
+	# @return [Array<Module>]
 	attr_reader :registered_controls
 
 
 	### Fetch the Branch for the base node of the directory.
+	### @return [Treequel::Branch]
 	def base
 		return @base ||= Treequel::Branch.new( self, self.base_dn )
 	end
 
 
 	### Returns a string that describes the directory
+	### @return [String]
 	def to_s
 		return "%s:%d (%s, %s, %s)" % [
 			self.host,
@@ -166,6 +179,7 @@ class Treequel::Directory
 
 
 	### Return a human-readable representation of the object suitable for debugging
+	### @return [String]
 	def inspect
 		return %{#<%s:0x%0x %s:%d (%s) base_dn=%p, bound as=%s, schema=%s>} % [
 			self.class.name,
@@ -182,12 +196,14 @@ class Treequel::Directory
 
 	### Return the LDAP::Conn object associated with this directory, creating it with the
 	### current options if necessary.
+	### @return [LDAP::Conn, LDAP::SSLConn]
 	def conn
 		return @conn ||= self.connect
 	end
 
 
 	### Return the URI object that corresponds to the directory.
+	### @return [URI::LDAP]
 	def uri
 		uri_parts = {
 			:scheme => self.connect_type == :ssl ? 'ldaps' : 'ldap',
@@ -201,6 +217,11 @@ class Treequel::Directory
 
 
 	### Bind as the specified +user_dn+ and +password+.
+	### 
+	### @param [String, #dn] user_dn  the DN of the user to bind as
+	### @param [String] password      the password to bind with
+	### 
+	### @return [void]
 	def bind( user_dn, password )
 		user_dn = user_dn.dn if user_dn.respond_to?( :dn )
 
@@ -213,6 +234,10 @@ class Treequel::Directory
 
 	### Execute the provided +block+ after binding as +user_dn+ with the given +password+. After
 	### the block returns, the original binding (if any) will be restored.
+	### 
+	### @param (see #bind)
+	### 
+	### @return [void]
 	def bound_as( user_dn, password )
 		raise LocalJumpError, "no block given" unless block_given?
 		previous_bind_dn = @bound_as
@@ -225,7 +250,8 @@ class Treequel::Directory
 	end
 
 
-	### Returns +true+ if the directory's connection has already established a binding.
+	### Returns +true+ if the directory's connection is already bound to the directory.
+	### @return [Boolean]
 	def bound?
 		return self.conn.bound?
 	end
@@ -233,6 +259,7 @@ class Treequel::Directory
 
 
 	### Ensure that the the receiver's connection is unbound.
+	### @return [void]
 	def unbind
 		if @conn.bound?
 			old_conn = @conn
@@ -243,6 +270,7 @@ class Treequel::Directory
 
 
 	### Return the RDN string to the given +dn+ from the base of the directory.
+	### @param [#to_s] dn  the DN of the entry
 	def rdn_to( dn )
 		base_re = Regexp.new( ',' + Regexp.quote(self.base_dn) + '$' )
 		return dn.to_s.sub( base_re, '' )
@@ -251,6 +279,8 @@ class Treequel::Directory
 
 	### Given a Treequel::Branch object, find its corresponding LDAP::Entry and return
 	### it.
+	### 
+	### @param [Treequel::Branch] branch  the branch to look up
 	def get_entry( branch )
 		self.log.debug "Looking up entry for %p" % [ branch.dn ]
 		return self.conn.search_ext2( branch.dn, SCOPE[:base], '(objectClass=*)' ).first
@@ -263,6 +293,8 @@ class Treequel::Directory
 	### Given a Treequel::Branch object, find its corresponding LDAP::Entry and return
 	### it with its operational attributes (http://tools.ietf.org/html/rfc4512#section-3.4)
 	### included.
+	### 
+	### @param [Treequel::Branch] branch  the branch to look up
 	def get_extended_entry( branch )
 		self.log.debug "Looking up entry (with operational attributes) for %p" % [ branch.dn ]
 		return self.conn.search_ext2( branch.dn, SCOPE[:base], '(objectClass=*)', %w[* +] ).first
@@ -290,43 +322,68 @@ class Treequel::Directory
 	###                            +:onelevel+, +:base+, or +:subtree+. 
 	### @param [#to_s] filter      The search filter (RFC4515), either as a String 
 	###                            or something that stringifies to an filter string.
-	### @param [Hash] parameters   Search options.
+	### @param [Hash] options      Search options.
 	### 
-	### @option parameters [Class] :results_class  
+	### @option options [Class] :results_class (Treequel::Branch)
 	###    The Class to use when wrapping results; if not specified, defaults to the class 
 	###    of +base+ if it responds to #new_from_entry, or Treequel::Branch 
 	###    if it does not.
-	### @option parameters [Array<String, Symbol>] :selectattrs  
-	###    The attributes to return from the search; defaults to the empty Array, which means 
-	###    to return all attributes.
-	### @option parameters [Boolean] :attrsonly
+	### @option options [Array<String, Symbol>] :selectattrs (['*'])
+	###    The attributes to return from the search; defaults to '*', which means to
+	###    return all non-operational attributes. Specifying '+' will cause the search
+	###    to include operational parameters as well.
+	### @option options [Boolean] :attrsonly (false)
 	###    If +true, the LDAP::Entry objects returned from the search won't have attribute values.
 	###    This has no real effect on Treequel::Branches, but is provided in case other 
 	###    +results_class+ classes need it.
-	def search( base, scope=:subtree, filter='(objectClass=*)', parameters={} )
+	### @option options [Array<LDAP::Control>] :server_controls (nil)
+	###    Any server controls that should be sent with the search.
+	### @option options [Array<LDAP::Control>] :client_controls (nil)
+	###    Any client controls that should be applied to the search.
+	### @option options [Fixnum] :timeout_s (0)
+	###    The number of seconds (in addition to :timeout_us) after which the search request should 
+	###    be aborted.
+	### @option options [Fixnum] :timeout_us (0)
+	###    The number of microseconds (in addition to :timeout_s) after which the search request 
+	###    should be aborted.
+	### @option options [Fixnum] :limit
+	###    The maximum number of results to return from the server.
+	### @option options [Array<String>] :sort_attribute
+	###    An Array of String attribute names to sort by. 
+	### @option options [Proc] :sort_func
+	###    A function that will provide sorting.
+	### 
+	### @return [Array] the array of results, each of which is wrapped in the
+	###    options[:results_class]. If a block is given, it acts like a filter:
+	###    the return vaule from the block is returned instead.
+	### 
+	### @yield [branch]  an optional block, which will receive the results one at a time
+	### @yieldparam [Treequel::Branch] branch  the resulting entry, wrapped in 
+	###    the options[:results_class].
+	def search( base, scope=:subtree, filter='(objectClass=*)', options={} )
 		collectclass = nil
 
 		# If the base argument is an object whose class knows how to create instances of itself
 		# from an LDAP::Entry, use it instead of Treequel::Branch to wrap results
-		if parameters.key?( :results_class )
-			collectclass = parameters.delete( :results_class )
+		if options.key?( :results_class )
+			collectclass = options.delete( :results_class )
 		else
 			collectclass = base.class.respond_to?( :new_from_entry ) ? base.class : Treequel::Branch
 		end
 
 		# Format the arguments in the way #search_ext2 expects them
-		base_dn, scope, filter, searchparams =
-			self.normalize_search_parameters( base, scope, filter, parameters )
+		base_dn, scope, filter, searchopts =
+			self.normalize_search_parameters( base, scope, filter, options )
 
-		# Unwrap the search parameters from the hash in the correct order
+		# Unwrap the search options from the hash in the correct order
 		self.log.debug {
 			attrlist = SEARCH_PARAMETER_ORDER.inject([]) do |list, param|
-				list << "%s: %p" % [ param, searchparams[param] ]
+				list << "%s: %p" % [ param, searchopts[param] ]
 			end
 			"searching with base: %p, scope: %p, filter: %p, %s" %
 				[ base_dn, scope, filter, attrlist.join(', ') ]
 		}
-		parameters = searchparams.values_at( *SEARCH_PARAMETER_ORDER )
+		parameters = searchopts.values_at( *SEARCH_PARAMETER_ORDER )
 
 		# Wrap each result in the class derived from the 'base' argument
 		self.log.debug "Searching via search_ext2 with arguments: %p" % [[

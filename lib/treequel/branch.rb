@@ -46,8 +46,10 @@ class Treequel::Branch
 
 
 	### Create a new Treequel::Branch from the given +entry+ hash from the specified +directory+.
+	### 
 	### @param [LDAP::Entry] entry  The raw entry object the Branch is wrapping.
 	### @param [Treequel::Directory] directory  The directory object the Branch is from.
+	### 
 	### @return [Treequel::Branch]  The new branch object.
 	def self::new_from_entry( entry, directory )
 		return self.new( directory, entry['dn'].first, entry )
@@ -62,6 +64,7 @@ class Treequel::Branch
 	### +base_dn+. If the optional +entry+ object is given, it will be used to fetch values from
 	### the directory; if it isn't provided, it will be fetched from the +directory+ the first
 	### time it is needed.
+	### 
 	### @param [Treequel::Directory] directory  The directory the Branch belongs to.
 	### @param [String] dn  The DN of the entry the Branch is wrapping.
 	### @param [LDAP::Entry, Hash] entry  The entry object if it's already been fetched.
@@ -105,6 +108,7 @@ class Treequel::Branch
 
 
 	### Change the DN the Branch uses to look up its entry.
+	### 
 	### @param [String] newdn  The new DN.
 	### @return [void]
 	def dn=( newdn )
@@ -114,6 +118,7 @@ class Treequel::Branch
 
 
 	### Enable or disable fetching of operational attributes (RC4512, section 3.4).
+	### 
 	### @param [Boolean] new_setting
 	### @return [void]
 	def include_operational_attrs=( new_setting )
@@ -132,6 +137,7 @@ class Treequel::Branch
 	### Return the LDAP::Entry associated with the receiver, fetching it from the
 	### directory if necessary. Returns +nil+ if the entry doesn't exist in the
 	### directory.
+	### 
 	### @return [LDAP::Entry]  The entry wrapped by the Branch.
 	def entry
 		unless @entry
@@ -166,9 +172,11 @@ class Treequel::Branch
 	end
 
 
-	### Return the receiver's DN as an Array of attribute=value pairs. If +limit+ is non-zero, 
-	### only the <code>limit-1</code> first pairs are split from the DN, and the remainder 
-	### will be returned as the last element.
+	### Return the receiver's DN as an Array of attribute=value pairs. 
+	### 
+	### @param [Fixnum] limit  If non-zero, only the <code>limit-1</code> first pairs 
+	###     are split from the DN, and the remainder will be returned as the last 
+	###     element.
 	def split_dn( limit=0 )
 		return self.dn.split( /\s*,\s*/, limit )
 	end
@@ -200,10 +208,12 @@ class Treequel::Branch
 
 	### Perform a search with the specified +scope+, +filter+, and +parameters+ 
 	### using the receiver as the base.
-	### @param scope (see Trequel::Directory#search)
-	### @param filter (see Trequel::Directory#search)
+	### 
+	### @param scope      (see Trequel::Directory#search)
+	### @param filter     (see Trequel::Directory#search)
 	### @param parameters (see Trequel::Directory#search)
-	### @param block (see Trequel::Directory#search)
+	### @param block      (see Trequel::Directory#search)
+	### 
 	### @return [Array<Treequel::Branch>] the search results
 	def search( scope=:subtree, filter='(objectClass=*)', parameters={}, &block )
 		return self.directory.search( self, scope, filter, parameters, &block )
@@ -224,171 +234,9 @@ class Treequel::Branch
 	end
 
 
-	### Return Treequel::Schema::ObjectClass instances for each of the receiver's
-	### objectClass attributes. If any +additional_classes+ are given, 
-	### merge them with the current list of the current objectClasses for the lookup.
-	### @param [Array<String, Symbol>] additional_classes 
-	### @return [Array<Treequel::Schema::ObjectClass>]
-	def object_classes( *additional_classes )
-		schema = self.directory.schema
-
-		oc_oids = self[:objectClass] || []
-		oc_oids |= additional_classes.collect {|str| str.to_sym }
-		oc_oids << :top if oc_oids.empty?
-
-		oclasses = []
-		oc_oids.each do |oid|
-			oc = schema.object_classes[ oid.to_sym ] or
-				raise Treequel::Error, "schema doesn't have a %p objectClass" % [ oid ]
-			oclasses << oc
-		end
-
-		return oclasses.uniq
-	end
-
-
-	### Return Treequel::Schema::AttributeType instances for each of the receiver's
-	### objectClass's MUST attributeTypes. If any +additional_object_classes+ are given, 
-	### include the MUST attributeTypes for them as well. This can be used to predict what
-	### attributes would need to be present for the entry to be saved if it added the
-	### +additional_object_classes+ to its own.
-	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Array<Treequel::Schema::AttributeType>]
-	def must_attribute_types( *additional_object_classes )
-		types = []
-		oclasses = self.object_classes( *additional_object_classes )
-		self.log.debug "Gathering MUST attribute types for objectClasses: %p" % [ oclasses ]
-
-		oclasses.each do |oc|
-			self.log.debug "  adding %p from %p" % [ oc.must, oc ]
-			types |= oc.must
-		end
-
-		return types
-	end
-
-
-	### Return OIDs (numeric OIDs as Strings, named OIDs as Symbols) for each of the receiver's
-	### objectClass's MUST attributeTypes. If any +additional_object_classes+ are given, 
-	### include the OIDs of the MUST attributes for them as well. This can be used to predict 
-	### what attributes would need to be present for the entry to be saved if it added the
-	### +additional_object_classes+ to its own.
-	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Array<String, Symbol>] oid strings and symbols
-	def must_oids( *additional_object_classes )
-		return self.object_classes( *additional_object_classes ).
-			collect {|oc| oc.must_oids }.flatten.uniq.reject {|val| val == '' }
-	end
-
-
-	### Return a Hash of the attributes required by the Branch's objectClasses. If 
-	### any +additional_object_classes+ are given, include the attributes that would be
-	### necessary for the entry to be saved with them.
-	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Hash<String => String>]
-	def must_attributes_hash( *additional_object_classes )
-		attrhash = {}
-
-		self.must_attribute_types( *additional_object_classes ).each do |attrtype|
-			self.log.debug "  adding attrtype %p to the MUST attributes hash" % [ attrtype ]
-
-			if attrtype.name == :objectClass
-				attrhash[ :objectClass ] = [:top] | additional_object_classes
-			elsif attrtype.single?
-				attrhash[ attrtype.name ] = ''
-			else
-				attrhash[ attrtype.name ] = ['']
-			end
-		end
-
-		return attrhash
-	end
-
-
-	### Return Treequel::Schema::AttributeType instances for each of the receiver's
-	### objectClass's MAY attributeTypes. If any +additional_object_classes+ are given, 
-	### include the MAY attributeTypes for them as well. This can be used to predict what
-	### optional attributes could be added to the entry if the +additional_object_classes+ 
-	### were added to it.
-	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Array<Treequel::Schema::AttributeType>]
-	def may_attribute_types( *additional_object_classes )
-		return self.object_classes( *additional_object_classes ).
-			collect {|oc| oc.may }.flatten.uniq
-	end
-
-
-	### Return OIDs (numeric OIDs as Strings, named OIDs as Symbols) for each of the receiver's
-	### objectClass's MAY attributeTypes. If any +additional_object_classes+ are given, 
-	### include the OIDs of the MAY attributes for them as well. This can be used to predict 
-	### what optional attributes could be added to the entry if the +additional_object_classes+ 
-	### were added to it.
-	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Array<String, Symbol>]  oid strings and symbols
-	def may_oids( *additional_object_classes )
-		return self.object_classes( *additional_object_classes ).
-			collect {|oc| oc.may_oids }.flatten.uniq
-	end
-
-
-	### Return a Hash of the optional attributes allowed by the Branch's objectClasses. If 
-	### any +additional_object_classes+ are given, include the attributes that would be
-	### available for the entry if it had them.
-	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Hash<String => String>]
-	def may_attributes_hash( *additional_object_classes )
-		entry = self.entry
-		attrhash = {}
-
-		self.may_attribute_types( *additional_object_classes ).each do |attrtype|
-			self.log.debug "  adding attrtype %p to the MAY attributes hash" % [ attrtype ]
-
-			if attrtype.single?
-				attrhash[ attrtype.name ] = nil
-			else
-				attrhash[ attrtype.name ] = []
-			end
-		end
-
-		attrhash[ :objectClass ] |= additional_object_classes
-		return attrhash
-	end
-
-
-	### Return Treequel::Schema::AttributeType instances for the set of all of the receiver's
-	### MUST and MAY attributeTypes.
-	### @return [Array<Treequel::Schema::AttributeType>]
-	def valid_attribute_types
-		return self.must_attribute_types | self.may_attribute_types
-	end
-
-
-	### Return a uniqified Array of OIDs (numeric OIDs as Strings, named OIDs as Symbols) for
-	### the set of all of the receiver's MUST and MAY attributeTypes.
-	### @return [Array<String, Symbol>]
-	def valid_attribute_oids
-		return self.must_oids | self.may_oids
-	end
-
-
-	### Return a Hash of all the attributes allowed by the Branch's objectClasses. If
-	### any +additional_object_classes+ are given, include the attributes that would be
-	### available for the entry if it had them.
-	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Hash<String => String>]
-	def valid_attributes_hash( *additional_object_classes )
-		self.log.debug "Gathering a hash of all valid attributes:"
-		must = self.must_attributes_hash( *additional_object_classes )
-		self.log.debug "  MUST attributes: %p" % [ must ]
-		may  = self.may_attributes_hash( *additional_object_classes )
-		self.log.debug "  MAY attributes: %p" % [ may ]
-
-		return may.merge( must )
-	end
-
-
 	### Return +true+ if the specified +attrname+ is a valid attributeType given the
 	### receiver's current objectClasses.
+	### 
 	### @param [String, Symbol] the OID (numeric or name) of the attribute in question
 	### @return [Boolean]
 	def valid_attribute?( attroid )
@@ -401,6 +249,7 @@ class Treequel::Branch
 
 	### Returns a human-readable representation of the object suitable for
 	### debugging.
+	### 
 	### @return [String]
 	def inspect
 		return "#<%s:0x%0x %s @ %s entry=%p>" % [
@@ -511,6 +360,7 @@ class Treequel::Branch
 
 
 	### Fetch one or more values from the entry.
+	### 
 	### @param [Array<Symbol, String>] attributes  The attributes to fetch values for.
 	### @return [Array<String>]  The values which correspond to +attributes+.
 	def values_at( *attributes )
@@ -521,6 +371,7 @@ class Treequel::Branch
 
 
 	### Set attribute +attrname+ to a new +value+.
+	### 
 	### @param [Symbol, String] attrname  attribute name
 	### @param [Object] value  the attribute value
 	def []=( attrname, value )
@@ -533,7 +384,9 @@ class Treequel::Branch
 
 
 	### Make the changes to the entry specified by the given +attributes+.
-	#### @param attributes (see Treequel::Directory#modify)
+	### 
+	### @param attributes (see Treequel::Directory#modify)
+	### @return [TrueClass] if the merge succeeded
 	def merge( attributes )
 		self.directory.modify( self, attributes )
 		self.clear_caches
@@ -555,6 +408,8 @@ class Treequel::Branch
 	###     branch.delete( :objectClass => [:inetOrgPerson, :posixAccount] )
 	### @example Delete any blank 'description' or 'cn' attributes:
 	###     branch.delete( :description => '', :cn => '' )
+	### 
+	### @return [TrueClass] if the delete succeeded
 	def delete( *attributes )
 		self.log.debug "Deleting attributes: %p" % [ attributes ]
 		mods = attributes.flatten.collect do |attribute|
@@ -577,6 +432,7 @@ class Treequel::Branch
 
 	### Create the entry for this Branch with the specified +attributes+. The +attributes+ should,
 	### at a minimum, contain the pair `:objectClass => :someStructuralObjectClass`.
+	### 
 	### @param [Hash<Symbol,String => Object>] attributes
 	def create( attributes={} )
 		self.directory.create( self, attributes )
@@ -586,6 +442,7 @@ class Treequel::Branch
 
 	### Copy the entry for this Branch to a new entry with the given +newdn+ and merge in the
 	### specified +attributes+.
+	### 
 	### @param [String] newdn  the dn of the new entry
 	### @param [Hash<String, Symbol => Object>] attributes  merge attributes
 	### @return [Treequel::Branch] a Branch for the new entry
@@ -609,6 +466,7 @@ class Treequel::Branch
 	### Move the entry associated with this branch to a new entry indicated by +rdn+. If 
 	### any +attributes+ are given, also replace the corresponding attributes on the new
 	### entry with them.
+	### 
 	### @param [String] rdn  
 	### @param [Hash<String, Symbol => Object>] attributes 
 	def move( rdn, attributes={} )
@@ -619,6 +477,7 @@ class Treequel::Branch
 
 	### Comparable interface: Returns -1 if other_branch is less than, 0 if other_branch is 
 	### equal to, and +1 if other_branch is greater than the receiving Branch.
+	### 
 	### @param [Treequel::Branch] other_branch
 	### @return [Fixnum]
 	def <=>( other_branch )
@@ -642,6 +501,7 @@ class Treequel::Branch
 
 	### Fetch a new Treequel::Branch object for the child of the receiver with the specified
 	### +rdn+.
+	### 
 	### @param [String] rdn  The RDN of the child to fetch.
 	### @return [Treequel::Branch]
 	def get_child( rdn )
@@ -652,12 +512,185 @@ class Treequel::Branch
 
 	### Addition operator: return a Treequel::BranchCollection that contains both the receiver
 	### and +other_branch+.
+	### 
 	### @param [Treequel::Branch] other_branch  
 	### @return [Treequel::BranchCollection]
 	def +( other_branch )
 		return Treequel::BranchCollection.new( self.branchset, other_branch.branchset )
 	end
 
+
+	### Return Treequel::Schema::ObjectClass instances for each of the receiver's
+	### objectClass attributes. If any +additional_classes+ are given, 
+	### merge them with the current list of the current objectClasses for the lookup.
+	### 
+	### @param [Array<String, Symbol>] additional_classes 
+	### @return [Array<Treequel::Schema::ObjectClass>]
+	def object_classes( *additional_classes )
+		schema = self.directory.schema
+
+		oc_oids = self[:objectClass] || []
+		oc_oids |= additional_classes.collect {|str| str.to_sym }
+		oc_oids << :top if oc_oids.empty?
+
+		oclasses = []
+		oc_oids.each do |oid|
+			oc = schema.object_classes[ oid.to_sym ] or
+				raise Treequel::Error, "schema doesn't have a %p objectClass" % [ oid ]
+			oclasses << oc
+		end
+
+		return oclasses.uniq
+	end
+
+
+	### Return Treequel::Schema::AttributeType instances for each of the receiver's
+	### objectClass's MUST attributeTypes. If any +additional_object_classes+ are given, 
+	### include the MUST attributeTypes for them as well. This can be used to predict what
+	### attributes would need to be present for the entry to be saved if it added the
+	### +additional_object_classes+ to its own.
+	### 
+	### @param [Array<String, Symbol>] additional_object_classes 
+	### @return [Array<Treequel::Schema::AttributeType>]
+	def must_attribute_types( *additional_object_classes )
+		types = []
+		oclasses = self.object_classes( *additional_object_classes )
+		self.log.debug "Gathering MUST attribute types for objectClasses: %p" % [ oclasses ]
+
+		oclasses.each do |oc|
+			self.log.debug "  adding %p from %p" % [ oc.must, oc ]
+			types |= oc.must
+		end
+
+		return types
+	end
+
+
+	### Return OIDs (numeric OIDs as Strings, named OIDs as Symbols) for each of the receiver's
+	### objectClass's MUST attributeTypes. If any +additional_object_classes+ are given, 
+	### include the OIDs of the MUST attributes for them as well. This can be used to predict 
+	### what attributes would need to be present for the entry to be saved if it added the
+	### +additional_object_classes+ to its own.
+	### 
+	### @param [Array<String, Symbol>] additional_object_classes 
+	### @return [Array<String, Symbol>] oid strings and symbols
+	def must_oids( *additional_object_classes )
+		return self.object_classes( *additional_object_classes ).
+			collect {|oc| oc.must_oids }.flatten.uniq.reject {|val| val == '' }
+	end
+
+
+	### Return a Hash of the attributes required by the Branch's objectClasses. If 
+	### any +additional_object_classes+ are given, include the attributes that would be
+	### necessary for the entry to be saved with them.
+	### 
+	### @param [Array<String, Symbol>] additional_object_classes 
+	### @return [Hash<String => String>]
+	def must_attributes_hash( *additional_object_classes )
+		attrhash = {}
+
+		self.must_attribute_types( *additional_object_classes ).each do |attrtype|
+			self.log.debug "  adding attrtype %p to the MUST attributes hash" % [ attrtype ]
+
+			if attrtype.name == :objectClass
+				attrhash[ :objectClass ] = [:top] | additional_object_classes
+			elsif attrtype.single?
+				attrhash[ attrtype.name ] = ''
+			else
+				attrhash[ attrtype.name ] = ['']
+			end
+		end
+
+		return attrhash
+	end
+
+
+	### Return Treequel::Schema::AttributeType instances for each of the receiver's
+	### objectClass's MAY attributeTypes. If any +additional_object_classes+ are given, 
+	### include the MAY attributeTypes for them as well. This can be used to predict what
+	### optional attributes could be added to the entry if the +additional_object_classes+ 
+	### were added to it.
+	### 
+	### @param [Array<String, Symbol>] additional_object_classes 
+	### @return [Array<Treequel::Schema::AttributeType>]
+	def may_attribute_types( *additional_object_classes )
+		return self.object_classes( *additional_object_classes ).
+			collect {|oc| oc.may }.flatten.uniq
+	end
+
+
+	### Return OIDs (numeric OIDs as Strings, named OIDs as Symbols) for each of the receiver's
+	### objectClass's MAY attributeTypes. If any +additional_object_classes+ are given, 
+	### include the OIDs of the MAY attributes for them as well. This can be used to predict 
+	### what optional attributes could be added to the entry if the +additional_object_classes+ 
+	### were added to it.
+	### 
+	### @param [Array<String, Symbol>] additional_object_classes 
+	### @return [Array<String, Symbol>]  oid strings and symbols
+	def may_oids( *additional_object_classes )
+		return self.object_classes( *additional_object_classes ).
+			collect {|oc| oc.may_oids }.flatten.uniq
+	end
+
+
+	### Return a Hash of the optional attributes allowed by the Branch's objectClasses. If 
+	### any +additional_object_classes+ are given, include the attributes that would be
+	### available for the entry if it had them.
+	### 
+	### @param [Array<String, Symbol>] additional_object_classes 
+	### @return [Hash<String => String>]
+	def may_attributes_hash( *additional_object_classes )
+		entry = self.entry
+		attrhash = {}
+
+		self.may_attribute_types( *additional_object_classes ).each do |attrtype|
+			self.log.debug "  adding attrtype %p to the MAY attributes hash" % [ attrtype ]
+
+			if attrtype.single?
+				attrhash[ attrtype.name ] = nil
+			else
+				attrhash[ attrtype.name ] = []
+			end
+		end
+
+		attrhash[ :objectClass ] |= additional_object_classes
+		return attrhash
+	end
+
+
+	### Return Treequel::Schema::AttributeType instances for the set of all of the receiver's
+	### MUST and MAY attributeTypes.
+	### 
+	### @return [Array<Treequel::Schema::AttributeType>]
+	def valid_attribute_types
+		return self.must_attribute_types | self.may_attribute_types
+	end
+
+
+	### Return a uniqified Array of OIDs (numeric OIDs as Strings, named OIDs as Symbols) for
+	### the set of all of the receiver's MUST and MAY attributeTypes.
+	### 
+	### @return [Array<String, Symbol>]
+	def valid_attribute_oids
+		return self.must_oids | self.may_oids
+	end
+
+
+	### Return a Hash of all the attributes allowed by the Branch's objectClasses. If
+	### any +additional_object_classes+ are given, include the attributes that would be
+	### available for the entry if it had them.
+	### 
+	### @param [Array<String, Symbol>] additional_object_classes 
+	### @return [Hash<String => String>]
+	def valid_attributes_hash( *additional_object_classes )
+		self.log.debug "Gathering a hash of all valid attributes:"
+		must = self.must_attributes_hash( *additional_object_classes )
+		self.log.debug "  MUST attributes: %p" % [ must ]
+		may  = self.may_attributes_hash( *additional_object_classes )
+		self.log.debug "  MAY attributes: %p" % [ may ]
+
+		return may.merge( must )
+	end
 
 
 	#########
