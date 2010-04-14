@@ -254,7 +254,8 @@ module Treequel
 		opts = {}
 
 		linecount = 0
-		File.readlines( configfile ) do |line|
+		IO.foreach( configfile ) do |line|
+			Treequel.log.debug "  line: %p" % [ line ]
 			linecount += 1
 			case line
 
