@@ -30,7 +30,8 @@ class Treequel::Schema::Table
 
 	# The list of methods that should be delegated through the key-normalization
 	# method.
-	KEYED_METHODS = [ :"[]", :"[]=", :delete, :fetch, :has_key?, :include?, :member?, :store ]
+	KEYED_METHODS = [ :"[]", :"[]=", :delete, :fetch, :key?, :has_key?, :include?, 
+		:member?, :store ]
 
 
 	### Auto-generate methods which call the given +delegate+ after normalizing

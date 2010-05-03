@@ -650,6 +650,21 @@ class Treequel::Shell
 	end
 
 
+	### Change the DN of an entry
+	def mv_command( options, rdn )
+		branch = @currbranch.get_child( rdn )
+
+		raise "#{branch.dn}: no such entry" unless branch.exists?
+		old_dn = branch.dn
+
+		branch.move( rdn )
+		message "  %s -> %s: success" % [ old_dn, branch.dn ]
+	end
+	set_options :mv do |oparser, options|
+		oparser.banner = "Rename (move) an entry"
+	end
+
+
 	### Remove the entry specified by +rdn+.
 	def rm_command( options, *rdns )
 		branchsets = self.convert_to_branchsets( *rdns )
@@ -661,10 +676,16 @@ class Treequel::Shell
 			columnize( branches.collect {|br| br.dn } )
 
 		if options.force
-			branches.each {|br| br.delete }
+			branches.each do |br|
+				br.directory.delete( br )
+				message "  delete %s: success" % [ br.dn ]
+			end
 		else
 			ask_for_confirmation( msg ) do
-				branches.each {|br| br.delete }
+				branches.each do |br|
+					br.directory.delete( br )
+					message "  delete %s: success" % [ br.dn ]
+				end
 			end
 		end
 	end
