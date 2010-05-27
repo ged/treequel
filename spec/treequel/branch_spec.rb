@@ -372,7 +372,7 @@ describe Treequel::Branch do
 
 		it "can be moved to a new location within the directory" do
 			newdn = "ou=hosts,dc=admin,#{TEST_BASE_DN}"
-			@directory.should_receive( :move ).with( @branch, newdn, {} )
+			@directory.should_receive( :move ).with( @branch, newdn )
 			@branch.move( newdn )
 		end
 

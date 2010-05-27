@@ -469,9 +469,9 @@ class Treequel::Branch
 	### 
 	### @param [String] rdn  
 	### @param [Hash<String, Symbol => Object>] attributes 
-	def move( rdn, attributes={} )
+	def move( rdn )
 		self.log.debug "Asking the directory to move me to an entry called %p" % [ rdn ]
-		return self.directory.move( self, rdn, attributes )
+		return self.directory.move( self, rdn )
 	end
 
 

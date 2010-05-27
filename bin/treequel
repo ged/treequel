@@ -118,18 +118,18 @@ class Treequel::Shell
 	###	C L A S S   M E T H O D S
 	#################################################################
 
-	### Get an OpenStruct that describes default invocation options.
-	def self::default_options
-		options = OpenStruct.new({
-			:try_tls => true,
-			:bind_as => nil,
-		})
-	end
-
 	### Run the shell.
 	def self::run( args )
-		options, ldapuri = self.parse_options( args )
-		Treequel::Shell.new( ldapuri, options ).run
+		Treequel.logger.formatter = Treequel::ColorLogFormatter.new( Treequel.logger )
+		bind_as, uri = self.parse_options( args )
+
+		directory = if uri
+			Treequel.directory( uri )
+		else
+			Treequel.directory_from_config
+		end
+
+		Treequel::Shell.new( directory ).run( bind_as )
 	end
 
 
@@ -137,48 +137,37 @@ class Treequel::Shell
 	### the LDAP URI.
 	def self::parse_options( argv )
 		progname = File.basename( $0 )
-		options = self.default_options
+		bind_as = nil
 
 		oparser = OptionParser.new( "Usage: #{progname} [OPTIONS] [LDAPURL]" ) do |oparser|
-			loglevels = [:debug, :info, :warn, :error, :fatal]
 			oparser.separator ' '
-			oparser.separator colorize( :bold ) { 'Global runtime options' }
-			oparser.on( '--[no-]tls', '-n', FalseClass, "Don't attempt to use TLS" ) do
-				options.try_tls = false
-			end
 
 			oparser.on( '--binddn=DN', '-b DN', String, "Bind as DN" ) do |dn|
-				options.bind_as = dn
+				bind_as = dn
 			end
 
-			oparser.on( '--loglevel=LEVEL', '-l LEVEL', loglevels, 
+			oparser.on( '--loglevel=LEVEL', '-l LEVEL', Treequel::Loggable::LEVEL.keys, 
 				"Set the logging level. Should be one of:",
-				loglevels.collect {|lvl| lvl.to_s } ) do |lvl|
-				$DEBUG = true
-				$trace = true
+				Treequel::Loggable::LEVEL.keys.collect {|lvl| lvl.to_s } ) do |lvl|
 				Treequel.logger.level = Treequel::Loggable::LEVEL[ lvl.to_sym ] or
 					raise "Invalid logging level %p" % [ lvl ]
-				options.loglevel = lvl.to_sym
 			end
 
 			oparser.on( '--debug', '-d', FalseClass, "Turn debugging on" ) do
 				$DEBUG = true
 				$trace = true
 				Treequel.logger.level = Logger::DEBUG
-				options.loglevel = :debug
 			end
 
 			oparser.on("-h", "--help", "Show this help message.") do
-				options.helpmode = true
 				$stderr.puts( oparser )
 				exit!
 			end
 		end
 
 		remaining_args = oparser.parse( argv )
-		ldapuri = URI( remaining_args.shift || 'ldap://localhost' )
 
-		return options, ldapuri
+		return bind_as, *remaining_args
 	end
 
 
@@ -199,15 +188,12 @@ class Treequel::Shell
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new shell that will traverse the directory at the specified +uri+.
-	def initialize( uri, options )
-		Treequel.logger.level = Logger::WARN
-		Treequel.logger.formatter = Treequel::ColorLogFormatter.new( Treequel.logger )
-
-		@uri        = uri
-		@options    = options
+	### Create a new shell for the specified +directory+.
+	### @param [Treequel::Directory] directory  the LDAP directory to navigate
+	def initialize( directory )
+		@dir        = directory
+		@uri        = directory.uri
 		@quit       = false
-		@dir        = self.get_ldap_directory( @uri, @options )
 		@currbranch = @dir
 		@columns    = TermInfo.screen_width
 		@rows       = TermInfo.screen_height
@@ -222,9 +208,6 @@ class Treequel::Shell
 	public
 	######
 
-	# The command-line options the shell was started with
-	attr_reader :options
-
 	# The number of columns in the current terminal
 	attr_reader :columns
 
@@ -236,7 +219,9 @@ class Treequel::Shell
 
 
 	### The command loop: run the shell until the user wants to quit
-	def run
+	### @param [String]              bind_as    The DN of the user to bind as. If none is
+	###                                         specified, the shell will bind anonymously.
+	def run( bind_as=nil )
 		@original_tty_settings = IO.read( '|-' ) or exec 'stty', '-g'
 		message "Connected to %s" % [ @uri ]
 
@@ -246,9 +231,11 @@ class Treequel::Shell
 		# Load saved command-line history
 		self.read_history
 
-		if uid = self.options.bind_as
+		# If the user said to bind as someone on the command line, invoke a
+		# 'bind' command before dropping into the command line
+		if bind_as
 			options = OpenStruct.new
-			self.bind_command( options, uid )
+			self.bind_command( options, bind_as )
 		end
 
 		# Run until something sets the quit flag
@@ -651,14 +638,13 @@ class Treequel::Shell
 
 
 	### Change the DN of an entry
-	def mv_command( options, rdn )
+	def mv_command( options, rdn, newdn )
 		branch = @currbranch.get_child( rdn )
 
 		raise "#{branch.dn}: no such entry" unless branch.exists?
-		old_dn = branch.dn
-
-		branch.move( rdn )
-		message "  %s -> %s: success" % [ old_dn, branch.dn ]
+		olddn = branch.dn
+		branch.move( newdn )
+		message "  %s -> %s: success" % [ olddn, branch.dn ]
 	end
 	set_options :mv do |oparser, options|
 		oparser.banner = "Rename (move) an entry"
