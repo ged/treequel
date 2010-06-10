@@ -14,6 +14,7 @@ require 'pp'
 MANUAL_PAGES = Pathname.glob( MANUALDIR + '**/*.page' )
 
 task :local => :check_manual
+task :manual => :check_manual
 
 # Check the manual for laika references before committing
 Rake::Task[ 'checkin' ].prerequisites.unshift( 'check_manual' )

@@ -819,11 +819,6 @@ module Treequel::Constants
 			#{SEP}
 		}xm
 
-		FOLDED_LDIF_ATTRVAL_SPEC = %{
-			(#{LDIF_ATTRIBUTE_DESCRIPTION})
-			(#{LDIF_VALUE_SPEC}(?:#{SEP}\x20)
-			#{SEP}
-		}
 
 		# Freeze all the pattern constants so they don't get clobbered
 		constants.each do |const|

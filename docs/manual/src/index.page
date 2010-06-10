@@ -42,7 +42,7 @@ irb> dir = Treequel.directory( 'ldap://ldap.andrew.cmu.edu/dc=cmu,dc=edu' )
 # => #<Treequel::Directory:0x4f052e ldap.andrew.cmu.edu:389 (not connected) base="dc=cmu,dc=edu", bound as=anonymous, schema=(schema not loaded)>
 <?end?>
 
-You may omit the base <abbr title="Distingished Name">DN</abbr> in the URL if your environment only has one top level base (or you don't know it!) Treequel will use the first base DN it finds from the server's advertised "namingContexts":http://tools.ietf.org/html/rfc4512#section-5.1 by default.
+You may omit the base <abbr title="Distingished Name">DN</abbr> in the URL if your environment only has one top level base (or you don't know it!) Treequel will use the first base DN it finds from the server's advertised "namingContexts":http://tools.ietf.org/html/rfc4512#section-5.1.2 by default.
 
 It will also use the user and password from a ==<code>user:pass@host</code>==-style URL, if present, and use them to immediately bind to the directory. See "the section on binding":#binding for details.
 
@@ -80,7 +80,7 @@ If you don't specify a user <abbr title="Distingished Name">DN</abbr> and passwo
 
 <?example { language: irb, caption: "Binding to the directory." } ?>
 irb> dir.bind( 'uid=mgranger,ou=people,dc=acme,dc=com', 'my_password' )
-# => "uid=mgranger,ou=people,dc=laika,dc=com"
+# => "uid=mgranger,ou=people,dc=acme,dc=com"
 <?end?>
 
 You can also bind to the directory by creating it using a URL that contains _authority_ information; this is not recommended for production use, as it requires that the password be in plain text in the connection information, but it's supported for convenience's sake:
@@ -165,13 +165,13 @@ The directory also provides a special @Branch@ object for its base DN that's use
 irb> dir.base
 # => #<Treequel::Branch:0x1368548 dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> dir.base.dn
-# => "dc=laika,dc=com"
+# => "dc=acme,dc=com"
 irb> dir.dn
-# => "dc=laika,dc=com"
+# => "dc=acme,dc=com"
 irb> dir.base.ou( :people )
-# => #<Treequel::Branch:0x117f45c ou=people,dc=laika,dc=com @ localhost:389 (dc=laika,dc=com, tls, anonymous) entry=nil>
+# => #<Treequel::Branch:0x117f45c ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> dir.ou( :people )
-# => #<Treequel::Branch:0x11850f0 ou=people,dc=laika,dc=com @ localhost:389 (dc=laika,dc=com, tls, anonymous) entry=nil>
+# => #<Treequel::Branch:0x11850f0 ou=people,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 <?end?>
 
 

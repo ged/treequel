@@ -651,6 +651,23 @@ class Treequel::Shell
 	end
 
 
+	### Copy an entry
+	def cp_command( options, rdn, newrdn )
+		branch = @currbranch.get_child( rdn )
+		newbranch = @currbranch.get_child( newrdn )
+
+		raise "#{branch.dn}: already exists" if newbranch.exists?
+
+		attributes = branch.entry.merge( :dn => newbranch.dn )
+		newbranch.create( attributes )
+
+		message "  %s -> %s: success" % [ old_dn, branch.dn ]
+	end
+	set_options :cp do |oparser, options|
+		oparser.banner = "Copy an entry"
+	end
+
+
 	### Remove the entry specified by +rdn+.
 	def rm_command( options, *rdns )
 		branchsets = self.convert_to_branchsets( *rdns )
