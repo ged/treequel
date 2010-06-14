@@ -75,8 +75,8 @@ describe Treequel::Directory do
 			and_return( conn )
 		conn.should_receive( :bind ).with( TEST_BIND_DN, TEST_BIND_PASS )
 
-		dir = Treequel::Directory.new( @options.merge( :bind_dn => TEST_BIND_DN, :pass => TEST_BIND_PASS ))
-		dir.instance_variable_get( :@bound_as ).should == TEST_BIND_DN
+		dir = Treequel::Directory.new( @options.merge(:bind_dn => TEST_BIND_DN, :pass => TEST_BIND_PASS) )
+		dir.bound_user.should == TEST_BIND_DN
 	end
 
 	it "uses the first namingContext from the Root DSE if no base is specified" do

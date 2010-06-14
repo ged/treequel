@@ -409,7 +409,7 @@ class Treequel::Shell
 
 	### Show help text for the specified command, or a list of all available commands 
 	### if none is specified.
-	def help_command( *args )
+	def help_command( options, *args )
 		if args.empty?
 			$stderr.puts
 			message colorize( "Available commands", :bold, :white ),
@@ -427,22 +427,30 @@ class Treequel::Shell
 				$stderr.puts
 				message( output )
 			else
-				error_message( "No help for '#{cmd}'" )
+				error_message( "No help for '#{cmd.inspect}'" )
 			end
 		end
+	end
+	set_options :help do |oparser, options|
+		oparser.banner = "help [COMMAND]"
+		oparser.separator 'Display general help, or help for a specific COMMAND.'
 	end
 
 
 	### Quit the shell.
-	def quit_command( *args )
+	def quit_command( options, *args )
 		message "Okay, exiting."
 		self.quit = true
+	end
+	set_options :help do |oparser, options|
+		oparser.banner = "quit"
+		oparser.separator 'Exit the shell.'
 	end
 
 
 	### Set the logging level (if invoked with an argument) or display the current
 	### level (with no argument).
-	def log_command( *args )
+	def log_command( options, *args )
 		newlevel = args.shift
 		if newlevel
 			if LOG_LEVELS.key?( newlevel )
@@ -457,10 +465,16 @@ class Treequel::Shell
 				[ LOG_LEVEL_NAMES[Treequel.logger.level] ]
 		end
 	end
+	set_options :log do |oparser, options|
+		oparser.banner = "log [LEVEL]"
+		oparser.separator 'Set the logging level, or display the current level if no level ' +
+		                  "is given. Valid log levels are: %s" %
+		                  LOG_LEVEL_NAMES.keys.sort.join(', ')
+	end
 
 
 	### Display LDIF for the specified RDNs.
-	def cat_command( *args )
+	def cat_command( options, *args )
 		args.each do |rdn|
 			extended = rdn.chomp!( '+' )
 
@@ -477,14 +491,22 @@ class Treequel::Shell
 			end
 		end
 	end
+	set_options :cat do |oparser, options|
+		oparser.banner = "cat [RDN]+"
+		oparser.separator 'Display the entries specified by RDN as LDIF.'
+	end
 
 
 	### Display YAML for the specified RDNs.
-	def yaml_command( *args )
+	def yaml_command( options, *args )
 		args.each do |rdn|
 			branch = @currbranch.get_child( rdn )
 			message( branch_as_yaml(branch) )
 		end
+	end
+	set_options :yaml do |oparser, options|
+		oparser.banner = "yaml [RDN]+"
+		oparser.separator 'Display the entries specified by RDN as YAML.'
 	end
 
 
@@ -518,7 +540,9 @@ class Treequel::Shell
 		end
 	end
 	set_options :ls do |oparser, options|
-		oparser.banner = "ls [OPTIONS] [DNs]"
+		oparser.banner = "ls [OPTIONS] [DN]+"
+		oparser.separator 'List the entries specified, or the current entry if none are specified.'
+		oparser.separator ''
 
 		oparser.on( "-l", "--long", FalseClass, "List in long format." ) do 
 			options.longform = true
@@ -579,7 +603,7 @@ class Treequel::Shell
 
 
 	### Change the current working DN to +rdn+.
-	def cdn_command( rdn=nil, *args )
+	def cdn_command( options, rdn=nil, *args )
 		if rdn.nil?
 			@currbranch = @dir.base
 			return
@@ -597,14 +621,22 @@ class Treequel::Shell
 			@currbranch = @currbranch.send( attribute.downcase, value )
 		end
 	end
+	set_options :cdn do |oparser, options|
+		oparser.banner = "cdn <RDN>"
+		oparser.separator 'Change the current entry to <RDN>.'
+	end
 
 
 	### Change the current working DN to the current entry's parent.
-	def parent_command( *args )
+	def parent_command( options, *args )
 		parent = @currbranch.parent or raise "%s is the root DN" % [ @currbranch.dn ]
 
 		self.log.debug "  changing to %s" % [ parent.dn ]
 		@currbranch = parent
+	end
+	set_options :help do |oparser, options|
+		oparser.banner = "parent"
+		oparser.separator "Change to the current entry's parent."
 	end
 
 
@@ -616,7 +648,8 @@ class Treequel::Shell
 		create_new_entry( branch )
 	end
 	set_options :create do |oparser, options|
-		oparser.banner = "create DN"
+		oparser.banner = "create <RDN>"
+		oparser.separator "Create a new entry at <RDN>."
 	end
 
 
@@ -626,6 +659,7 @@ class Treequel::Shell
 
 		raise "#{branch.dn}: no such entry. Did you mean to 'create' it instead? " unless
 		 	branch.exists?
+
 		if entryhash = edit_in_yaml( branch )
 			branch.merge( entryhash )
 		end
@@ -633,7 +667,8 @@ class Treequel::Shell
 		message "Saved #{rdn}."
 	end
 	set_options :edit do |oparser, options|
-		oparser.banner = "edit DN"
+		oparser.banner = "edit <RDN>"
+		oparser.separator "Edit the entry at RDN as YAML."
 	end
 
 
@@ -647,7 +682,8 @@ class Treequel::Shell
 		message "  %s -> %s: success" % [ olddn, branch.dn ]
 	end
 	set_options :mv do |oparser, options|
-		oparser.banner = "Rename (move) an entry"
+		oparser.banner = "mv <RDN> <NEWRDN>"
+		oparser.separator "Move the entry at RDN to NEWRDN"
 	end
 
 
@@ -664,7 +700,8 @@ class Treequel::Shell
 		message "  %s -> %s: success" % [ old_dn, branch.dn ]
 	end
 	set_options :cp do |oparser, options|
-		oparser.banner = "Copy an entry"
+		oparser.banner = "cp <RDN> <NEWRDN>"
+		oparser.separator "Copy the entry at RDN to a new entry at NEWRDN"
 	end
 
 
@@ -693,7 +730,8 @@ class Treequel::Shell
 		end
 	end
 	set_options :rm do |oparser, options|
-		oparser.banner = "rm [DNs]"
+		oparser.banner = "rm <RDN>+"
+		oparser.separator 'Remove the entries at the given RDNs.'
 
 		oparser.on( '-f', '--force', TrueClass, "Force -- remove without confirmation." ) do
 			options.force = true
@@ -716,7 +754,26 @@ class Treequel::Shell
 		message( output )
 	end
 	set_options :grep do |oparser, options|
-		oparser.banner = "grep [OPTIONS] FILTER"
+		oparser.banner = "grep [OPTIONS] <FILTER>"
+		oparser.separator 'Search for children of the current entry that match the given FILTER'
+
+		oparser.on( '-r', '--recursive', TrueClass, "Search recursively." ) do
+			options.force = true
+		end
+	end
+
+
+	### Show who the shell is currently bound as.
+	def whoami_command( options, *args )
+		if user = @dir.bound_user
+			message "Bound as #{user}"
+		else
+			message "Bound anonymously"
+		end
+	end
+	set_options :whoami do |oparser, options|
+		oparser.banner = "whoami"
+		oparser.separator 'Display the DN of the user the shell is bound as.'
 	end
 
 
@@ -739,6 +796,7 @@ class Treequel::Shell
 	end
 	set_options :bind do |oparser, options|
 		oparser.banner = "bind [BIND_DN or UID]"
+		oparser.separator "Bind as BIND_DN or UID"
 		oparser.separator "If you don't specify a BIND_DN, you will be prompted for it."
 	end
 

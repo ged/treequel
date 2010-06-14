@@ -110,7 +110,7 @@ class Treequel::Directory
 		@connect_type = options[:connect_type]
 
 		@conn         = nil
-		@bound_as     = nil
+		@bound_user   = nil
 
 		@base_dn      = options[:base_dn] || self.get_default_base_dn
 
@@ -157,6 +157,10 @@ class Treequel::Directory
 	# @return [Array<Module>]
 	attr_reader :registered_controls
 
+	# The DN of the user the directory is bound as
+	# @return [String]
+	attr_reader :bound_user
+
 
 	### Fetch the Branch for the base node of the directory.
 	### @return [Treequel::Branch]
@@ -173,7 +177,7 @@ class Treequel::Directory
 			self.port,
 			self.base_dn,
 			self.connect_type,
-			self.bound? ? @bound_as : 'anonymous'
+			self.bound? ? @bound_user : 'anonymous'
 		  ]
 	end
 
@@ -188,7 +192,7 @@ class Treequel::Directory
 			self.port,
 			@conn ? "connected" : "not connected",
 			self.base_dn,
-			@bound_as ? @bound_as.dump : "anonymous",
+			@bound_user ? @bound_user.dump : "anonymous",
 			@schema ? @schema.inspect : "(schema not loaded)",
 		]
 	end
@@ -227,7 +231,7 @@ class Treequel::Directory
 
 		self.log.info "Binding with connection %p as: %s" % [ self.conn, user_dn ]
 		self.conn.bind( user_dn.to_s, password )
-		@bound_as = user_dn.to_s
+		@bound_user = user_dn.to_s
 	end
 	alias_method :bind_as, :bind
 
@@ -240,13 +244,13 @@ class Treequel::Directory
 	### @return [void]
 	def bound_as( user_dn, password )
 		raise LocalJumpError, "no block given" unless block_given?
-		previous_bind_dn = @bound_as
+		previous_bind_dn = @bound_user
 		self.with_duplicate_conn do
 			self.bind( user_dn, password )
 			yield
 		end
 	ensure
-		@bound_as = previous_bind_dn
+		@bound_user = previous_bind_dn
 	end
 
 
