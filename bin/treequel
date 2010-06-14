@@ -293,6 +293,7 @@ class Treequel::Shell
 
 			# ...otherwise just call it with all the args.
 			else
+				self.log.warn "  no options defined for '%s' command" % [ command ]
 				meth.call( *args )
 			end
 
@@ -634,7 +635,7 @@ class Treequel::Shell
 		self.log.debug "  changing to %s" % [ parent.dn ]
 		@currbranch = parent
 	end
-	set_options :help do |oparser, options|
+	set_options :parent do |oparser, options|
 		oparser.banner = "parent"
 		oparser.separator "Change to the current entry's parent."
 	end
@@ -697,7 +698,7 @@ class Treequel::Shell
 		attributes = branch.entry.merge( :dn => newbranch.dn )
 		newbranch.create( attributes )
 
-		message "  %s -> %s: success" % [ old_dn, branch.dn ]
+		message "  %s -> %s: success" % [ rdn, branch.dn ]
 	end
 	set_options :cp do |oparser, options|
 		oparser.banner = "cp <RDN> <NEWRDN>"
