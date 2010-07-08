@@ -14,6 +14,7 @@ require 'spec/lib/constants'
 require 'spec/lib/helpers'
 
 require 'treequel/branchset'
+require 'treequel/branchcollection'
 require 'treequel/control'
 
 include Treequel::TestConstants
@@ -156,6 +157,33 @@ describe Treequel::Branchset do
 				:second_email => :second_cn,
 			}
 		end
+
+		#
+		# #+
+		#
+		they "can be combined into a BranchCollection by adding them together" do
+			other_branch = mock( "second treequel branch", :dn => 'theotherdn' )
+			other_branch.stub!( :directory ).and_return( @directory )
+			other_branchset = Treequel::Branchset.new( other_branch )
+
+			result = @branchset + other_branchset
+			result.should be_a( Treequel::BranchCollection )
+			result.branchsets.should have( 2 ).members
+			result.branchsets.should include( @branchset, other_branchset )
+		end
+
+		they "can be combined with a Branch into a BranchCollection by adding it" do
+			other_branch = mock( "second treequel branch", :dn => 'theotherdn' )
+			other_branch.stub!( :directory ).and_return( @directory )
+
+			result = @branchset + other_branch
+			result.should be_a( Treequel::BranchCollection )
+			result.branchsets.should have( 2 ).members
+			result.branchsets.should include( @branchset )
+			result.branchsets.select {|bs| bs != @branchset }.
+				first.branch.should == other_branch
+		end
+
 	end
 
 	describe "instance with no filter, options, or scope set" do

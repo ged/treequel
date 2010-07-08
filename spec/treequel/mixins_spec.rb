@@ -152,6 +152,7 @@ describe Treequel, "mixin" do
 	end
 
 	describe Treequel::ArrayUtilities do
+
 		it "includes a function for stringifying Array elements" do
 			testarray = [:a, :b, :c, [:d, :e, [:f, :g]]]
 
@@ -173,7 +174,6 @@ describe Treequel, "mixin" do
 			result.should == [:a, :b, :c, [:d, :e, [:f, :g]]]
 		end
 	end
-
 
 	describe Treequel::AttributeDeclarations do
 		before( :all ) do
@@ -323,6 +323,45 @@ describe Treequel, "mixin" do
 
 		end
 
+	end
+
+	describe Treequel::Normalization do
+
+		describe "key normalization" do
+			it "downcases" do
+				Treequel::Normalization.normalize_key( :logonTime ).should == :logontime
+			end
+
+			it "symbolifies" do
+				Treequel::Normalization.normalize_key( 'cn' ).should == :cn
+			end
+
+			it "strips invalid characters" do
+				Treequel::Normalization.normalize_key( 'given name' ).should == :givenname
+			end
+
+			it "converts hyphens to underscores" do
+				Treequel::Normalization.normalize_key( 'apple-nickname' ).should == :apple_nickname
+			end
+		end
+
+		describe "hash normalization" do
+			it "applies key-normalization to the keys of a hash" do
+				hash = {
+					:logonTime       => 'a logon time',
+					'cn'             => 'a common name',
+					'given name'     => 'a given name',
+					'apple-nickname' => 'a nickname',
+				}
+
+				Treequel::Normalization.normalize_hash( hash ).should == {
+					:logontime      => 'a logon time',
+					:cn             => 'a common name',
+					:givenname      => 'a given name',
+					:apple_nickname => 'a nickname',
+				}
+			end
+		end
 	end
 
 end

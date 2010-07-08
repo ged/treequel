@@ -13,12 +13,11 @@ require 'treequel'
 require 'treequel/mixins'
 #require 'treequel/model'
 
-dir = Treequel.directory
+dir = Treequel.directory_from_config
 
-# A model is specialized kind of Branch that:
+# A Treequel::Model class:
 # * Knows what its directory is
-# * Has a pre-filtered BranchSet
-# * Has a collection of anonymous modules, one for each objectclass
+# * Has a pre-filtered BranchSet that defines its extent
 # class Treequel::Model < Treequel::Branch
 # 
 # 	@directory = nil
@@ -52,8 +51,8 @@ dir = Treequel.directory
 # 
 # 
 # class Employee < Treequel::Model
-# 	model_branchset DIR.ou( :people ).filter( :objectClass => :laikaAccount )
-# 	model_objectClasses :laikaAccount, :inetOrgPerson
+# 	model_branchset DIR.ou( :people ).filter( :objectClass => :acmeAccount )
+# 	model_objectClasses :acmeAccount, :inetOrgPerson
 # end
 # 
 # pp Employee.find( :firstname => 'Scarlet' )
@@ -68,12 +67,12 @@ dir = Treequel.directory
 
 def fetch_objectclass( oc )
 	case oc
-	when Treequel::Schema::AbstractObjectClass
-		fetch_abstract_objectclass( oc )
 	when Treequel::Schema::StructuralObjectClass
 		fetch_structural_objectclass( oc )
+	when Treequel::Schema::AbstractObjectClass
+		fetch_abstract_objectclass_mixin( oc )
 	when Treequel::Schema::AuxiliaryObjectClass
-		fetch_auxiliary_objectclass( oc )
+		fetch_auxiliary_objectclass_mixin( oc )
 	else
 		raise "Ack! I don't know how to fetch a class/module for %s instances" %
 			[ oc.class ]
@@ -83,26 +82,6 @@ rescue => err
 	return nil
 end
 
-
-def fetch_abstract_objectclass( oc )
-	return Object if oc.nil?
-
-	unless classobj = @abstract[ oc.oid ]
-		parent = fetch_abstract_objectclass( oc.sup )
-		$stderr.puts "Creating abstract objectClass %s (%s)" % [ oc.name, oc.oid ]
-		classobj = @abstract[ oc.oid ] = Class.new( parent || Object ) do
-			@objectClass = oc
-			oc.must do |attrtype|
-				attr_accessor attrtype.name
-			end
-			oc.may do |attrtype|
-				attr_accessor attrtype.name
-			end
-		end
-	end
-
-	return classobj
-end
 
 def fetch_structural_objectclass( oc )
 	unless classobj = @structural[ oc.oid ]
@@ -122,7 +101,29 @@ def fetch_structural_objectclass( oc )
 	return classobj
 end
 
-def fetch_auxiliary_objectclass( oc )
+def fetch_abstract_objectclass_mixin( oc )
+	return Object if oc.nil?
+
+	unless classobj = @abstract[ oc.oid ]
+		parent = fetch_abstract_objectclass_mixin( oc.sup )
+		$stderr.puts "Creating abstract objectClass %s (%s)" % [ oc.name, oc.oid ]
+		classobj = @abstract[ oc.oid ] = Module.new do
+			include( parent )
+
+			@objectClass = oc
+			oc.must do |attrtype|
+				attr_accessor attrtype.name
+			end
+			oc.may do |attrtype|
+				attr_accessor attrtype.name
+			end
+		end
+	end
+
+	return classobj
+end
+
+def fetch_auxiliary_objectclass_mixin( oc )
 	unless mod = @auxiliary[ oc.oid ]
 		$stderr.puts "Creating auxiliary objectClass %s (%s)" % [ oc.name, oc.oid ]
 		mod = @auxiliary[ oc.oid ] = Module.new do

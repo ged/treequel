@@ -210,9 +210,17 @@ describe Treequel::Branch do
 
 			lambda {
 				@branch.facelart( 'sbc' )
-			}.should raise_error( NoMethodError )
+			}.should raise_exception( NoMethodError, /undefined method.*facelart/i )
 		end
 
+		it "don't create sub-branches for multi-value RDNs with an invalid attribute" do
+			@schema.should_receive( :attribute_types ).
+				and_return({ :cn => :a_value, :ou => :a_value })
+
+			lambda {
+				@branch.cn( 'benchlicker', :facelart => 'sbc' )
+			}.should raise_exception( NoMethodError, /invalid secondary attribute.*facelart/i )
+		end
 
 		it "can return all of its immediate children as Branches" do
 			@directory.should_receive( :search ).with( @branch, :one, '(objectClass=*)', {} ).
@@ -358,13 +366,14 @@ describe Treequel::Branch do
 		end
 
 		it "knows if a attribute is valid given its objectClasses" do
-			attrs = mock( "Attribute list", :null_object => true )
+			attrtype = mock( "attribute type object" )
 
 			@branch.should_receive( :valid_attribute_types ).
 				twice.
-				and_return([ attrs ])
+				and_return([ attrtype ])
 
-			attrs.should_receive( :names ).twice.and_return([ :cn, :l, :uid ])
+			attrtype.should_receive( :valid_name? ).with( :uid ).and_return( true )
+			attrtype.should_receive( :valid_name? ).with( :rubberChicken ).and_return( false )
 
 			@branch.valid_attribute?( :uid ).should be_true()
 			@branch.valid_attribute?( :rubberChicken ).should be_false()

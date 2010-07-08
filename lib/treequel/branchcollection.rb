@@ -49,6 +49,13 @@ class Treequel::BranchCollection
 		symbols.each do |methname|
 			# Create the method body
 			methodbody = Proc.new {|*args|
+
+				# Check to be sure the mutator version of the method is being called
+				arity = self.branchsets.first.method( methname ).arity
+				if arity.nonzero? && args.empty?
+					raise ArgumentError, "wrong number of arguments: (0 for %d)" % [ arity.abs ]
+				end
+
 				mutated_branchsets = self.branchsets.
 					collect {|bs| bs.send(methname, *args) }.flatten
 				self.class.new( *mutated_branchsets )

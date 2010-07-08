@@ -68,6 +68,11 @@ module Treequel::TestConstants # :nodoc:all
 		TEST_SUBHOSTS_RDN       = "#{TEST_HOSTS_DN_ATTR}=#{TEST_HOSTS_DN_VALUE}"
 		TEST_SUBHOSTS_DN        = "#{TEST_HOSTS_RDN},#{TEST_SUBDOMAIN_DN}"
 
+		TEST_SUBHOST_DN_ATTR    = 'cn'
+		TEST_SUBHOST_DN_VALUE   = 'ronky'
+		TEST_SUBHOST_RDN        = "#{TEST_SUBHOST_DN_ATTR}=#{TEST_SUBHOST_DN_VALUE}"
+		TEST_SUBHOST_DN         = "#{TEST_SUBHOST_RDN},#{TEST_SUBHOSTS_DN}"
+
 		TEST_PEOPLE_DN_ATTR     = 'ou'
 		TEST_PEOPLE_DN_VALUE    = 'People'
 		TEST_PEOPLE_RDN         = "#{TEST_PEOPLE_DN_ATTR}=#{TEST_PEOPLE_DN_VALUE}"
@@ -82,6 +87,21 @@ module Treequel::TestConstants # :nodoc:all
 		TEST_PERSON2_DN_VALUE   = 'gmichaels'
 		TEST_PERSON2_RDN        = "#{TEST_PERSON2_DN_ATTR}=#{TEST_PERSON2_DN_VALUE}"
 		TEST_PERSON2_DN         = "#{TEST_PERSON2_RDN},#{TEST_PEOPLE_DN}"
+
+		TEST_PHONES_DN_ATTR     = 'ou'
+		TEST_PHONES_DN_VALUE    = 'Phones'
+		TEST_PHONES_RDN         = "#{TEST_PHONES_DN_ATTR}=#{TEST_PHONES_DN_VALUE}"
+		TEST_PHONES_DN          = "#{TEST_PHONES_RDN},#{TEST_BASE_DN}"
+
+		TEST_ROOMS_DN_ATTR      = 'ou'
+		TEST_ROOMS_DN_VALUE     = 'Rooms'
+		TEST_ROOMS_RDN          = "#{TEST_ROOMS_DN_ATTR}=#{TEST_ROOMS_DN_VALUE}"
+		TEST_ROOMS_DN           = "#{TEST_ROOMS_RDN},#{TEST_BASE_DN}"
+
+		TEST_ROOM_DN_ATTR       = 'cn'
+		TEST_ROOM_DN_VALUE      = 'broomcloset'
+		TEST_ROOM_RDN           = "#{TEST_ROOM_DN_ATTR}=#{TEST_ROOM_DN_VALUE}"
+		TEST_ROOM_DN            = "#{TEST_ROOM_RDN},#{TEST_ROOMS_DN}"
 
 		constants.each do |cname|
 			const_get(cname).freeze

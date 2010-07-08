@@ -200,6 +200,15 @@ describe Treequel::BranchCollection do
 			filtered_collection.should include( filtered_branchset1, filtered_branchset2 )
 		end
 
+		it "raises a reasonable exception if one of its delegates returns a non-branchset" do
+			filter = Treequel::Filter.new
+			@branchset1.stub!( :filter ).and_return( filter )
+
+			expect {
+				@collection.filter
+			}.to raise_exception( ArgumentError, /0 for 1/ )
+		end
+
 		# it "can create a clone of itself with ordered branchsets" do
 		# 	ordered_branchset1 = stub( "branchset 3", :dn => 'cn=example3,dc=acme,dc=com', :each => 1 )
 		# 	ordered_branchset2 = stub( "branchset 4", :dn => 'cn=example4,dc=acme,dc=com', :each => 1 )

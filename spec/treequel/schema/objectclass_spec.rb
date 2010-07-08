@@ -9,24 +9,15 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-begin
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
 
-	require 'yaml'
-	require 'ldap'
-	require 'ldap/schema'
-	require 'treequel/schema/objectclass'
-	require 'treequel/schema/attributetype'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
+require 'yaml'
+require 'ldap'
+require 'ldap/schema'
+require 'treequel/schema/objectclass'
+require 'treequel/schema/attributetype'
 
 include Treequel::TestConstants
 include Treequel::Constants
@@ -38,14 +29,40 @@ include Treequel::Constants
 describe Treequel::Schema::ObjectClass do
 	include Treequel::SpecHelpers
 
+	TOP_OBJECTCLASS =
+		%{( 2.5.6.0 NAME 'top' } +
+		%{DESC 'top of the superclass chain' ABSTRACT } +
+		%{MUST objectClass )}
+
+	PERSON_OBJECTCLASS =
+		%{( 2.5.6.6 NAME 'person'} +
+		%{    DESC 'RFC2256: a person'} +
+		%{    SUP top STRUCTURAL} +
+		%{    MUST ( sn $ cn )} +
+		%{    MAY ( userPassword $ telephoneNumber $ seeAlso $ description ) )}
+
+	ORGPERSON_OBJECTCLASS =
+		%{( 2.5.6.7 NAME 'organizationalPerson'} +
+		%{    DESC 'RFC2256: an organizational person'} +
+		%{    SUP person STRUCTURAL} +
+		%{    MAY ( title $ x121Address $ registeredAddress $ destinationIndicator $} +
+		%{        preferredDeliveryMethod $ telexNumber $ teletexTerminalIdentifier $} +
+		%{        telephoneNumber $ internationaliSDNNumber $ } +
+		%{        facsimileTelephoneNumber $ street $ postOfficeBox $ postalCode $} +
+		%{        postalAddress $ physicalDeliveryOfficeName $ ou $ st $ l ) )}
+
 
 	before( :all ) do
-		setup_logging( :fatal )
+		setup_logging( :debug )
 		@datadir = Pathname( __FILE__ ).dirname.parent.parent + 'data'
 	end
 
 	before( :each ) do
-		@schema = mock( "Treequel schema" )
+		octable = {}
+		@schema = stub( "Treequel schema", :object_classes => octable )
+		octable[:top] = Treequel::Schema::ObjectClass.parse( @schema, TOP_OBJECTCLASS )
+		octable[:person] = Treequel::Schema::ObjectClass.parse( @schema, PERSON_OBJECTCLASS )
+		octable[:orgPerson] = Treequel::Schema::ObjectClass.parse( @schema, ORGPERSON_OBJECTCLASS )
 	end
 
 	after( :all ) do
@@ -55,11 +72,8 @@ describe Treequel::Schema::ObjectClass do
 
 	describe "parsed from the 'top' objectClass" do
 
-		TOP_OBJECTCLASS = %{( 2.5.6.0 NAME 'top' DESC 'top of the superclass chain' ABSTRACT } +
-			%{MUST objectClass )}
-
 		before( :each ) do
-			@oc = Treequel::Schema::ObjectClass.parse( @schema, TOP_OBJECTCLASS )
+			@oc = @schema.object_classes[:top]
 		end
 
 		it "is an AbstractObjectClass because its 'kind' is 'ABSTRACT'" do
@@ -114,19 +128,10 @@ describe Treequel::Schema::ObjectClass do
 	end
 
 
-	describe "parsed from the 'organizationalUnit' objectClass" do
-
-		OU_OBJECTCLASS = %{( 2.5.6.5 NAME 'organizationalUnit' } +
-			%{DESC 'RFC2256: an organizational unit' SUP top STRUCTURAL } +
-			%{MUST ou MAY ( userPassword $ searchGuide $ seeAlso $ } +
-			%{businessCategory $ x121Address $ registeredAddress $ } +
-			%{destinationIndicator $ preferredDeliveryMethod $ telexNumber $ } +
-			%{teletexTerminalIdentifier $ telephoneNumber $ internationaliSDNNumber $ } +
-			%{facsimileTelephoneNumber $ street $ postOfficeBox $ postalCode $ postalAddress $ } +
-			%{physicalDeliveryOfficeName $ st $ l $ description ) )}
+	describe "parsed from the 'organizationalPerson' objectClass" do
 
 		before( :each ) do
-			@oc = Treequel::Schema::ObjectClass.parse( @schema, OU_OBJECTCLASS )
+			@oc = @schema.object_classes[:orgPerson]
 		end
 
 		it "is a StructuralObjectClass because its kind is 'STRUCTURAL'" do
@@ -134,29 +139,45 @@ describe Treequel::Schema::ObjectClass do
 		end
 
 		it "knows what OID corresponds to the class" do
-			@oc.oid.should == '2.5.6.5'
+			@oc.oid.should == '2.5.6.7'
 		end
 
 		it "knows what its NAME attribute is" do
-			@oc.name.should == :organizationalUnit
+			@oc.name.should == :organizationalPerson
 		end
 
 		it "knows what its DESC attribute is" do
-			@oc.desc.should == 'RFC2256: an organizational unit'
+			@oc.desc.should == 'RFC2256: an organizational person'
 		end
 
-		it "knows that it has one MUST attribute" do
-			@oc.must_oids.should have( 1 ).member
-			@oc.must_oids.should == [ :ou ]
+		it "knows what its MUST attributes are" do
+			@oc.must_oids.should have( 3 ).members
+			@oc.must_oids.should include( :sn, :cn, :objectClass )
+		end
+
+		it "knows what its unique MUST attributes are" do
+			@oc.must_oids( false ).should be_empty()
 		end
 
 		it "knows what its MAY attributes are" do
-			@oc.may_oids.should have( 21 ).members
-        	@oc.may_oids.should include( :userPassword, :searchGuide, :seeAlso, :businessCategory,
-	        	:x121Address, :registeredAddress, :destinationIndicator, :preferredDeliveryMethod,
-	        	:telexNumber, :teletexTerminalIdentifier, :telephoneNumber, :internationaliSDNNumber,
-	        	:facsimileTelephoneNumber, :street, :postOfficeBox, :postalCode, :postalAddress,
-	        	:physicalDeliveryOfficeName, :st, :l, :description )
+			@oc.may_oids.should have( 22 ).members
+        	@oc.may_oids.should include(
+				:userPassword, :telephoneNumber, :seeAlso, :description,
+				:title, :x121Address, :registeredAddress, :destinationIndicator,
+				:preferredDeliveryMethod, :telexNumber, :teletexTerminalIdentifier,
+				:telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber,
+				:street, :postOfficeBox, :postalCode, :postalAddress,
+				:physicalDeliveryOfficeName, :ou, :st, :l )
+		end
+
+		it "knows what its unique MAY attributes are" do
+			@oc.may_oids( false ).should have( 18 ).members
+        	@oc.may_oids( false ).should include(
+				:title, :x121Address, :registeredAddress, :destinationIndicator,
+				:preferredDeliveryMethod, :telexNumber, :teletexTerminalIdentifier,
+				:telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber,
+				:street, :postOfficeBox, :postalCode, :postalAddress,
+				:physicalDeliveryOfficeName, :ou, :st, :l )
 		end
 
 	end

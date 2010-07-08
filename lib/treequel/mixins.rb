@@ -6,6 +6,7 @@ require 'etc'
 require 'logger'
 
 require 'treequel'
+require 'treequel/constants'
 
 
 module Treequel
@@ -111,6 +112,42 @@ module Treequel
 		end
 
 	end # module Delegation
+
+
+	# A collection of key-normalization functions for various artifacts in LDAP like
+	# attribute names, objectclass OIDs, etc.
+	module Normalization
+
+		###############
+		module_function
+		###############
+
+		### Normalize the given key
+		### @param [String] key  the key to normalize
+		### @return a downcased Symbol stripped of any invalid characters, and 
+		###         with '-' characters converted to '_'.
+		def normalize_key( key )
+			return key if key.to_s =~ Treequel::Constants::Patterns::NUMERICOID
+			return key.to_s.downcase.
+				gsub( /[^[:alnum:]\-_]/, '' ).
+				gsub( '-', '_' ).
+				to_sym
+		end
+
+		### Return a copy of +hash+ with all of its keys normalized by #normalize_key.
+		### @param [Hash] hash  the Hash to normalize
+		def normalize_hash( hash )
+			hash = hash.dup
+			hash.keys.each do |key|
+				nkey = normalize_key( key )
+				hash[ nkey ] = hash.delete( key ) if key != nkey
+			end
+
+			return hash
+		end
+
+
+	end # Normalization
 
 
 	### Add logging to a Treequel class. Including classes get #log and #log_debug methods.

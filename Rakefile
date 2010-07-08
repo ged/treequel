@@ -8,7 +8,6 @@
 #
 # Authors:
 #  * Michael Granger <ged@FaerieMUD.org>
-#  * Mahlon E. Smith <mahlon@martini.nu>
 #
 
 BEGIN {
@@ -77,7 +76,7 @@ elsif VERSION_FILE.exist?
 	PKG_VERSION = VERSION_FILE.read[ /VERSION\s*=\s*['"](\d+\.\d+\.\d+)['"]/, 1 ]
 end
 
-PKG_VERSION ||= '0.0.0'
+PKG_VERSION = '0.0.0' unless defined?( PKG_VERSION )
 
 PKG_FILE_NAME = "#{PKG_NAME.downcase}-#{PKG_VERSION}"
 GEM_FILE_NAME = "#{PKG_FILE_NAME}.gem"
@@ -92,7 +91,7 @@ EXTCONF       = EXTDIR + 'extconf.rb'
 
 ARTIFACTS_DIR = Pathname.new( CC_BUILD_ARTIFACTS )
 
-TEXT_FILES    = Rake::FileList.new( %w[Rakefile ChangeLog README LICENSE] )
+TEXT_FILES    = Rake::FileList.new( %w[Rakefile ChangeLog README* LICENSE] )
 BIN_FILES     = Rake::FileList.new( "#{BINDIR}/*" )
 LIB_FILES     = Rake::FileList.new( "#{LIBDIR}/**/*.rb" )
 EXT_FILES     = Rake::FileList.new( "#{EXTDIR}/**/*.{c,h,rb}" )
@@ -180,18 +179,19 @@ SNAPSHOT_GEM_NAME = "#{SNAPSHOT_PKG_NAME}.gem"
 
 # Documentation constants
 API_DOCSDIR = DOCSDIR + 'api'
+README_FILE = TEXT_FILES.find {|path| path =~ /^README/ } || 'README'
 RDOC_OPTIONS = [
 	'--tab-width=4',
 	'--show-hash',
 	'--include', BASEDIR.to_s,
-	'--main=README',
+	"--main=#{README_FILE}",
 	"--title=#{PKG_NAME}",
   ]
 YARD_OPTIONS = [
 	'--use-cache',
 	'--no-private',
 	'--protected',
-	'-r', 'README',
+	'-r', README_FILE,
 	'--exclude', 'extconf\\.rb',
 	'--files', 'ChangeLog,LICENSE',
 	'--output-dir', API_DOCSDIR.to_s,
@@ -216,16 +216,16 @@ DEPENDENCIES = {
 
 # Developer Gem dependencies: gemname => version
 DEVELOPMENT_DEPENDENCIES = {
-	'rake'        => '>= 0.8.7',
-	'rcodetools'  => '>= 0.7.0.0',
-	'rcov'        => '>= 0.8.1.2.0',
-	'rdoc'        => '>= 2.4.3',
-	'RedCloth'    => '>= 4.0.3',
-	'rspec'       => '>= 1.2.6',
-	'termios'     => '>= 0',
-	'text-format' => '>= 1.0.0',
-	'tmail'       => '>= 1.2.3.1',
-	'diff-lcs'    => '>= 1.1.2',
+	'rake'         => '>= 0.8.7',
+	'rcodetools'   => '>= 0.7.0.0',
+	'rcov'         => '>= 0.8.1.2.0',
+	'rdoc'         => '>= 2.4.3',
+	'RedCloth'     => '>= 4.0.3',
+	'rspec'        => '>= 1.2.6',
+	'ruby-termios' => '>= 0.9.6',
+	'text-format'  => '>= 1.0.0',
+	'tmail'        => '>= 1.2.3.1',
+	'diff-lcs'     => '>= 1.1.2',
 	'termios' => '>= 0.9.4',
 	'columnize' => '>= 0.3.1',
 	'diff-lcs' => '>= 1.1.2',
@@ -263,7 +263,7 @@ GEMSPEC   = Gem::Specification.new do |gem|
 
 	gem.has_rdoc          = true
 	gem.rdoc_options      = RDOC_OPTIONS
-	gem.extra_rdoc_files  = %w[ChangeLog README LICENSE]
+	gem.extra_rdoc_files  = TEXT_FILES - [ 'Rakefile' ]
 
 	gem.bindir            = BINDIR.relative_path_from(BASEDIR).to_s
 	gem.executables       = BIN_FILES.select {|pn| File.executable?(pn) }.

@@ -9,22 +9,14 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-begin
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
 
-	require 'yaml'
-	require 'ldap'
-	require 'ldap/schema'
-	require 'treequel/schema/attributetype'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'yaml'
+require 'ldap'
+require 'ldap/schema'
+require 'treequel/schema/attributetype'
 
 
 include Treequel::TestConstants
@@ -40,7 +32,6 @@ describe Treequel::Schema::AttributeType do
 
 	before( :all ) do
 		setup_logging( :fatal )
-		@datadir = Pathname( __FILE__ ).dirname.parent.parent + 'data'
 	end
 
 	before( :each ) do
@@ -185,7 +176,7 @@ describe Treequel::Schema::AttributeType do
 
 	describe "parsed from an attributeType that has a list as the value of its NAME attribute" do
 
-		MULTINAME_ATTRIBUTETYPE = %{( 1.1.1.1 NAME ('firstname' 'secondname') )}
+		MULTINAME_ATTRIBUTETYPE = %{( 1.1.1.1 NAME ('firstName' 'secondName') )}
 
 		before( :each ) do
 			@attrtype = Treequel::Schema::AttributeType.parse( @schema, MULTINAME_ATTRIBUTETYPE )
@@ -193,13 +184,24 @@ describe Treequel::Schema::AttributeType do
 
 		it "knows what both names are" do
 			@attrtype.names.should have(2).members
-			@attrtype.names.should include( :firstname, :secondname )
+			@attrtype.names.should include( :firstName, :secondName )
 		end
 
 		it "returns the first of its names for the #name method" do
-			@attrtype.name.should == :firstname
+			@attrtype.name.should == :firstName
 		end
 
+		it "knows how to build a normalized list of its names" do
+			@attrtype.normalized_names.should == [ :firstname, :secondname ]
+		end
+
+		it "knows when a name is valid" do
+			@attrtype.valid_name?( 'first name' ).should be_true()
+		end
+
+		it "knows when a name is invalid" do
+			@attrtype.valid_name?( :name2 ).should be_false()
+		end
 	end
 
 	describe "parsed from an attributeType that has escaped characters in its DESC attribute" do

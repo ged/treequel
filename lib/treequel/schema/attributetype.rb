@@ -23,6 +23,7 @@ require 'treequel/exceptions'
 #
 class Treequel::Schema::AttributeType
 	include Treequel::Loggable,
+	        Treequel::Normalization,
 	        Treequel::Constants::Patterns
 
 	extend Treequel::AttributeDeclarations
@@ -154,6 +155,20 @@ class Treequel::Schema::AttributeType
 	### Return the first of the attributeType's names, if it has any, or +nil+.
 	def name
 		return self.names.first
+	end
+
+
+	### Return the attributeType's names after normalizing them.
+	def normalized_names
+		return self.names.collect {|name| normalize_key(name) }
+	end
+
+
+	### Returns +true+ if the specified +name+ is one of the attribute's names
+	### after normalization of both.
+	def valid_name?( name )
+		normname = normalize_key( name )
+		return self.normalized_names.include?( normname )
 	end
 
 

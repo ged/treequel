@@ -26,6 +26,7 @@ require 'treequel/mixins'
 class Treequel::Schema::Table
 	extend Forwardable
 	include Treequel::Loggable,
+	        Treequel::Normalization,
 	        Treequel::Constants::Patterns
 
 	# The list of methods that should be delegated through the key-normalization
@@ -153,32 +154,6 @@ class Treequel::Schema::Table
 	### Create a Proc that will act as a getter for the given key
 	def make_getter( key )
 		return Proc.new { self[key] }
-	end
-
-
-	#######
-	private
-	#######
-
-	### Return a copy of +hash+ with all of its keys normalized by #normalize_key.
-	def normalize_hash( hash )
-		hash = hash.dup
-		hash.keys.each do |key|
-			nkey = normalize_key( key )
-			hash[ nkey ] = hash.delete( key ) if key != nkey
-		end
-
-		return hash
-	end
-
-
-	### Normalize the given key to equivalence
-	def normalize_key( key )
-		return key if key =~ NUMERICOID
-		return key.to_s.downcase.
-			gsub( /[^[:alnum:]\-_]/, '' ).
-			gsub( '-', '_' ).
-			to_sym
 	end
 
 end # class Treequel::Schema::Table

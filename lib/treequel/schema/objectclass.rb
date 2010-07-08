@@ -123,12 +123,6 @@ class Treequel::Schema
 		# The name of the objectClass's superior class (if specified)
 		attr_accessor :sup_name
 
-		# The Array of the objectClass's MUST OIDs
-		attr_reader :must_oids
-
-		# The Array of the objectClass's MAY OIDs
-		attr_reader :may_oids
-
 		# The objectClass's extensions (as a String)
 		attr_accessor :extensions
 
@@ -139,10 +133,26 @@ class Treequel::Schema
 		end
 
 
+		### Return the objectClass's MUST OIDs as Symbols (for symbolic OIDs) or Strings (for
+		### dotted-numeric OIDs).
+		### @param [Boolean] include_sup  (true) include MUST OIDs inherited from the 
+		###                               objectClass's SUP, if it has one.
+		### @return [Array<Symbol,String>] the objectClass's MUST OIDs
+		def must_oids( include_sup=true )
+			oids = @must_oids.dup
+
+			if include_sup && superclass = self.sup
+				oids.unshift( *superclass.must_oids )
+			end
+
+			return oids.flatten
+		end
+
+
 		### Return Treequel::Schema::AttributeType objects for each of the objectClass's
 		### MUST attributes.
-		def must
-			self.must_oids.collect do |oid|
+		def must( include_sup=true )
+			self.must_oids( include_sup ).collect do |oid|
 				self.log.warn "No attribute type for OID %p (case bug?)" % [ oid ] unless
 					self.schema.attribute_types.key?( oid )
 				self.schema.attribute_types[oid]
@@ -150,10 +160,26 @@ class Treequel::Schema
 		end
 
 
+		### Return the objectClass's MAY OIDs as Symbols (for symbolic OIDs) or Strings (for
+		### dotted-numeric OIDs).
+		### @param [Boolean] include_sup  (true) include MAY OIDs inherited from the 
+		###                               objectClass's SUP, if it has one.
+		### @return [Array<Symbol,String>] the objectClass's MAY OIDs
+		def may_oids( include_sup=true )
+			oids = @may_oids.dup
+
+			if include_sup && superclass = self.sup
+				oids.unshift( *superclass.may_oids )
+			end
+
+			return oids.flatten
+		end
+
+
 		### Return Treequel::Schema::AttributeType objects for each of the objectClass's
 		### MAY attributes.
-		def may
-			self.may_oids.collect do |oid|
+		def may( include_sup=true )
+			self.may_oids( include_sup ).collect do |oid|
 				self.log.warn "No attribute type for OID %p (case bug?)" % [ oid ] unless
 					self.schema.attribute_types.key?( oid )
 				self.schema.attribute_types[oid]

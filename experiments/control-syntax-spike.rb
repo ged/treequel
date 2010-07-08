@@ -101,7 +101,7 @@ end
 
 
 ### Persistent search control
-hosts = dir.filter( :objectClass => :laikaHost )
+hosts = dir.filter( :objectClass => :acmeHost )
 hosts.with_persistent_search( :all ) do |msg, entry, ctrl|
 	# do something interesting on update...
 end

@@ -172,7 +172,16 @@ class Treequel::Branchset
 
 	### Create a BranchCollection from the results of the Branchset and return it.
 	def collection
-		Treequel::BranchCollection.new( self.all )
+		return Treequel::BranchCollection.new( self.all )
+	end
+
+
+	### Create a BranchCollection from the receiver and the +other_branchset+ and return 
+	### it. 
+	### @param [Treequel::Branchset] other_branchset  the branchset to combine with
+	### @return [Treequel::BranchCollection]  the resulting collection object
+	def +( other_branchset )
+		return Treequel::BranchCollection.new( self, other_branchset )
 	end
 
 

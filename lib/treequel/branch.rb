@@ -60,9 +60,9 @@ class Treequel::Branch
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new Treequel::Branch with the given +directory+, +rdn_attribute+, +rdn_value+, and
-	### +base_dn+. If the optional +entry+ object is given, it will be used to fetch values from
-	### the directory; if it isn't provided, it will be fetched from the +directory+ the first
+	### Create a new Treequel::Branch with the given +directory+, +dn+, and an optional +entry+. 
+	### If the optional +entry+ object is given, it will be used to fetch values from the 
+	### directory; if it isn't provided, it will be fetched from the +directory+ the first
 	### time it is needed.
 	### 
 	### @param [Treequel::Directory] directory  The directory the Branch belongs to.
@@ -76,10 +76,9 @@ class Treequel::Branch
 		@directory = directory
 		@dn        = dn
 		@entry     = entry
+		@values    = {}
 
 		@include_operational_attrs = self.class.include_operational_attrs?
-
-		@values    = {}
 	end
 
 
@@ -90,7 +89,7 @@ class Treequel::Branch
 	# Delegate some other methods to a new Branchset via the #branchset method
 	def_method_delegators :branchset, :filter, :scope, :select, :limit, :timeout, :order
 
-	# Delegate some methods to the underlying entry via its accessor
+	# Delegate some methods to the Branch's directory via its accessor
 	def_method_delegators :directory, :controls, :referrals
 
 
@@ -140,20 +139,7 @@ class Treequel::Branch
 	### 
 	### @return [LDAP::Entry]  The entry wrapped by the Branch.
 	def entry
-		unless @entry
-			self.log.debug "Looking up entry for %p" % [ self ]
-			if self.include_operational_attrs?
-				self.log.debug "  including operational attributes."
-				@entry = self.directory.get_extended_entry( self )
-			else
-				self.log.debug "  not including operational attributes."
-				@entry = self.directory.get_entry( self )
-			end
-		else
-			self.log.debug "Using cached entry: %p" % [ @entry ]
-		end
-
-		return @entry
+		@entry ||= self.lookup_entry
 	end
 
 
@@ -234,19 +220,6 @@ class Treequel::Branch
 	end
 
 
-	### Return +true+ if the specified +attrname+ is a valid attributeType given the
-	### receiver's current objectClasses.
-	### 
-	### @param [String, Symbol] the OID (numeric or name) of the attribute in question
-	### @return [Boolean]
-	def valid_attribute?( attroid )
-		attroid = attroid.to_sym if attroid.is_a?( String ) &&
-			attroid !~ NUMERICOID
-
-		return self.valid_attribute_types.any? { |a| a.names.include?( attroid ) }
-	end
-
-
 	### Returns a human-readable representation of the object suitable for
 	### debugging.
 	### 
@@ -296,7 +269,7 @@ class Treequel::Branch
 	def ldif_for_attr( attribute, values, width )
 		ldif = ''
 
-		values.each do |val|
+		Array( values ).each do |val|
 			line = "#{attribute}:"
 
 			if val =~ /^#{LDIF_SAFE_STRING}$/
@@ -676,6 +649,26 @@ class Treequel::Branch
 	end
 
 
+	### If the given +attroid+ is a valid attributeType name or numeric OID, return the 
+	### AttributeType object that corresponds with it. If it isn't valid, return nil.
+	###
+	### @param [String,Symbol] attroid  a numeric OID (as a String) or a named OID (as a Symbol)
+	### @return [Treequel::Schema::AttributeType] the validated attributeType
+	def valid_attribute_type( attroid )
+		return self.valid_attribute_types.find {|attr_type| attr_type.valid_name?(attroid) }
+	end
+
+
+	### Return +true+ if the specified +attrname+ is a valid attributeType given the
+	### receiver's current objectClasses.
+	### 
+	### @param [String, Symbol] the OID (numeric or name) of the attribute in question
+	### @return [Boolean]
+	def valid_attribute?( attroid )
+		return !self.valid_attribute_type( attroid ).nil?
+	end
+
+
 	### Return a Hash of all the attributes allowed by the Branch's objectClasses. If
 	### any +additional_object_classes+ are given, include the attributes that would be
 	### available for the entry if it had them.
@@ -697,9 +690,22 @@ class Treequel::Branch
 	protected
 	#########
 
-	### Proxy method: if the first argument matches a valid attribute in the directory's
-	### schema, return a new Branch for the RDN made by using the first two arguments as
-	### attribute and value, and the remaining hash as additional attributes.
+	### Proxy method: call #traverse_branch if +attribute+ is a valid attribute
+	### and +value+ isn't +nil+.
+	### @see Treequel::Branch#traverse_branch
+	def method_missing( attribute, value=nil, additional_attributes={} )
+		return super( attribute ) if value.nil?
+		return self.traverse_branch( attribute, value, additional_attributes )
+	end
+
+
+	### If +attribute+ matches a valid attribute type in the directory's
+	### schema, return a new Branch for the RDN of +attribute+ and +value+, and 
+	### +additional_attributes+ if it's a multi-value RDN.
+	###
+	### @param [Symbol] attribute            the RDN attribute of the child
+	### @param [String] value                the RDN valye of the child
+	### @param [Hash] additional_attributes  any additional RDN attributes
 	### 
 	### @example
 	###   branch = Treequel::Branch.new( directory, 'ou=people,dc=acme,dc=com' )
@@ -708,18 +714,36 @@ class Treequel::Branch
 	###   branch.uid( :chester, :employeeType => 'admin' ).dn
 	###   # => 'uid=chester+employeeType=admin,ou=people,dc=acme,dc=com'
 	### 
-	### @return [Treequel::Branch]
-	def method_missing( attribute, value=nil, additional_attributes={} )
-		return super( attribute ) if value.nil?
+	### @return [Treequel::Branch]  the Branch for the specified child
+	### @raise [NoMethodError] if the +attribute+ or any +additional_attributes+ are
+	###                        not valid attributeTypes.
+	def traverse_branch( attribute, value, additional_attributes={} )
 		valid_types = self.directory.schema.attribute_types
 
-		return super(attribute) unless
-			valid_types.key?( attribute ) &&
-			additional_attributes.keys.all? {|ex_attr| valid_types.key?(ex_attr) }
+		# Raise if either the primary attribute or any secondary attributes are invalid
+		if !valid_types.key?( attribute )
+			raise NoMethodError, "undefined method `%s' for %p" % [ attribute, self ]
+		elsif invalid = additional_attributes.keys.find {|ex_attr| !valid_types.key?(ex_attr) }
+			raise NoMethodError, "invalid secondary attribute `%s' for %p" %
+				[ invalid, self ]
+		end
 
+		# Make a normalized RDN from the arguments and return the Branch for it
 		rdn = rdn_from_pair_and_hash( attribute, value, additional_attributes )
-
 		return self.get_child( rdn )
+	end
+
+
+	### Fetch the entry from the Branch's directory.
+	def lookup_entry
+		self.log.debug "Looking up entry for %p" % [ self ]
+		if self.include_operational_attrs?
+			self.log.debug "  including operational attributes."
+			return self.directory.get_extended_entry( self )
+		else
+			self.log.debug "  not including operational attributes."
+			return self.directory.get_entry( self )
+		end
 	end
 
 

@@ -22,6 +22,10 @@ module Treequel
 	### unsupported on the current server.
 	class UnsupportedControl < Treequel::ControlError; end
 
+	### Exception raised from Treequel::Model due to misconfiguration or
+	### other problem.
+	class ModelError < Treequel::Error; end
+
 end # module Treequel
 
 
