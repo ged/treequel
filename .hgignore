@@ -11,3 +11,4 @@ coverage\\.info
 \.orig$
 ^\.yardoc/
 docs/.*\.dump$
+^release\.notes$

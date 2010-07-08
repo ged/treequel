@@ -134,7 +134,7 @@ class Treequel::Directory
 	def_method_delegators :base, *DELEGATED_BRANCH_METHODS
 
 	# Delegate some methods to the connection via the #conn method
-	def_method_delegators :conn, :controls, :referrals
+	def_method_delegators :conn, :controls, :referrals, :root_dse
 
 
 	# The host to connect to.
@@ -619,7 +619,7 @@ class Treequel::Directory
 
 	### Fetch the default base dn for the server from the server's Root DSE.
 	def get_default_base_dn
-		dse = self.conn.root_dse
+		dse = self.root_dse
 		return '' if dse.nil? || dse.empty?
 		return dse.first['namingContexts'].first
 	end
