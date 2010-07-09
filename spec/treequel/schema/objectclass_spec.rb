@@ -53,7 +53,7 @@ describe Treequel::Schema::ObjectClass do
 
 
 	before( :all ) do
-		setup_logging( :debug )
+		setup_logging( :fatal )
 		@datadir = Pathname( __FILE__ ).dirname.parent.parent + 'data'
 	end
 

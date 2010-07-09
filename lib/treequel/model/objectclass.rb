@@ -1,0 +1,104 @@
+#!/usr/bin/env ruby
+# coding: utf-8
+
+require 'treequel'
+require 'treequel/model'
+require 'treequel/mixins'
+require 'treequel/constants'
+
+
+# Mixin that provides Treequel::Model characteristics to a mixin module.
+module Treequel::Model::ObjectClass
+
+	### Extension callback -- add data structures to the extending +mod+.
+	### @param [Module] mod  the mixin module to be extended
+	def self::extended( mod )
+		# mod.instance_variable_set( :@model_directory, nil )
+		# mod.instance_variable_set( :@model_bases, [] )
+		mod.instance_variable_set( :@model_class, Treequel::Model )
+		mod.instance_variable_set( :@model_objectclasses, [] )
+		mod.instance_variable_set( :@model_bases, [] )
+		super
+	end
+
+
+	### Inclusion callback -- Methods should be applied to the module rather than an instance.
+	### Warn the user if they use include() and extend() instead.
+	def self::included( mod )
+		warn "extending %p rather than appending features to it" % [ mod ]
+		mod.extend( self )
+	end
+
+
+	### Declare which Treequel::Model subclasses the mixin will register itself with. If this is
+	### used, it should be declared *before* declaring the mixin's bases and/or objectClasses.
+	def model_class( mclass=nil )
+		if mclass
+
+			# If there were already registered objectclasses, remove them from the previous
+			# model class
+			unless @model_objectclasses.empty?
+				Treequel.log.warn "%p: model_class should come before model_objectclasses" % [ self ]
+				@model_class.unregister_mixin( self )
+				mclass.register_mixin( self )
+			end
+			@model_class = mclass
+		end
+
+		return @model_class
+	end
+
+
+	### Set or get objectClasses that the mixin requires. Also registers the mixin with
+	### Treequel::Model.
+	### 
+	### @param [Array<Symbol>] objectclasses  the objectClasses the mixin will apply to, as an
+	###                                       array of Symbols
+	### @return [Array<Symbol>] the objectClasses that the module requires
+	def model_objectclasses( *objectclasses )
+		unless objectclasses.empty?
+			@model_objectclasses = objectclasses
+			@model_class.register_mixin( self )
+		end
+		return @model_objectclasses
+	end
+
+
+	### Set or get base DNs that the mixin applies to.
+	def model_bases( *base_dns )
+		unless base_dns.empty?
+			@model_bases = base_dns.collect {|dn| dn.gsub(/\s+/, '') }
+			@model_class.register_mixin( self )
+		end
+
+		return @model_bases
+	end
+
+
+	### Return a Branchset (or BranchCollection if the receiver has more than one
+	### base) that can be used to search the given +directory+ for entries to which
+	### the receiver applies.
+	###
+	### @param [Treequel::Directory] directory  the directory to search
+	### @return [Treequel::Branchset, Treequel::BranchCollection]  the encapsulated search
+	def search( directory )
+		bases = self.model_bases
+		objectclasses = self.model_objectclasses
+
+		raise Treequel::ModelError, "%p has no search criteria defined" % [ self ] if
+			bases.empty? && objectclasses.empty?
+
+		# Start by making a Branchset or BranchCollection for the mixin's bases. If
+		# the mixin doesn't have any bases, just use the base DN of the directory
+		# to be searched
+		bases = [directory.base_dn] if bases.empty?
+		search = bases.map {|base| self.model_class.new(directory, base).branchset }.
+			inject {|branch1,branch2| branch1 + branch2 }
+
+		return self.model_objectclasses.inject( search ) do |branchset, oid|
+			branchset.filter( :objectClass => oid )
+		end
+	end
+
+end # Treequel::Model::ObjectClass
+

@@ -25,7 +25,7 @@ end
 
 # A library for interacting with LDAP modelled after Sequel.
 #
-# @version 1.0.4
+# @version 1.1.0
 # 
 # @example
 #   # Connect to the directory at the specified URL
@@ -53,7 +53,7 @@ end
 module Treequel
 
 	# Library version
-	VERSION = '1.0.4'
+	VERSION = '1.1.0'
 
 	# VCS revision
 	REVISION = %q$Revision$
