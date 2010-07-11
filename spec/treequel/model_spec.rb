@@ -70,9 +70,9 @@ describe Treequel::Model do
 		mixin.should_receive( :model_objectclasses ).at_least( :once ).
 			and_return( [] )
 		mixin.should_receive( :model_bases ).at_least( :once ).
-			and_return( ['ou=people,dc=acme,dc=com'] )
+			and_return( [TEST_PEOPLE_DN] )
 		Treequel::Model.register_mixin( mixin )
-		Treequel::Model.mixins_for_dn( 'ou=people,dc=acme,dc=com' ).should include( mixin )
+		Treequel::Model.mixins_for_dn( TEST_PEOPLE_DN ).should include( mixin )
 	end
 
 	it "knows which mixins should be applied for a DN that is a child of one that's registered" do
@@ -80,9 +80,20 @@ describe Treequel::Model do
 		mixin.should_receive( :model_objectclasses ).at_least( :once ).
 			and_return( [] )
 		mixin.should_receive( :model_bases ).at_least( :once ).
-			and_return( ['ou=people,dc=acme,dc=com'] )
+			and_return( [TEST_PEOPLE_DN] )
 		Treequel::Model.register_mixin( mixin )
-		Treequel::Model.mixins_for_dn( 'uid=marlon,ou=people,dc=acme,dc=com' ).should include( mixin )
+		Treequel::Model.mixins_for_dn( TEST_PERSON_DN ).should include( mixin )
+	end
+
+	it "knows that mixins that don't have a base apply to all DNs" do
+		mixin = mock( "module" )
+		mixin.should_receive( :model_objectclasses ).at_least( :once ).
+			and_return( [:top] )
+		mixin.should_receive( :model_bases ).at_least( :once ).and_return( [] )
+
+		Treequel::Model.register_mixin( mixin )
+
+		Treequel::Model.mixins_for_dn( TEST_PERSON_DN ).should include( mixin )
 	end
 
 
@@ -121,12 +132,12 @@ describe Treequel::Model do
 			@entry = {
 				'dn'          => ['uid=slappy,ou=people,dc=acme,dc=com'],
 				'uid'         => ['slappy'],
-				'cn'          => ['Slappy the Ham'],
+				'cn'          => ['Slappy the Frog'],
 				'givenName'   => ['Slappy'],
-				'sn'          => ['Ham'],
-				'l'           => ['basement bathroom'],
-				'title'       => ['Chief AhhhhNaaaoooaa'],
-				'displayName' => ['Hamgina!'],
+				'sn'          => ['Frog'],
+				'l'           => ['a forest in England'],
+				'title'       => ['Forest Fire Prevention Advocate'],
+				'displayName' => ['Slappy the Frog'],
 				'logonTime'   => 'a time string',
 				'objectClass' => %w[
 					top

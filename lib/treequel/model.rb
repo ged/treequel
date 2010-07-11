@@ -51,13 +51,21 @@ class Treequel::Model < Treequel::Branch
 	### @param [Module] mixin                 the mixin to be applied; it should be extended with 
 	###                                       Treequel::Model::ObjectClass.
 	def self::register_mixin( mixin )
+		objectclasses = mixin.model_objectclasses
+		bases = mixin.model_bases
+		bases << '' if bases.empty?
+
 		Treequel.logger.debug "registering %p [objectClasses: %p, base DNs: %p]" %
-			[ mixin, mixin.model_objectclasses, mixin.model_bases ]
-		mixin.model_objectclasses.each do |oc|
+			[ mixin, objectclasses, bases ]
+
+		# Register it with each of its objectClasses
+		objectclasses.each do |oc|
 			@objectclass_registry[ oc.to_sym ].add( mixin )
 		end
-		mixin.model_bases.each do |dn|
-			@base_registry[ dn ].add( mixin )
+
+		# ...and each of its bases
+		bases.each do |dn|
+			@base_registry[ dn.downcase ].add( mixin )
 		end
 	end
 
@@ -65,12 +73,20 @@ class Treequel::Model < Treequel::Branch
 	### Unregister the given +mixin+ for the specified +objectclasses+.
 	### @param [Module] mixin  the mixin that should no longer be applied
 	def self::unregister_mixin( mixin )
-		Treequel.logger.debug "un-registering %p for objectclasses: %p" %
-			[ mixin, mixin.model_objectclasses ]
-		mixin.model_bases.each do |dn|
-			@base_registry[ dn ].delete( mixin )
+		objectclasses = mixin.model_objectclasses
+		bases = mixin.model_bases
+		bases << '' if bases.empty?
+
+		Treequel.logger.debug "un-registering %p [objectclasses: %p, base DNs: %p]" %
+			[ mixin, objectclasses, bases ]
+
+		# Unregister it from each of its bases
+		bases.each do |dn|
+			@base_registry[ dn.downcase ].delete( mixin )
 		end
-		mixin.model_objectclasses.each do |oc|
+
+		# ...and each of its objectClasses
+		objectclasses.each do |oc|
 			@objectclass_registry[ oc.to_sym ].delete( mixin )
 		end
 	end
@@ -102,18 +118,21 @@ class Treequel::Model < Treequel::Branch
 	### @param [String] dn  the DN of the entry
 	### @return [Set<Module>] the Set of mixin modules which apply
 	def self::mixins_for_dn( dn )
-		dn_tuples = dn.split( /\s*,\s*/ )
-		dn_keys = dn_tuples.reverse.inject([]) do |keys, dnpair|
-			dnpair += ',' + keys.last unless keys.empty?
+		dn_tuples = dn.downcase.split( /\s*,\s*/ )
+		dn_keys = dn_tuples.reverse.inject(['']) do |keys, dnpair|
+			dnpair += ',' + keys.last unless keys.last.empty?
 			keys << dnpair
 		end
 
-		Treequel.logger.debug "Finding mixins for DN keys: %p" % [ dn_keys ]
+		Treequel.log.debug "Finding mixins for DN keys: %p" % [ dn_keys ]
 
 		# Get the union of all of the mixin sets for the DN and all of its parents
-		return self.base_registry.
+		union = self.base_registry.
 			values_at( *dn_keys ).
 			inject {|set1,set2| set1 | set2 }
+		Treequel.log.debug "  found: %p" % [ union ]
+
+		return union
 	end
 
 
@@ -126,7 +145,7 @@ class Treequel::Model < Treequel::Branch
 	### entry is set.
 	def initialize( *args )
 		super
-		self.apply_applicable_mixins if @entry
+		self.apply_applicable_mixins( @dn, @entry ) if @entry
 	end
 
 
@@ -220,22 +239,24 @@ class Treequel::Model < Treequel::Branch
 
 	### Overridden to apply applicable mixins to lazily-loaded objects once their entry 
 	### has been looked up.
+	### @return [LDAP::Entry]  the fetched entry object
 	def lookup_entry
-		@entry = super
-		self.apply_applicable_mixins
+		entry = super
+		self.apply_applicable_mixins( self.dn, entry )
+		return entry
 	end
 
 
 	### Apply mixins that are applicable considering the receiver's DN and the 
 	### objectClasses from its entry.
-	def apply_applicable_mixins
-		oc_mixins = self.class.mixins_for_objectclasses( @entry['objectClass'] )
-		dn_mixins = self.class.mixins_for_dn( @dn )
+	def apply_applicable_mixins( dn, entry )
+		oc_mixins = self.class.mixins_for_objectclasses( entry['objectClass'] )
+		dn_mixins = self.class.mixins_for_dn( dn )
 
 		# The applicable mixins are those in the intersection of the ones
 		# inferred by its objectclasses and those that apply to its DN
 		mixins = ( oc_mixins & dn_mixins )
-		self.log.debug "Applying %d mixins to %s" % [ mixins.length, self.dn ]
+		self.log.debug "Applying %d mixins to %s" % [ mixins.length, dn ]
 
 		mixins.each {|mod| self.extend(mod) }
 	end

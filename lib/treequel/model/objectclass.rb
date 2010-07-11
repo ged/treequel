@@ -60,7 +60,7 @@ module Treequel::Model::ObjectClass
 			@model_objectclasses = objectclasses
 			@model_class.register_mixin( self )
 		end
-		return @model_objectclasses
+		return @model_objectclasses.dup
 	end
 
 
@@ -71,7 +71,7 @@ module Treequel::Model::ObjectClass
 			@model_class.register_mixin( self )
 		end
 
-		return @model_bases
+		return @model_bases.dup
 	end
 
 
@@ -88,14 +88,21 @@ module Treequel::Model::ObjectClass
 		raise Treequel::ModelError, "%p has no search criteria defined" % [ self ] if
 			bases.empty? && objectclasses.empty?
 
+		Treequel.log.debug "Creating search for %s using model class %p" %
+			[ self.name, self.model_class ]
+
 		# Start by making a Branchset or BranchCollection for the mixin's bases. If
 		# the mixin doesn't have any bases, just use the base DN of the directory
 		# to be searched
 		bases = [directory.base_dn] if bases.empty?
-		search = bases.map {|base| self.model_class.new(directory, base).branchset }.
+		search = bases.
+			map {|base| self.model_class.new(directory, base).branchset }.
 			inject {|branch1,branch2| branch1 + branch2 }
 
+		Treequel.log.debug "Search branch after applying bases is: %p" % [ search ]
+
 		return self.model_objectclasses.inject( search ) do |branchset, oid|
+			Treequel.log.debug "  adding filter for objectClass=%s to %p" % [ oid, branchset ]
 			branchset.filter( :objectClass => oid )
 		end
 	end

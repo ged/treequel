@@ -104,7 +104,7 @@ class Treequel::Branch
 
 	# Whether or not to include operational attributes when fetching the Branch's entry
 	predicate_attr :include_operational_attrs
-
+	alias_method :include_operational_attributes?, :include_operational_attrs?
 
 	### Change the DN the Branch uses to look up its entry.
 	### 
@@ -124,6 +124,7 @@ class Treequel::Branch
 		self.clear_caches
 		@include_operational_attrs = new_setting ? true : false
 	end
+	alias_method :include_operational_attributes=, :include_operational_attrs=
 
 
 	### Return the attribute/s which make up this Branch's RDN.
