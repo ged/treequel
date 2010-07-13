@@ -9,6 +9,7 @@ require 'treequel'
 require 'treequel/schema'
 require 'treequel/mixins'
 require 'treequel/constants'
+require 'treequel/branch'
 
 
 # The object in Treequel that represents a connection to a directory, the
@@ -27,7 +28,8 @@ class Treequel::Directory
 		:connect_type  => :tls,
 		:base_dn       => nil,
 		:bind_dn       => nil,
-		:pass          => nil
+		:pass          => nil,
+		:results_class => Treequel::Branch,
 	}
 
 	# Default mapping of SYNTAX OIDs to conversions. See #add_syntax_mapping for more
@@ -102,19 +104,22 @@ class Treequel::Directory
 	###    The DN of the user to bind as; if unset, binds anonymously.
 	### @option options [String] :pass (nil)
 	###    The password to use when binding.
+	### @option options [CLass] :results_class (Treequel::Branch)
+	###    The class to instantiate by default for entries fetched from the Directory.
 	def initialize( options={} )
-		options       = DEFAULT_OPTIONS.merge( options )
+		options              = DEFAULT_OPTIONS.merge( options )
 
-		@host         = options[:host]
-		@port         = options[:port]
-		@connect_type = options[:connect_type]
+		@host                = options[:host]
+		@port                = options[:port]
+		@connect_type        = options[:connect_type]
+		@results_class       = options[:results_class]
 
-		@conn         = nil
-		@bound_user   = nil
+		@conn                = nil
+		@bound_user          = nil
 
-		@base_dn      = options[:base_dn] || self.get_default_base_dn
+		@base_dn             = options[:base_dn] || self.get_default_base_dn
 
-		@base         = nil
+		@base                = nil
 
 		@syntax_mapping      = DEFAULT_SYNTAX_MAPPING.dup
 		@registered_controls = []
@@ -149,6 +154,10 @@ class Treequel::Directory
 	# @return [Symbol]
 	attr_accessor :connect_type
 
+	# The Class to instantiate when wrapping results fetched from the Directory.
+	# @return [Class]
+	attr_accessor :results_class
+
 	# The base DN of the directory
 	# @return [String]
 	attr_accessor :base_dn
@@ -165,7 +174,7 @@ class Treequel::Directory
 	### Fetch the Branch for the base node of the directory.
 	### @return [Treequel::Branch]
 	def base
-		return @base ||= Treequel::Branch.new( self, self.base_dn )
+		return @base ||= self.results_class.new( self, self.base_dn )
 	end
 
 
@@ -330,8 +339,8 @@ class Treequel::Directory
 	### 
 	### @option options [Class] :results_class (Treequel::Branch)
 	###    The Class to use when wrapping results; if not specified, defaults to the class 
-	###    of +base+ if it responds to #new_from_entry, or Treequel::Branch 
-	###    if it does not.
+	###    of +base+ if it responds to #new_from_entry, or the directory object's 
+	###    #results_class if it does not.
 	### @option options [Array<String, Symbol>] :selectattrs (['*'])
 	###    The attributes to return from the search; defaults to '*', which means to
 	###    return all non-operational attributes. Specifying '+' will cause the search
@@ -372,7 +381,9 @@ class Treequel::Directory
 		if options.key?( :results_class )
 			collectclass = options.delete( :results_class )
 		else
-			collectclass = base.class.respond_to?( :new_from_entry ) ? base.class : Treequel::Branch
+			collectclass = base.class.respond_to?( :new_from_entry ) ?
+				base.class :
+				self.results_class
 		end
 
 		# Format the arguments in the way #search_ext2 expects them
@@ -395,7 +406,6 @@ class Treequel::Directory
 		]]
 
 		results = []
-
 		self.conn.search_ext2( base_dn, scope, filter, *parameters ).each do |entry|
 			branch = collectclass.new_from_entry( entry, self )
 			branch.include_operational_attrs = base.include_operational_attrs? if

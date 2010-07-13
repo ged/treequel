@@ -88,6 +88,21 @@ describe Treequel::Directory do
 		@dir.base_dn.should == TEST_BASE_DN
 	end
 
+	it "can return its root element as a Branch instance" do
+		@dir = Treequel::Directory.new( @options )
+		@dir.base.should be_a( Treequel::Branch )
+		@dir.base.dn.should == TEST_BASE_DN
+	end
+
+	it "can return its root element as an instance of its results class if it's been set" do
+		subtype = Class.new( Treequel::Branch )
+		@dir = Treequel::Directory.new( @options )
+
+		@dir.results_class = subtype
+
+		@dir.base.should be_a( subtype )
+		@dir.base.dn.should == TEST_BASE_DN
+	end
 
 	describe "instances without existing connections" do
 
