@@ -158,9 +158,17 @@ class Treequel::Model < Treequel::Branch
 		plainsym, methodtype = attribute_from_method( sym )
 
 		unless attrtype = self.valid_attribute_type( plainsym )
-			self.log.error "method_missing: No valid attribute named %p; falling through" %
-				[ plainsym ]
-			return super
+
+			# If the attribute doesn't match as-is, try stripping underscores so
+			# attribute_name -> attributeName works.
+			camelcased_sym = plainsym.to_s.gsub( /_(\w)/ ) { $1.upcase }.to_sym
+
+			unless camelcased_sym != plainsym &&
+				   (attrtype = self.valid_attribute_type( camelcased_sym ))
+				self.log.error "method_missing: No valid attribute named %p; falling through" %
+					[ plainsym ]
+				return super
+			end
 		end
 
 		# Get the attribute's canonical name from the schema
@@ -271,11 +279,12 @@ class Treequel::Model < Treequel::Branch
 	### @param [Symbol] methodname  the method being called
 	### @return [Symbol] the attribute name that corresponds to the method
 	def attribute_from_method( methodname )
+
 		case methodname.to_s
-		when /^([a-z]\w+)(=)?$/i
-			return $1.to_sym, ($2 ? :writer : :reader )
 		when /^(?:has_)?([a-z]\w+)\?$/i
 			return $1.to_sym, :predicate
+		when /^([a-z]\w+)(=)?$/i
+			return $1.to_sym, ($2 ? :writer : :reader )
 		end
 	end
 

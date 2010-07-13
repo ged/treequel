@@ -170,7 +170,8 @@ describe Treequel::Model do
 		it "normalizes underbarred readers for camelCased attributes" do
 			attrtype = stub( "Treequel attributeType object", :name => :givenName )
 
-			@obj.should_receive( :valid_attribute_type ).with( :given_name ).and_return( attrtype )
+			@obj.should_receive( :valid_attribute_type ).with( :given_name ).and_return( nil )
+			@obj.should_receive( :valid_attribute_type ).with( :givenName ).and_return( attrtype )
 			@obj.should_receive( :[] ).with( :givenName ).and_return( ['Slappy'] )
 
 			@obj.given_name.should == ['Slappy']

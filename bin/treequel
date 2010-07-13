@@ -571,7 +571,7 @@ class Treequel::Shell
 		# Calcuate column widths
 		oclen = children.map do |subbranch|
 			subbranch.include_operational_attrs = true
-			subbranch[:structuralObjectClass].length
+			subbranch[:structuralObjectClass] ? subbranch[:structuralObjectClass].length : 0
 		end.max
 
 		# Set up sorting by collecting all the requested sort criteria as Proc objects which
@@ -868,9 +868,10 @@ class Treequel::Shell
 		metadatalen = oclen + 16 + 6 # oc + timestamp + whitespace
 		maxdesclen = self.columns - metadatalen - rdn.length - 5
 
+		modtime = branch[:modifyTimestamp] || branch[:createTimestamp]
 		return "%#{oclen}s  %s  %s%s %s" % [
-			branch[:structuralObjectClass],
-			branch[:modifyTimestamp].strftime('%Y-%m-%d %H:%M'),
+			branch[:structuralObjectClass] || '',
+			modtime.strftime('%Y-%m-%d %H:%M'),
 			rdn,
 			branch[:hasSubordinates] ? '/' : '',
 			single_line_description( branch, maxdesclen )
