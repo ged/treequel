@@ -69,6 +69,21 @@ class Treequel::Schema::LDAPSyntax
 	# The syntax's extensions (as a String)
 	attr_accessor :extensions
 
+	# SyntaxDescription = LPAREN WSP
+	# 	numericoid                 ; object identifier
+	# 	[ SP "DESC" SP qdstring ]  ; description
+	# 	extensions WSP RPAREN      ; extensions
+
+	### Returns the SyntaxDescription as a String, which is the RFC4512-style schema
+	### description.
+	def to_s
+		parts = [ self.oid ]
+		parts << "DESC '%s'" % [ self.desc ] if self.desc
+		parts << self.extensions.strip unless self.extensions.empty?
+
+		return "( %s )" % [ parts.join(' ') ]
+	end
+
 
 	### Return a human-readable representation of the object suitable for debugging
 	def inspect

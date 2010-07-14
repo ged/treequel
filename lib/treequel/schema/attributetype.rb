@@ -28,6 +28,19 @@ class Treequel::Schema::AttributeType
 
 	extend Treequel::AttributeDeclarations
 
+	# Regex for splitting a syntax OID from its length specifier
+	OID_SPLIT_PATTERN = /
+		^
+		#{SQUOTE}?
+		(#{OID})					# OID = $1
+		#{SQUOTE}?
+		(?:
+			#{LCURLY}
+			(#{LEN})				# Length = $2
+			#{RCURLY}
+		)?$
+	/x
+
 
 	#############################################################
 	###	C L A S S   M E T H O D S
@@ -92,7 +105,7 @@ class Treequel::Schema::AttributeType
 		@usagetype       = attributes[:usagetype]
 		@extensions      = attributes[:extensions]
 
-		@syntax_oid, @syntax_len = self.split_syntax_oid( attributes[:syntax_oid] ) if
+		@syntax_oid, @syntax_len = split_syntax_oid( attributes[:syntax_oid] ) if
 			attributes[:syntax_oid]
 
 		super()
@@ -147,6 +160,8 @@ class Treequel::Schema::AttributeType
 
 	# The application of this attributeType
 	attr_accessor :usagetype
+	alias_method :usage, :usagetype
+	alias_method :usage=, :usagetype=
 
 	# The attributeType's extensions (as a String)
 	attr_accessor :extensions
@@ -178,6 +193,33 @@ class Treequel::Schema::AttributeType
 	def sup
 		return nil unless oid = self.sup_oid
 		return self.schema.attribute_types[ oid ]
+	end
+
+
+	### Returns the attributeType as a String, which is the RFC4512-style schema
+	### description.
+	def to_s
+		parts = [ self.oid ]
+
+		parts << "NAME %s" % Treequel::Schema.qdescrs( self.names ) unless self.names.empty?
+
+		parts << "DESC '%s'" % [ self.desc ]           if self.desc
+		parts << "OBSOLETE"                            if self.obsolete?
+		parts << "SUP %s" % [ self.sup_oid ]           if self.sup_oid
+		parts << "EQUALITY %s" % [ self.eqmatch_oid ]  if self.eqmatch_oid
+		parts << "ORDERING %s" % [ self.ordmatch_oid ] if self.ordmatch_oid
+		parts << "SUBSTR %s" % [ self.submatch_oid ]   if self.submatch_oid
+		if self.syntax_oid
+			parts << "SYNTAX %s" % [ self.syntax_oid ]
+			parts.last << "{%d}" % [ self.syntax_len ] if self.syntax_len
+		end
+		parts << "SINGLE-VALUE"                        if self.is_single?
+		parts << "COLLECTIVE"                          if self.is_collective?
+		parts << "NO-USER-MODIFICATION"            unless self.is_user_modifiable?
+		parts << "USAGE %s" % [ self.usagetype ]       if self.usagetype
+		parts << self.extensions.strip             unless self.extensions.empty?
+
+		return "( %s )" % [ parts.join(' ') ]
 	end
 
 
@@ -247,21 +289,9 @@ class Treequel::Schema::AttributeType
 	end
 
 
-	#########
-	protected
-	#########
-
-	OID_SPLIT_PATTERN = /
-		^
-		#{SQUOTE}?
-		(#{OID})					# OID = $1
-		#{SQUOTE}?
-		(?:
-			#{LCURLY}
-			(#{LEN})				# Length = $2
-			#{RCURLY}
-		)?$
-	/x
+	#######
+	private
+	#######
 
 	### Split a numeric OID with an optional length qualifier into a numeric OID and length. If
 	### no length qualifier is present, it will be nil.

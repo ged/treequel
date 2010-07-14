@@ -58,6 +58,9 @@ describe Treequel::Schema::LDAPSyntax do
 			@syntax.desc.should == 'Boolean'
 		end
 
+		it "can remake its own schema description" do
+			@syntax.to_s.should == BOOLEAN_SYNTAX
+		end
 	end
 
 
@@ -74,6 +77,10 @@ describe Treequel::Schema::LDAPSyntax do
 
 		it "knows that it doesn't have a DESC attribute" do
 			@syntax.desc.should be_nil()
+		end
+
+		it "can remake its own schema description" do
+			@syntax.to_s.should == NODESC_SYNTAX
 		end
 	end
 

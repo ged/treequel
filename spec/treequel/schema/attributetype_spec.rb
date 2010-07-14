@@ -105,6 +105,9 @@ describe Treequel::Schema::AttributeType do
 			@attrtype.syntax.should == :the_syntax
 		end
 
+		it "can remake its own schema description" do
+			@attrtype.to_s.should == OBJECTCLASS_ATTRTYPE
+		end
 
 	end
 

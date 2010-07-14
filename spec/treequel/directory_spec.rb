@@ -104,6 +104,7 @@ describe Treequel::Directory do
 		@dir.base.dn.should == TEST_BASE_DN
 	end
 
+
 	describe "instances without existing connections" do
 
 		before( :each ) do
@@ -555,6 +556,15 @@ describe Treequel::Directory do
 		### Datatype conversion
 
 		it "allows a mapping to be overridden by a block for a valid syntax OID" do
+			@dir.add_syntax_mapping( OIDS::BIT_STRING_SYNTAX ) do |unconverted_value, directory|
+				unconverted_value.to_sym
+			end
+			@dir.convert_syntax_value( OIDS::BIT_STRING_SYNTAX, 'a_value' ).should == :a_value
+		end
+
+		it "allows a mapping to be overridden by a block with only one parameter for a " +
+		   "valid syntax OID (backwards-compatibility)" do
+			pending "doesn't work under 1.8" if RUBY_VERSION < '1.9.1'
 			@dir.add_syntax_mapping( OIDS::BIT_STRING_SYNTAX ) do |unconverted_value|
 				unconverted_value.to_sym
 			end

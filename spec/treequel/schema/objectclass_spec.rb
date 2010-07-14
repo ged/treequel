@@ -125,6 +125,9 @@ describe Treequel::Schema::ObjectClass do
 			@oc.sup.should be_nil()
 		end
 
+		it "can remake its own schema description" do
+			@oc.to_s.should == TOP_OBJECTCLASS
+		end
 	end
 
 
@@ -180,6 +183,9 @@ describe Treequel::Schema::ObjectClass do
 				:physicalDeliveryOfficeName, :ou, :st, :l )
 		end
 
+		it "can remake its own schema description" do
+			@oc.to_s.should == ORGPERSON_OBJECTCLASS.squeeze(' ')
+		end
 	end
 
 
@@ -195,11 +201,15 @@ describe Treequel::Schema::ObjectClass do
 			@oc.should be_an_instance_of( Treequel::Schema::StructuralObjectClass )
 		end
 
+		it "can remake its own schema description" do
+			# STRUCTURAL is implied...
+			@oc.to_s.sub( / STRUCTURAL/, '' ).should == KINDLESS_OBJECTCLASS
+		end
 	end
 
 	describe "parsed from an objectClass that has a list as the value of its NAME attribute" do
 
-		MULTINAME_OBJECTCLASS = %{( 1.1.1.1 NAME ('firstname' 'secondname') )}
+		MULTINAME_OBJECTCLASS = %{( 1.1.1.1 NAME ( 'firstname' 'secondname' ) )}
 
 		before( :each ) do
 			@oc = Treequel::Schema::ObjectClass.parse( @schema, MULTINAME_OBJECTCLASS )
@@ -214,6 +224,10 @@ describe Treequel::Schema::ObjectClass do
 			@oc.name.should == :firstname
 		end
 
+		it "can remake its own schema description" do
+			# STRUCTURAL is implied...
+			@oc.to_s.sub( / STRUCTURAL/, '' ).should == MULTINAME_OBJECTCLASS
+		end
 	end
 
 	describe "parsed from an objectClass that has escaped characters in its DESC attribute" do
@@ -225,10 +239,14 @@ describe Treequel::Schema::ObjectClass do
 			@oc = Treequel::Schema::ObjectClass.parse( @schema, ESCAPED_DESC_OBJECTCLASS )
 		end
 
-		it "unscapes the escaped characters" do
+		it "unescapes the escaped characters" do
 			@oc.desc.should == %{This spec's example, which includes a \\ character.}
 		end
 
+		it "can remake its own schema description" do
+			# STRUCTURAL is implied...
+			@oc.to_s.sub( / STRUCTURAL/, '' ).should == ESCAPED_DESC_OBJECTCLASS
+		end
 	end
 
 	describe "parsed from an objectClass that has the OBSOLETE attribute" do
@@ -243,6 +261,10 @@ describe Treequel::Schema::ObjectClass do
 			@oc.should be_obsolete()
 		end
 
+		it "can remake its own schema description" do
+			# STRUCTURAL is implied...
+			@oc.to_s.sub( / STRUCTURAL/, '' ).should == OBSOLETE_OBJECTCLASS
+		end
 	end
 
 	describe "parsed from an objectClass that has organizationalPerson as its SUP" do
@@ -259,6 +281,10 @@ describe Treequel::Schema::ObjectClass do
 			@oc.sup.should == :organizationalPerson_objectclass
 		end
 
+		it "can remake its own schema description" do
+			# STRUCTURAL is implied...
+			@oc.to_s.sub( / STRUCTURAL/, '' ).should == SUB_OBJECTCLASS
+		end
 	end
 
 	describe "parsed from an objectClass that has no explicit SUP" do
@@ -275,6 +301,10 @@ describe Treequel::Schema::ObjectClass do
 			@oc.sup.should == :top_objectclass
 		end
 
+		it "can remake its own schema description" do
+			# STRUCTURAL is implied...
+			@oc.to_s.sub( / STRUCTURAL/, '' ).should == ORPHAN_OBJECTCLASS
+		end
 	end
 
 end

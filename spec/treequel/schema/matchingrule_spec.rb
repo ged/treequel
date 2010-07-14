@@ -46,7 +46,8 @@ describe Treequel::Schema::MatchingRule do
 
 	describe "parsed from the 'octetStringMatch' matchingRule" do
 
-		OCTETSTRINGMATCH_RULE = %{( 2.5.13.17 NAME 'octetStringMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )}
+		OCTETSTRINGMATCH_RULE = %{( 2.5.13.17 NAME 'octetStringMatch' } +
+			%{SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )}
 
 		before( :each ) do
 			@rule = Treequel::Schema::MatchingRule.parse( @schema, OCTETSTRINGMATCH_RULE )
@@ -74,6 +75,9 @@ describe Treequel::Schema::MatchingRule do
 			@rule.should_not be_obsolete()
 		end
 
+		it "can remake its own schema description" do
+			@rule.to_s.should == OCTETSTRINGMATCH_RULE
+		end
 	end
 
 	describe "parsed from an matchingRule that has a DESC attribute" do

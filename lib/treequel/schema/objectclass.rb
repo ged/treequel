@@ -92,7 +92,7 @@ class Treequel::Schema
 			@names      = names
 			@desc       = desc
 			@obsolete   = obsolete ? true : false
-			@sup_name   = sup
+			@sup_oid    = sup
 			@must_oids  = must_oids
 			@may_oids   = may_oids
 			@extensions = extensions
@@ -120,8 +120,8 @@ class Treequel::Schema
 		# Is the objectClass obsolete?
 		predicate_attr :obsolete
 
-		# The name of the objectClass's superior class (if specified)
-		attr_accessor :sup_name
+		# The OID of the objectClass's superior class (if specified)
+		attr_accessor :sup_oid
 
 		# The objectClass's extensions (as a String)
 		attr_accessor :extensions
@@ -194,6 +194,48 @@ class Treequel::Schema
 		end
 
 
+		### Returns the objectClass as a String, which is the RFC4512-style schema
+		### description.
+		def to_s
+			# ObjectClassDescription = LPAREN WSP
+		    #     numericoid                 ; object identifier
+		    #     [ SP "NAME" SP qdescrs ]   ; short names (descriptors)
+		    #     [ SP "DESC" SP qdstring ]  ; description
+		    #     [ SP "OBSOLETE" ]          ; not active
+		    #     [ SP "SUP" SP oids ]       ; superior object classes
+		    #     [ SP kind ]                ; kind of class
+		    #     [ SP "MUST" SP oids ]      ; attribute types
+		    #     [ SP "MAY" SP oids ]       ; attribute types
+		    #     extensions WSP RPAREN
+            #
+		    # kind = "ABSTRACT" / "STRUCTURAL" / "AUXILIARY"
+
+			parts = [ self.oid ]
+
+			parts << "NAME %s" % Treequel::Schema.qdescrs( self.names ) unless self.names.empty?
+			parts << "DESC %s" % [ Treequel::Schema.qdstring(self.desc) ] if self.desc
+			parts << "OBSOLETE" if self.obsolete?
+			parts << "SUP %s" % [ Treequel::Schema.oids(self.sup_oid) ] if self.sup_oid
+			parts << self.kind
+			parts << "MUST %s" % [ Treequel::Schema.oids(self.must_oids(false)) ] unless
+				self.must_oids(false).empty?
+			parts << "MAY %s" % [ Treequel::Schema.oids(self.may_oids(false)) ] unless
+				self.may_oids(false).empty?
+			parts << self.extensions.strip unless self.extensions.empty?
+
+			return "( %s )" % [ parts.join(' ') ]
+		end
+
+		# @oid        = oid
+		# @names      = names
+		# @desc       = desc
+		# @obsolete   = obsolete ? true : false
+		# @sup_oid   = sup
+		# @must_oids  = must_oids
+		# @may_oids   = may_oids
+		# @extensions = extensions
+
+
 		### Return a human-readable representation of the object suitable for debugging
 		def inspect
 			return %{#<%s:0x%0x %s(%s) < %s "%s" MUST: %p, MAY: %p>} % [
@@ -201,7 +243,7 @@ class Treequel::Schema
 				self.object_id / 2,
 				self.name,
 				self.oid,
-				self.sup_name,
+				self.sup_oid,
 				self.desc,
 				self.must_oids,
 				self.may_oids,
@@ -212,11 +254,19 @@ class Treequel::Schema
 		### Return the ObjectClass for the receiver's SUP. If this is called on
 		### 'top', returns nil.
 		def sup
-			unless name = self.sup_name
+			unless name = self.sup_oid
 				return nil if self.oid == Treequel::Constants::OIDS::TOP_OBJECTCLASS
 				return self.schema.object_classes[ :top ]
 			end
 			return self.schema.object_classes[ name.to_sym ]
+		end
+
+
+		### Return the string that represents the kind of objectClass
+		### the receiver represents.
+		### @return [String] one of: 'ABSTRACT', 'STRUCTURAL', 'AUXILIARY'
+		def kind
+			return Treequel::Schema::OBJECTCLASS_TYPES.invert[ self.class ]
 		end
 
 	end # class ObjectClass

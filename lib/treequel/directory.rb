@@ -35,11 +35,15 @@ class Treequel::Directory
 	# Default mapping of SYNTAX OIDs to conversions. See #add_syntax_mapping for more
 	# information on what a valid conversion is.
 	DEFAULT_SYNTAX_MAPPING = {
-		OIDS::BIT_STRING_SYNTAX       => lambda {|bs| bs[0..-1].to_i(2) },
-		OIDS::BOOLEAN_SYNTAX          => { 'TRUE' => true, 'FALSE' => false },
-		OIDS::GENERALIZED_TIME_SYNTAX => lambda {|string| Time.parse(string) },
-		OIDS::UTC_TIME_SYNTAX         => lambda {|string| Time.parse(string) },
-		OIDS::INTEGER_SYNTAX          => lambda {|string| Integer(string) },
+		OIDS::BIT_STRING_SYNTAX         => lambda {|bs| bs[0..-1].to_i(2) },
+		OIDS::BOOLEAN_SYNTAX            => { 'TRUE' => true, 'FALSE' => false },
+		OIDS::GENERALIZED_TIME_SYNTAX   => lambda {|string| Time.parse(string) },
+		OIDS::UTC_TIME_SYNTAX           => lambda {|string| Time.parse(string) },
+		OIDS::INTEGER_SYNTAX            => lambda {|string| Integer(string) },
+		OIDS::DISTINGUISHED_NAME_SYNTAX => lambda {|dn, directory|
+			resclass = directory.results_class
+			resclass.new( directory, dn )
+		},
 	}
 
 	# :NOTE: the docs for #search_ext2 lie. The method signature is actually:
@@ -544,7 +548,12 @@ class Treequel::Directory
 		end
 
 		self.log.debug "  ...found conversion: %p" % [ conversion ]
-		return conversion[ value ]
+
+		if conversion.respond_to?( :call )
+			return conversion.call( value, self )
+		else
+			return conversion[ value ]
+		end
 	end
 
 

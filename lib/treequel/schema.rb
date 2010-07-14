@@ -105,6 +105,54 @@ class Treequel::Schema
 	end
 
 
+	### Return a description of the given +descriptors+ suitable for inclusion in 
+	### an RFC4512-style schema description entry.
+	### @param [Array<String>] descriptors  an Array of descriptors
+	### @return [String] the 'qdescrs' text
+	def self::qdescrs( *descriptors )
+		descriptors.flatten!
+		if descriptors.length > 1
+			return "( %s )" % [ descriptors.collect {|str| self.qdstring(str) }.join(" ") ]
+		else
+			return self.qdstring( descriptors.first )
+		end
+	end
+
+
+    # qdstring = SQUOTE dstring SQUOTE
+    # dstring = 1*( QS / QQ / QUTF8 )   ; escaped UTF-8 string
+    # 
+    # QQ =  ESC %x32 %x37 ; "\27"
+    # QS =  ESC %x35 ( %x43 / %x63 ) ; "\5C" / "\5c"
+    # 
+    # ; Any UTF-8 encoded Unicode character
+    # ; except %x27 ("\'") and %x5C ("\")
+    # QUTF8    = QUTF1 / UTFMB
+
+	### Escape and quote the specified +string+ according to the rules in 
+	### RFC4512/2252.
+	### @param [String] string  the unescaped UTF8 string
+	### @return [String] the string after quoting and escaping
+	def self::qdstring( string )
+		return "'%s'" % [ string.to_s.gsub(/\\/, '\\\\5c').gsub(/'/, '\\\\27') ]
+	end
+
+
+	### Return a description of the given +oids+ suitable for inclusion in 
+	### an RFC4512-style schema description entry.
+	### @param [Array<String>] oids  an Array of numeric or symbolic OIDs
+	### @return [String] the oid list text
+	def self::oids( *oids )
+		oids.flatten!
+		if oids.length > 1
+			return "( %s )" % [ oids.join(" $ ") ]
+		else
+			return oids.first
+		end
+	end
+
+
+
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
@@ -145,6 +193,7 @@ class Treequel::Schema
 	# The hash of Treequel::Schema::MatchingRuleUse objects, keyed by OID and any associated NAME
 	# attributes (as Symbols), that describe the attributes to which a matchingRule can be applied.
 	attr_reader :matching_rule_uses
+	alias_method :matching_rule_use, :matching_rule_uses
 
 
 	### Return a human-readable representation of the object suitable for debugging.

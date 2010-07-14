@@ -90,6 +90,30 @@ class Treequel::Schema::MatchingRuleUse
 	end
 
 
+	# MatchingRuleUseDescription = LPAREN WSP
+	# 	numericoid                 ; object identifier
+	# 	[ SP "NAME" SP qdescrs ]   ; short names (descriptors)
+	# 	[ SP "DESC" SP qdstring ]  ; description
+	# 	[ SP "OBSOLETE" ]          ; not active
+	# 	SP "APPLIES" SP oids       ; attribute types
+	# 	extensions WSP RPAREN      ; extensions
+
+	### Returns the matchingRuleUse as a String, which is the RFC4512-style schema
+	### description.
+	def to_s
+		parts = [ self.oid ]
+
+		parts << "NAME %s" % Treequel::Schema.qdescrs( self.names ) unless self.names.empty?
+
+		parts << "DESC '%s'" % [ self.desc ]           if self.desc
+		parts << "OBSOLETE"                            if self.obsolete?
+		parts << "APPLIES %s" % [ Treequel::Schema.oids(self.attr_oids) ]
+		parts << self.extensions.strip             unless self.extensions.empty?
+
+		return "( %s )" % [ parts.join(' ') ]
+	end
+
+
 	### Return a human-readable representation of the object suitable for debugging
 	def inspect
 		return "#<%s:0x%0x %s(%s) %p -> %p >" % [

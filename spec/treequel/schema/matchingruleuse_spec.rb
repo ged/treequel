@@ -73,6 +73,10 @@ describe Treequel::Schema::MatchingRuleUse do
 				and_return({ :uniqueMember => :a_attrtype_object })
 			@ruleuse.attribute_types.should == [ :a_attrtype_object ]
 		end
+
+		it "can remake its own schema description" do
+			@ruleuse.to_s.should == UNIQUE_MEMBER_MATCH_DESC
+		end
 	end
 
 
