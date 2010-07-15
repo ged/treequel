@@ -96,7 +96,7 @@ class Treequel::Model < Treequel::Branch
 	### @param [Array<Symbol>] objectclasses  the objectclasses from the entry
 	### @return [Set<Module>] the Set of mixin modules which apply
 	def self::mixins_for_objectclasses( *objectclasses )
-		ocsymbols = objectclasses.flatten.collect {|oc| oc.to_sym }
+		ocsymbols = objectclasses.flatten.collect {|oc| oc.untaint.to_sym }
 
 		# Get the union of all of the mixin sets for the objectclasses in question
 		mixins = self.objectclass_registry.
