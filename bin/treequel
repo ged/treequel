@@ -610,7 +610,7 @@ class Treequel::Shell
 			return
 		end
 
-		return self.parent_command if rdn == '..'
+		return self.parent_command( options ) if rdn == '..'
 
 		raise "invalid RDN %p" % [ rdn ] unless RELATIVE_DISTINGUISHED_NAME.match( rdn )
 
