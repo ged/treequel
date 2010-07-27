@@ -149,6 +149,18 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
+	######
+	public
+	######
+
+	### Override Branch#search to inject the 'objectClass' attribute to the
+	### selected attribute list if there is one.
+	def search( scope=:subtree, filter='(objectClass=*)', parameters={}, &block )
+		parameters[:selectattrs] |= ['objectClass'] if parameters.key?( :selectattrs )
+		super
+	end
+
+
 	#########
 	protected
 	#########
@@ -157,22 +169,16 @@ class Treequel::Model < Treequel::Branch
 	def method_missing( sym, *args )
 		plainsym, methodtype = attribute_from_method( sym )
 
+		# If the attribute doesn't match as-is, try the camelCased version of it
 		unless attrtype = self.valid_attribute_type( plainsym )
-
-			# If the attribute doesn't match as-is, try stripping underscores so
-			# attribute_name -> attributeName works.
 			camelcased_sym = plainsym.to_s.gsub( /_(\w)/ ) { $1.upcase }.to_sym
 
-			unless camelcased_sym != plainsym &&
-				   (attrtype = self.valid_attribute_type( camelcased_sym ))
+			unless attrtype = self.valid_attribute_type( camelcased_sym )
 				self.log.error "method_missing: No valid attribute named %p; falling through" %
 					[ plainsym ]
 				return super
 			end
 		end
-
-		# Get the attribute's canonical name from the schema
-		attrname = attrtype.name
 
 		# Make a method body for a new method based on what kind it is
 		methodbody = case methodtype

@@ -141,6 +141,18 @@ module Treequel::Constants
 	FEATURE_NAMES = FEATURE_OIDS.invert.freeze
 
 
+	### The list of attributes that are 'operational' 
+	### (http://tools.ietf.org/html/rfc4512#section-3.4)
+	OPERATIONAL_ATTRIBUTES = [
+		:creatorsName,
+		:createTimestamp,
+		:modifiersName,
+		:modifyTimestamp,
+		:structuralObjectClass,
+		:governingStructureRule,
+	]
+
+
 	### OIDs of RFC values
 	module OIDS
 

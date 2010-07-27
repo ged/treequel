@@ -555,22 +555,40 @@ describe Treequel::Directory do
 
 		### Datatype conversion
 
-		it "allows a mapping to be overridden by a block for a valid syntax OID" do
-			@dir.add_syntax_mapping( OIDS::BIT_STRING_SYNTAX ) do |unconverted_value, directory|
+		it "allows an attribute conversion to be overridden by a block for a valid syntax OID" do
+			@dir.add_attribute_conversion( OIDS::BIT_STRING_SYNTAX ) do |unconverted_value, directory|
 				unconverted_value.to_sym
 			end
-			@dir.convert_syntax_value( OIDS::BIT_STRING_SYNTAX, 'a_value' ).should == :a_value
+			@dir.convert_to_object( OIDS::BIT_STRING_SYNTAX, 'a_value' ).should == :a_value
 		end
 
-		it "allows a mapping to be overridden by a Hash for a valid syntax OID" do
-			@dir.add_syntax_mapping( OIDS::BOOLEAN_SYNTAX, {'true' => true, 'false' => false} )
-			@dir.convert_syntax_value( OIDS::BOOLEAN_SYNTAX, 'true' ).should == true
+		it "allows an attribute conversion to be overridden by a Hash for a valid syntax OID" do
+			@dir.add_attribute_conversion( OIDS::BOOLEAN_SYNTAX, {'true' => true, 'false' => false} )
+			@dir.convert_to_object( OIDS::BOOLEAN_SYNTAX, 'true' ).should == true
 		end
 
-		it "allows a mapping to be cleared by adding a nil mapping" do
-			@dir.add_syntax_mapping( OIDS::BOOLEAN_SYNTAX, {'true' => true, 'false' => false} )
-			@dir.add_syntax_mapping( OIDS::BOOLEAN_SYNTAX )
-			@dir.convert_syntax_value( OIDS::BOOLEAN_SYNTAX, 'true' ).should == 'true'
+		it "allows an attribute conversion to be cleared by adding a nil mapping" do
+			@dir.add_attribute_conversion( OIDS::BOOLEAN_SYNTAX, {'true' => true, 'false' => false} )
+			@dir.add_attribute_conversion( OIDS::BOOLEAN_SYNTAX )
+			@dir.convert_to_object( OIDS::BOOLEAN_SYNTAX, 'true' ).should == 'true'
+		end
+
+		it "allows an object conversion to be overridden by a block for a valid syntax OID" do
+			@dir.add_object_conversion( OIDS::BIT_STRING_SYNTAX ) do |unconverted_value, directory|
+				unconverted_value.to_s
+			end
+			@dir.convert_to_attribute( OIDS::BIT_STRING_SYNTAX, :a_value ).should == 'a_value'
+		end
+
+		it "allows an object conversion to be overridden by a Hash for a valid syntax OID" do
+			@dir.add_object_conversion( OIDS::BOOLEAN_SYNTAX, {false => 'FALSE', true => 'TRUE'} )
+			@dir.convert_to_attribute( OIDS::BOOLEAN_SYNTAX, false ).should == 'FALSE'
+		end
+
+		it "allows an object conversion to be cleared by adding a nil mapping" do
+			@dir.add_object_conversion( OIDS::BOOLEAN_SYNTAX, {'true' => true, 'false' => false} )
+			@dir.add_object_conversion( OIDS::BOOLEAN_SYNTAX )
+			@dir.convert_to_attribute( OIDS::BOOLEAN_SYNTAX, true ).should == 'true'
 		end
 
 

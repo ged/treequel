@@ -150,10 +150,10 @@ describe Treequel::Model do
 					acmeAccount
 				],
 			}
-			@directory = mock( 'Treequel Directory' )
 		end
 
 		before( :each ) do
+			@directory = mock( 'Treequel Directory' )
 			@obj = Treequel::Model.new_from_entry( @entry, @directory )
 		end
 
@@ -247,12 +247,19 @@ describe Treequel::Model do
 		end
 
 		it "falls through to the default proxy method for invalid attributes" do
-			@obj.should_receive( :valid_attribute_type ).with( :nonexistant ).and_return( nil )
+			@obj.should_receive( :valid_attribute_type ).at_least( :once ).with( :nonexistant ).
+				and_return( nil )
 			@obj.should_not_receive( :[] )
 
 			expect {
 				@obj.nonexistant
 			}.to raise_exception( NoMethodError, /undefined method/i )
+		end
+
+		it "adds the objectClass attribute when searching" do
+			@directory.should_receive( :search ).
+				with( @obj, :scope, :filter, :selectattrs => ['cn', 'objectClass'] )
+			@obj.search( :scope, :filter, :selectattrs => ['cn'] )
 		end
 
 	end

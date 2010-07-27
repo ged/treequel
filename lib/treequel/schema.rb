@@ -196,6 +196,13 @@ class Treequel::Schema
 	alias_method :matching_rule_use, :matching_rule_uses
 
 
+	### Return the Treequel::Schema::AttributeType objects that correspond to the
+	### RFC4512 'operational attributes' that are supported by the directory.
+	def operational_attribute_types
+		return self.attribute_types.values_at( *Treequel::OPERATIONAL_ATTRIBUTES ).compact
+	end
+
+
 	### Return a human-readable representation of the object suitable for debugging.
 	def inspect
 		ivar_descs = self.instance_variables.sort.collect do |ivar|

@@ -302,15 +302,16 @@ describe Treequel::Branch do
 			oc_attr = mock( "objectClass attributeType object" )
 			@schema.should_receive( :attribute_types ).and_return({ :objectClass => oc_attr })
 			oc_attr.should_receive( :single? ).and_return( false )
-			oc_attr.should_receive( :syntax_oid ).and_return( OIDS::STRING_SYNTAX )
+			oc_attr.should_receive( :syntax_oid ).at_least( :once ).
+				and_return( OIDS::STRING_SYNTAX )
 
 			@entry.should_receive( :[] ).with( 'objectClass' ).at_least( :once ).
 				and_return([ 'organizationalUnit', 'extensibleObject' ])
 
-			@directory.should_receive( :convert_syntax_value ).
+			@directory.should_receive( :convert_to_object ).
 				with( OIDS::STRING_SYNTAX, 'organizationalUnit' ).
 				and_return( 'organizationalUnit' )
-			@directory.should_receive( :convert_syntax_value ).
+			@directory.should_receive( :convert_to_object ).
 				with( OIDS::STRING_SYNTAX, 'extensibleObject' ).
 				and_return( 'extensibleObject' )
 
@@ -321,6 +322,17 @@ describe Treequel::Branch do
 
 			@branch.object_classes.should == [ :ou_objectclass, :extobj_objectclass ]
 		end
+
+		it "knows what operational attributes it has" do
+			op_attrs = OPERATIONAL_ATTRIBUTES.inject({}) do |hash, oa|
+				hash[ oa ] = mock("#{oa} attributeType object")
+				hash
+			end
+			@schema.should_receive( :operational_attribute_types ).and_return( op_attrs.values )
+
+			@branch.operational_attribute_types.should == op_attrs.values
+		end
+
 
 		it "can return the set of all its MUST attributeTypes based on which objectClasses it has" do
 			oc1 = mock( "first objectclass" )
@@ -371,11 +383,14 @@ describe Treequel::Branch do
 				and_return([ :cn, :l, :uid ])
 			@branch.should_receive( :may_attribute_types ).
 				and_return([ :description, :mobilePhone, :chunktype ])
+			@branch.should_receive( :operational_attribute_types ).
+				and_return([ :createTimestamp, :creatorsName ])
 
 			all_attrs = @branch.valid_attribute_types
 
-			all_attrs.should have( 6 ).members
-			all_attrs.should include( :cn, :uid, :l, :description, :mobilePhone, :chunktype )
+			all_attrs.should have( 8 ).members
+			all_attrs.should include( :cn, :uid, :l, :description, :mobilePhone,
+				:chunktype, :createTimestamp, :creatorsName )
 		end
 
 		it "knows if a attribute is valid given its objectClasses" do
@@ -549,6 +564,20 @@ describe Treequel::Branch do
 		end
 
 
+		it "knows how to represent itself as a Hash" do
+			@entry.should_receive( :keys ).and_return([ 'description', 'dn', 'l' ])
+			@entry.should_receive( :[] ).with( 'description' ).
+				and_return([ 'A chilly little penguin.' ])
+			@entry.should_receive( :[] ).with( 'l' ).
+				and_return([ 'Antartica', 'Galapagos' ])
+
+			@branch.to_hash.should == {
+				'description' => ['A chilly little penguin.'],
+				'l' => [ 'Antartica', 'Galapagos' ],
+				'dn' => TEST_HOSTS_DN,
+			}
+		end
+
 		it "returns a Treequel::BranchCollection with equivalent Branchsets if added to another " +
 		   "Branch" do
 			other_branch = Treequel::Branch.new( @directory, TEST_SUBHOSTS_DN )
@@ -572,7 +601,7 @@ describe Treequel::Branch do
 					and_return([ 'glumpa1', 'glumpa2' ])
 
 				@attribute_type.stub!( :syntax_oid ).and_return( OIDS::STRING_SYNTAX )
-				@directory.stub!( :convert_syntax_value ).and_return {|_,str| str }
+				@directory.stub!( :convert_to_object ).and_return {|_,str| str }
 
 				@branch[ :glumpy ].should == [ 'glumpa1', 'glumpa2' ]
 			end
@@ -584,7 +613,7 @@ describe Treequel::Branch do
 					and_return([ 'glumpa1' ])
 
 				@attribute_type.stub!( :syntax_oid ).and_return( OIDS::STRING_SYNTAX )
-				@directory.stub!( :convert_syntax_value ).and_return {|_,str| str }
+				@directory.stub!( :convert_to_object ).and_return {|_,str| str }
 
 				@branch[ :glumpy ].should == 'glumpa1'
 			end
@@ -605,7 +634,7 @@ describe Treequel::Branch do
 				@schema.stub!( :attribute_types ).and_return({ :glump => @attribute_type })
 				@attribute_type.stub!( :single? ).and_return( true )
 				@attribute_type.stub!( :syntax_oid ).and_return( OIDS::STRING_SYNTAX )
-				@directory.stub!( :convert_syntax_value ).and_return {|_,str| str }
+				@directory.stub!( :convert_to_object ).and_return {|_,str| str }
 				@entry.should_receive( :[] ).with( 'glump' ).once.and_return( [:a_value] )
 				2.times { @branch[ :glump ] }
 			end
@@ -615,8 +644,9 @@ describe Treequel::Branch do
 				@attribute_type.should_receive( :single? ).and_return( true )
 				@entry.should_receive( :[] ).with( 'bvector' ).at_least( :once ).
 					and_return([ '010011010101B' ])
-				@attribute_type.should_receive( :syntax_oid ).and_return( OIDS::BIT_STRING_SYNTAX )
-				@directory.should_receive( :convert_syntax_value ).
+				@attribute_type.should_receive( :syntax_oid ).at_least( :once ).
+					and_return( OIDS::BIT_STRING_SYNTAX )
+				@directory.should_receive( :convert_to_object ).
 					with( OIDS::BIT_STRING_SYNTAX, '010011010101B' ).
 					and_return( 1237 )
 
@@ -644,10 +674,11 @@ describe Treequel::Branch do
 				@schema.stub!( :attribute_types ).and_return({ :glorpy => @attribute_type })
 				@attribute_type.stub!( :single? ).and_return( true )
 				@attribute_type.stub!( :syntax_oid ).and_return( OIDS::STRING_SYNTAX )
-				@directory.stub!( :convert_syntax_value ).and_return {|_,val| val }
+				@directory.stub!( :convert_to_object ).and_return {|_,val| val }
 				@entry.should_receive( :[] ).with( 'glorpy' ).and_return( [:firstval], [:secondval] )
 
 				@directory.should_receive( :modify ).with( @branch, {'glorpy' => ['chunks']} )
+				@directory.stub!( :convert_to_attribute ).and_return {|_,val| val }
 				@entry.should_receive( :[]= ).with( 'glorpy', ['chunks'] )
 
 				@branch[ :glorpy ].should == :firstval

@@ -287,6 +287,12 @@ describe Treequel::Branchset do
 			newset.select.should == [ 'l', 'cn', 'uid', 'firstName', 'lastName' ]
 		end
 
+		it "adding attributes via #select_more should work even if there was no current " +
+		   "attribute selection" do
+			newset = @branchset.select_more( :firstName, :uid, :lastName, :objectClass )
+			newset.select.should include( 'uid', 'firstName', 'lastName', 'objectClass' )
+		end
+
 		it "uses its selection as the list of attributes to fetch when searching" do
 			@branchset.options[:select] = [ :l, :cn, :uid ]
 			@branch.should_receive( :search ).

@@ -262,35 +262,21 @@ class Treequel::Branch
 	end
 
 
-	### Make LDIF for the given +attribute+ and its +values+, wrapping at the given
-	### +width+.
-	### 
-	### @param [String] attribute  the attribute
-	### @param [Array<String>] values  the values for the given +attribute+
-	### @param [Fixnum] width  the maximum width of the lines to return
-	def ldif_for_attr( attribute, values, width )
-		ldif = ''
+	### Return the Branch as a Hash.
+	### @see Treequel::Branch#[]
+	### @return [Hash]  the entry as a Hash with converted values
+	def to_hash
+		entry = self.entry || self.valid_attributes_hash
+		self.log.debug "  making a Hash from an entry: %p" % [ entry ]
 
-		Array( values ).each do |val|
-			line = "#{attribute}:"
-
-			if val =~ /^#{LDIF_SAFE_STRING}$/
-				line << ' ' << val.to_s
+		return entry.keys.inject({}) do |hash, attribute|
+			if attribute == 'dn'
+				hash[ attribute ] = self.dn
 			else
-				line << ': ' << [ val ].pack( 'm' ).chomp
+				hash[ attribute ] = self[ attribute ]
 			end
-
-			# calculate how many times the line needs to be split, then add any 
-			# additional splits that need to be added because of the additional
-			# fold characters
-			splits  = ( line.length / width )
-			splits += ( splits * LDIF_FOLD_SEPARATOR.length ) / width
-			splits.times {|i| line[ width * (i+1), 0 ] = LDIF_FOLD_SEPARATOR }
-
-			ldif << line << "\n"
+			hash
 		end
-
-		return ldif
 	end
 
 
@@ -300,32 +286,9 @@ class Treequel::Branch
 		attrsym = attrname.to_sym
 
 		unless @values.key?( attrsym )
-			directory = self.directory
-			entry = self.entry or return nil
-			return nil unless (( value = entry[attrsym.to_s] ))
-
-			self.log.debug "  value is not cached; checking its attributeType"
-			if attribute = directory.schema.attribute_types[ attrsym ]
-				self.log.debug "  attribute exists; checking the entry for a value"
-
-				syntax_oid = attribute.syntax_oid
-
-				if attribute.single?
-					self.log.debug "    attributeType is SINGLE; unwrapping the Array"
-					@values[ attrsym ] = directory.convert_syntax_value( syntax_oid, value.first )
-				else
-					self.log.debug "    attributeType is not SINGLE; keeping the Array"
-					@values[ attrsym ] = value.collect do |raw|
-						directory.convert_syntax_value( syntax_oid, raw )
-					end
-					@values[ attrsym ].freeze if @values[ attrsym ].is_a?( Array )
-				end
-
-			else
-				self.log.info "no attributeType for %p" % [ attrsym ]
-				@values[ attrsym ] = value
-				@values[ attrsym ].freeze
-			end
+			value = self.get_converted_object( attrsym )
+			value.freeze if value.respond_to?( :freeze )
+			@values[ attrsym ] = value
 		else
 			self.log.debug "  value is cached."
 		end
@@ -351,6 +314,7 @@ class Treequel::Branch
 	### @param [Object] value  the attribute value
 	def []=( attrname, value )
 		value = [ value ] unless value.is_a?( Array )
+		value.collect! {|val| self.get_converted_attribute(attrname, val) }
 		self.log.debug "Modifying %s to %p" % [ attrname, value ]
 		self.directory.modify( self, attrname.to_s => value )
 		@values.delete( attrname.to_sym )
@@ -520,6 +484,21 @@ class Treequel::Branch
 	end
 
 
+	### Return the receiver's operational attributes as attributeType schema objects.
+	###
+	### @return [Array<Treequel::Schema::AttributeType>]  the operational attributes
+	def operational_attribute_types
+		return self.directory.schema.operational_attribute_types
+	end
+
+
+	### Return OIDs (numeric OIDs as Strings, named OIDs as Symbols) for each of the 
+	### receiver's operational attributes.
+	def operational_attribute_oids
+		return self.operational_attribute_types.map( &:oid )
+	end
+
+
 	### Return Treequel::Schema::AttributeType instances for each of the receiver's
 	### objectClass's MUST attributeTypes. If any +additional_object_classes+ are given, 
 	### include the MUST attributeTypes for them as well. This can be used to predict what
@@ -635,16 +614,19 @@ class Treequel::Branch
 
 
 	### Return Treequel::Schema::AttributeType instances for the set of all of the receiver's
-	### MUST and MAY attributeTypes.
+	### MUST and MAY attributeTypes plus the operational attributes.
 	### 
 	### @return [Array<Treequel::Schema::AttributeType>]
 	def valid_attribute_types
-		return self.must_attribute_types | self.may_attribute_types
+		return self.must_attribute_types |
+		       self.may_attribute_types  |
+		       self.operational_attribute_types
 	end
 
 
 	### Return a uniqified Array of OIDs (numeric OIDs as Strings, named OIDs as Symbols) for
-	### the set of all of the receiver's MUST and MAY attributeTypes.
+	### the set of all of the receiver's MUST and MAY attributeTypes plus the operational
+	### attributes.
 	### 
 	### @return [Array<String, Symbol>]
 	def valid_attribute_oids
@@ -652,8 +634,10 @@ class Treequel::Branch
 	end
 
 
-	### If the given +attroid+ is a valid attributeType name or numeric OID, return the 
+	### If the attribute associated with the given +attroid+ is in the list of valid 
+	### attributeTypes for the receiver given its objectClasses, return the 
 	### AttributeType object that corresponds with it. If it isn't valid, return nil.
+	### Includes operational attributes.
 	###
 	### @param [String,Symbol] attroid  a numeric OID (as a String) or a named OID (as a Symbol)
 	### @return [Treequel::Schema::AttributeType] the validated attributeType
@@ -663,7 +647,7 @@ class Treequel::Branch
 
 
 	### Return +true+ if the specified +attrname+ is a valid attributeType given the
-	### receiver's current objectClasses.
+	### receiver's current objectClasses. Does not include operational attributes.
 	### 
 	### @param [String, Symbol] the OID (numeric or name) of the attribute in question
 	### @return [Boolean]
@@ -750,6 +734,44 @@ class Treequel::Branch
 	end
 
 
+	### Get the value associated with +attrsym+, convert it to a Ruby object if the Branch's
+	### directory has a conversion rule, and return it.
+	def get_converted_object( attrsym )
+		return nil unless self.entry
+		value = self.entry[ attrsym.to_s ] or return nil
+
+		if attribute = self.directory.schema.attribute_types[ attrsym ]
+			self.log.debug "converting value for %p using the conversion for %p" %
+				[ attrsym, attribute.syntax_oid ]
+			if attribute.single?
+				value = self.directory.convert_to_object( attribute.syntax_oid, value.first )
+			else
+				value = value.collect do |raw|
+					self.directory.convert_to_object( attribute.syntax_oid, raw )
+				end
+			end
+		else
+			self.log.info "no attributeType for %p" % [ attrsym ]
+		end
+
+		return value
+	end
+
+
+	### Convert the specified +object+ according to the Branch's directory's conversion rules, 
+	### and return it.
+	def get_converted_attribute( attrsym, object )
+		if attribute = self.directory.schema.attribute_types[ attrsym ]
+			self.log.debug "converting %p object to a %p attribute" %
+				[ attrsym, attribute.syntax_oid ]
+			return self.directory.convert_to_attribute( attribute.syntax_oid, object )
+		else
+			self.log.info "no attributeType for %p" % [ attrsym ]
+			return object.to_s
+		end
+	end
+
+
 	### Clear any cached values when the structural state of the object changes.
 	### @return [void]
 	def clear_caches
@@ -795,6 +817,39 @@ class Treequel::Branch
 			attributes
 		end
 	end
+
+
+	### Make LDIF for the given +attribute+ and its +values+, wrapping at the given
+	### +width+.
+	### 
+	### @param [String] attribute  the attribute
+	### @param [Array<String>] values  the values for the given +attribute+
+	### @param [Fixnum] width  the maximum width of the lines to return
+	def ldif_for_attr( attribute, values, width )
+		ldif = ''
+
+		Array( values ).each do |val|
+			line = "#{attribute}:"
+
+			if val =~ /^#{LDIF_SAFE_STRING}$/
+				line << ' ' << val.to_s
+			else
+				line << ': ' << [ val ].pack( 'm' ).chomp
+			end
+
+			# calculate how many times the line needs to be split, then add any 
+			# additional splits that need to be added because of the additional
+			# fold characters
+			splits  = ( line.length / width )
+			splits += ( splits * LDIF_FOLD_SEPARATOR.length ) / width
+			splits.times {|i| line[ width * (i+1), 0 ] = LDIF_FOLD_SEPARATOR }
+
+			ldif << line << "\n"
+		end
+
+		return ldif
+	end
+
 
 end # class Treequel::Branch
 

@@ -62,6 +62,8 @@ describe Treequel::Schema do
 		schema.matching_rules.should have( 72 ).members
 		schema.matching_rule_uses.should have( 54 ).members
 		schema.ldap_syntaxes.should have( 31 ).members
+
+		schema.operational_attribute_types.should have( 5 ).members
 	end
 
 
@@ -82,6 +84,8 @@ describe Treequel::Schema do
 		schema.matching_rules.should have( 72 ).members
 		schema.matching_rule_uses.should have( 54 ).members
 		schema.ldap_syntaxes.should have( 31 ).members
+
+		schema.operational_attribute_types.should have( 5 ).members
 	end
 
 

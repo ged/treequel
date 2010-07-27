@@ -32,9 +32,9 @@ class Treequel::Directory
 		:results_class => Treequel::Branch,
 	}
 
-	# Default mapping of SYNTAX OIDs to conversions. See #add_syntax_mapping for more
-	# information on what a valid conversion is.
-	DEFAULT_SYNTAX_MAPPING = {
+	# Default mapping of SYNTAX OIDs to conversions from an LDAP string. 
+	# See #add_attribute_conversions for more information on what a valid conversion is.
+	DEFAULT_ATTRIBUTE_CONVERSIONS = {
 		OIDS::BIT_STRING_SYNTAX         => lambda {|bs, _| bs[0..-1].to_i(2) },
 		OIDS::BOOLEAN_SYNTAX            => { 'TRUE' => true, 'FALSE' => false },
 		OIDS::GENERALIZED_TIME_SYNTAX   => lambda {|string, _| Time.parse(string) },
@@ -44,6 +44,17 @@ class Treequel::Directory
 			resclass = directory.results_class
 			resclass.new( directory, dn )
 		},
+	}
+
+	# Default mapping of SYNTAX OIDs to conversions to an LDAP string from a Ruby object. 
+	# See #add_object_conversion for more information on what a valid conversion is.
+	DEFAULT_OBJECT_CONVERSIONS = {
+		OIDS::BIT_STRING_SYNTAX         => lambda {|bs, _| bs.to_i.to_s(2) },
+		OIDS::BOOLEAN_SYNTAX            => lambda {|obj, _| obj ? 'TRUE' : 'FALSE' },
+		OIDS::GENERALIZED_TIME_SYNTAX   => lambda {|time, _| time.ldap_generalized },
+		OIDS::UTC_TIME_SYNTAX           => lambda {|time, _| time.ldap_utc },
+		OIDS::INTEGER_SYNTAX            => lambda {|obj, _| Integer(obj).to_s },
+		OIDS::DISTINGUISHED_NAME_SYNTAX => lambda {|obj, _| obj.dn },
 	}
 
 	# :NOTE: the docs for #search_ext2 lie. The method signature is actually:
@@ -111,22 +122,23 @@ class Treequel::Directory
 	### @option options [CLass] :results_class (Treequel::Branch)
 	###    The class to instantiate by default for entries fetched from the Directory.
 	def initialize( options={} )
-		options              = DEFAULT_OPTIONS.merge( options )
+		options                = DEFAULT_OPTIONS.merge( options )
 
-		@host                = options[:host]
-		@port                = options[:port]
-		@connect_type        = options[:connect_type]
-		@results_class       = options[:results_class]
+		@host                  = options[:host]
+		@port                  = options[:port]
+		@connect_type          = options[:connect_type]
+		@results_class         = options[:results_class]
 
-		@conn                = nil
-		@bound_user          = nil
+		@conn                  = nil
+		@bound_user            = nil
 
-		@base_dn             = options[:base_dn] || self.get_default_base_dn
+		@base_dn               = options[:base_dn] || self.get_default_base_dn
 
-		@base                = nil
+		@base                  = nil
 
-		@syntax_mapping      = DEFAULT_SYNTAX_MAPPING.dup
-		@registered_controls = []
+		@object_conversions    = DEFAULT_OBJECT_CONVERSIONS.dup
+		@attribute_conversions = DEFAULT_ATTRIBUTE_CONVERSIONS.dup
+		@registered_controls   = []
 
 		# Immediately bind if credentials are passed to the initializer.
 		if ( options[:bind_dn] && options[:pass] )
@@ -509,13 +521,26 @@ class Treequel::Directory
 	end
 
 
-	### Add +conversion+ mapping for the specified +oid+. A conversion is any object that
-	### responds to #[] with a String argument(e.g., Proc, Method, Hash); the argument is 
-	### the raw value String returned from the LDAP entry, and it should return the 
-	### converted value. Adding a mapping with a nil +conversion+ effectively clears it.
-	def add_syntax_mapping( oid, conversion=nil )
+	### Add +conversion+ mapping for attributes of specified +oid+ to a Ruby object. A 
+	### conversion is any object that responds to #[] with a String 
+	### argument(e.g., Proc, Method, Hash); the argument is the raw value String returned 
+	### from the LDAP entry, and it should return the converted value. Adding a mapping 
+	### with a nil +conversion+ effectively clears it.
+	### @see #convert_to_object
+	def add_attribute_conversion( oid, conversion=nil )
 		conversion = Proc.new if block_given?
-		@syntax_mapping[ oid ] = conversion
+		@attribute_conversions[ oid ] = conversion
+	end
+
+
+	### Add +conversion+ mapping for the specified +oid+. A conversion is any object that
+	### responds to #[] with an object argument(e.g., Proc, Method, Hash); the argument is 
+	### the Ruby object that's being set as a value in an LDAP entry, and it should return the 
+	### raw LDAP string. Adding a mapping with a nil +conversion+ effectively clears it.
+	### @see #convert_to_attribute
+	def add_object_conversion( oid, conversion=nil )
+		conversion = Proc.new if block_given?
+		@object_conversions[ oid ] = conversion
 	end
 
 
@@ -538,21 +563,41 @@ class Treequel::Directory
 	end
 
 
-	### Map the specified +value+ to its Ruby datatype if one is registered for the given 
+	### Map the specified LDAP +attribute+ to its Ruby datatype if one is registered for the given 
 	### syntax +oid+. If there is no conversion registered, just return the +value+ as-is.
-	def convert_syntax_value( oid, value )
-		self.log.debug "Converting value %p using the syntax rule for %p" % [ value, oid ]
-		unless conversion = @syntax_mapping[ oid ]
+	def convert_to_object( oid, attribute )
+		self.log.debug "Converting %p to an object using the syntax rule for %p" % [ attribute, oid ]
+		unless conversion = @attribute_conversions[ oid ]
 			self.log.debug "  ...no conversion, returning it as-is."
-			return value
+			return attribute
 		end
 
 		self.log.debug "  ...found conversion: %p" % [ conversion ]
 
 		if conversion.respond_to?( :call )
-			return conversion.call( value, self )
+			return conversion.call( attribute, self )
 		else
-			return conversion[ value ]
+			return conversion[ attribute ]
+		end
+	end
+
+
+	### Map the specified Ruby +object+ to its LDAP string equivalent if a conversion is 
+	### registered for the given syntax +oid+. If there is no conversion registered, just 
+	### returns the +value+ as a String (via #to_s).
+	def convert_to_attribute( oid, object )
+		self.log.debug "Converting %p to an attribute using the syntax rule for %p" % [ object, oid ]
+		unless conversion = @object_conversions[ oid ]
+			self.log.debug "  ...no conversion, returning it as a String."
+			return object.to_s
+		end
+
+		self.log.debug "  ...found conversion: %p" % [ conversion ]
+
+		if conversion.respond_to?( :call )
+			return conversion.call( object, self )
+		else
+			return conversion[ object ]
 		end
 	end
 
