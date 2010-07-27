@@ -182,6 +182,19 @@ describe Treequel::Branch do
 		end
 
 
+		it "can fetch a child entry by RDN" do
+			res = @branch.get_child( 'cn=surprise' )
+			res.should be_a( Treequel::Branch )
+			res.dn.should == [ 'cn=surprise', @branch.dn ].join( ',' )
+		end
+
+		it "can fetch a child entry by RDN if its DN is the empty String" do
+			@branch.dn = ''
+			res = @branch.get_child( 'cn=surprise' )
+			res.should be_a( Treequel::Branch )
+			res.dn.should == 'cn=surprise'
+		end
+
 		it "create sub-branches for messages that match valid attributeType OIDs" do
 			@schema.should_receive( :attribute_types ).twice.
 				and_return({ :cn => :a_value, :ou => :a_value })
@@ -502,6 +515,37 @@ describe Treequel::Branch do
 			ldif = @branch.to_ldif
 			ldif.should =~ /dn: #{TEST_HOSTS_DN_ATTR}=#{TEST_HOSTS_DN_VALUE},#{TEST_BASE_DN}/i
 			ldif.should =~ /description: A chilly little penguin./
+		end
+
+
+		LONG_TEST_VALUE = 'PCFET0NUWVBFIHBsaXN0IFBVQkxJQyAiLS8vQXBwbGU' +
+			'gQ29tcHV0ZXIvL0RURCBQTElTVCAxLjAvL0VOIiAiaHR0cDovL3d' +
+			'3dy5hcHBsZS5jb20vRFREcy9Qcm9wZXJ0eUxpc3QtMS4wLmR0ZCI' +
+			'+Cg=='
+
+		it "knows how to split long lines in LDIF output" do
+			@entry.should_receive( :keys ).and_return([ 'description', 'l' ])
+			@entry.should_receive( :[] ).with( 'description' ).
+				and_return([ LONG_TEST_VALUE ])
+			@entry.should_receive( :[] ).with( 'l' ).
+				and_return([ 'Antartica', 'Galapagos' ])
+
+			ldif = @branch.to_ldif( 20 )
+			ldif.should =~ /description: ((?:[^\n]|\n )+)/
+			val = ldif[ /description: ((?:[^\n]|\n )+)/, 1 ]
+
+			val.split( /\n/ ).should == [
+				'PCFET0N',
+				' UWVBFIHBsaXN0IFBVQ',
+				' kxJQyAiLS8vQXBwbGU',
+				' gQ29tcHV0ZXIvL0RUR',
+				' CBQTElTVCAxLjAvL0V',
+				' OIiAiaHR0cDovL3d3d',
+				' y5hcHBsZS5jb20vRFR',
+				' Ecy9Qcm9wZXJ0eUxpc',
+				' 3QtMS4wLmR0ZCI+Cg=='
+			]
+
 		end
 
 

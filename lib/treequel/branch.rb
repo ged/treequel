@@ -69,7 +69,8 @@ class Treequel::Branch
 	### @param [String] dn  The DN of the entry the Branch is wrapping.
 	### @param [LDAP::Entry, Hash] entry  The entry object if it's already been fetched.
 	def initialize( directory, dn, entry=nil )
-		raise ArgumentError, "invalid DN" unless dn.match( Patterns::DISTINGUISHED_NAME )
+		raise ArgumentError, "invalid DN" unless
+			dn.match( Patterns::DISTINGUISHED_NAME ) || dn.empty?
 		raise ArgumentError, "can't cast a %s to an LDAP::Entry" % [entry.class.name] unless
 			entry.nil? || entry.is_a?( Hash )
 
@@ -479,7 +480,8 @@ class Treequel::Branch
 	### @param [String] rdn  The RDN of the child to fetch.
 	### @return [Treequel::Branch]
 	def get_child( rdn )
-		newdn = [ rdn, self.dn ].join( ',' )
+		self.log.debug "Getting child %p from base = %p" % [ rdn, self.dn ]
+		newdn = [ rdn, self.dn ].reject {|part| part.empty? }.join( ',' )
 		return self.class.new( self.directory, newdn )
 	end
 
