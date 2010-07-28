@@ -147,13 +147,17 @@ describe Treequel::Model do
 					posixAccount
 					shadowAccount
 					apple-user
-					acmeAccount
 				],
 			}
+
+			schema_dumpfile = Pathname( __FILE__ ).dirname.parent + 'data' + 'schema.yml'
+			hash = YAML.load_file( schema_dumpfile )
+			schemahash = LDAP::Schema.new( hash )
+			@schema = Treequel::Schema.new( schemahash )
 		end
 
 		before( :each ) do
-			@directory = mock( 'Treequel Directory' )
+			@directory = mock( 'Treequel Directory', :schema => @schema )
 			@obj = Treequel::Model.new_from_entry( @entry, @directory )
 		end
 
@@ -247,21 +251,27 @@ describe Treequel::Model do
 		end
 
 		it "falls through to the default proxy method for invalid attributes" do
-			@obj.should_receive( :valid_attribute_type ).at_least( :once ).with( :nonexistant ).
-				and_return( nil )
-			@obj.should_not_receive( :[] )
+			@obj.stub!( :valid_attribute_type ).and_return( nil )
+			@entry.should_not_receive( :[] )
 
 			expect {
 				@obj.nonexistant
 			}.to raise_exception( NoMethodError, /undefined method/i )
 		end
 
-		it "adds the objectClass attribute when searching" do
+		it "adds the objectClass attribute to the attribute list when executing a search that " +
+		   "contains a select" do
+			@directory.stub!( :convert_to_object ).and_return {|oid,str| str }
 			@directory.should_receive( :search ).
 				with( @obj, :scope, :filter, :selectattrs => ['cn', 'objectClass'] )
 			@obj.search( :scope, :filter, :selectattrs => ['cn'] )
 		end
 
+		it "knows which attribute methods it responds to" do
+			@directory.stub!( :convert_to_object ).and_return {|oid,str| str }
+			@obj.should respond_to( :cn )
+			@obj.should_not respond_to( :humpsize )
+		end
 	end
 
 end

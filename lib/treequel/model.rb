@@ -161,24 +161,48 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
+	### Returns +true+ if the receiver responds to the given method.
+	### @param [Symbol,String] sym  the name of the method to test for
+	### @return [Boolean]
+	def respond_to?( sym, include_priv=false )
+		return true if super
+		plainsym, _ = attribute_from_method( sym )
+		return self.find_attribute_type( plainsym ) ? true : false
+	end
+
+
+
 	#########
 	protected
 	#########
 
-	### Proxy method -- Handle calls to missing methods by searching for an attribute.
-	def method_missing( sym, *args )
-		plainsym, methodtype = attribute_from_method( sym )
+	### Search for the Treequel::Schema::AttributeType associated with +sym+.
+	### 
+	### @param [Symbol,String] name  the name of the attribute to find
+	### @return [Treequel::Schema::AttributeType,nil]  the associated attributeType, or nil
+	###                                                if there isn't one
+	def find_attribute_type( name )
+		attrtype = nil
 
 		# If the attribute doesn't match as-is, try the camelCased version of it
-		unless attrtype = self.valid_attribute_type( plainsym )
-			camelcased_sym = plainsym.to_s.gsub( /_(\w)/ ) { $1.upcase }.to_sym
+		unless attrtype = self.valid_attribute_type( name )
+			camelcased_sym = name.to_s.gsub( /_(\w)/ ) { $1.upcase }.to_sym
 
 			unless attrtype = self.valid_attribute_type( camelcased_sym )
 				self.log.error "method_missing: No valid attribute named %p; falling through" %
-					[ plainsym ]
-				return super
+					[ name ]
+				return nil
 			end
 		end
+
+		return attrtype
+	end
+
+
+	### Proxy method -- Handle calls to missing methods by searching for an attribute.
+	def method_missing( sym, *args )
+		plainsym, methodtype = attribute_from_method( sym )
+		attrtype = self.find_attribute_type( plainsym ) or return super
 
 		# Make a method body for a new method based on what kind it is
 		methodbody = case methodtype
