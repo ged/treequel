@@ -276,6 +276,23 @@ class Treequel::Branchset
 	end
 
 
+	### Add an alternate filter to an existing filter by ORing them.
+	### @param filterspec  the filter spec to OR with the existing filter
+	### @raises [Treequel::InvalidOperation]  if there is no existing filter
+	### @see Treequel::Filter.new  for specifics on what +filterspec+ can be
+	def or( *filterspec )
+		opts = self.options
+		existing_filter = self.filter
+		raise Treequel::ExpressionError, "no existing filter" if
+			existing_filter.promiscuous?
+
+		newfilter = Treequel::Filter.new( *filterspec )
+
+		self.log.debug "cloning %p with alternative filterspec: %p" % [ self, filterspec ]
+		return self.clone( :filter => (self.filter | newfilter) )
+	end
+
+
 	### If called with no argument, returns the current scope of the Branchset. If 
 	### called with an argument (which should be one of the keys of 
 	### Treequel::Constants::SCOPE), returns a clone of the receiving Branchset

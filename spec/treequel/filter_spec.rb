@@ -221,6 +221,20 @@ describe Treequel::Filter do
 			result.should == @filter1
 		end
 
+		it "creates a new OR filter out of two filters that are bitwise-ORed together" do
+			result = @filter1 | @filter2
+			result.should be_a( Treequel::Filter )
+		end
+
+		it "collapses two OR filters into a single OR clause when bitwise-ORed together" do
+			orfilter = @filter1 | @filter2
+			thirdfilter = Treequel::Filter.new( :l => :saturn )
+			result = ( orfilter | thirdfilter )
+
+			result.should be_a( Treequel::Filter )
+			result.to_s.should == '(|(uid=buckrogers)(l=mars)(l=saturn))'
+		end
+
 	end
 
 	describe "components:" do
@@ -235,6 +249,12 @@ describe Treequel::Filter do
 			it "stringifies by joining its stringified members" do
 				Treequel::Filter::FilterList.new( @filter1, @filter2 ).to_s.
 					should == '(filter1)(filter2)'
+			end
+
+			it "supports appending via the << operator" do
+				list = Treequel::Filter::FilterList.new( @filter1 )
+				( list << @filter2 ).should == list
+				list.to_s.should == '(filter1)(filter2)'
 			end
 		end
 
@@ -365,6 +385,11 @@ describe Treequel::Filter do
 					should == '|(filter1)'
 			end
 
+			it "allows futher alternations to be added to it" do
+				filter = Treequel::Filter::OrComponent.new( @filter1 )
+				filter.add_alternation( @filter2 )
+				filter.to_s.should == '|(filter1)(filter2)'
+			end
 		end
 
 		describe Treequel::Filter::NotComponent do

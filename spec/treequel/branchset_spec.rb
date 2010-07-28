@@ -233,6 +233,24 @@ describe Treequel::Branchset do
 			newset.filter_string.should == '(clothing=pants)'
 		end
 
+		#
+		# #or
+		#
+
+		it "creates a new branchset cloned from itself with an OR clause added to to an " +
+		   "existing filter" do
+			pantset = @branchset.filter( :clothing => 'pants' )
+			bothset = pantset.or( :clothing => 'shirt' )
+
+			bothset.filter_string.should == '(|(clothing=pants)(clothing=shirt))'
+		end
+
+		it "raises an exception if #or is invoked without an existing filter" do
+			expect {
+				@branchset.or( :clothing => 'shirt' )
+			}.to raise_exception( Treequel::ExpressionError, /no existing filter/i )
+		end
+
 		# 
 		# #scope
 		# 

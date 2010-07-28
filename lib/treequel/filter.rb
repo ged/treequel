@@ -62,6 +62,15 @@ class Treequel::Filter
 			return self.filters.collect {|f| f.to_s }.join
 		end
 
+
+		### Append operator: add the +other+ filter to the list.
+		### @param [Treequel::Filter] other  the new filter to add
+		### @return [Treequel::Filter::FilterList]  self (for chaining)
+		def <<( other )
+			@filters << other
+			return self
+		end
+
 	end # class FilterList
 
 
@@ -158,6 +167,12 @@ class Treequel::Filter
 		### Stringify the item
 		def to_s
 			return '|' + @filterlist.to_s
+		end
+
+		### Add an additional filter to the list of alternatives
+		### @param [Treequel::Filter] filter  the new alternative
+		def add_alternation( filter )
+			@filterlist << filter
 		end
 
 	end # class OrComponent
@@ -687,6 +702,24 @@ class Treequel::Filter
 	end
 	alias_method :+, :&
 
+
+	### OR two filters together
+	### @param [Treequel::Filter] other_filter
+	def |( other_filter )
+		return other_filter if self.promiscuous?
+		return self.dup if other_filter.promiscuous?
+
+		# Collapse nested ORs into a single one with an additional alternation
+		# if possible.
+		if self.component.respond_to?( :add_alternation )
+			self.log.debug "collapsing nested ORs..."
+			newcomp = self.component.dup
+			newcomp.add_alternation( other_filter )
+			return self.class.new( newcomp )
+		else
+			return self.class.new( :or, [self, other_filter] )
+		end
+	end
 
 
 end # class Treequel::Filter
