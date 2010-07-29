@@ -149,6 +149,12 @@ class Treequel::Filter
 			return '&' + @filterlist.to_s
 		end
 
+		### Add an additional filter to the list of requirements
+		### @param [Treequel::Filter] filter  the new requirement
+		def add_requirement( filter )
+			@filterlist << filter
+		end
+
 	end # AndComponent
 
 

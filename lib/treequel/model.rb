@@ -185,15 +185,9 @@ class Treequel::Model < Treequel::Branch
 		attrtype = nil
 
 		# If the attribute doesn't match as-is, try the camelCased version of it
-		unless attrtype = self.valid_attribute_type( name )
-			camelcased_sym = name.to_s.gsub( /_(\w)/ ) { $1.upcase }.to_sym
-
-			unless attrtype = self.valid_attribute_type( camelcased_sym )
-				self.log.error "method_missing: No valid attribute named %p; falling through" %
-					[ name ]
-				return nil
-			end
-		end
+		camelcased_sym = name.to_s.gsub( /_(\w)/ ) { $1.upcase }.to_sym
+		attrtype = self.valid_attribute_type( name ) ||
+		           self.valid_attribute_type( camelcased_sym )
 
 		return attrtype
 	end
