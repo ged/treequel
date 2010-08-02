@@ -29,6 +29,7 @@ describe Treequel::Branch do
 	include Treequel::SpecHelpers,
 	        Treequel::Matchers
 
+
 	before( :all ) do
 		setup_logging( :fatal )
 	end
@@ -533,10 +534,11 @@ describe Treequel::Branch do
 		end
 
 
-		LONG_TEST_VALUE = 'PCFET0NUWVBFIHBsaXN0IFBVQkxJQyAiLS8vQXBwbGU' +
-			'gQ29tcHV0ZXIvL0RURCBQTElTVCAxLjAvL0VOIiAiaHR0cDovL3d' +
-			'3dy5hcHBsZS5jb20vRFREcy9Qcm9wZXJ0eUxpc3QtMS4wLmR0ZCI' +
-			'+Cg=='
+		LONG_TEST_VALUE = 'A poet once said, "The whole universe is in ' +
+			'a glass of wine." We will probably never know in what sense ' +
+			'he meant that, for poets do not write to be understood. But ' +
+			'it is true that if we look at a glass of wine closely enough ' +
+			'we see the entire universe.'
 
 		it "knows how to split long lines in LDIF output" do
 			@entry.should_receive( :keys ).and_return([ 'description', 'l' ])
@@ -546,21 +548,50 @@ describe Treequel::Branch do
 				and_return([ 'Antartica', 'Galapagos' ])
 
 			ldif = @branch.to_ldif( 20 )
-			ldif.should =~ /description: ((?:[^\n]|\n )+)/
-			val = ldif[ /description: ((?:[^\n]|\n )+)/, 1 ]
+			val = ldif[ /(description: (?:[^\n]|\n )+)/, 1 ]
+			lines = val.split( /\n/ )
 
-			val.split( /\n/ ).should == [
-				'PCFET0N',
-				' UWVBFIHBsaXN0IFBVQ',
-				' kxJQyAiLS8vQXBwbGU',
-				' gQ29tcHV0ZXIvL0RUR',
-				' CBQTElTVCAxLjAvL0V',
-				' OIiAiaHR0cDovL3d3d',
-				' y5hcHBsZS5jb20vRFR',
-				' Ecy9Qcm9wZXJ0eUxpc',
-				' 3QtMS4wLmR0ZCI+Cg=='
-			]
+			lines.first.should =~ /.{20}/
+			lines[1..-2].each do |line|
+				line.should =~ / .{19}/
+			end
+			lines.last.should =~ / .{1,19}/
+		end
 
+
+		LONG_BINARY_TEST_VALUE = ( <<-END_VALUE ).gsub( /^\t{2}/, '' )
+		Once there came a man
+		Who said,
+		"Range me all men of the world in rows."
+		And instantly
+		There was terrific clamour among the people
+		Against being ranged in rows.
+		There was a loud quarrel, world-wide.
+		It endured for ages;
+		And blood was shed
+		By those who would not stand in rows,
+		And by those who pined to stand in rows.
+		Eventually, the man went to death, weeping.
+		And those who staid in bloody scuffle
+		Knew not the great simplicity.
+		END_VALUE
+
+		it "knows how to split long binary lines in LDIF output" do
+			@entry.should_receive( :keys ).and_return([ 'description', 'l' ])
+			@entry.should_receive( :[] ).with( 'description' ).
+				and_return([ LONG_BINARY_TEST_VALUE ])
+			@entry.should_receive( :[] ).with( 'l' ).
+				and_return([ 'Antartica', 'Galapagos' ])
+
+			ldif = @branch.to_ldif( 20 )
+			val = ldif[ /(description: (?:[^\n]|\n )+)/, 1 ]
+			lines = val.split( /\n/ )
+
+			lines.first.should =~ /.{20}/
+			lines[1..-2].each do |line|
+				line.should =~ / .{19}/
+			end
+			lines.last.should =~ / .{1,19}/
 		end
 
 

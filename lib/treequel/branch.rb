@@ -183,6 +183,7 @@ class Treequel::Branch
 	### @return [String]
 	def parent_dn
 		return nil if self.dn == self.directory.base_dn
+		return '' if self.dn.index( ',' ).nil?
 		return self.split_dn( 2 ).last
 	end
 
@@ -829,22 +830,19 @@ class Treequel::Branch
 		ldif = ''
 
 		Array( values ).each do |val|
-			line = "#{attribute}:"
+			unsplit_line = "#{attribute}:"
 
 			if val =~ /^#{LDIF_SAFE_STRING}$/
-				line << ' ' << val.to_s
+				unsplit_line << ' ' << val.to_s
 			else
-				line << ': ' << [ val ].pack( 'm' ).chomp
+				unsplit_line << ': ' << [ val ].pack( 'm' ).chomp
 			end
 
-			# calculate how many times the line needs to be split, then add any 
-			# additional splits that need to be added because of the additional
-			# fold characters
-			splits  = ( line.length / width )
-			splits += ( splits * LDIF_FOLD_SEPARATOR.length ) / width
-			splits.times {|i| line[ width * (i+1), 0 ] = LDIF_FOLD_SEPARATOR }
+			ldif << unsplit_line.slice!( 0, width ) << LDIF_FOLD_SEPARATOR until
+				unsplit_line.empty?
 
-			ldif << line << "\n"
+			ldif.rstrip!
+			ldif << "\n"
 		end
 
 		return ldif

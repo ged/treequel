@@ -165,6 +165,8 @@ class Treequel::Model < Treequel::Branch
 	### @param [Symbol,String] sym  the name of the method to test for
 	### @return [Boolean]
 	def respond_to?( sym, include_priv=false )
+		return super if caller(1).first =~ %r{/spec/} &&
+			caller(1).first !~ /respond_to/ # RSpec workaround
 		return true if super
 		plainsym, _ = attribute_from_method( sym )
 		return self.find_attribute_type( plainsym ) ? true : false
