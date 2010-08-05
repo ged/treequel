@@ -584,9 +584,10 @@ describe Treequel::Branch do
 				and_return([ 'Antartica', 'Galapagos' ])
 
 			ldif = @branch.to_ldif( 20 )
-			val = ldif[ /(description: (?:[^\n]|\n )+)/, 1 ]
-			lines = val.split( /\n/ )
+			ldif.scan( /^description/ ).length.should == 1
 
+			val = ldif[ /^(description:: (?:[^\n]|\n )+)/, 1 ]
+			lines = val.split( /\n/ )
 			lines.first.should =~ /.{20}/
 			lines[1..-2].each do |line|
 				line.should =~ / .{19}/

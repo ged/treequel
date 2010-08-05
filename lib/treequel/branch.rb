@@ -824,24 +824,21 @@ class Treequel::Branch
 	### @param [String] attribute  the attribute
 	### @param [Array<String>] values  the values for the given +attribute+
 	### @param [Fixnum] width  the maximum width of the lines to return
-	def ldif_for_attr( attribute, values, width )
+	def ldif_for_attr( attribute, value, width )
 		ldif = ''
 
-		Array( values ).each do |val|
-			unsplit_line = "#{attribute}:"
+		unsplit_line = "#{attribute}:"
 
-			if val =~ /^#{LDIF_SAFE_STRING}$/
-				unsplit_line << ' ' << val.to_s
-			else
-				unsplit_line << ': ' << [ val ].pack( 'm' ).chomp
-			end
-
-			ldif << unsplit_line.slice!( 0, width ) << LDIF_FOLD_SEPARATOR until
-				unsplit_line.empty?
-
-			ldif.rstrip!
-			ldif << "\n"
+		if value =~ /\A#{LDIF_SAFE_STRING}\Z/
+			unsplit_line << ' ' << value.to_s
+		else
+			unsplit_line << ': ' << [ value ].pack( 'm' ).chomp
 		end
+
+		ldif << unsplit_line.slice!( 0, width ) << LDIF_FOLD_SEPARATOR until
+			unsplit_line.empty?
+		ldif.rstrip!
+		ldif << "\n"
 
 		return ldif
 	end
