@@ -742,8 +742,6 @@ class Treequel::Branch
 		value = self.entry[ attrsym.to_s ] or return nil
 
 		if attribute = self.directory.schema.attribute_types[ attrsym ]
-			self.log.debug "converting value for %p using the conversion for %p" %
-				[ attrsym, attribute.syntax_oid ]
 			if attribute.single?
 				value = self.directory.convert_to_object( attribute.syntax_oid, value.first )
 			else

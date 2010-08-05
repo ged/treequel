@@ -566,13 +566,7 @@ class Treequel::Directory
 	### Map the specified LDAP +attribute+ to its Ruby datatype if one is registered for the given 
 	### syntax +oid+. If there is no conversion registered, just return the +value+ as-is.
 	def convert_to_object( oid, attribute )
-		self.log.debug "Converting %p to an object using the syntax rule for %p" % [ attribute, oid ]
-		unless conversion = @attribute_conversions[ oid ]
-			self.log.debug "  ...no conversion, returning it as-is."
-			return attribute
-		end
-
-		self.log.debug "  ...found conversion: %p" % [ conversion ]
+		return attribute unless conversion = @attribute_conversions[ oid ]
 
 		if conversion.respond_to?( :call )
 			return conversion.call( attribute, self )
@@ -586,13 +580,7 @@ class Treequel::Directory
 	### registered for the given syntax +oid+. If there is no conversion registered, just 
 	### returns the +value+ as a String (via #to_s).
 	def convert_to_attribute( oid, object )
-		self.log.debug "Converting %p to an attribute using the syntax rule for %p" % [ object, oid ]
-		unless conversion = @object_conversions[ oid ]
-			self.log.debug "  ...no conversion, returning it as a String."
-			return object.to_s
-		end
-
-		self.log.debug "  ...found conversion: %p" % [ conversion ]
+		return object.to_s unless conversion = @object_conversions[ oid ]
 
 		if conversion.respond_to?( :call )
 			return conversion.call( object, self )

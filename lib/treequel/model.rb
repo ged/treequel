@@ -103,9 +103,6 @@ class Treequel::Model < Treequel::Branch
 			values_at( *ocsymbols ).
 			inject {|set1,set2| set1 | set2 }
 
-		Treequel.logger.debug "Got candidate mixins: %p for objectClasses: %p" %
-			[ mixins, ocsymbols ]
-
 		# Return the mixins whose objectClass requirements are met by the 
 		# specified objectclasses
 		return mixins.delete_if do |mixin|
@@ -124,13 +121,10 @@ class Treequel::Model < Treequel::Branch
 			keys << dnpair
 		end
 
-		Treequel.log.debug "Finding mixins for DN keys: %p" % [ dn_keys ]
-
 		# Get the union of all of the mixin sets for the DN and all of its parents
 		union = self.base_registry.
 			values_at( *dn_keys ).
 			inject {|set1,set2| set1 | set2 }
-		Treequel.log.debug "  found: %p" % [ union ]
 
 		return union
 	end
@@ -198,9 +192,10 @@ class Treequel::Model < Treequel::Branch
 	### Proxy method -- Handle calls to missing methods by searching for an attribute.
 	def method_missing( sym, *args )
 		plainsym, methodtype = attribute_from_method( sym )
-		attrtype = self.find_attribute_type( plainsym ) or return super
+		return super if methodtype == :reader && !args.empty?
 
 		# Make a method body for a new method based on what kind it is
+		attrtype = self.find_attribute_type( plainsym ) or return super
 		methodbody = case methodtype
 			when :writer
 				self.make_writer( attrtype )
@@ -290,7 +285,6 @@ class Treequel::Model < Treequel::Branch
 		# The applicable mixins are those in the intersection of the ones
 		# inferred by its objectclasses and those that apply to its DN
 		mixins = ( oc_mixins & dn_mixins )
-		self.log.debug "Applying %d mixins to %s" % [ mixins.length, dn ]
 
 		mixins.each {|mod| self.extend(mod) }
 	end

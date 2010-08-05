@@ -182,12 +182,11 @@ describe Treequel::Model do
 		end
 
 		it "falls through to branch-traversal for a reader with arguments" do
-			attrtype = stub( "Treequel attributeType object", :name => :dc )
-
-			@obj.should_receive( :valid_attribute_type ).with( :dc ).and_return( attrtype )
+			@obj.should_not_receive( :valid_attribute_type )
 			@obj.should_not_receive( :[] )
 
-			@obj.should_receive( :traverse_branch ).with( :dc, :admin ).and_return( :a_child_branch )
+			@obj.should_receive( :traverse_branch ).
+				with( :dc, :admin, {} ).and_return( :a_child_branch )
 
 			@obj.dc( :admin ).should == :a_child_branch
 		end
