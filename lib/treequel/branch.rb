@@ -827,7 +827,7 @@ class Treequel::Branch
 	def ldif_for_attr( attribute, value, width )
 		unsplit_line = "#{attribute}:"
 
-		if value =~ /\A#{LDIF_SAFE_STRING}\Z/
+		if value.empty? || value =~ /\A#{LDIF_SAFE_STRING}\Z/
 			unsplit_line << ' ' << value.to_s
 		else
 			unsplit_line << ': ' << [ value ].pack( 'm' ).chomp
