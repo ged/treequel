@@ -266,6 +266,14 @@ describe Treequel::Model do
 			@obj.search( :scope, :filter, :selectattrs => ['cn'] )
 		end
 
+		it "doesn't add the objectClass attribute to the attribute list when the search " +
+		   "doesn't contain a select" do
+			@directory.stub!( :convert_to_object ).and_return {|oid,str| str }
+			@directory.should_receive( :search ).
+				with( @obj, :scope, :filter, :selectattrs => [] )
+			@obj.search( :scope, :filter, :selectattrs => [] )
+		end
+
 		it "knows which attribute methods it responds to" do
 			@directory.stub!( :convert_to_object ).and_return {|oid,str| str }
 			@obj.should respond_to( :cn )

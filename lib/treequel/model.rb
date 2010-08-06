@@ -150,7 +150,9 @@ class Treequel::Model < Treequel::Branch
 	### Override Branch#search to inject the 'objectClass' attribute to the
 	### selected attribute list if there is one.
 	def search( scope=:subtree, filter='(objectClass=*)', parameters={}, &block )
-		parameters[:selectattrs] |= ['objectClass'] if parameters.key?( :selectattrs )
+		parameters[:selectattrs] |= ['objectClass'] unless
+			!parameters.key?( :selectattrs ) || parameters[ :selectattrs ].empty?
+
 		super
 	end
 
