@@ -236,8 +236,10 @@ class Treequel::Filter
 			self.log.debug "creating a new %s %s for %p and %p" %
 				[ filtertype, self.class.name, attribute, value ]
 
-			filtertype = filtertype.to_s.downcase.to_sym
+			# Handle Sequel :attribute.identifier
+			attribute = attribute.value if attribute.respond_to?( :value )
 
+			filtertype = filtertype.to_s.downcase.to_sym
 			if FILTERTYPE_OP.key?( filtertype )
 				# no-op
 			elsif FILTEROP_NAMES.key?( filtertype.to_s )
