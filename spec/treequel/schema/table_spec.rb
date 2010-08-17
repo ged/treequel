@@ -119,14 +119,34 @@ describe Treequel::Schema::Table do
 
 
 	it "provides a case-insensitive version of #values_at" do
-		@table[:cn]      = 'contra_rules'
-		@table[:d]       = 'ghosty'
+		@table[:cn]               = 'contra_rules'
+		@table[:d]                = 'ghosty'
 		@table[:porntipsGuzzardo] = 'cha-ching'
 
 		results = @table.values_at( :CN, 'PornTipsGuzzARDO' )
 		results.should include( 'contra_rules' )
 		results.should include( 'cha-ching' )
 		results.should_not include( 'ghosty' )
+	end
+
+	it "can iterate over its members" do
+		@table[:cn]               = 'contra_rules'
+		@table[:d]                = 'ghosty'
+		@table[:porntipsGuzzardo] = 'cha-ching'
+
+		collection = []
+		@table.each {|k,v| collection << [k,v] }
+		collection.transpose[0].should include( :cn, :d, :porntipsguzzardo )
+		collection.transpose[1].should include( 'contra_rules', 'ghosty', 'cha-ching' )
+	end
+
+	it "is Enumerable" do
+		@table[:cn]               = 'contra_rules'
+		@table[:d]                = 'ghosty'
+		@table[:porntipsGuzzardo] = 'cha-ching'
+
+		collection = []
+		@table.any? {|k,v| v.index('o') }.should == true
 	end
 
 end

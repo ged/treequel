@@ -11,27 +11,16 @@ require 'treequel/mixins'
 
 # This is an object that is used to store LDAP schema information in a 
 # case-insensitive table.
-# 
-# == Authors
-# 
-# * Michael Granger <ged@FaerieMUD.org>
-# * Mahlon E. Smith <mahlon@martini.nu>
-# 
-# :include: LICENSE
-#
-#--
-#
-# Please see the file LICENSE in the base directory for licensing details.
-#
 class Treequel::Schema::Table
 	extend Forwardable
-	include Treequel::Loggable,
+	include Enumerable,
+	        Treequel::Loggable,
 	        Treequel::Normalization,
 	        Treequel::Constants::Patterns
 
 	# The list of methods that should be delegated through the key-normalization
 	# method.
-	KEYED_METHODS = [ :"[]", :"[]=", :delete, :fetch, :key?, :has_key?, :include?, 
+	KEYED_METHODS = [ :"[]", :"[]=", :delete, :fetch, :key?, :has_key?, :include?,
 		:member?, :store ]
 
 
@@ -73,7 +62,8 @@ class Treequel::Schema::Table
 
 	# Delegate some methods to the underlying Hash
 	begin
-		unoverridden_methods = Hash.instance_methods(false).collect {|mname| mname.to_sym }
+		unoverridden_methods = Hash.
+			instance_methods(false).collect {|mname| mname.to_sym }
 		def_delegators :@hash, *( unoverridden_methods - KEYED_METHODS )
 	end
 
