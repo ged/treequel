@@ -106,9 +106,28 @@ describe Treequel::Schema::AttributeType do
 		end
 
 		it "can remake its own schema description" do
-			@attrtype.to_s.should == OBJECTCLASS_ATTRTYPE
+			@attrtype.to_s.sub( /USAGE \w+\s*/i, '' ).should == OBJECTCLASS_ATTRTYPE
 		end
 
+		it "knows that it's a user application attribute type" do
+			@attrtype.should be_user()
+		end
+
+		it "knows that it's not an operational attribute type" do
+			@attrtype.should_not be_operational()
+		end
+
+		it "knows that it's not a directory operational attribute type" do
+			@attrtype.should_not be_directory_operational()
+		end
+
+		it "knows that it's not a distributed attribute type" do
+			@attrtype.should_not be_distributed_operational()
+		end
+
+		it "knows that it's not a DSA attribute type" do
+			@attrtype.should_not be_dsa_operational()
+		end
 	end
 
 
@@ -232,6 +251,99 @@ describe Treequel::Schema::AttributeType do
 
 		it "knows that it's obsolete" do
 			@attrtype.should be_obsolete()
+		end
+
+	end
+
+	describe "parsed from an attributeType that has the 'directoryOperation' USAGE attribute" do
+
+		DIRECTORY_OPERATIONAL_ATTRIBUTETYPE = %{( 1.1.1.1 USAGE directoryOperation )}
+
+		before( :each ) do
+			@attrtype = Treequel::Schema::AttributeType.
+				parse( @schema, DIRECTORY_OPERATIONAL_ATTRIBUTETYPE )
+		end
+
+		it "knows that it's not a user-application attribute type" do
+			@attrtype.should_not be_user()
+		end
+
+		it "knows that it's an operational attribute type" do
+			@attrtype.should be_operational()
+		end
+
+		it "knows that it's a directory operational attribute type" do
+			@attrtype.should be_directory_operational()
+		end
+
+		it "knows that it's NOT a distributed operational attribute type" do
+			@attrtype.should_not be_distributed_operational()
+		end
+
+		it "knows that it's NOT a DSA-specific operational attribute type" do
+			@attrtype.should_not be_dsa_operational()
+		end
+
+	end
+
+	describe "parsed from an attributeType that has the 'distributedOperation' USAGE attribute" do
+
+		DISTRIBUTED_OPERATIONAL_ATTRIBUTETYPE = %{( 1.1.1.1 USAGE distributedOperation )}
+
+		before( :each ) do
+			@attrtype = Treequel::Schema::AttributeType.
+				parse( @schema, DISTRIBUTED_OPERATIONAL_ATTRIBUTETYPE )
+		end
+
+		it "knows that it's not a user-application attribute type" do
+			@attrtype.should_not be_user()
+		end
+
+		it "knows that it's an operational attribute type" do
+			@attrtype.should be_operational()
+		end
+
+		it "knows that it's NOT a directory operational attribute type" do
+			@attrtype.should_not be_directory_operational()
+		end
+
+		it "knows that it's a distributed operational attribute type" do
+			@attrtype.should be_distributed_operational()
+		end
+
+		it "knows that it's NOT a DSA-specific operational attribute type" do
+			@attrtype.should_not be_dsa_operational()
+		end
+
+	end
+
+	describe "parsed from an attributeType that has the 'dSAOperation' USAGE attribute" do
+
+		DSASPECIFIC_OPERATIONAL_ATTRIBUTETYPE = %{( 1.1.1.1 USAGE dSAOperation )}
+
+		before( :each ) do
+			@attrtype = Treequel::Schema::AttributeType.
+				parse( @schema, DSASPECIFIC_OPERATIONAL_ATTRIBUTETYPE )
+		end
+
+		it "knows that it's not a user-application attribute type" do
+			@attrtype.should_not be_user()
+		end
+
+		it "knows that it's an operational attribute type" do
+			@attrtype.should be_operational()
+		end
+
+		it "knows that it's NOT a directory operational attribute type" do
+			@attrtype.should_not be_directory_operational()
+		end
+
+		it "knows that it's NOT a distributed operational attribute type" do
+			@attrtype.should_not be_distributed_operational()
+		end
+
+		it "knows that it's a DSA-specific operational attribute type" do
+			@attrtype.should be_dsa_operational()
 		end
 
 	end

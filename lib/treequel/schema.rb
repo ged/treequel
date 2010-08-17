@@ -174,36 +174,43 @@ class Treequel::Schema
 	public
 	######
 
-	# The Hash of Treequel::Schema::ObjectClass objects, keyed by OID and any associated NAME 
+	# The table of Treequel::Schema::ObjectClass objects, keyed by OID and any associated NAME 
 	# attributes (as Symbols), that describes the objectClasses in the directory's schema.
+	# @return [Treequel::Schema::Table]
 	attr_reader :object_classes
 
 	# The hash of Treequel::Schema::AttributeType objects, keyed by OID and any associated NAME
 	# attributes (as Symbols), that describe the attributeTypes in the directory's schema.
+	# @return [Treequel::Schema::Table]
 	attr_reader :attribute_types
 
 	# The hash of Treequel::Schema::LDAPSyntax objects, keyed by OID, that describe the 
 	# syntaxes in the directory's schema.
+	# @return [Treequel::Schema::Table]
 	attr_reader :ldap_syntaxes
 
 	# The hash of Treequel::Schema::MatchingRule objects, keyed by OID and any associated NAME
 	# attributes (as Symbols), that describe the matchingRules int he directory's schema.
+	# @return [Treequel::Schema::Table]
 	attr_reader :matching_rules
 
 	# The hash of Treequel::Schema::MatchingRuleUse objects, keyed by OID and any associated NAME
 	# attributes (as Symbols), that describe the attributes to which a matchingRule can be applied.
+	# @return [Treequel::Schema::Table]
 	attr_reader :matching_rule_uses
 	alias_method :matching_rule_use, :matching_rule_uses
 
 
 	### Return the Treequel::Schema::AttributeType objects that correspond to the
-	### RFC4512 'operational attributes' that are supported by the directory.
+	### operational attributes that are supported by the directory.
+	### @return [Array<Treequel::Schema::AttributeType>]  the operational attributes
 	def operational_attribute_types
-		return self.attribute_types.values_at( *Treequel::OPERATIONAL_ATTRIBUTES ).compact
+		return self.attribute_types.values.find_all {|attrtype| attrtype.operational? }.uniq
 	end
 
 
 	### Return a human-readable representation of the object suitable for debugging.
+	### @return [String]
 	def inspect
 		ivar_descs = self.instance_variables.sort.collect do |ivar|
 			len = self.instance_variable_get( ivar ).length

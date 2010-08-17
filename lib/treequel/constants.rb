@@ -141,9 +141,9 @@ module Treequel::Constants
 	FEATURE_NAMES = FEATURE_OIDS.invert.freeze
 
 
-	### The list of attributes that are 'operational' 
+	### The list of RFC4512 operational attributes that "SHOULD" be maintained.
 	### (http://tools.ietf.org/html/rfc4512#section-3.4)
-	OPERATIONAL_ATTRIBUTES = [
+	MINIMAL_OPERATIONAL_ATTRIBUTES = [
 		:creatorsName,
 		:createTimestamp,
 		:modifiersName,

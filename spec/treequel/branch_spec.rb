@@ -325,7 +325,7 @@ describe Treequel::Branch do
 		end
 
 		it "knows what operational attributes it has" do
-			op_attrs = OPERATIONAL_ATTRIBUTES.inject({}) do |hash, oa|
+			op_attrs = MINIMAL_OPERATIONAL_ATTRIBUTES.inject({}) do |hash, oa|
 				hash[ oa ] = mock("#{oa} attributeType object")
 				hash
 			end

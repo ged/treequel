@@ -41,6 +41,17 @@ class Treequel::Schema::AttributeType
 		)?$
 	/x
 
+	# The default USAGE type: "Usage of userApplications, the default,
+	# indicates that attributes of this type represent user information.
+	# That is, they are user attributes." (RFC4512)
+	DEFAULT_USAGE_TYPE = 'userApplications'.freeze
+
+	# A usage of directoryOperation, distributedOperation, or dSAOperation
+	# indicates that attributes of this type represent operational and/or
+	# administrative information.  That is, they are operational
+	# attributes. (RFC4512)
+	OPERATIONAL_ATTRIBUTE_USAGES = %w[directoryOperation distributedOperation dSAOperation].freeze
+
 
 	#############################################################
 	###	C L A S S   M E T H O D S
@@ -76,7 +87,7 @@ class Treequel::Schema::AttributeType
 			:single          => single,
 			:collective      => collective,
 			:user_modifiable => nousermod ? false : true,
-			:usagetype       => usagetype,
+			:usagetype       => usagetype || DEFAULT_USAGE_TYPE,
 			:extensions      => extensions
 		  )
 	end
@@ -287,6 +298,54 @@ class Treequel::Schema::AttributeType
 			return nil
 		end
 	end
+
+	# Usage of userApplications, the default, indicates that attributes of
+	# this type represent user information.  That is, they are user
+	# attributes.
+
+	### Test whether or not the attrinbute is a user applications attribute.
+	### @return [Boolean]  true if the attribute's USAGE is 'userApplications' (or nil)
+	def is_user?
+		return !self.is_operational?
+	end
+	alias_method :user?, :is_user?
+
+
+	### Test whether or not the attribute is an operational attribute.
+	### @return [Boolean]  true if the attribute's usage is one of the OPERATIONAL_ATTRIBUTE_USAGES
+	def is_operational?
+		usage_type = self.usage || DEFAULT_USAGE_TYPE
+		return OPERATIONAL_ATTRIBUTE_USAGES.map( &:downcase ).include?( usage_type.downcase )
+	end
+	alias_method :operational?, :is_operational?
+
+
+	### Test whether or not the attribute is a directory operational attribute.
+	### @return [Boolean]  true if the attribute's usage is 'directoryOperation'
+	def is_directory_operational?
+		usage_type = self.usage || DEFAULT_USAGE_TYPE
+		return usage_type == 'directoryOperation'
+	end
+	alias_method :directory_operational?, :is_directory_operational?
+
+
+	### Test whether or not the attribute is a distributed operational attribute.
+	### @return [Boolean]  true if the attribute's usage is 'distributedOperation'
+	def is_distributed_operational?
+		usage_type = self.usage || DEFAULT_USAGE_TYPE
+		return usage_type == 'distributedOperation'
+	end
+	alias_method :distributed_operational?, :is_distributed_operational?
+
+
+	### Test whether or not the attribute is a DSA-specific operational attribute.
+	### @return [Boolean]  true if the attribute's usage is 'dSAOperation'
+	def is_dsa_operational?
+		usage_type = self.usage || DEFAULT_USAGE_TYPE
+		return usage_type == 'dSAOperation'
+	end
+	alias_method :dsa_operational?, :is_dsa_operational?
+	alias_method :dsa_specific?, :is_dsa_operational?
 
 
 	#######
