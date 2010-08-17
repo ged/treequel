@@ -36,11 +36,16 @@ describe Treequel::Model do
 	end
 
 	before( :each ) do
-		@directory = mock( "treequel directory", :get_entry => :an_entry_hash )
+		@simple_entry = {
+			'dn' => TEST_HOST_DN,
+			'objectClass' => ['ipHost', 'device']
+		}
+		@directory = mock( "treequel directory", :get_entry => @simple_entry )
 	end
 
 	after( :each ) do
 		Treequel::Model.objectclass_registry.clear
+		Treequel::Model.base_registry.clear
 	end
 
 
@@ -96,6 +101,19 @@ describe Treequel::Model do
 		Treequel::Model.mixins_for_dn( TEST_PERSON_DN ).should include( mixin )
 	end
 
+	it "adds new registries to subclasses" do
+		subclass = Class.new( Treequel::Model )
+
+		# The registry should have the same default proc, but be a distinct Hash
+		subclass.objectclass_registry.default_proc.
+			should equal( Treequel::Model::SET_HASH.default_proc )
+		subclass.objectclass_registry.should_not equal( Treequel::Model.objectclass_registry )
+
+		# Same with this one
+		subclass.base_registry.default_proc.
+			should equal( Treequel::Model::SET_HASH.default_proc )
+		subclass.base_registry.should_not equal( Treequel::Model.base_registry )
+	end
 
 	it "extends new instances with registered mixins which are applicable" do
 		mixin1 = Module.new do
@@ -113,20 +131,65 @@ describe Treequel::Model do
 			model_objectclasses :person
 		end
 
-		entry = {
-			'dn' => TEST_HOST_DN,
-			'objectClass' => ['ipHost', 'device']
-		}
-
-		obj = Treequel::Model.new( @directory, TEST_SUBHOST_DN, entry )
+		obj = Treequel::Model.new( @directory, TEST_SUBHOST_DN, @simple_entry )
 
 		obj.should be_a( mixin1 )
 		obj.should_not be_a( mixin2 )
 		obj.should_not be_a( mixin3 )
 	end
 
+	it "applies applicable mixins to instances created before looking up the corresponding entry" do
+		mixin1 = Module.new do
+			extend Treequel::Model::ObjectClass
+			model_bases TEST_HOSTS_DN, TEST_SUBHOSTS_DN
+			model_objectclasses :ipHost
+		end
+		mixin2 = Module.new do
+			extend Treequel::Model::ObjectClass
+			model_bases TEST_HOSTS_DN
+			model_objectclasses :device
+		end
+		mixin3 = Module.new do
+			extend Treequel::Model::ObjectClass
+			model_objectclasses :person
+		end
 
-	describe "objects" do
+		obj = Treequel::Model.new( @directory, TEST_HOST_DN )
+		obj.exists? # Trigger the lookup
+
+		obj.should be_a( mixin1 )
+		obj.should be_a( mixin2 )
+		obj.should_not be_a( mixin3 )
+	end
+
+	it "doesn't try to apply objectclasses to non-existant entries" do
+		mixin1 = Module.new do
+			extend Treequel::Model::ObjectClass
+			model_bases TEST_HOSTS_DN, TEST_SUBHOSTS_DN
+			model_objectclasses :ipHost
+		end
+
+		@directory.stub!( :get_entry ).and_return( nil )
+		obj = Treequel::Model.new( @directory, TEST_HOST_DN )
+		obj.exists? # Trigger the lookup
+
+		obj.should_not be_a( mixin1 )
+	end
+
+	it "allows a mixin to be unregistered" do
+		mixin = Module.new
+		mixin.should_receive( :model_objectclasses ).at_least( :once ).
+			and_return( [:inetOrgPerson] )
+		mixin.should_receive( :model_bases ).at_least( :once ).
+			and_return( [] )
+		Treequel::Model.register_mixin( mixin )
+		Treequel::Model.unregister_mixin( mixin )
+		Treequel::Model.mixins_for_objectclasses( :inetOrgPerson ).should_not include( mixin )
+	end
+
+
+
+	describe "objects created from entries" do
 
 		before( :all ) do
 			@entry = {
@@ -189,6 +252,13 @@ describe Treequel::Model do
 				with( :dc, :admin, {} ).and_return( :a_child_branch )
 
 			@obj.dc( :admin ).should == :a_child_branch
+		end
+
+		it "accommodates branch-traversal from its auto-generated readers" do
+			@obj.should_receive( :[] ).with( :uid ).and_return( ['slappy'] )
+			@obj.uid.should == ['slappy']
+
+			@obj.uid( :slappy ).should be_a( Treequel::Model )
 		end
 
 		it "provides writers for valid singular attributes" do
@@ -279,6 +349,7 @@ describe Treequel::Model do
 			@obj.should respond_to( :cn )
 			@obj.should_not respond_to( :humpsize )
 		end
+
 	end
 
 end

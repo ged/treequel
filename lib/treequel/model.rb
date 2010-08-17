@@ -272,8 +272,9 @@ class Treequel::Model < Treequel::Branch
 	### has been looked up.
 	### @return [LDAP::Entry]  the fetched entry object
 	def lookup_entry
-		entry = super
-		self.apply_applicable_mixins( self.dn, entry )
+		if entry = super
+			self.apply_applicable_mixins( self.dn, entry )
+		end
 		return entry
 	end
 
