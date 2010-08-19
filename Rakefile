@@ -18,6 +18,7 @@ BEGIN {
 	libdir = basedir + "lib"
 	extdir = libdir + Config::CONFIG['sitearch']
 
+	$LOAD_PATH.unshift( basedir.to_s ) unless $LOAD_PATH.include?( basedir.to_s )
 	$LOAD_PATH.unshift( libdir.to_s ) unless $LOAD_PATH.include?( libdir.to_s )
 	$LOAD_PATH.unshift( extdir.to_s ) unless $LOAD_PATH.include?( extdir.to_s )
 }
@@ -76,7 +77,7 @@ elsif VERSION_FILE.exist?
 	PKG_VERSION = VERSION_FILE.read[ /VERSION\s*=\s*['"](\d+\.\d+\.\d+)['"]/, 1 ]
 end
 
-PKG_VERSION = '0.0.0' unless defined?( PKG_VERSION )
+PKG_VERSION = '0.0.0' unless defined?( PKG_VERSION ) && !PKG_VERSION.nil?
 
 PKG_FILE_NAME = "#{PKG_NAME.downcase}-#{PKG_VERSION}"
 GEM_FILE_NAME = "#{PKG_FILE_NAME}.gem"
@@ -169,7 +170,7 @@ include RakefileHelpers
 
 # Set the build ID if the mercurial executable is available
 if hg = which( 'hg' )
-	id = IO.read('|-') or exec hg.to_s, 'id', '-n'
+	id = `#{hg} id -n`.chomp
 	PKG_BUILD = "pre%03d" % [(id.chomp[ /^[[:xdigit:]]+/ ] || '1')]
 else
 	PKG_BUILD = 'pre000'
@@ -226,9 +227,9 @@ DEVELOPMENT_DEPENDENCIES = {
 	'text-format'  => '>= 1.0.0',
 	'tmail'        => '>= 1.2.3.1',
 	'diff-lcs'     => '>= 1.1.2',
-	'termios' => '>= 0.9.4',
 	'columnize' => '>= 0.3.1',
 	'diff-lcs' => '>= 1.1.2',
+	'ruby-termios' => '>= 0.9.6',
 	'ruby-terminfo' => '>= 0.1.1',
 }
 
