@@ -273,6 +273,7 @@ class Treequel::Model < Treequel::Branch
 	### @return [LDAP::Entry]  the fetched entry object
 	def lookup_entry
 		if entry = super
+			self.log.debug "  applying mixins to %p" % [ entry ]
 			self.apply_applicable_mixins( self.dn, entry )
 		end
 		return entry

@@ -172,16 +172,37 @@ describe Treequel::Branchset do
 			result.branchsets.should include( @branchset, other_branchset )
 		end
 
-		they "can be combined with a Branch into a BranchCollection by adding it" do
-			other_branch = mock( "second treequel branch", :dn => 'theotherdn' )
-			other_branch.stub!( :directory ).and_return( @directory )
+		they "return the results of the search with the additional Branch if one is added to it" do
+			other_branch = mock( "additional treequel branch", :dn => 'theotherdn' )
+			resultbranch = mock( "Result Branch" )
+			resultbranch2 = mock( "Result Branch 2" )
+
+			@branch.should_receive( :search ).
+				with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, @params ).
+				and_yield( resultbranch ).and_yield( resultbranch2 )
 
 			result = @branchset + other_branch
-			result.should be_a( Treequel::BranchCollection )
-			result.branchsets.should have( 2 ).members
-			result.branchsets.should include( @branchset )
-			result.branchsets.select {|bs| bs != @branchset }.
-				first.branch.should == other_branch
+			result.should have( 3 ).members
+			result.should include( other_branch, resultbranch, resultbranch2 )
+		end
+
+		#
+		# #-
+		#
+		they "return the results of the search without the specified object if an object is " +
+		     "subtracted from it" do
+				resultbranch = stub( "Result Branch", :dn => TEST_PERSON_DN )
+				resultbranch2 = stub( "Result Branch 2", :dn => TEST_PERSON2_DN )
+
+				otherbranch = stub( "Subtracted Branch", :dn => TEST_PERSON2_DN )
+
+				@branch.should_receive( :search ).
+					with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, @params ).
+					and_yield( resultbranch ).and_yield( resultbranch2 )
+
+				result = @branchset - otherbranch
+				result.should have( 1 ).members
+				result.should_not include( resultbranch2 )
 		end
 
 	end

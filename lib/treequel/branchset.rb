@@ -176,12 +176,25 @@ class Treequel::Branchset
 	end
 
 
-	### Create a BranchCollection from the receiver and the +other_branchset+ and return 
-	### it. 
-	### @param [Treequel::Branchset] other_branchset  the branchset to combine with
-	### @return [Treequel::BranchCollection]  the resulting collection object
-	def +( other_branchset )
-		return Treequel::BranchCollection.new( self, other_branchset )
+	### If given another Branchset or a BranchCollection, return a BranchCollection that includes
+	### them both. If given anything else, execute the search and return 
+	### @param [Treequel::Branchset, Treequel::Branch] other  the branchset or branch to combine 
+	###                                                       with
+	### @return [Treequel::BranchCollection, Array<Treequel::Branch>]
+	def +( other )
+		if other.is_a?( Treequel::BranchCollection ) || other.is_a?( Treequel::Branchset )
+			return Treequel::BranchCollection.new( self, other )
+		else
+			return self.all + Array( other )
+		end
+	end
+
+
+	### Return the results of executing the search without +other+.
+	### @param [Treequel::Branch] other  the Branch to omit from the results
+	### @return [Array<Treequel::Branch>]
+	def -( other )
+		return self.all.delete_if {|branch| branch.dn == other.dn }
 	end
 
 
