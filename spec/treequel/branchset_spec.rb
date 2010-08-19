@@ -6,6 +6,7 @@ BEGIN {
 
 	libdir = basedir + "lib"
 
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
@@ -174,6 +175,7 @@ describe Treequel::Branchset do
 
 		they "return the results of the search with the additional Branch if one is added to it" do
 			other_branch = mock( "additional treequel branch", :dn => 'theotherdn' )
+			other_branch.stub!( :to_ary ).and_return( [other_branch] )
 			resultbranch = mock( "Result Branch" )
 			resultbranch2 = mock( "Result Branch 2" )
 

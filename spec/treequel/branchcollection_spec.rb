@@ -6,6 +6,7 @@ BEGIN {
 
 	libdir = basedir + "lib"
 
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
@@ -42,7 +43,7 @@ describe Treequel::BranchCollection do
 	end
 
 	before( :each ) do
-		@directory = mock( "treequel directory ")
+		@directory = mock( "treequel directory", :registered_controls => [] )
 	end
 
 	it "can be instantiated without any branchsets" do
@@ -51,8 +52,10 @@ describe Treequel::BranchCollection do
 	end
 
 	it "can be instantiated with one or more branchsets" do
-		branchset1 = stub( "branchset 1", :dn => 'cn=example1,dc=acme,dc=com', :each => 1 )
-		branchset2 = stub( "branchset 2", :dn => 'cn=example2,dc=acme,dc=com', :each => 1 )
+		branch1 = stub( "branch for branchset 1", :directory => @directory )
+		branchset1 = Treequel::Branchset.new( branch1 )
+		branch2 = stub( "branch for branchset 2", :directory => @directory )
+		branchset2 = Treequel::Branchset.new( branch2 )
 
 		collection = Treequel::BranchCollection.new( branchset1, branchset2 )
 
@@ -60,17 +63,17 @@ describe Treequel::BranchCollection do
 	end
 
 	it "wraps any object that doesn't have an #each in a Branchset" do
-		non_branchset1 = stub( "non-branchset 1" )
-		non_branchset2 = stub( "non-branchset 2" )
-		branchset1 = stub( "branchset 1", :dn => 'cn=example1,dc=acme,dc=com' )
-		branchset2 = stub( "branchset 2", :dn => 'cn=example2,dc=acme,dc=com' )
+		branch1 = stub( "branch for branchset 1", :directory => @directory )
+		branchset1 = Treequel::Branchset.new( branch1 )
+		branch2 = stub( "branch for branchset 2", :directory => @directory )
+		branchset2 = Treequel::Branchset.new( branch2 )
 
-		Treequel::Branchset.should_receive( :new ).with( non_branchset1 ).
+		Treequel::Branchset.should_receive( :new ).with( :non_branchset1 ).
 			and_return( branchset1 )
-		Treequel::Branchset.should_receive( :new ).with( non_branchset2 ).
+		Treequel::Branchset.should_receive( :new ).with( :non_branchset2 ).
 			and_return( branchset2 )
 
-		collection = Treequel::BranchCollection.new( non_branchset1, non_branchset2 )
+		collection = Treequel::BranchCollection.new( :non_branchset1, :non_branchset2 )
 
 		collection.branchsets.should include( branchset1, branchset2 )
 	end
@@ -99,8 +102,13 @@ describe Treequel::BranchCollection do
 	describe "instance with two Branchsets" do
 
 		before( :each ) do
-			@branchset1 = mock( "branchset 1", :dn => 'cn=example1,dc=acme,dc=com', :each => 1 )
-			@branchset2 = mock( "branchset 2", :dn => 'cn=example2,dc=acme,dc=com', :each => 1 )
+			# @branchset1 = mock( "branchset 1", :dn => 'cn=example1,dc=acme,dc=com', :each => 1 )
+			# @branchset2 = mock( "branchset 2", :dn => 'cn=example2,dc=acme,dc=com', :each => 1 )
+			@branch1 = mock( "branch1", :directory => @directory )
+			@branchset1 = Treequel::Branchset.new( @branch1 )
+
+			@branch2 = mock( "branch2", :directory => @directory )
+			@branchset2 = Treequel::Branchset.new( @branch2 )
 
 			@collection = Treequel::BranchCollection.new( @branchset1, @branchset2 )
 		end
@@ -134,26 +142,51 @@ describe Treequel::BranchCollection do
 		end
 
 		it "returns a clone of itself with an additional Branchset if a Branchset is added to it" do
-			branchset3 = mock( "branchset 3", :dn => 'cn=example3,dc=acme,dc=com', :each => 1 )
+			branch3 = mock( "branch 3", :directory => @directory )
+			branchset3 = Treequel::Branchset.new( branch3 )
+
 			new_collection = @collection + branchset3
 
 			new_collection.should be_an_instance_of( Treequel::BranchCollection )
 			new_collection.should include( @branchset1, @branchset2, branchset3 )
 		end
 
-		it "returns a clone of itself with an additional Branchset if a Branch is added to it" do
-			branchset3 = mock( "branchset 3", :dn => 'cn=example3,dc=acme,dc=com', :each => 1 )
-			branch3 = mock( "branch 3", :branchset => branchset3 )
-			new_collection = @collection + branch3
+		it "returns all of the results from each of its branchsets plus the added branch if a " +
+		   "Branch is added to it" do
+			@branchset1.should_receive( :each ).and_yield( :bs1_stuff )
+			@branchset2.should_receive( :each ).and_yield( :bs2_stuff )
+			added_branch = stub( "added branch", :directory => @directory )
+			added_branch.stub!( :to_ary ).and_return( [added_branch] )
 
-			new_collection.should be_an_instance_of( Treequel::BranchCollection )
-			new_collection.should include( @branchset1, @branchset2, branchset3 )
+			results = @collection + added_branch
+
+			results.should have( 3 ).members
+			results.should include( :bs1_stuff, :bs2_stuff, added_branch )
+		end
+
+		it "returns all of the results from each of its branchsets minus the subtracted branch " +
+		   "if a Branch is subtracted from it" do
+			results_branch1 = stub( "results branch 1", :dn => TEST_PERSON_DN )
+			results_branch2 = stub( "results branch 2", :dn => TEST_PERSON2_DN )
+			subtracted_branch = stub( "subtracted branch", :dn => TEST_PERSON_DN )
+
+			@branchset1.should_receive( :each ).and_yield( results_branch1 )
+			@branchset2.should_receive( :each ).and_yield( results_branch2 )
+
+			results = @collection - subtracted_branch
+
+			results.should have( 1 ).members
+			results.should_not include( subtracted_branch )
+			results.should_not include( results_branch1 )
 		end
 
 		it "returns a clone of itself with both collections' Branchsets if a BranchCollection is " +
 		   "added to it" do
-			branchset3 = stub( "branchset 3", :dn => 'cn=example3,dc=acme,dc=com', :each => 1 )
-			branchset4 = stub( "branchset 4", :dn => 'cn=example4,dc=acme,dc=com', :each => 1 )
+			branch3 = stub( "branch for branchset 3", :directory => @directory )
+			branchset3 = Treequel::Branchset.new( branch3 )
+			branch4 = stub( "branch for branchset 4", :directory => @directory )
+			branchset4 = Treequel::Branchset.new( branch4 )
+
 			other_collection = Treequel::BranchCollection.new( branchset3, branchset4 )
 
 			new_collection = @collection + other_collection
@@ -164,8 +197,11 @@ describe Treequel::BranchCollection do
 
 		it "returns a new BranchCollection with the union of Branchsets if it is ORed with " +
 		   "another BranchCollection" do
-			branchset3 = stub( "branchset 3", :dn => 'cn=example3,dc=acme,dc=com', :each => 1 )
-			branchset4 = stub( "branchset 4", :dn => 'cn=example4,dc=acme,dc=com', :each => 1 )
+			branch3 = stub( "branch for branchset 3", :directory => @directory )
+			branchset3 = Treequel::Branchset.new( branch3 )
+			branch4 = stub( "branch for branchset 4", :directory => @directory )
+			branchset4 = Treequel::Branchset.new( branch4 )
+
 			other_collection = Treequel::BranchCollection.new( branchset3, branchset4 )
 
 			new_collection = @collection | other_collection
@@ -176,8 +212,11 @@ describe Treequel::BranchCollection do
 
 		it "returns a new BranchCollection with the intersection of Branchsets if it is ANDed with " +
 		   "another BranchCollection" do
-			branchset3 = stub( "branchset 3", :dn => 'cn=example3,dc=acme,dc=com', :each => 1 )
-			branchset4 = stub( "branchset 4", :dn => 'cn=example4,dc=acme,dc=com', :each => 1 )
+			branch3 = stub( "branch for branchset 3", :directory => @directory )
+			branchset3 = Treequel::Branchset.new( branch3 )
+			branch4 = stub( "branch for branchset 4", :directory => @directory )
+			branchset4 = Treequel::Branchset.new( branch4 )
+
 			other_collection = Treequel::BranchCollection.new( @branchset2, branchset3, branchset4 )
 			@collection << branchset4
 
@@ -188,8 +227,11 @@ describe Treequel::BranchCollection do
 		end
 
 		it "can create a clone of itself with filtered branchsets" do
-			filtered_branchset1 = stub( "branchset 3", :dn => 'cn=example3,dc=acme,dc=com', :each => 1 )
-			filtered_branchset2 = stub( "branchset 4", :dn => 'cn=example4,dc=acme,dc=com', :each => 1 )
+			branch3 = stub( "branch for branchset 3", :directory => @directory )
+			filtered_branchset1 = Treequel::Branchset.new( branch3 )
+			branch4 = stub( "branch for branchset 4", :directory => @directory )
+			filtered_branchset2 = Treequel::Branchset.new( branch4 )
+
 			@branchset1.should_receive( :filter ).with( :cn => 'chunkalicious' ).
 				and_return( filtered_branchset1 )
 			@branchset2.should_receive( :filter ).with( :cn => 'chunkalicious' ).

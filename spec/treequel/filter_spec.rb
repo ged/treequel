@@ -6,6 +6,7 @@ BEGIN {
 
 	libdir = basedir + "lib"
 
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
@@ -240,8 +241,8 @@ describe Treequel::Filter do
 	describe "components:" do
 
 		before( :each ) do
-			@filter1 = stub( "filter1", :to_s => '(filter1)' )
-			@filter2 = stub( "filter2", :to_s => '(filter2)' )
+			@filter1 = Treequel::Filter.new( '(filter1)' )
+			@filter2 = Treequel::Filter.new( '(filter2)' )
 		end
 
 

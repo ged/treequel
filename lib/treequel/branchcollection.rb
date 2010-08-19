@@ -178,16 +178,27 @@ class Treequel::BranchCollection
 	end
 
 
-	### Return a new Treequel::BranchCollection that includes both the receiver's Branchsets and
-	### those in +other_object+ (or +other_object+ itself if it's a Branchset).
+	### Return either a new Treequel::BranchCollection that includes both the receiver's 
+	### Branchsets and those in +other_object+ (if it responds_to #branchsets), or the results
+	### from executing the BranchCollection's search with +other_object+ appended if it doesn't.
+	### @param [Object] other_object
 	def +( other_object )
 		if other_object.respond_to?( :branchsets )
 			return self.class.new( self.branchsets + other_object.branchsets )
-		elsif other_object.respond_to?( :branchset )
-			return self.class.new( self.branchsets + [other_object.branchset] )
-		else
+		elsif other_object.respond_to?( :collection )
 			return self.class.new( self.branchsets + [other_object] )
+		else
+			return self.all + Array( other_object )
 		end
+	end
+
+
+	### Return the results from each of the receiver's Branchsets without the +other_object+.
+	### @param [#dn]  other_object  the object to omit from the results. Must respond_to #dn.
+	### @return [Array<Treequel::Branch>]
+	def -( other_object )
+		other_dn = other_object.dn
+		return self.reject {|branch| branch.dn == other_dn }
 	end
 
 

@@ -190,11 +190,12 @@ class Treequel::Branchset
 	end
 
 
-	### Return the results of executing the search without +other+.
-	### @param [Treequel::Branch] other  the Branch to omit from the results
+	### Return the results of executing the search without the +other_object+.
+	### @param [#dn] other_object  the object to omit from the results; must respond_to #dn.
 	### @return [Array<Treequel::Branch>]
-	def -( other )
-		return self.all.delete_if {|branch| branch.dn == other.dn }
+	def -( other_object )
+		other_dn = other_object.dn
+		return self.reject {|branch| branch.dn == other_dn }
 	end
 
 
