@@ -41,7 +41,7 @@ module Treequel::TimeExtensions
 				'.' + sprintf('%06d', usec) + '0' * (fraction_digits - 6)
 			end
 		tz =
-			if utc?
+			if self.utc?
 				'Z'
 			else
 				off  = utc_offset

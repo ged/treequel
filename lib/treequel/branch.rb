@@ -615,7 +615,11 @@ class Treequel::Branch
 			end
 		end
 
-		attrhash[ :objectClass ] |= additional_object_classes
+		# :FIXME: Does the resulting hash need the additional objectClasses? objectClass is
+		#         MUST via 'top', so it should already exist in that hash when merged with
+		#         this one...
+		# attrhash[ :objectClass ] |= additional_object_classes
+
 		return attrhash
 	end
 

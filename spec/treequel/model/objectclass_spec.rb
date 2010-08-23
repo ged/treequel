@@ -57,6 +57,7 @@ describe Treequel::Model::ObjectClass do
 
 		after( :each ) do
 			Treequel::Model.objectclass_registry.clear
+			Treequel::Model.base_registry.clear
 		end
 
 		they "can declare a required objectClass" do
@@ -117,6 +118,52 @@ describe Treequel::Model::ObjectClass do
 			expect {
 				mixin.search( @directory )
 			}.to raise_exception( Treequel::ModelError, /has no search criteria defined/ )
+		end
+
+		they "default to using Treequel::Model as their model class" do
+			mixin = Module.new do
+				extend Treequel::Model::ObjectClass
+			end
+
+			mixin.model_class.should == Treequel::Model
+		end
+
+		they "can declare a model class other than Treequel::Model" do
+			class MyModel < Treequel::Model; end
+			mixin = Module.new do
+				extend Treequel::Model::ObjectClass
+				model_class MyModel
+			end
+
+			mixin.model_class.should == MyModel
+		end
+
+		they "re-register objectClasses that have already been declared when declaring a " +
+		     "new model class" do
+			class MyModel < Treequel::Model; end
+
+			mixin = Module.new do
+				extend Treequel::Model::ObjectClass
+				model_objectclasses :inetOrgPerson
+				model_class MyModel
+			end
+
+			Treequel::Model.objectclass_registry[:inetOrgPerson].should_not include( mixin )
+			MyModel.objectclass_registry[:inetOrgPerson].should include( mixin )
+		end
+
+		they "re-register bases that have already been declared when declaring a " +
+		     "new model class" do
+			class MyModel < Treequel::Model; end
+
+			mixin = Module.new do
+				extend Treequel::Model::ObjectClass
+				model_bases 'ou=people,dc=acme,dc=com', 'ou=notpeople,dc=acme,dc=com'
+				model_class MyModel
+			end
+
+			Treequel::Model.base_registry['ou=people,dc=acme,dc=com'].should_not include( mixin )
+			MyModel.base_registry['ou=people,dc=acme,dc=com'].should include( mixin )
 		end
 
 	end

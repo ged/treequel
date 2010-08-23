@@ -626,6 +626,7 @@ describe Treequel::Directory do
 			end
 
 			it "raises an exception if a registered control doesn't define an OID" do
+				@control.const_set( :OID, nil )
 				expect {
 					@dir.register_controls( @control )
 				}.to raise_error( NotImplementedError, /doesn't define/i )

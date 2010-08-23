@@ -699,6 +699,52 @@ dir.filter( :ou => 'hosts' ).collection.filter( :cn => 'www' )
 <?end ?>
 
 
+h2(#models). Models
+
+A common pattern when you're using any kind of datastore is to represent the data contained within it as a "domain model":http://www.martinfowler.com/eaaCatalog/domainModel.html. For relational databases, Martin Fowler's "Active Record" pattern has become the _de facto_ standard, and because of its popularity, a few people have tried to apply the same pattern to LDAP. However, LDAP records aren't of fixed dimensionality, and don't need to be grouped together in the directory, so applying the logic of relational sets only works for the simplest cases.
+
+Treequel comes with its own set of tools for constructing domain models, tools that take advantage of Ruby's flexible object model to reflect the flexibility and organic nature of LDAP data.
+
+h3(#modeling-objectclass). Modeling ObjectClasses
+
+The principle component is a class called <?api Treequel::Model ?>, which provides the usual attribute accessors for the entry that it wraps, as well as the mechanism for layering functionality onto an object based on what its @objectClass@ attribute contains.
+
+The layers are created via a module called <?api Treequel::ObjectClass ?>. To descibe the domain model, you register one or more modules with @Treequel::Model@, each of which can correspond to a combination of @objectClasses@ and @bases@. For example, say you wanted to add some structure to the @labeledUris@ attribute of all entries that contain the @inetOrgPerson@ objectClass:
+
+<?example { language: ruby, caption: "Make a mixin to decorate @inetOrgPerson@ entries." } ?>
+module LAIKA::InetOrgPerson
+	extend Treequel::Model::ObjectClass
+
+	model_class Treequel::Model
+	model_bases 'ou=people,dc=laika,dc=com'
+	model_objectclasses :inetOrgPerson
+
+
+	### Return the person's URIs as values in a Hash keyed by either the
+	### associated label (if there is one), or a number if there's no
+	### label.
+	def labeled_uris
+		counter = 0
+		return self.labeled_uri.inject({}) do |hash, luri|
+			uri, label = luri.split( /\s+/, 2 )
+			unless label
+				label = counter
+				counter += 1
+			end
+			hash[ label ] = URI( uri )
+			hash
+		end
+	end
+
+end # module LAIKA::InetOrgPerson
+
+<?end ?>
+
+
+hen you fetch an entry from the database as a Treequel::Model object, it will extended with the appropriate mixins.
+
+
+
 h2(#schema-introspection). Schema Introspection
 
 The information about the structure of the directory comes from its schema, and Treequel provides instrospection tools for accessing it in an object-oriented manner. You can get the <?api Treequel::Schema ?> from the directory by calling its @#schema@ method:

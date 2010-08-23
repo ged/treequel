@@ -93,6 +93,11 @@ describe Treequel do
 			{ :base_dn => 'dc=example,dc=com', :port => 389 }
 	end
 
+	it "uses the LDAPS port for ldaps:// URIs" do
+		Treequel.make_options_from_uri( 'ldaps:///dc=example,dc=com' ).should ==
+			{ :base_dn => 'dc=example,dc=com', :connect_type => :ssl, :port => 636 }
+	end
+
 	# [?<attrs>[?<scope>[?<filter>[?<extensions>]]]]
 	it "can build an options hash from an LDAP URL with extra stuff" do
 		uri = 'ldap:///dc=example,dc=com?uid=jrandom,ou=People?l?one?!bindname=cn=auth'
@@ -121,6 +126,12 @@ describe Treequel do
 		Treequel.directory( uri, :bind_dn => user_dn, :pass => pass, :connect_type => :plain )
 	end
 
+	it "raises an exception when ::directory is called with something other than a Hash, " +
+	   "String, or URI" do
+		expect {
+			Treequel.directory( 2 )
+		}.to raise_exception( ArgumentError, /unknown directory option/i )
+	end
 
 	it "provides a convenience method for creating directory objects from the system LDAP config" do
 		Treequel.should_receive( :find_configfile ).and_return( :a_configfile_path )
@@ -343,6 +354,16 @@ describe Treequel do
 				and_yield( "\n# Use plain SSL\nssl on\n" )
 			Treequel.read_opts_from_config( :a_configfile ).should == 
 				{ :port => 636, :connect_type => :ssl }
+		end
+
+		it "ignores nss-style 'ssl' option if it is set to something other than " +
+		   "'on', 'off', or 'start_tls'" do
+			IO.should_receive( :foreach ).with( :a_configfile ).
+				and_yield( "\n# Use alien-invasion protocol\nssl aliens\n" )
+
+			expect {
+				Treequel.read_opts_from_config( :a_configfile )
+			}.to_not raise_exception()
 		end
 
 		# 

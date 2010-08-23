@@ -12,20 +12,12 @@ BEGIN {
 	$LOAD_PATH.unshift( extdir ) unless $LOAD_PATH.include?( extdir )
 }
 
-begin
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
 
-	require 'treequel'
-	require 'treequel/mixins'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'treequel'
+require 'treequel/mixins'
 
 
 include Treequel::TestConstants

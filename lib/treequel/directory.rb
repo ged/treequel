@@ -546,12 +546,15 @@ class Treequel::Directory
 
 	### Register the specified +modules+
 	def register_controls( *modules )
-		dse = self.conn.root_dse.first
-		supported_controls = dse['supportedControl']
+		supported_controls = self.supported_control_oids
+		self.log.debug "Got %d supported controls: %p" %
+			[ supported_controls.length, supported_controls ]
 
 		modules.each do |mod|
 			oid = mod.const_get( :OID ) if mod.const_defined?( :OID )
 			raise NotImplementedError, "%s doesn't define an OID" % [ mod.name ] if oid.nil?
+
+			self.log.debug "Checking for directory support for %p (%s)" % [ mod, oid ]
 
 			if supported_controls.include?( oid )
 				@registered_controls << mod

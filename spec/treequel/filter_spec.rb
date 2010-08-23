@@ -10,9 +10,6 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'rubygems'
-gem 'rspec', '>= 1.2.6'
-
 require 'spec'
 require 'spec/lib/constants'
 require 'spec/lib/helpers'

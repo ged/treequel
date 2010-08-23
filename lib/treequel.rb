@@ -292,7 +292,7 @@ module Treequel
 				opts[:port] = $1.to_i
 
 			# SSL <on|off|start_tls>
-			when /^\s*SSL\s+(on|off|start_tls)/i
+			when /^\s*SSL\s+(\S+)/i
 				mode = $1.downcase
 				case mode
 				when 'on'

@@ -10,22 +10,14 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-begin
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
 
-	require 'yaml'
-	require 'ldap'
-	require 'ldap/schema'
-	require 'treequel/schema'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'yaml'
+require 'ldap'
+require 'ldap/schema'
+require 'treequel/schema'
 
 
 include Treequel::TestConstants

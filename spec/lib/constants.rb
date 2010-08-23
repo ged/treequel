@@ -21,32 +21,34 @@ module Treequel::TestConstants # :nodoc:all
 
 		TEST_DSE = [{
 			"supportedSASLMechanisms" => [
-				"SRP", "SRP", "SRP", "PLAIN", "PLAIN", 
-				"PLAIN", "OTP", "OTP", "OTP", "NTLM", "NTLM", "NTLM", "LOGIN", 
-				"LOGIN", "LOGIN", "GSSAPI", "GSSAPI", "GSSAPI", "DIGEST-MD5", 
+				"SRP", "SRP", "SRP", "PLAIN", "PLAIN",
+				"PLAIN", "OTP", "OTP", "OTP", "NTLM", "NTLM", "NTLM", "LOGIN",
+				"LOGIN", "LOGIN", "GSSAPI", "GSSAPI", "GSSAPI", "DIGEST-MD5",
 				"DIGEST-MD5", "DIGEST-MD5", "CRAM-MD5", "CRAM-MD5", "CRAM-MD5"
 			],
 			"supportedFeatures" => [
 				"1.3.6.1.1.14", "1.3.6.1.4.1.4203.1.5.1", "1.3.6.1.4.1.4203.1.5.2",
-				"1.3.6.1.4.1.4203.1.5.3", "1.3.6.1.4.1.4203.1.5.4", 
+				"1.3.6.1.4.1.4203.1.5.3", "1.3.6.1.4.1.4203.1.5.4",
 				"1.3.6.1.4.1.4203.1.5.5"
 			],
 			"namingContexts" => [TEST_BASE_DN],
 			"supportedLDAPVersion" => ["3"],
 			"subschemaSubentry" => ["cn=Subschema"],
 			"supportedControl" => [
-				"1.3.6.1.4.1.4203.1.9.1.1", "2.16.840.1.113730.3.4.18", 
+				"1.3.6.1.4.1.4203.1.9.1.1", "2.16.840.1.113730.3.4.18",
 				"2.16.840.1.113730.3.4.2", "1.3.6.1.4.1.4203.1.10.1",
-				"1.2.840.113556.1.4.319", "1.2.826.0.1.334810.2.3", 
+				"1.2.840.113556.1.4.319", "1.2.826.0.1.334810.2.3",
 				"1.2.826.0.1.3344810.2.3", "1.3.6.1.1.13.2",
 				"1.3.6.1.1.13.1", "1.3.6.1.1.12"
 			],
 			"supportedExtension" => [
-				"1.3.6.1.4.1.1466.20037", "1.3.6.1.4.1.4203.1.11.1", 
+				"1.3.6.1.4.1.1466.20037", "1.3.6.1.4.1.4203.1.11.1",
 				"1.3.6.1.4.1.4203.1.11.3"
 			],
 			"dn"=>[""]
 		}]
+		TEST_DSE.first.keys.each {|key| TEST_DSE.first[key].freeze }
+
 
 		TEST_HOSTS_DN_ATTR      = 'ou'
 		TEST_HOSTS_DN_VALUE     = 'Hosts'

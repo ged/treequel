@@ -13,6 +13,8 @@ require 'pp'
 
 MANUAL_PAGES = Pathname.glob( MANUALDIR + '**/*.page' )
 
+RCOV_EXCLUDES.replace( RCOV_EXCLUDES + ',sequel_integration\.rb' )
+
 task :local => :check_manual
 task :manual => :check_manual
 

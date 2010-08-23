@@ -70,6 +70,12 @@ describe Treequel::Branch do
 		branch.entry.should == entry
 	end
 
+	it "raises an exception if constructed with something other than a Hash entry" do
+		expect {
+			Treequel::Branch.new( @directory, TEST_PEOPLE_DN, 18 )
+		}.to raise_exception( ArgumentError, /can't cast/i )
+	end
+
 	it "can be configured to include operational attributes for all future instances" do
 		Treequel::Branch.include_operational_attrs = false
 		Treequel::Branch.new( @directory, TEST_PEOPLE_DN ).include_operational_attrs?.should be_false
@@ -110,6 +116,11 @@ describe Treequel::Branch do
 		it "can return its DN as a limited array of attribute=value pairs" do
 			@branch.split_dn( 2 ).should have( 2 ).members
 			@branch.split_dn( 2 ).should include( TEST_HOSTS_RDN, TEST_BASE_DN )
+		end
+
+		it "can return itself as an ldap:// URI" do
+			@directory.should_receive( :uri ).and_return( URI.parse("ldap://#{TEST_HOST}/#{TEST_BASE_DN}") )
+			@branch.uri.to_s.should == "ldap://#{TEST_HOST}/#{TEST_HOSTS_DN}?"
 		end
 
 		it "are Comparable if they are siblings" do
@@ -335,6 +346,31 @@ describe Treequel::Branch do
 			@branch.operational_attribute_types.should == op_attrs.values
 		end
 
+		it "knows what the OIDs of its operational attributes are" do
+			op_attrs = MINIMAL_OPERATIONAL_ATTRIBUTES.inject({}) do |hash, oa|
+				hash[ oa ] = stub("#{oa} attributeType object", :oid => :an_oid )
+				hash
+			end
+			@schema.should_receive( :operational_attribute_types ).at_least( :once ).
+				and_return( op_attrs.values )
+
+			@branch.operational_attribute_oids.should have( op_attrs.length ).members
+			@branch.operational_attribute_oids.should include( :an_oid )
+		end
+
+		it "can return the set of all its MUST attributes' OIDs based on which objectClasses " +
+		   "it has" do
+			oc1 = mock( "first objectclass" )
+			oc2 = mock( "second objectclass" )
+
+			@branch.should_receive( :object_classes ).and_return([ oc1, oc2 ])
+			oc1.should_receive( :must_oids ).at_least( :once ).and_return([ :oid1, :oid2 ])
+			oc2.should_receive( :must_oids ).at_least( :once ).and_return([ :oid1, :oid3 ])
+
+			must_oids = @branch.must_oids
+			must_oids.should have( 3 ).members
+			must_oids.should include( :oid1, :oid2, :oid3 )
+		end
 
 		it "can return the set of all its MUST attributeTypes based on which objectClasses it has" do
 			oc1 = mock( "first objectclass" )
@@ -350,7 +386,7 @@ describe Treequel::Branch do
 		end
 
 		it "can return a Hash pre-populated with pairs that correspond to its MUST attributes" do
-			cn_attrtype = mock( "cn attribute type", :single? => true )
+			cn_attrtype = mock( "cn attribute type", :single? => false )
 			l_attrtype = mock( "l attribute type", :single? => true )
 			objectClass_attrtype = mock( "objectClass attribute type", :single? => false )
 
@@ -362,9 +398,23 @@ describe Treequel::Branch do
 				and_return([ cn_attrtype, l_attrtype, objectClass_attrtype ])
 
 			@branch.must_attributes_hash.
-				should == { :cn => '', :l => '', :objectClass => [:top] }
+				should == { :cn => [''], :l => '', :objectClass => [:top] }
 		end
 
+
+		it "can return the set of all its MAY attributes' OIDs based on which objectClasses " +
+		   "it has" do
+			oc1 = mock( "first objectclass" )
+			oc2 = mock( "second objectclass" )
+
+			@branch.should_receive( :object_classes ).and_return([ oc1, oc2 ])
+			oc1.should_receive( :may_oids ).at_least( :once ).and_return([ :oid1, :oid2 ])
+			oc2.should_receive( :may_oids ).at_least( :once ).and_return([ :oid1, :oid3 ])
+
+			must_oids = @branch.may_oids
+			must_oids.should have( 3 ).members
+			must_oids.should include( :oid1, :oid2, :oid3 )
+		end
 
 		it "can return the set of all its MAY attributeTypes based on which objectClasses it has" do
 			oc1 = mock( "first objectclass" )
@@ -379,8 +429,22 @@ describe Treequel::Branch do
 			must_attrs.should include( :description, :mobilePhone, :chunktype )
 		end
 
+		it "can return a Hash pre-populated with pairs that correspond to its MAY attributes" do
+			cn_attrtype = mock( "cn attribute type", :single? => false )
+			l_attrtype = mock( "l attribute type", :single? => true )
+
+			cn_attrtype.should_receive( :name ).at_least( :once ).and_return( :cn )
+			l_attrtype.should_receive( :name ).at_least( :once ).and_return( :l )
+
+			@branch.should_receive( :may_attribute_types ).at_least( :once ).
+				and_return([ cn_attrtype, l_attrtype ])
+
+			@branch.may_attributes_hash.
+				should == { :cn => [], :l => nil }
+		end
+
 		it "can return the set of all of its valid attributeTypes, which is a union of its " +
-		   "MUST and MAY attributes" do
+		   "MUST and MAY attributes plus the directory's operational attributes" do
 			@branch.should_receive( :must_attribute_types ).
 				and_return([ :cn, :l, :uid ])
 			@branch.should_receive( :may_attribute_types ).
@@ -395,7 +459,37 @@ describe Treequel::Branch do
 				:chunktype, :createTimestamp, :creatorsName )
 		end
 
-		it "knows if a attribute is valid given its objectClasses" do
+		it "can return a Hash pre-populated with pairs that correspond to all of its valid " +
+		   "attributes" do
+			@branch.should_receive( :must_attributes_hash ).at_least( :once ).
+				and_return({ :cn => [''], :l => '', :objectClass => [:top] })
+			@branch.should_receive( :may_attributes_hash ).at_least( :once ).
+				and_return({ :description => nil, :givenName => [], :cn => nil })
+
+			@branch.valid_attributes_hash.should == {
+				:cn => [''],
+				:l => '',
+				:objectClass => [:top],
+				:description => nil,
+				:givenName => [],
+			}
+		end
+
+
+		it "can return the set of all of its valid attribute OIDs, which is a union of its " +
+		   "MUST and MAY attribute OIDs" do
+			@branch.should_receive( :must_oids ).
+				and_return([ :must_oid1, :must_oid2 ])
+			@branch.should_receive( :may_oids ).
+				and_return([ :may_oid1, :may_oid2, :must_oid1 ])
+
+			all_attr_oids = @branch.valid_attribute_oids
+
+			all_attr_oids.should have( 4 ).members
+			all_attr_oids.should include( :must_oid1, :must_oid2, :may_oid1, :may_oid2 )
+		end
+
+		it "knows if an attribute is valid given its objectClasses" do
 			attrtype = mock( "attribute type object" )
 
 			@branch.should_receive( :valid_attribute_types ).

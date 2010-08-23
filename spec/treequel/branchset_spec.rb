@@ -479,6 +479,10 @@ describe Treequel::Branchset do
 			@directory.stub!( :registered_controls ).and_return([ @control ])
 		end
 
+		after( :each ) do
+			@directory = nil
+		end
+
 		it "extends instances of itself with any controls registered with its Branch's Directory" do
 			set = Treequel::Branchset.new( @branch )
 			set.should respond_to( :yep )

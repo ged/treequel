@@ -37,7 +37,7 @@ module Treequel::Model::ObjectClass
 
 			# If there were already registered objectclasses, remove them from the previous
 			# model class
-			unless @model_objectclasses.empty?
+			unless @model_objectclasses.empty? && @model_bases.empty?
 				Treequel.log.warn "%p: model_class should come before model_objectclasses" % [ self ]
 				@model_class.unregister_mixin( self )
 				mclass.register_mixin( self )
