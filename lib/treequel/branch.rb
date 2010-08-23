@@ -351,19 +351,25 @@ class Treequel::Branch
 	### 
 	### @return [TrueClass] if the delete succeeded
 	def delete( *attributes )
-		self.log.debug "Deleting attributes: %p" % [ attributes ]
-		mods = attributes.flatten.collect do |attribute|
-			if attribute.is_a?( Hash )
-				attribute.collect do |key,vals|
-					vals = Array( vals ).collect {|val| val.to_s }
-					LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, key.to_s, vals )
+		if attributes.empty?
+			self.log.info "No attributes specified; deleting entire entry for %s" % [ self.dn ]
+			self.directory.delete( self )
+		else
+			self.log.debug "Deleting attributes: %p" % [ attributes ]
+			mods = attributes.flatten.collect do |attribute|
+				if attribute.is_a?( Hash )
+					attribute.collect do |key,vals|
+						vals = Array( vals ).collect {|val| val.to_s }
+						LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, key.to_s, vals )
+					end
+				else
+					LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute.to_s, [] )
 				end
-			else
-				LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute.to_s, [] )
-			end
-		end.flatten
+			end.flatten
 
-		self.directory.modify( self, mods )
+			self.directory.modify( self, mods )
+		end
+
 		self.clear_caches
 
 		return true

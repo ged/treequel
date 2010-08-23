@@ -517,6 +517,12 @@ describe Treequel::Branch do
 			@branch.delete( :objectClass => ['apple-user',:inetOrgPerson], :cn => [] )
 		end
 
+		it "deletes its entry entirely if no attributes are specified" do
+			@directory.should_receive( :delete ).with( @branch )
+			@branch.delete
+		end
+
+
 		it "knows how to represent its DN as an RFC1781-style UFN" do
 			@branch.to_ufn.should =~ /Hosts, acme\.com/i
 		end
