@@ -38,7 +38,7 @@ end
 ### Again, the link text defaults to the page title, or can be overriden via a prepended string,
 ### and you can link into a page with an appended ID.
 class LinksFilter < Manual::Page::Filter
-	
+
 	# PI	   ::= '<?' PITarget (S (Char* - (Char* '?>' Char*)))? '?>'
 	LinkPI = %r{
 		<\?
@@ -53,8 +53,8 @@ class LinksFilter < Manual::Page::Filter
 			\s+
 		\?>
 	  }x
-	
-	
+
+
 	######
 	public
 	######
@@ -66,19 +66,19 @@ class LinksFilter < Manual::Page::Filter
 			link_text = $1
 			reference = $2
 			fragment  = $3
-			
+
 			self.generate_link( page, reference, link_text, fragment )
 		end
 	end
-	
-	
+
+
 	### Create an HTML link fragment from the parsed LinkPI.
 	def generate_link( current_page, reference, link_text=nil, fragment=nil )
 
 		if other_page = self.find_linked_page( current_page, reference )
 			href_path = other_page.sourcefile.relative_path_from( current_page.sourcefile.dirname )
 			href = href_path.to_s.gsub( '.page', '.html' )
-		
+
 			if link_text
 				return %{<a href="#{href}#{fragment}">#{link_text}</a>}
 			else
@@ -91,19 +91,19 @@ class LinksFilter < Manual::Page::Filter
 			return %{<a href="#" title="#{error_message}" class="broken-link">#{link_text}</a>}
 		end
 	end
-	
-	
+
+
 	### Lookup a page +reference+ in the catalog.  +reference+ can be either a
 	### path to the .page file, relative to the manual root path, or a page title.
 	### Returns a matching Page object, or nil if no match is found.
 	def find_linked_page( current_page, reference )
-		
+
 		catalog = current_page.catalog
-		
+
 		# Lookup by page path
 		if reference =~ /\.page$/
 			return catalog.uri_index[ reference ]
-			
+
 		# Lookup by page title
 		else
 			return catalog.title_index[ reference ]

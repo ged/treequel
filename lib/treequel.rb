@@ -250,7 +250,7 @@ module Treequel
 	### @return [Hash] The hash of configuration values read from the file, in a form suitable for
 	###   passing to {Treequel::Directory#initialize}.
 	def self::read_opts_from_config( configfile )
-		Treequel.log.debug "Reading config options from %s..." % [ configfile ]
+		Treequel.log.info "Reading config options from %s..." % [ configfile ]
 		opts = {}
 
 		linecount = 0

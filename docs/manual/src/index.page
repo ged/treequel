@@ -73,6 +73,41 @@ irb> dir = Treequel.directory( 'ldap://localhost/dc=acme,dc=com', :connect_type 
 # => #<Treequel::Directory:0x4a0844 localhost:389 (not connected) base="dc=acme,dc=com",    bound as=anonymous, schema=(schema not loaded)>
 <?end?>
 
+h3(#connecting-with-system-settings). Connecting With System Settings
+
+Very often, the host you're running on will already be using LDAP for something else, so it might not make sense to configure the connection again when you've already got all the information you need in the system settings.
+
+Treequel supports using LDAP system settings to create new <?api Treequel::Directory ?> objects, too, using either OpenLDAP or 'nss_ldap' style configurations. To do this, call @Treequel.directory_from_config@ with the path to the config file you want to load:
+
+<?example { language: irb, caption: "Load an OpenLDAP config file." } ?>
+irb> Treequel.directory_from_config( '/usr/local/etc/openldap/ldap.conf' )
+# => #<Treequel::Directory:0x4078db0c ldap.acme.com:389 (not connected) base_dn="dc=acme,dc=com", bound as=anonymous, schema=(schema not loaded)>
+<?end?>
+
+Or, just omit the argument and Treequel will search a bunch of common paths[1] for a config file and load the first one it finds:
+
+<?example { language: irb, caption: "Load the config from a common path." } ?>
+irb> Treequel.log.level = Logger::INFO
+# => 1
+irb> Treequel.directory_from_config
+[2010-08-20 17:04:40.648875 41003/main]  INFO -- Searching common paths for ldap.conf
+[2010-08-20 17:04:40.650592 41003/main]  INFO -- Reading config options from /etc/openldap/ldap.conf...
+# => #<Treequel::Directory:0x4078db0c ldap.acme.com:389 (not connected) base_dn="dc=acme,dc=com", bound as=anonymous, schema=(schema not loaded)>
+<?end?>
+
+It also supports overriding elements of the LDAP configuration via OpenLDAP-style environment variables, too:
+
+<?example { language: irb, caption: "Override the configured host to connect to the master." } ?>
+irb> ENV['LDAPHOST'] = 'ldap-master.acme.com'
+# => "ldap-master.acme.com"
+irb> Treequel.directory_from_config( '/etc/openldap/ldap.conf' )
+[2010-08-20 17:19:57.686113 41432/main]  INFO -- Reading config options from /etc/openldap/ldap.conf...
+# => #<Treequel::Directory:0x4078c266 ldap-master.acme.com:389 (not connected) base_dn="dc=acme,dc=com", bound as=anonymous, schema=(schema not loaded)>
+<?end?>
+
+----
+fn1. If there's one missing, let us know and we'll add it!
+----
 
 h2(#binding). Binding to the Directory
 
@@ -106,7 +141,7 @@ irb> dir.bound_as( 'cn=admin,dc=acme,dc=com', 's00per:sekrit' ) { dir }
 
 Once the block returns, the binding reverts to what it previously was.
 
-There are a bunch of other things you can do with the Directory object, but in most cases you won't interact with it directly except as the root of the directory. To interact with the entries in the directory, you'll probably want to start with a <?api Treequel::Branch ?>
+There are a bunch of other things you can do with the Directory object, but in most cases you won't interact with it directly except as the root of the directory. To interact with the entries in the directory, you'll probably want to start with a <?api Treequel::Branch ?>.
 
 h2(#branches). Branches
 
@@ -123,7 +158,7 @@ irb> people.dn
 # => "ou=people,dc=acme,dc=com"
 <?end?>
 
-Then you can fetch branches for individuals under @ou=People@ by calling their @RDN@ method, too. Since I happen to know that all of my company's People are keyed by @uid@, everyone's @RDN@ from @ou=People@ will be @uid=«something»@:
+Then you can fetch branches for individuals under @ou=People@ by calling their @RDN@ method, too. Since I happen to know that all of my company's People are keyed by @uid@, everyone's @RDN@ from @ou=People@ will be @uid=something@:
 
 <?example { language: irb, caption: "Fetching a branch for uid=mgranger,ou=people." } ?>
 irb> me = people.uid( :mgranger )
@@ -218,28 +253,41 @@ irb> me.merge( :gecos => 'Michael Granger', :uidNumber => 514 )
 
 h3(#attribute-datatypes). Attribute Datatypes
 
-Attribute values are cast to Ruby objects based on the "syntax rule":http://tools.ietf.org/html/rfc4517#section-3.3 that corresponds to its attribute type. By default, all values are mapped to <code>String</code>s except those contained in <var>Treequel::Directory::DEFAULT_SYNTAX_MAPPING</var>, which is a mapping of syntax rule <code>OID</code>s to an object which converts the @String@ value from the directory into a Ruby object. This object can be of any type which responds to @#[]@ with a @String@ argument, e.g., a @Proc@, a @Hash@, a @Method@, etc.:
+Attribute values are cast to Ruby objects and vice-versa based on the "syntax rule":http://tools.ietf.org/html/rfc4517#section-3.3 that corresponds to its attribute type. By default, all attribute values from LDAP are mapped to <code>String</code>s except those contained in <var>Treequel::Directory::DEFAULT_ATTRIBUTE_CONVERSIONS</var>, which is a mapping of syntax rule <code>OID</code>s to an object which converts the @String@ value from the directory into a Ruby object. This object can be of any type which responds to @#call@, in which case it will be called with the attribute and the @Directory@ it belongs to, or to @#[]@ with a @String@ argument, e.g., a  @Hash@:
 
 <?example { language: irb, caption: "Convert integer values to Ruby Integers" } ?>
-irb> dir.add_syntax_mapping( Treequel::Constants::OIDS::INTEGER_SYNTAX ) {|string| Integer(string) }
+irb> dir.add_attribute_conversion( Treequel::OIDS::INTEGER_SYNTAX ) {|string, _| Integer(string) }
 # => #<Proc:0x00507080@(irb):3>
+irb> dir.convert_to_object( Treequel::OIDS::INTEGER_SYNTAX, "181" )
+# => 181
 <?end ?>
 
-You can use this, for example, to return every attribute that's a <abbr title="Distingished Name">DN</abbr> as a @Treequel::Branch@ instead of the DN string:
+This is, incidentally, how every attribute that's a <abbr title="Distingished Name">DN</abbr> gets returned as a @Treequel::Branch@ instead of the DN string. If you were doing this yourself (or wanted to override the conversion to return something else), you do:
 
-<?example { language: irb, caption: "Mapping DNs to Treequel::Branches by default" } ?>
+<?example { language: irb, caption: "Mapping DNs to Treequel::Branches" } ?>
 irb> dir = Treequel.directory 
 # => #<Treequel::Directory:0x665783 localhost:389 (connected) base_dn="dc=acme,dc=com", bound as=anonymous, schema=(schema not loaded)>
-irb> dir.add_syntax_mapping( Treequel::Constants::OIDS::DISTINGUISHED_NAME_SYNTAX ) {|dn| Treequel::Branch.new(dir, dn) }
+irb> dir.add_attribute_conversion( Treequel::OIDS::DISTINGUISHED_NAME_SYNTAX ) {|dn, dir| Treequel::Branch.new(dir, dn) }
 # => #<Proc:0x0198ddd8@(irb):2>
-irb> isdept = dir.ou( :departments ).cn( :sales )
+irb> sales_dept = dir.ou( :departments ).cn( :sales )
 # => #<Treequel::Branch:0x18def54 cn=sales,ou=departments,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
-irb> isdept['supervisor']
+irb> sales_dept['supervisor']
 # => #<Treequel::Branch:0x18db228 uid=mahlon,ou=People,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 <?end?>
 
+You could also do this by setting the @Directory.results_class@, but that'll come up later in the section about "Models":#treequel-model.
+
+To map Ruby objects back into LDAP attribute strings, there's a corollary to the <var>DEFAULT_ATTRIBUTE_CONVERSIONS</var> called <var>DEFAULT_OBJECT_CONVERSIONS</var> that works the same way, but in reverse. The values registered with it are given the Ruby object and the @Directory@, and return the LDAP-encoded String:
+
+<?example { language: irb, caption: "Convert objects to LDAP bit strings" } ?>
+irb> dir.add_object_conversion( Treequel::OIDS::BIT_STRING_SYNTAX ) {|bs, _| bs.to_i.to_s(2) }
+# => #<Proc:0x00000101840d80@(irb):3>
+irb> dir.convert_to_attribute( Treequel::OIDS::BIT_STRING_SYNTAX, 169130 )
+# => "101001010010101010"
+<?end?>
+
 <div class="callout note-callout">
-Syntax mappings are per-directory, so you can establish different conversion rules for different directories. We're planning on adding a way to add or replace the default rules, too, but for now you'll have to either modify <var>Treequel::Directory::DEFAULT_SYNTAX_MAPPING</var> directly or
+Syntax mappings are per-directory, so you can establish different conversion rules for different directories. We're planning on adding a way to add or replace the default rules, too, but for now you'll have to either modify <var>Treequel::Directory::DEFAULT_ATTRIBUTE_CONVERSIONS</var> directly or
 install custom mappings for each @Directory@ individually if you want the same rules for every one.
 </div>
 
@@ -260,12 +308,19 @@ irb> dir.ou( :people ).entry.keys.sort
 # => ["createTimestamp", "creatorsName", "description", "dn", "entryCSN", "entryDN", "entryUUID", "hasSubordinates", "modifiersName", "modifyTimestamp", "objectClass", "ou", "structuralObjectClass", "subschemaSubentry"]
 <?end?>
 
+To see which operational attributes your directory software supports, ask the <code>Directory</code> object, which will return schema objects for each one:
+
+<?example { language: irb, caption: "Get the list of supported operational attributes." } ?>
+irb> dir.operational_attribute_types.map( &:name )
+# => [:structuralObjectClass, :createTimestamp, :modifyTimestamp, :creatorsName, :modifiersName, :hasSubordinates, :subschemaSubentry, :entryDN, :entryUUID, :altServer, :namingContexts, :supportedControl, :supportedExtension, :supportedLDAPVersion, :supportedSASLMechanisms, :supportedFeatures, :vendorName, :vendorVersion, :matchingRules, :attributeTypes, :objectClasses, :matchingRuleUse, :ldapSyntaxes, :ref, :entryTtl, :dynamicSubtrees, :memberOf, :pwdChangedTime, :pwdAccountLockedTime, :pwdFailureTime, :pwdHistory, :pwdGraceUseTime, :pwdReset, :pwdPolicySubentry]
+<?end?>
+
 
 h3(#branch-ldif). Getting a Branch's LDIF
 
 A convenient way to look at all of a branch's attributes is via its "LDIF":http://en.wikipedia.org/wiki/LDAP_Data_Interchange_Format string:
 
-<?example { language: irb, caption: "Displaying a branch's LDIF." } ?>
+<?example { language: irb, caption: "Displaying a branch's entry as LDIF." } ?>
 irb> puts me.to_ldif
 dn: uid=mgranger,ou=people,dc=acme,dc=com
 gidNumber: 200
