@@ -97,7 +97,8 @@ describe Treequel::Branch do
 			@schema.stub!( :attribute_types ).
 				and_return({ :cn => :a_value, :ou => :a_value })
 
-			@attribute_type = mock( "schema attribute type object" )
+			@syntax = stub( "attribute ldapSyntax object", :oid => OIDS::STRING_SYNTAX )
+			@attribute_type = mock( "schema attribute type object", :syntax => @syntax )
 		end
 
 
@@ -313,10 +314,11 @@ describe Treequel::Branch do
 
 		it "knows which objectClasses it has" do
 			oc_attr = mock( "objectClass attributeType object" )
+			string_syntax = stub( "string ldapSyntax object", :oid => OIDS::STRING_SYNTAX )
 			@schema.should_receive( :attribute_types ).and_return({ :objectClass => oc_attr })
 			oc_attr.should_receive( :single? ).and_return( false )
-			oc_attr.should_receive( :syntax_oid ).at_least( :once ).
-				and_return( OIDS::STRING_SYNTAX )
+			oc_attr.should_receive( :syntax ).at_least( :once ).
+				and_return( string_syntax )
 
 			@entry.should_receive( :[] ).with( 'objectClass' ).at_least( :once ).
 				and_return([ 'organizationalUnit', 'extensibleObject' ])
@@ -733,7 +735,7 @@ describe Treequel::Branch do
 				@entry.should_receive( :[] ).with( 'glumpy' ).at_least( :once ).
 					and_return([ 'glumpa1', 'glumpa2' ])
 
-				@attribute_type.stub!( :syntax_oid ).and_return( OIDS::STRING_SYNTAX )
+				@attribute_type.stub!( :syntax ).and_return( @syntax )
 				@directory.stub!( :convert_to_object ).and_return {|_,str| str }
 
 				@branch[ :glumpy ].should == [ 'glumpa1', 'glumpa2' ]
@@ -745,7 +747,7 @@ describe Treequel::Branch do
 				@entry.should_receive( :[] ).with( 'glumpy' ).at_least( :once ).
 					and_return([ 'glumpa1' ])
 
-				@attribute_type.stub!( :syntax_oid ).and_return( OIDS::STRING_SYNTAX )
+				@attribute_type.stub!( :syntax ).and_return( @syntax )
 				@directory.stub!( :convert_to_object ).and_return {|_,str| str }
 
 				@branch[ :glumpy ].should == 'glumpa1'
@@ -766,7 +768,7 @@ describe Treequel::Branch do
 			it "caches the value fetched from its entry" do
 				@schema.stub!( :attribute_types ).and_return({ :glump => @attribute_type })
 				@attribute_type.stub!( :single? ).and_return( true )
-				@attribute_type.stub!( :syntax_oid ).and_return( OIDS::STRING_SYNTAX )
+				@attribute_type.stub!( :syntax ).and_return( @syntax )
 				@directory.stub!( :convert_to_object ).and_return {|_,str| str }
 				@entry.should_receive( :[] ).with( 'glump' ).once.and_return( [:a_value] )
 				2.times { @branch[ :glump ] }
@@ -777,8 +779,7 @@ describe Treequel::Branch do
 				@attribute_type.should_receive( :single? ).and_return( true )
 				@entry.should_receive( :[] ).with( 'bvector' ).at_least( :once ).
 					and_return([ '010011010101B' ])
-				@attribute_type.should_receive( :syntax_oid ).at_least( :once ).
-					and_return( OIDS::BIT_STRING_SYNTAX )
+				@syntax.stub!( :oid ).and_return( OIDS::BIT_STRING_SYNTAX )
 				@directory.should_receive( :convert_to_object ).
 					with( OIDS::BIT_STRING_SYNTAX, '010011010101B' ).
 					and_return( 1237 )
@@ -806,7 +807,7 @@ describe Treequel::Branch do
 			it "clears the cache after a successful write" do
 				@schema.stub!( :attribute_types ).and_return({ :glorpy => @attribute_type })
 				@attribute_type.stub!( :single? ).and_return( true )
-				@attribute_type.stub!( :syntax_oid ).and_return( OIDS::STRING_SYNTAX )
+				@attribute_type.stub!( :syntax ).and_return( @syntax )
 				@directory.stub!( :convert_to_object ).and_return {|_,val| val }
 				@entry.should_receive( :[] ).with( 'glorpy' ).and_return( [:firstval], [:secondval] )
 

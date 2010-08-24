@@ -753,10 +753,10 @@ class Treequel::Branch
 
 		if attribute = self.directory.schema.attribute_types[ attrsym ]
 			if attribute.single?
-				value = self.directory.convert_to_object( attribute.syntax_oid, value.first )
+				value = self.directory.convert_to_object( attribute.syntax.oid, value.first )
 			else
 				value = value.collect do |raw|
-					self.directory.convert_to_object( attribute.syntax_oid, raw )
+					self.directory.convert_to_object( attribute.syntax.oid, raw )
 				end
 			end
 		else
@@ -772,8 +772,8 @@ class Treequel::Branch
 	def get_converted_attribute( attrsym, object )
 		if attribute = self.directory.schema.attribute_types[ attrsym ]
 			self.log.debug "converting %p object to a %p attribute" %
-				[ attrsym, attribute.syntax_oid ]
-			return self.directory.convert_to_attribute( attribute.syntax_oid, object )
+				[ attrsym, attribute.syntax.oid ]
+			return self.directory.convert_to_attribute( attribute.syntax.oid, object )
 		else
 			self.log.info "no attributeType for %p" % [ attrsym ]
 			return object.to_s

@@ -299,6 +299,7 @@ class Treequel::Schema::AttributeType
 		end
 	end
 
+
 	# Usage of userApplications, the default, indicates that attributes of
 	# this type represent user information.  That is, they are user
 	# attributes.
