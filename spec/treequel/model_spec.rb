@@ -193,6 +193,7 @@ describe Treequel::Model do
 		before( :all ) do
 			@entry = {
 				'dn'          => [TEST_PERSON_DN],
+				'cn'          => ['Slappy the Frog'],
 				'objectClass' => %w[
 					ipHost
 				],
@@ -212,6 +213,9 @@ describe Treequel::Model do
 			@directory = mock( 'Treequel Directory', :schema => @schema )
 			@directory.stub!( :convert_to_object ).with( Treequel::OIDS::OID_SYNTAX, 'ipHost' ).
 				and_return( 'ipHost' )
+			@directory.stub!( :convert_to_object ).
+				with( Treequel::OIDS::DIRECTORY_STRING_SYNTAX, 'Slappy the Frog' ).
+				and_return( 'Slappy the Frog' )
 			@obj = Treequel::Model.new( @directory, TEST_PERSON_DN )
 		end
 
@@ -224,6 +228,11 @@ describe Treequel::Model do
 		     "entry is loaded" do
 			@directory.should_receive( :get_entry ).with( @obj ).and_return( @entry )
 			@obj.fqdn.should == 'some.home.example.com'
+		end
+
+		it "correctly falls through for methods not added by loading the entry" do
+			@directory.should_receive( :get_entry ).with( @obj ).and_return( @entry )
+			@obj.cn.should == ['Slappy the Frog']
 		end
 	end
 

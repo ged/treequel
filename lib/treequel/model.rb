@@ -200,7 +200,7 @@ class Treequel::Model < Treequel::Branch
 		if !@entry && self.entry
 			meth = begin
 				self.method( sym )
-			rescue NoMethodError
+			rescue NoMethodError, NameError
 				nil
 			end
 			return meth.call( *args ) if meth
