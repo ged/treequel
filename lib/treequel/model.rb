@@ -193,10 +193,25 @@ class Treequel::Model < Treequel::Branch
 
 	### Proxy method -- Handle calls to missing methods by searching for an attribute.
 	def method_missing( sym, *args )
+
+		# First, if the entry hasn't yet been loaded, try loading it to make sure the 
+		# object is already extended with any applicable objectClass mixins. If that ends
+		# up defining the method in question, call it.
+		if !@entry && self.entry
+			meth = begin
+				self.method( sym )
+			rescue NoMethodError
+				nil
+			end
+			return meth.call( *args ) if meth
+		end
+
+		# Next, super to rdn-traversal if it looks like a reader but has arguments
 		plainsym, methodtype = attribute_from_method( sym )
 		return super if methodtype == :reader && !args.empty?
 
-		# Make a method body for a new method based on what kind it is
+		# Now make a method body for a new method based on what attributeType it is if 
+		# it's a valid attribute
 		attrtype = self.find_attribute_type( plainsym ) or return super
 		methodbody = case methodtype
 			when :writer
@@ -290,6 +305,7 @@ class Treequel::Model < Treequel::Branch
 		# inferred by its objectclasses and those that apply to its DN
 		mixins = ( oc_mixins & dn_mixins )
 
+		self.log.debug "  %d mixins apply to %s: %p" % [ mixins.length, dn, mixins.to_a ]
 		mixins.each {|mod| self.extend(mod) }
 	end
 

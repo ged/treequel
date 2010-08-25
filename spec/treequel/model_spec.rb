@@ -189,6 +189,44 @@ describe Treequel::Model do
 	end
 
 
+	describe "created from DNs" do
+		before( :all ) do
+			@entry = {
+				'dn'          => [TEST_PERSON_DN],
+				'objectClass' => %w[
+					ipHost
+				],
+			}
+			schema_dumpfile = Pathname( __FILE__ ).dirname.parent + 'data' + 'schema.yml'
+			hash = YAML.load_file( schema_dumpfile )
+			schemahash = LDAP::Schema.new( hash )
+			@schema = Treequel::Schema.new( schemahash )
+		end
+
+		before( :each ) do
+			@mixin = Module.new do
+				extend Treequel::Model::ObjectClass
+				model_objectclasses :ipHost
+				def fqdn; "some.home.example.com"; end
+			end
+			@directory = mock( 'Treequel Directory', :schema => @schema )
+			@directory.stub!( :convert_to_object ).with( Treequel::OIDS::OID_SYNTAX, 'ipHost' ).
+				and_return( 'ipHost' )
+			@obj = Treequel::Model.new( @directory, TEST_PERSON_DN )
+		end
+
+		after( :each ) do
+			Treequel::Model.objectclass_registry.clear
+			Treequel::Model.base_registry.clear
+		end
+
+		it "correctly dispatches to methods added via extension that are called before its " +
+		     "entry is loaded" do
+			@directory.should_receive( :get_entry ).with( @obj ).and_return( @entry )
+			@obj.fqdn.should == 'some.home.example.com'
+		end
+	end
+
 
 	describe "objects created from entries" do
 
