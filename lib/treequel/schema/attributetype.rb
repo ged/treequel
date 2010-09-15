@@ -236,14 +236,14 @@ class Treequel::Schema::AttributeType
 
 	### Return a human-readable representation of the object suitable for debugging
 	def inspect
-		return "#<%s:0x%0x %s(%s) %p %sSYNTAX: %p (length: %s)>" % [
+		return "#<%s:0x%0x %s(%s) %p %sSYNTAX: %s (length: %s)>" % [
 			self.class.name,
 			self.object_id / 2,
 			self.name,
 			self.oid,
 			self.desc,
 			self.is_single? ? '(SINGLE) ' : '',
-			self.syntax_oid,
+			self.syntax,
 			self.syntax_len ? self.syntax_len : 'unlimited',
 		]
 	end
