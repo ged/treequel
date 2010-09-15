@@ -734,7 +734,6 @@ class Treequel::Branch
 
 	### Fetch the entry from the Branch's directory.
 	def lookup_entry
-		self.log.debug "Looking up entry for %p" % [ self ]
 		if self.include_operational_attrs?
 			self.log.debug "  including operational attributes."
 			return self.directory.get_extended_entry( self )
