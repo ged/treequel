@@ -169,6 +169,24 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
+	### Return the Treequel::Model::ObjectClass mixins that have been applied to the receiver.
+	### @return [Array<Module>]
+	def extensions
+		return self.included_modules.find_all do |mod|
+			(class << mod; self; end).include?(Treequel::Model::ObjectClass)
+		end
+	end
+
+
+	### Return a human-readable representation of the receiving object, suitable for debugging.
+	def inspect
+		return "#<%s:0x%x (%s)>" % [
+			self.class.name,
+			self.object_id * 2,
+			self.extensions.map( &:name ).join( ', ' )
+		]
+	end
+
 
 	#########
 	protected
