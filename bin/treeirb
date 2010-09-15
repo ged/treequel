@@ -6,8 +6,12 @@ require 'irb/cmd/nop'
 require 'treequel'
 
 
-uri = ARGV.shift or raise "usage: #$0 [LDAPURI]"
-$dir = Treequel.directory( uri )
+if uri = ARGV.shift
+	$dir = Treequel.directory( uri )
+else
+	$dir = Treequel.directory_from_config
+end
+
 $stderr.puts "Directory is in $dir:", '  ' + $dir.inspect
 
 IRB.start( $0 )
