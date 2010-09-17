@@ -278,6 +278,10 @@ GEMSPEC   = Gem::Specification.new do |gem|
 	gem.files             = RELEASE_FILES
 	gem.test_files        = SPEC_FILES
 
+	# signing key and certificate chain
+	gem.signing_key       = '/Volumes/Keys/ged-private_gem_key.pem'
+	gem.cert_chain        = [File.expand_path('~/.gem/ged-public_gem_cert.pem')]
+
 	DEPENDENCIES.each do |name, version|
 		version = '>= 0' if version.length.zero?
 		gem.add_runtime_dependency( name, version )
