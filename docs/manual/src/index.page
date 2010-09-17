@@ -707,16 +707,19 @@ Treequel comes with its own set of tools for constructing domain models, tools t
 
 h3(#modeling-objectclass). Modeling ObjectClasses
 
-The principle component is a class called <?api Treequel::Model ?>, which provides the usual attribute accessors for the entry that it wraps, as well as the mechanism for layering functionality onto an object based on what its @objectClass@ attribute contains.
+The principle component is a class called <?api Treequel::Model ?>, which provides the usual attribute accessors for the entry that it wraps, as well as a mechanism for layering functionality onto an object based on what its @objectClass@ attributes are.
 
-The layers are created via a module called <?api Treequel::ObjectClass ?>. To descibe the domain model, you register one or more modules with @Treequel::Model@, each of which can correspond to a combination of @objectClasses@ and @bases@. For example, say you wanted to add some structure to the @labeledUris@ attribute of all entries that contain the @inetOrgPerson@ objectClass:
+The layers are mixin Modules that extend <?api Treequel::Model::ObjectClass ?>, each of which is associated with a particular combination of objectClasses and bases. Here's a fairly simple example that adds a method that expands any _labeledUri_ attributes of entries under @ou=people,dc=acme,dc=com@ that have the @inetOrgPerson@ objectClass:
 
-<?example { language: ruby, caption: "Make a mixin to decorate @inetOrgPerson@ entries." } ?>
-module LAIKA::InetOrgPerson
+<?example { language: ruby, caption: "Add url-expansion to @inetOrgPerson@ entries." } ?>
+require 'treequel/model'
+require 'treequel/model/objectclass'
+
+module ACME::InetOrgPerson
 	extend Treequel::Model::ObjectClass
 
 	model_class Treequel::Model
-	model_bases 'ou=people,dc=laika,dc=com'
+	model_bases 'ou=people,dc=acme,dc=com'
 	model_objectclasses :inetOrgPerson
 
 
@@ -736,14 +739,90 @@ module LAIKA::InetOrgPerson
 		end
 	end
 
-end # module LAIKA::InetOrgPerson
+end # module ACME::InetOrgPerson
 
+<?end?>
+
+The module first extends Treequel::Model::ObjectClass [line 5], and then registers itself with a model class [line 7]. The next two lines set which objectClasses and base DNs the mixin will apply to [lines 8 and 9], and then the code that follows declares the method that's added to applicable model objects.
+
+For example, if the above code was in a file called @acme/inetorgperson.rb@:
+
+<?example { language: irb, caption: "Get the labeledUris associated with the 'jonh' user." } ?>
+require 'treequel/model'
+require 'acme/inetorgperson'
+
+directory = Treequel.directory_from_config
+jonh = Treequel::Model.search( directory ).
+	filter( :uid => 'jonh', :objectClass => :inetOrgPerson ).first
+jonh.labeled_uris
+# => {"My Homepage"=>#<URI::HTTP:0x00000102841f68 URL:http://example.com/>} 
+<?end?>
+
+h3(#model-associations). Model Associations
+
+You can use the methods of the mixins to associate entries with one another, as well. For attributes that contain a full DN, fetching the value will automatically return another <?api Treequel::Model ?> instance, but for less-restrictive attributes like @memberUid@ that are just plain strings, you'll need to map them into the corresponding entry yourself:
+
+<?example { language: ruby, caption: "Associate posixGroup memberUids with posixAccount uids." } ?>
+require 'treequel/model'
+require 'treequel/model/objectclass'
+
+$directory = Treequel.directory_from_config
+
+module ACME::PosixAccount
+	extend Treequel::Model::ObjectClass
+
+	model_class Treequel::Model
+	model_bases 'ou=people,dc=acme,dc=com'
+	model_objectclasses :posixAccount
+
+	### Return ACME::PosixGroup objects for the groups the account is a member of.
+	def groups
+		return ACME::PosixGroup.search( $directory ).filter( :memberUid => self.uid ).all
+	end
+
+end # module ACME::PosixAccount
+
+
+module ACME::PosixGroup
+	extend Treequel::Model::ObjectClass
+
+	model_class Treequel::Model
+	model_bases 'ou=groups,dc=acme,dc=com'
+	model_objectclasses :posixGroup
+
+	### Return ACME::PosixAccount objects for the group's members
+	def members
+		return ACME::PosixAccount.search( $directory ).filter( :uid => self.memberUid ).all
+	end
+
+end # module ACME::PosixGroup
+<?end?>
+
+If you want to make the associations a bit more useful, you can return a <?api Treequel::Branchset ?> from the association methods instead of calling @.all@ on it immediately, which will allow the results to be filtered further by chaining additional filter methods:
+
+<?example { language: ruby, caption: "Find all sysadmin accounts that don't have a password." } ?>
+require 'treequel/model'
+require 'treequel/model/objectclass'
+
+$directory = Treequel.directory_from_config
+
+# Re-open to modify the association to return a Branchset instead
+module ACME::PosixGroup
+	def members
+		return ACME::PosixAccount.search( $directory ).filter( :uid => self.memberUid )
+	end
+end # module ACME::PosixGroup
+
+sysadmin_group = ACME::PosixGroup.search( $directory ).
+	filter( :cn => 'sysadmin' ).first
+sysadmin_group.members.filter( ~:userPassword ).all
+
+# => [#<Treequel::Model:0x100b0a2d8 uid=mahlon,ou=People,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>]
 <?end ?>
 
+Mahlon appears to be violating ACME Company policy [line 17]. He will be flogged in accordance with company handbook section C, paragraph 2.
 
-hen you fetch an entry from the database as a Treequel::Model object, it will extended with the appropriate mixins.
-
-
+If the functionality you wish to define requires attributes of two or more different _objectClasses_ , you can put all of them in the @model_objectclasses@ statement, and then the mixin will only apply to entries that have *all* of them. The @model_bases@ attribute can also take multiple values; entries will be limited to children of *any* of them.
 
 h2(#schema-introspection). Schema Introspection
 
