@@ -172,7 +172,8 @@ class Treequel::Model < Treequel::Branch
 	### Return the Treequel::Model::ObjectClass mixins that have been applied to the receiver.
 	### @return [Array<Module>]
 	def extensions
-		return self.included_modules.find_all do |mod|
+		eigenclass = ( class << self; self; end )
+		return eigenclass.included_modules.find_all do |mod|
 			(class << mod; self; end).include?(Treequel::Model::ObjectClass)
 		end
 	end
@@ -316,7 +317,11 @@ class Treequel::Model < Treequel::Branch
 	### Apply mixins that are applicable considering the receiver's DN and the 
 	### objectClasses from its entry.
 	def apply_applicable_mixins( dn, entry )
-		oc_mixins = self.class.mixins_for_objectclasses( entry['objectClass'] )
+		ocs = entry.object_classes.collect do |explicit_oc|
+			explicit_oc.ancestors.collect {|oc| oc.name }
+		end.flatten.uniq
+
+		oc_mixins = self.class.mixins_for_objectclasses( *ocs )
 		dn_mixins = self.class.mixins_for_dn( dn )
 
 		# The applicable mixins are those in the intersection of the ones

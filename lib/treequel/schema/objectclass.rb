@@ -262,6 +262,21 @@ class Treequel::Schema
 		end
 
 
+		### Return the SUP chain for the receiver up to 'top', including the receiver
+		### itself.
+		### @return [Array<Treequel::Schema::ObjectClass>]  the array of ObjectClass objects
+		###                                                 the receiver inherits from.
+		def ancestors
+			rval = [ self ]
+
+			if parent = self.sup
+				rval += parent.ancestors
+			end
+
+			return rval
+		end
+
+
 		### Return the string that represents the kind of objectClass
 		### the receiver represents.
 		### @return [String] one of: 'ABSTRACT', 'STRUCTURAL', 'AUXILIARY'

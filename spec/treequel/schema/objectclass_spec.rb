@@ -187,6 +187,10 @@ describe Treequel::Schema::ObjectClass do
 		it "can remake its own schema description" do
 			@oc.to_s.should == ORGPERSON_OBJECTCLASS.squeeze(' ')
 		end
+
+		it "can fetch all of its ancestors" do
+			@oc.ancestors.should == @schema.object_classes.values_at( :orgPerson, :person, :top )
+		end
 	end
 
 
@@ -273,6 +277,8 @@ describe Treequel::Schema::ObjectClass do
 		SUB_OBJECTCLASS = %{( 1.1.1.1 SUP organizationalPerson )}
 
 		before( :each ) do
+			@top = Treequel::Schema::ObjectClass.parse( @schema, TOP_OBJECTCLASS )
+			@op = Treequel::Schema::ObjectClass.parse( @schema, ORGPERSON_OBJECTCLASS )
 			@oc = Treequel::Schema::ObjectClass.parse( @schema, SUB_OBJECTCLASS )
 		end
 
@@ -286,6 +292,7 @@ describe Treequel::Schema::ObjectClass do
 			# STRUCTURAL is implied...
 			@oc.to_s.sub( / STRUCTURAL/, '' ).should == SUB_OBJECTCLASS
 		end
+
 	end
 
 	describe "parsed from an objectClass that has no explicit SUP" do

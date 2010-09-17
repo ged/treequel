@@ -37,10 +37,18 @@ describe Treequel::Model do
 	end
 
 	before( :each ) do
+		@top_oc    = mock( "top objectClass", :name => 'top' )
+		@iphost_oc = mock( "ipHost objectClass", :name => 'ipHost' )
+		@device_oc = mock( "device objectClass", :name => 'device' )
+
+		@iphost_oc.stub!( :ancestors ).and_return([ @iphost_oc, @top_oc ])
+		@device_oc.stub!( :ancestors ).and_return([ @device_oc, @top_oc ])
+
 		@simple_entry = {
 			'dn' => TEST_HOST_DN,
 			'objectClass' => ['ipHost', 'device']
 		}
+		@simple_entry.stub!( :object_classes ).and_return([ @iphost_oc, @device_oc ])
 		@directory = mock( "treequel directory", :get_entry => @simple_entry )
 	end
 
@@ -139,6 +147,23 @@ describe Treequel::Model do
 		obj.should_not be_a( mixin3 )
 	end
 
+	it "extends new instances with mixins that are implied by objectClass SUP attributes, too" do
+		inherited_mixin = Module.new do
+			extend Treequel::Model::ObjectClass
+			model_objectclasses :top
+		end
+		mixin1 = Module.new do
+			extend Treequel::Model::ObjectClass
+			model_bases TEST_HOSTS_DN, TEST_SUBHOSTS_DN
+			model_objectclasses :ipHost
+		end
+
+		obj = Treequel::Model.new( @directory, TEST_SUBHOST_DN, @simple_entry )
+
+		obj.should be_a( mixin1 )
+		obj.should be_a( inherited_mixin )
+	end
+
 	it "applies applicable mixins to instances created before looking up the corresponding entry" do
 		mixin1 = Module.new do
 			extend Treequel::Model::ObjectClass
@@ -217,6 +242,7 @@ describe Treequel::Model do
 				with( Treequel::OIDS::DIRECTORY_STRING_SYNTAX, 'Slappy the Frog' ).
 				and_return( 'Slappy the Frog' )
 			@obj = Treequel::Model.new( @directory, TEST_PERSON_DN )
+			@entry.stub!( :object_classes ).and_return([ @schema.object_classes[:ipHost] ])
 		end
 
 		after( :each ) do
@@ -269,6 +295,7 @@ describe Treequel::Model do
 
 		before( :each ) do
 			@directory = mock( 'Treequel Directory', :schema => @schema )
+			@entry.stub!( :object_classes ).and_return([ @schema.object_classes[:ipHost] ])
 			@obj = Treequel::Model.new_from_entry( @entry, @directory )
 		end
 
