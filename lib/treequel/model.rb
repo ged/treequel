@@ -96,6 +96,7 @@ class Treequel::Model < Treequel::Branch
 	### @param [Array<Symbol>] objectclasses  the objectclasses from the entry
 	### @return [Set<Module>] the Set of mixin modules which apply
 	def self::mixins_for_objectclasses( *objectclasses )
+		return self.objectclass_registry[:top] if objectclasses.empty?
 		ocsymbols = objectclasses.flatten.collect {|oc| oc.untaint.to_sym }
 
 		# Get the union of all of the mixin sets for the objectclasses in question
@@ -317,7 +318,10 @@ class Treequel::Model < Treequel::Branch
 	### Apply mixins that are applicable considering the receiver's DN and the 
 	### objectClasses from its entry.
 	def apply_applicable_mixins( dn, entry )
-		ocs = entry.object_classes.collect do |explicit_oc|
+		schema = self.directory.schema
+
+		ocs = entry['objectClass'].collect do |oc_oid|
+			explicit_oc = schema.object_classes[ oc_oid ]
 			explicit_oc.ancestors.collect {|oc| oc.name }
 		end.flatten.uniq
 
@@ -328,7 +332,8 @@ class Treequel::Model < Treequel::Branch
 		# inferred by its objectclasses and those that apply to its DN
 		mixins = ( oc_mixins & dn_mixins )
 
-		self.log.debug "  %d mixins apply to %s: %p" % [ mixins.length, dn, mixins.to_a ]
+		self.log.debug "Applying %d mixins to %s: %p" %
+			[ mixins.length, dn, mixins.collect(&:inspect) ]
 		mixins.each {|mod| self.extend(mod) }
 	end
 

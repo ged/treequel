@@ -28,8 +28,13 @@ describe Treequel::Model do
 	include Treequel::SpecHelpers,
 	        Treequel::Matchers
 
+	SCHEMA_DUMPFILE = Pathname( __FILE__ ).dirname.parent + 'data' + 'schema.yml'
+	SCHEMAHASH      = LDAP::Schema.new( YAML.load_file(SCHEMA_DUMPFILE) )
+
 	before( :all ) do
 		setup_logging( :fatal )
+
+		@schema = Treequel::Schema.new( SCHEMAHASH )
 	end
 
 	after( :all ) do
@@ -37,9 +42,9 @@ describe Treequel::Model do
 	end
 
 	before( :each ) do
-		@top_oc    = mock( "top objectClass", :name => 'top' )
-		@iphost_oc = mock( "ipHost objectClass", :name => 'ipHost' )
-		@device_oc = mock( "device objectClass", :name => 'device' )
+		@top_oc    = @schema.object_classes[:top]
+		@iphost_oc = @schema.object_classes[:ipHost]
+		@device_oc = @schema.object_classes[:device]
 
 		@iphost_oc.stub!( :ancestors ).and_return([ @iphost_oc, @top_oc ])
 		@device_oc.stub!( :ancestors ).and_return([ @device_oc, @top_oc ])
@@ -48,8 +53,8 @@ describe Treequel::Model do
 			'dn' => TEST_HOST_DN,
 			'objectClass' => ['ipHost', 'device']
 		}
-		@simple_entry.stub!( :object_classes ).and_return([ @iphost_oc, @device_oc ])
-		@directory = mock( "treequel directory", :get_entry => @simple_entry )
+		@directory = mock( "treequel directory", :schema => @schema )
+		@directory.stub!( :convert_to_object ).and_return {|oid,value| value }
 	end
 
 	after( :each ) do
@@ -181,6 +186,7 @@ describe Treequel::Model do
 		end
 
 		obj = Treequel::Model.new( @directory, TEST_HOST_DN )
+		@directory.stub!( :get_entry ).with( obj ).and_return( @simple_entry )
 		obj.exists? # Trigger the lookup
 
 		obj.should be_a( mixin1 )
@@ -223,10 +229,6 @@ describe Treequel::Model do
 					ipHost
 				],
 			}
-			schema_dumpfile = Pathname( __FILE__ ).dirname.parent + 'data' + 'schema.yml'
-			hash = YAML.load_file( schema_dumpfile )
-			schemahash = LDAP::Schema.new( hash )
-			@schema = Treequel::Schema.new( schemahash )
 		end
 
 		before( :each ) do
@@ -235,14 +237,12 @@ describe Treequel::Model do
 				model_objectclasses :ipHost
 				def fqdn; "some.home.example.com"; end
 			end
-			@directory = mock( 'Treequel Directory', :schema => @schema )
 			@directory.stub!( :convert_to_object ).with( Treequel::OIDS::OID_SYNTAX, 'ipHost' ).
 				and_return( 'ipHost' )
 			@directory.stub!( :convert_to_object ).
 				with( Treequel::OIDS::DIRECTORY_STRING_SYNTAX, 'Slappy the Frog' ).
 				and_return( 'Slappy the Frog' )
 			@obj = Treequel::Model.new( @directory, TEST_PERSON_DN )
-			@entry.stub!( :object_classes ).and_return([ @schema.object_classes[:ipHost] ])
 		end
 
 		after( :each ) do
@@ -252,12 +252,12 @@ describe Treequel::Model do
 
 		it "correctly dispatches to methods added via extension that are called before its " +
 		     "entry is loaded" do
-			@directory.should_receive( :get_entry ).with( @obj ).and_return( @entry )
+			@directory.stub!( :get_entry ).with( @obj ).and_return( @entry )
 			@obj.fqdn.should == 'some.home.example.com'
 		end
 
 		it "correctly falls through for methods not added by loading the entry" do
-			@directory.should_receive( :get_entry ).with( @obj ).and_return( @entry )
+			@directory.stub!( :get_entry ).with( @obj ).and_return( @entry )
 			@obj.cn.should == ['Slappy the Frog']
 		end
 	end
@@ -286,16 +286,9 @@ describe Treequel::Model do
 					apple-user
 				],
 			}
-
-			schema_dumpfile = Pathname( __FILE__ ).dirname.parent + 'data' + 'schema.yml'
-			hash = YAML.load_file( schema_dumpfile )
-			schemahash = LDAP::Schema.new( hash )
-			@schema = Treequel::Schema.new( schemahash )
 		end
 
 		before( :each ) do
-			@directory = mock( 'Treequel Directory', :schema => @schema )
-			@entry.stub!( :object_classes ).and_return([ @schema.object_classes[:ipHost] ])
 			@obj = Treequel::Model.new_from_entry( @entry, @directory )
 		end
 

@@ -478,7 +478,7 @@ class Treequel::Branch
 
 		oc_oids = self[:objectClass] || []
 		oc_oids |= additional_classes.collect {|str| str.to_sym }
-		oc_oids << :top if oc_oids.empty?
+		oc_oids << 'top' if oc_oids.empty?
 
 		oclasses = []
 		oc_oids.each do |oid|
