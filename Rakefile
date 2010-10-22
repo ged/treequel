@@ -171,9 +171,9 @@ include RakefileHelpers
 # Set the build ID if the mercurial executable is available
 if hg = which( 'hg' )
 	id = `#{hg} id -n`.chomp
-	PKG_BUILD = "pre%03d" % [(id.chomp[ /^[[:xdigit:]]+/ ] || '1')]
+	PKG_BUILD = (id.chomp[ /^[[:xdigit:]]+/ ] || '1')
 else
-	PKG_BUILD = 'pre000'
+	PKG_BUILD = '0'
 end
 SNAPSHOT_PKG_NAME = "#{PKG_FILE_NAME}.#{PKG_BUILD}"
 SNAPSHOT_GEM_NAME = "#{SNAPSHOT_PKG_NAME}.gem"
@@ -210,6 +210,8 @@ PROJECT_DOCDIR = "#{PROJECT_PUBDIR}/#{PKG_NAME}"
 PROJECT_SCPPUBURL = "#{PROJECT_HOST}:#{PROJECT_PUBDIR}"
 PROJECT_SCPDOCURL = "#{PROJECT_HOST}:#{PROJECT_DOCDIR}"
 
+GEM_PUBHOST = 'rubygems.org'
+
 # Gem dependencies: gemname => version
 DEPENDENCIES = {
 	'ruby-ldap' => '>= 0.9.9',
@@ -228,8 +230,8 @@ DEVELOPMENT_DEPENDENCIES = {
 	'tmail'        => '>= 1.2.3.1',
 	'diff-lcs'     => '>= 1.1.2',
 	'columnize' => '>= 0.3.1',
-	'diff-lcs' => '>= 1.1.2',
 	'ruby-termios' => '>= 0.9.6',
+	'diff-lcs' => '>= 1.1.2',
 	'ruby-terminfo' => '>= 0.1.1',
 }
 
@@ -281,6 +283,9 @@ GEMSPEC   = Gem::Specification.new do |gem|
 	# signing key and certificate chain
 	gem.signing_key       = '/Volumes/Keys/ged-private_gem_key.pem'
 	gem.cert_chain        = [File.expand_path('~/.gem/ged-public_gem_cert.pem')]
+
+
+	gem.required_ruby_version = '>=1.8.7'
 
 	DEPENDENCIES.each do |name, version|
 		version = '>= 0' if version.length.zero?
