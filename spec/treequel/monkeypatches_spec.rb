@@ -11,7 +11,8 @@ BEGIN {
 
 require 'time'
 
-require 'spec'
+require 'rspec'
+
 require 'spec/lib/constants'
 require 'spec/lib/helpers'
 

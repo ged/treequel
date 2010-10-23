@@ -12,7 +12,8 @@ BEGIN {
 	$LOAD_PATH.unshift( extdir ) unless $LOAD_PATH.include?( extdir )
 }
 
-require 'spec'
+require 'rspec'
+
 require 'spec/lib/constants'
 require 'spec/lib/helpers'
 
@@ -249,10 +250,7 @@ describe Treequel, "mixin" do
 				@obj.delegated_method( :arg1, :arg2 )
 			end
 
-			it "reports errors from its caller's perspective" do
-				pending "doesn't work under 1.9, but may not be necessary" if
-					vvec(RUBY_VERSION) > vvec('1.8.7')
-
+			it "reports errors from its caller's perspective", :ruby_1_8_only => true do
 				begin
 					@obj.erroring_delegated_method
 				rescue NoMethodError => err
@@ -298,10 +296,7 @@ describe Treequel, "mixin" do
 				@obj.delegated_method( :arg1, :arg2 )
 			end
 
-			it "reports errors from its caller's perspective" do
-				pending "doesn't work under 1.9, but may not be necessary" if
-					vvec(RUBY_VERSION) > vvec('1.8.7')
-
+			it "reports errors from its caller's perspective", :ruby_1_8_only => true do
 				begin
 					@obj.erroring_delegated_method
 				rescue NoMethodError => err

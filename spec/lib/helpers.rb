@@ -10,29 +10,18 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir.to_s ) unless $LOAD_PATH.include?( libdir.to_s )
 }
 
-begin
-	require 'yaml'
-	require 'treequel'
+require 'rspec'
 
-	require 'spec/lib/constants'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'yaml'
+require 'treequel'
+
+require 'spec/lib/constants'
+require 'spec/lib/matchers'
 
 
 ### RSpec helper functions.
 module Treequel::SpecHelpers
 	include Treequel::TestConstants
-
-	### Make an easily-comparable version vector out of +ver+ and return it.
-	def vvec( ver )
-		return ver.split('.').collect {|char| char.to_i }.pack('N*')
-	end
-
 
 	class ArrayLogger
 		### Create a new ArrayLogger that will append content to +array+.
@@ -65,6 +54,12 @@ module Treequel::SpecHelpers
 	module_function
 	###############
 
+	### Make an easily-comparable version vector out of +ver+ and return it.
+	def vvec( ver )
+		return ver.split('.').collect {|char| char.to_i }.pack('N*')
+	end
+
+
 	### Reset the logging subsystem to its default state.
 	def reset_logging
 		Treequel.reset_logger
@@ -94,6 +89,19 @@ module Treequel::SpecHelpers
 	end
 
 end
+
+
+### Mock with Rspec
+Rspec.configure do |c|
+	c.mock_with :rspec
+	c.include( Treequel::TestConstants )
+	c.include( Treequel::SpecHelpers )
+	c.include( Treequel::Matchers )
+
+	c.filter_run_excluding( :ruby_1_8_only => true ) if
+		Treequel::SpecHelpers.vvec( RUBY_VERSION ) >= Treequel::SpecHelpers.vvec('1.9.1')
+end
+
 
 
 # vim: set nosta noet ts=4 sw=4:

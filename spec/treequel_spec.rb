@@ -10,7 +10,8 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
+require 'rspec'
+
 require 'spec/lib/constants'
 require 'spec/lib/helpers'
 
@@ -152,6 +153,10 @@ describe Treequel do
 
 	describe "system LDAP config methods" do
 
+		before( :all ) do
+			setup_logging( :fatal )
+		end
+
 		before( :each ) do
 			ENV['LDAPCONF']   = nil
 			ENV['LDAPRC']     = nil
@@ -162,6 +167,9 @@ describe Treequel do
 			ENV['LDAPPORT']   = nil
 		end
 
+		after( :all ) do
+			reset_logging()
+		end
 
 		it "uses the LDAPCONF environment variable if it is set" do
 			configpath = mock( "configfile Pathname object" )
@@ -444,7 +452,7 @@ describe Treequel do
 
 
 		it "uses the new defaults when the logging subsystem is reset" do
-			logger = mock( "dummy logger", :null_object => true )
+			logger = double( "dummy logger" ).as_null_object
 			formatter = mock( "dummy logger" )
 
 			Treequel.default_logger = logger

@@ -214,7 +214,7 @@ class Treequel::Schema
 	def inspect
 		ivar_descs = self.instance_variables.sort.collect do |ivar|
 			len = self.instance_variable_get( ivar ).length
-			"%d %s" % [ len, ivar.gsub(/_/, ' ')[1..-1] ]
+			"%d %s" % [ len, ivar.to_s.gsub(/_/, ' ')[1..-1] ]
 		end
 		return %{#<%s:0x%0x %s>} % [
 			self.class.name,

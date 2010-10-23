@@ -10,7 +10,8 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
+require 'rspec'
+
 require 'spec/lib/constants'
 require 'spec/lib/helpers'
 
@@ -404,39 +405,31 @@ describe Treequel::Filter do
 		end
 	end
 
-	describe "support for Sequel expressions" do
+	describe "support for Sequel expressions", :sequel_integration => true do
 
 		before( :each ) do
 			pending "requires the 'sequel' library" unless Sequel.const_defined?( :Model )
 		end
 
-		it "supports the boolean expression syntax" do
-			pending( "inequality operators don't work under 1.9.1" ) if
-				vvec( RUBY_VERSION ) > vvec( '1.8.7' )
+		it "supports the boolean expression syntax", :ruby_1_8_only => true do
 			filter = Treequel::Filter.new( :uid >= 2000 )
 			filter.should be_a( Treequel::Filter )
 			filter.to_s.should == '(uid>=2000)'
 		end
 
-		it "supports Sequel expressions in ANDed subexpressions" do
-			pending( "inequality operators don't work under 1.9.1" ) if
-				vvec( RUBY_VERSION ) > vvec( '1.8.7' )
+		it "supports Sequel expressions in ANDed subexpressions", :ruby_1_8_only => true do
 			filter = Treequel::Filter.new( :and, [:uid >= 1024], [:uid <= 65535] )
 			filter.should be_a( Treequel::Filter )
 			filter.to_s.should == '(&(uid>=1024)(uid<=65535))'
 		end
 
-		it "advises user to use '>=' instead of '>' in expressions" do
-			pending( "inequality operators don't work under 1.9.1" ) if
-				vvec( RUBY_VERSION ) > vvec( '1.8.7' )
+		it "advises user to use '>=' instead of '>' in expressions", :ruby_1_8_only => true do
 			expect {
 				Treequel::Filter.new( :uid > 1024 )
 			}.to raise_error( Treequel::ExpressionError, /greater-than-or-equal/i )
 		end
 
-		it "advises user to use '<=' instead of '<' in expressions" do
-			pending( "inequality operators don't work under 1.9.1" ) if
-				vvec( RUBY_VERSION ) > vvec( '1.8.7' )
+		it "advises user to use '<=' instead of '<' in expressions", :ruby_1_8_only => true do
 			expect {
 				Treequel::Filter.new( :activated < Time.now )
 			}.to raise_error( Treequel::ExpressionError, /less-than-or-equal/i )

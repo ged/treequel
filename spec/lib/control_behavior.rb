@@ -10,7 +10,8 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
+require 'rspec'
+
 require 'spec/lib/constants'
 require 'spec/lib/helpers'
 
@@ -23,12 +24,13 @@ include Treequel::Constants
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
-describe "A Treequel::Control", :shared => true do
+shared_examples_for "A Treequel::Control" do
 	include Treequel::SpecHelpers
 
-	before( :each ) do
-		raise "Spec doesn't set @control before the Control shared behavior" unless @control
+	let( :control ) do
+		described_class
 	end
+
 
 	it "implements one of either #get_client_controls or #get_server_controls" do
 		methods = [
@@ -37,7 +39,7 @@ describe "A Treequel::Control", :shared => true do
 			:get_client_controls,		# 1.9.x
 			:get_server_controls
 		]
-		(@control.instance_methods( false ) | methods).should_not be_empty()
+		(control.instance_methods( false ) | methods).should_not be_empty()
 	end
 
 end
