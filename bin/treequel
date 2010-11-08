@@ -690,10 +690,27 @@ class Treequel::Shell
 
 	### Copy an entry
 	def cp_command( options, rdn, newrdn )
-		branch = @currbranch.get_child( rdn )
-		newbranch = @currbranch.get_child( newrdn )
+		base_dn = @currbranch.directory.base_dn
 
-		raise "#{branch.dn}: already exists" if newbranch.exists?
+		# If the RDN includes the base, it's a DN
+		branch = if rdn =~ /,#{base_dn}$/i
+				Treequel::Branch.new( @currbranch.directory, rdn )
+			else
+				@currbranch.get_child( rdn )
+			end
+
+		# The source should already exist
+		raise "#{branch.dn}: no such entry" unless branch.exists?
+
+		# Same for the other RDN...
+		newbranch = if newrdn =~ /,#{base_dn}$/i
+				Treequel::Branch.new( @currbranch.directory, newrdn )
+			else
+				@currbranch.get_child( newrdn )
+			end
+
+		# But it *shouldn't* exist already
+		raise "#{newbranch.dn}: already exists" if newbranch.exists?
 
 		attributes = branch.entry.merge( :dn => newbranch.dn )
 		newbranch.create( attributes )
