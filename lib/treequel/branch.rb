@@ -287,11 +287,13 @@ class Treequel::Branch
 		attrsym = attrname.to_sym
 
 		unless @values.key?( attrsym )
+			self.log.debug "  value for %p is NOT cached." % [ attrsym ]
 			value = self.get_converted_object( attrsym )
+			self.log.debug "  converted value is: %p" % [ value ]
 			value.freeze if value.respond_to?( :freeze )
 			@values[ attrsym ] = value
 		else
-			self.log.debug "  value is cached."
+			self.log.debug "  value for %p is cached." % [ attrname ]
 		end
 
 		return @values[ attrsym ]
@@ -474,11 +476,13 @@ class Treequel::Branch
 	### @param [Array<String, Symbol>] additional_classes 
 	### @return [Array<Treequel::Schema::ObjectClass>]
 	def object_classes( *additional_classes )
+		self.log.debug "Fetching object classes for %s" % [ self.dn ]
 		schema = self.directory.schema
 
 		oc_oids = self[:objectClass] || []
+		self.log.debug "  objectClass OIDs are: %p" % [ oc_oids ]
 		oc_oids |= additional_classes.collect {|str| str.to_sym }
-		oc_oids << 'top' if oc_oids.empty?
+		oc_oids << :top if oc_oids.empty?
 
 		oclasses = []
 		oc_oids.each do |oid|
@@ -487,6 +491,7 @@ class Treequel::Branch
 			oclasses << oc
 		end
 
+		self.log.debug "  found %d objectClasses: %p" % [  oclasses.length, oclasses ]
 		return oclasses.uniq
 	end
 
@@ -517,7 +522,8 @@ class Treequel::Branch
 	def must_attribute_types( *additional_object_classes )
 		types = []
 		oclasses = self.object_classes( *additional_object_classes )
-		self.log.debug "Gathering MUST attribute types for objectClasses: %p" % [ oclasses ]
+		self.log.debug "Gathering MUST attribute types for objectClasses: %p" %
+		 	[ oclasses.map(&:name) ]
 
 		oclasses.each do |oc|
 			self.log.debug "  adding %p from %p" % [ oc.must, oc ]
@@ -734,13 +740,19 @@ class Treequel::Branch
 
 	### Fetch the entry from the Branch's directory.
 	def lookup_entry
+		self.log.debug "Looking up entry for %s" % [ self.dn ]
+		entry = nil
+
 		if self.include_operational_attrs?
 			self.log.debug "  including operational attributes."
-			return self.directory.get_extended_entry( self )
+			entry = self.directory.get_extended_entry( self )
 		else
 			self.log.debug "  not including operational attributes."
-			return self.directory.get_entry( self )
+			entry = self.directory.get_entry( self )
 		end
+
+		self.log.debug "  entry is: %p" % [ entry ]
+		return entry
 	end
 
 

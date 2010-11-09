@@ -92,10 +92,10 @@ describe Treequel::Branch do
 
 			@schema = mock( "treequel schema" )
 			@entry = mock( "entry object" )
-			@directory.stub!( :schema ).and_return( @schema )
-			@directory.stub!( :get_entry ).and_return( @entry )
-			@directory.stub!( :base_dn ).and_return( TEST_BASE_DN )
-			@schema.stub!( :attribute_types ).
+			@directory.stub( :schema ).and_return( @schema )
+			@directory.stub( :get_entry ).and_return( @entry )
+			@directory.stub( :base_dn ).and_return( TEST_BASE_DN )
+			@schema.stub( :attribute_types ).
 				and_return({ :cn => :a_value, :ou => :a_value })
 
 			@syntax = stub( "attribute ldapSyntax object", :oid => OIDS::STRING_SYNTAX )
@@ -736,8 +736,8 @@ describe Treequel::Branch do
 				@entry.should_receive( :[] ).with( 'glumpy' ).at_least( :once ).
 					and_return([ 'glumpa1', 'glumpa2' ])
 
-				@attribute_type.stub!( :syntax ).and_return( @syntax )
-				@directory.stub!( :convert_to_object ).and_return {|_,str| str }
+				@attribute_type.stub( :syntax ).and_return( @syntax )
+				@directory.stub( :convert_to_object ).and_return {|_,str| str }
 
 				@branch[ :glumpy ].should == [ 'glumpa1', 'glumpa2' ]
 			end
@@ -748,8 +748,8 @@ describe Treequel::Branch do
 				@entry.should_receive( :[] ).with( 'glumpy' ).at_least( :once ).
 					and_return([ 'glumpa1' ])
 
-				@attribute_type.stub!( :syntax ).and_return( @syntax )
-				@directory.stub!( :convert_to_object ).and_return {|_,str| str }
+				@attribute_type.stub( :syntax ).and_return( @syntax )
+				@directory.stub( :convert_to_object ).and_return {|_,str| str }
 
 				@branch[ :glumpy ].should == 'glumpa1'
 			end
@@ -767,10 +767,10 @@ describe Treequel::Branch do
 			end
 
 			it "caches the value fetched from its entry" do
-				@schema.stub!( :attribute_types ).and_return({ :glump => @attribute_type })
-				@attribute_type.stub!( :single? ).and_return( true )
-				@attribute_type.stub!( :syntax ).and_return( @syntax )
-				@directory.stub!( :convert_to_object ).and_return {|_,str| str }
+				@schema.stub( :attribute_types ).and_return({ :glump => @attribute_type })
+				@attribute_type.stub( :single? ).and_return( true )
+				@attribute_type.stub( :syntax ).and_return( @syntax )
+				@directory.stub( :convert_to_object ).and_return {|_,str| str }
 				@entry.should_receive( :[] ).with( 'glump' ).once.and_return( [:a_value] )
 				2.times { @branch[ :glump ] }
 			end
@@ -780,7 +780,7 @@ describe Treequel::Branch do
 				@attribute_type.should_receive( :single? ).and_return( true )
 				@entry.should_receive( :[] ).with( 'bvector' ).at_least( :once ).
 					and_return([ '010011010101B' ])
-				@syntax.stub!( :oid ).and_return( OIDS::BIT_STRING_SYNTAX )
+				@syntax.stub( :oid ).and_return( OIDS::BIT_STRING_SYNTAX )
 				@directory.should_receive( :convert_to_object ).
 					with( OIDS::BIT_STRING_SYNTAX, '010011010101B' ).
 					and_return( 1237 )
@@ -806,14 +806,14 @@ describe Treequel::Branch do
 			end
 
 			it "clears the cache after a successful write" do
-				@schema.stub!( :attribute_types ).and_return({ :glorpy => @attribute_type })
-				@attribute_type.stub!( :single? ).and_return( true )
-				@attribute_type.stub!( :syntax ).and_return( @syntax )
-				@directory.stub!( :convert_to_object ).and_return {|_,val| val }
+				@schema.stub( :attribute_types ).and_return({ :glorpy => @attribute_type })
+				@attribute_type.stub( :single? ).and_return( true )
+				@attribute_type.stub( :syntax ).and_return( @syntax )
+				@directory.stub( :convert_to_object ).and_return {|_,val| val }
 				@entry.should_receive( :[] ).with( 'glorpy' ).and_return( [:firstval], [:secondval] )
 
 				@directory.should_receive( :modify ).with( @branch, {'glorpy' => ['chunks']} )
-				@directory.stub!( :convert_to_attribute ).and_return {|_,val| val }
+				@directory.stub( :convert_to_attribute ).and_return {|_,val| val }
 				@entry.should_receive( :[]= ).with( 'glorpy', ['chunks'] )
 
 				@branch[ :glorpy ].should == :firstval

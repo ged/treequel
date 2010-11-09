@@ -47,15 +47,15 @@ describe Treequel::Model do
 		@iphost_oc = @schema.object_classes[:ipHost]
 		@device_oc = @schema.object_classes[:device]
 
-		@iphost_oc.stub!( :ancestors ).and_return([ @iphost_oc, @top_oc ])
-		@device_oc.stub!( :ancestors ).and_return([ @device_oc, @top_oc ])
+		@iphost_oc.stub( :ancestors ).and_return([ @iphost_oc, @top_oc ])
+		@device_oc.stub( :ancestors ).and_return([ @device_oc, @top_oc ])
 
 		@simple_entry = {
 			'dn' => TEST_HOST_DN,
 			'objectClass' => ['ipHost', 'device']
 		}
 		@directory = mock( "treequel directory", :schema => @schema )
-		@directory.stub!( :convert_to_object ).and_return {|oid,value| value }
+		@directory.stub( :convert_to_object ).and_return {|oid,value| value }
 	end
 
 	after( :each ) do
@@ -187,7 +187,7 @@ describe Treequel::Model do
 		end
 
 		obj = Treequel::Model.new( @directory, TEST_HOST_DN )
-		@directory.stub!( :get_entry ).with( obj ).and_return( @simple_entry )
+		@directory.stub( :get_entry ).with( obj ).and_return( @simple_entry )
 		obj.exists? # Trigger the lookup
 
 		obj.should be_a( mixin1 )
@@ -202,7 +202,7 @@ describe Treequel::Model do
 			model_objectclasses :ipHost
 		end
 
-		@directory.stub!( :get_entry ).and_return( nil )
+		@directory.stub( :get_entry ).and_return( nil )
 		obj = Treequel::Model.new( @directory, TEST_HOST_DN )
 		obj.exists? # Trigger the lookup
 
@@ -226,39 +226,38 @@ describe Treequel::Model do
 			@entry = {
 				'dn'          => [TEST_PERSON_DN],
 				'cn'          => ['Slappy the Frog'],
-				'objectClass' => %w[
-					ipHost
-				],
+				'objectClass' => ['ipHost'],
 			}
 		end
 
 		before( :each ) do
+			Treequel::Model.objectclass_registry.clear
+			Treequel::Model.base_registry.clear
+
 			@mixin = Module.new do
 				extend Treequel::Model::ObjectClass
 				model_objectclasses :ipHost
 				def fqdn; "some.home.example.com"; end
 			end
-			@directory.stub!( :convert_to_object ).with( Treequel::OIDS::OID_SYNTAX, 'ipHost' ).
+			@directory.stub( :convert_to_object ).with( Treequel::OIDS::OID_SYNTAX, 'ipHost' ).
 				and_return( 'ipHost' )
-			@directory.stub!( :convert_to_object ).
+			@directory.stub( :convert_to_object ).
 				with( Treequel::OIDS::DIRECTORY_STRING_SYNTAX, 'Slappy the Frog' ).
 				and_return( 'Slappy the Frog' )
 			@obj = Treequel::Model.new( @directory, TEST_PERSON_DN )
 		end
 
-		after( :each ) do
-			Treequel::Model.objectclass_registry.clear
-			Treequel::Model.base_registry.clear
-		end
+		# after( :each ) do
+		# end
 
 		it "correctly dispatches to methods added via extension that are called before its " +
 		     "entry is loaded" do
-			@directory.stub!( :get_entry ).with( @obj ).and_return( @entry )
+			@directory.should_receive( :get_entry ).with( @obj ).at_least( :once ).and_return( @entry )
 			@obj.fqdn.should == 'some.home.example.com'
 		end
 
 		it "correctly falls through for methods not added by loading the entry" do
-			@directory.stub!( :get_entry ).with( @obj ).and_return( @entry )
+			@directory.should_receive( :get_entry ).with( @obj ).and_return( @entry )
 			@obj.cn.should == ['Slappy the Frog']
 		end
 	end
@@ -389,7 +388,7 @@ describe Treequel::Model do
 		end
 
 		it "falls through to the default proxy method for invalid attributes" do
-			@obj.stub!( :valid_attribute_type ).and_return( nil )
+			@obj.stub( :valid_attribute_type ).and_return( nil )
 			@entry.should_not_receive( :[] )
 
 			expect {
@@ -399,7 +398,7 @@ describe Treequel::Model do
 
 		it "adds the objectClass attribute to the attribute list when executing a search that " +
 		   "contains a select" do
-			@directory.stub!( :convert_to_object ).and_return {|oid,str| str }
+			@directory.stub( :convert_to_object ).and_return {|oid,str| str }
 			@directory.should_receive( :search ).
 				with( @obj, :scope, :filter, :selectattrs => ['cn', 'objectClass'] )
 			@obj.search( :scope, :filter, :selectattrs => ['cn'] )
@@ -407,14 +406,14 @@ describe Treequel::Model do
 
 		it "doesn't add the objectClass attribute to the attribute list when the search " +
 		   "doesn't contain a select" do
-			@directory.stub!( :convert_to_object ).and_return {|oid,str| str }
+			@directory.stub( :convert_to_object ).and_return {|oid,str| str }
 			@directory.should_receive( :search ).
 				with( @obj, :scope, :filter, :selectattrs => [] )
 			@obj.search( :scope, :filter, :selectattrs => [] )
 		end
 
 		it "knows which attribute methods it responds to" do
-			@directory.stub!( :convert_to_object ).and_return {|oid,str| str }
+			@directory.stub( :convert_to_object ).and_return {|oid,str| str }
 			@obj.should respond_to( :cn )
 			@obj.should_not respond_to( :humpsize )
 		end

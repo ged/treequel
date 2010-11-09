@@ -19,8 +19,6 @@ require 'spec/lib/control_behavior'
 require 'treequel'
 require 'treequel/controls/pagedresults'
 
-include Treequel::TestConstants
-include Treequel::Constants
 
 #####################################################################
 ###	C O N T E X T S
@@ -33,13 +31,11 @@ describe Treequel::PagedResultsControl do
 	end
 
 	before( :each ) do
-		# Used by the shared behavior
-		@control = Treequel::PagedResultsControl
 		@branch = mock( "Branch", :dn => 'cn=example,dc=acme,dc=com' )
 		@directory = mock( "Directory" )
 
-		@branch.stub!( :directory ).and_return( @directory )
-		@directory.stub!( :registered_controls ).and_return([ Treequel::PagedResultsControl ])
+		@branch.stub( :directory ).and_return( @directory )
+		@directory.stub( :registered_controls ).and_return([ Treequel::PagedResultsControl ])
 		@branchset = Treequel::Branchset.new( @branch )
 	end
 

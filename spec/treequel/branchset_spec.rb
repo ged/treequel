@@ -19,8 +19,6 @@ require 'treequel/branchset'
 require 'treequel/branchcollection'
 require 'treequel/control'
 
-include Treequel::TestConstants
-include Treequel::Constants
 
 #####################################################################
 ###	C O N T E X T S
@@ -53,7 +51,7 @@ describe Treequel::Branchset do
 	before( :each ) do
 		@directory = mock( "treequel directory ", :registered_controls => [] )
 		@branch = mock( "treequel branch", :dn => 'thedn' )
-		@branch.stub!( :directory ).and_return( @directory )
+		@branch.stub( :directory ).and_return( @directory )
 		@params = DEFAULT_PARAMS.dup
 	end
 
@@ -165,7 +163,7 @@ describe Treequel::Branchset do
 		#
 		they "can be combined into a BranchCollection by adding them together" do
 			other_branch = mock( "second treequel branch", :dn => 'theotherdn' )
-			other_branch.stub!( :directory ).and_return( @directory )
+			other_branch.stub( :directory ).and_return( @directory )
 			other_branchset = Treequel::Branchset.new( other_branch )
 
 			result = @branchset + other_branchset
@@ -176,7 +174,7 @@ describe Treequel::Branchset do
 
 		they "return the results of the search with the additional Branch if one is added to it" do
 			other_branch = mock( "additional treequel branch", :dn => 'theotherdn' )
-			other_branch.stub!( :to_ary ).and_return( [other_branch] )
+			other_branch.stub( :to_ary ).and_return( [other_branch] )
 			resultbranch = mock( "Result Branch" )
 			resultbranch2 = mock( "Result Branch 2" )
 
@@ -434,8 +432,8 @@ describe Treequel::Branchset do
 		# 
 		it "can create a new branchset cloned from itself that will return instances of a different branch class" do
 			subclass = Class.new( Treequel::Branch )
-			@branch.stub!( :directory ).and_return( :the_directory )
-			@branch.stub!( :dn ).and_return( TEST_HOSTS_DN )
+			@branch.stub( :directory ).and_return( :the_directory )
+			@branch.stub( :dn ).and_return( TEST_HOSTS_DN )
 			newset = @branchset.as( subclass )
 			newset.branch.should be_an_instance_of( subclass )
 		end
@@ -477,7 +475,7 @@ describe Treequel::Branchset do
 		end
 
 		before( :each ) do
-			@directory.stub!( :registered_controls ).and_return([ @control ])
+			@directory.stub( :registered_controls ).and_return([ @control ])
 		end
 
 		after( :each ) do

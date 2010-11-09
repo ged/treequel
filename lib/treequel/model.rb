@@ -162,8 +162,8 @@ class Treequel::Model < Treequel::Branch
 	### @param [Symbol,String] sym  the name of the method to test for
 	### @return [Boolean]
 	def respond_to?( sym, include_priv=false )
-		return super if caller(1).first =~ %r{/spec/} &&
-			caller(1).first !~ /respond_to/ # RSpec workaround
+		# return super if caller(1).first =~ %r{/spec/} &&
+		# 	caller(1).first !~ /respond_to/ # RSpec workaround
 		return true if super
 		plainsym, _ = attribute_from_method( sym )
 		return self.find_attribute_type( plainsym ) ? true : false
@@ -213,26 +213,34 @@ class Treequel::Model < Treequel::Branch
 
 	### Proxy method -- Handle calls to missing methods by searching for an attribute.
 	def method_missing( sym, *args )
+		self.log.debug "Dynamic dispatch to %p with args: %p" % [ sym, args ]
 
 		# First, if the entry hasn't yet been loaded, try loading it to make sure the 
 		# object is already extended with any applicable objectClass mixins. If that ends
 		# up defining the method in question, call it.
 		if !@entry && self.entry
+			self.log.debug "  entry wasn't loaded, looking for methods added by loading it..."
 			meth = begin
 				self.method( sym )
-			rescue NoMethodError, NameError
+			rescue NoMethodError, NameError => err
+				self.log.debug "  it still didn't define %p: %s: %s" %
+					[ sym, err.class.name, err.message ]
 				nil
 			end
 			return meth.call( *args ) if meth
 		end
 
+		self.log.debug "  checking to see if it's a traversal call"
 		# Next, super to rdn-traversal if it looks like a reader but has arguments
 		plainsym, methodtype = attribute_from_method( sym )
+		self.log.debug "    method look like a %p" % [ methodtype ]
 		return super if methodtype == :reader && !args.empty?
+		self.log.debug "  ...but it doesn't have any arguments. Finding attr type."
 
 		# Now make a method body for a new method based on what attributeType it is if 
 		# it's a valid attribute
 		attrtype = self.find_attribute_type( plainsym ) or return super
+		self.log.debug "  attrtype is: %p" % [ attrtype ]
 		methodbody = case methodtype
 			when :writer
 				self.make_writer( attrtype )
@@ -310,6 +318,8 @@ class Treequel::Model < Treequel::Branch
 		if entry = super
 			self.log.debug "  applying mixins to %p" % [ entry ]
 			self.apply_applicable_mixins( self.dn, entry )
+		else
+			self.log.debug "  failed to fetch the entry."
 		end
 		return entry
 	end

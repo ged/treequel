@@ -20,8 +20,6 @@ require 'treequel'
 require 'treequel/branchset'
 require 'treequel/controls/sortedresults'
 
-include Treequel::TestConstants
-include Treequel::Constants
 
 #####################################################################
 ###	C O N T E X T S
@@ -34,13 +32,11 @@ describe Treequel::SortedResultsControl do
 	end
 
 	before( :each ) do
-		# Used by the shared behavior
-		@control = Treequel::SortedResultsControl
 		@branch = mock( "Branch", :dn => 'cn=example,dc=acme,dc=com' )
 		@directory = mock( "Directory" )
 
-		@branch.stub!( :directory ).and_return( @directory )
-		@directory.stub!( :registered_controls ).and_return([ Treequel::SortedResultsControl ])
+		@branch.stub( :directory ).and_return( @directory )
+		@directory.stub( :registered_controls ).and_return([ Treequel::SortedResultsControl ])
 		@branchset = Treequel::Branchset.new( @branch )
 
 	end

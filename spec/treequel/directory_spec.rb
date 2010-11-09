@@ -20,8 +20,6 @@ require 'treequel/branch'
 require 'treequel/control'
 
 
-include Treequel::TestConstants
-include Treequel::Constants
 
 #####################################################################
 ###	C O N T E X T S
@@ -47,8 +45,8 @@ describe Treequel::Directory do
 			:connect_type => :plain,
 		}
 		@conn = mock( "LDAP connection", :set_option => true, :bound? => false )
-		LDAP::SSLConn.stub!( :new ).and_return( @conn )
-		@conn.stub!( :root_dse ).and_return( nil )
+		LDAP::SSLConn.stub( :new ).and_return( @conn )
+		@conn.stub( :root_dse ).and_return( nil )
 	end
 
 
@@ -83,7 +81,7 @@ describe Treequel::Directory do
 
 	it "uses the first namingContext from the Root DSE if no base is specified" do
 		conn = mock( "LDAP connection", :set_option => true )
-		LDAP::Conn.stub!( :new ).and_return( conn )
+		LDAP::Conn.stub( :new ).and_return( conn )
 		conn.should_receive( :root_dse ).and_return( TEST_DSE )
 
 		@dir = Treequel::Directory.new( @options.merge(:base_dn => nil) )
@@ -152,9 +150,9 @@ describe Treequel::Directory do
 			@dir.instance_variable_set( :@conn, @conn )
 
 			@schema = mock( "Directory schema" )
-			@conn.stub!( :schema ).and_return( :the_schema )
-			Treequel::Schema.stub!( :new ).with( :the_schema ).and_return( @schema )
-			@schema.stub!( :attribute_types ).and_return({ :cn => :a_value, :ou => :a_value })
+			@conn.stub( :schema ).and_return( :the_schema )
+			Treequel::Schema.stub( :new ).with( :the_schema ).and_return( @schema )
+			@schema.stub( :attribute_types ).and_return({ :cn => :a_value, :ou => :a_value })
 		end
 
 		it "can bind with the given user DN and password" do
@@ -304,7 +302,7 @@ describe Treequel::Directory do
 				and_return( true )
 			branch.should_receive( :respond_to? ).with( :dn ).
 				and_return( true )
-		   	branch.stub!( :include_operational_attrs? ).and_return( true )
+		   	branch.stub( :include_operational_attrs? ).and_return( true )
 
 			found_branch1 = stub( "entry1 branch" )
 			found_branch2 = stub( "entry2 branch" )
@@ -438,7 +436,7 @@ describe Treequel::Directory do
 			@schema.should_receive( :attribute_types ).
 				and_return({ :cn => :a_value, :ou => :a_value })
 
-			@dir.stub!( :bound? ).and_return( false )
+			@dir.stub( :bound? ).and_return( false )
 			rval = @dir.ou( :people )
 			rval.dn.downcase.should == TEST_PEOPLE_DN.downcase
 		end
@@ -542,7 +540,7 @@ describe Treequel::Directory do
 
 
 		it "can move a record to a new dn within the same branch" do
-			@dir.stub!( :bound? ).and_return( false )
+			@dir.stub( :bound? ).and_return( false )
 			branch = mock( "sibling branch obj" )
 			branch.should_receive( :dn ).at_least( :once ).and_return( TEST_PERSON_DN )
 			branch.should_receive( :split_dn ).at_least( :once ).

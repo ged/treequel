@@ -149,7 +149,7 @@ describe Treequel::BranchCollection do
 			@branchset1.should_receive( :each ).and_yield( :bs1_stuff )
 			@branchset2.should_receive( :each ).and_yield( :bs2_stuff )
 			added_branch = stub( "added branch", :directory => @directory )
-			added_branch.stub!( :to_ary ).and_return( [added_branch] )
+			added_branch.stub( :to_ary ).and_return( [added_branch] )
 
 			results = @collection + added_branch
 
@@ -237,7 +237,7 @@ describe Treequel::BranchCollection do
 
 		it "raises a reasonable exception if one of its delegates returns a non-branchset" do
 			filter = Treequel::Filter.new
-			@branchset1.stub!( :filter ).and_return( filter )
+			@branchset1.stub( :filter ).and_return( filter )
 
 			expect {
 				@collection.filter
