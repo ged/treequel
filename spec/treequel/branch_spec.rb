@@ -376,8 +376,8 @@ describe Treequel::Branch do
 		end
 
 		it "can return the set of all its MUST attributeTypes based on which objectClasses it has" do
-			oc1 = mock( "first objectclass" )
-			oc2 = mock( "second objectclass" )
+			oc1 = mock( "first objectclass", :name => 'first_oc' )
+			oc2 = mock( "second objectclass", :name => 'second_oc' )
 
 			@branch.should_receive( :object_classes ).and_return([ oc1, oc2 ])
 			oc1.should_receive( :must ).at_least( :once ).and_return([ :cn, :uid ])

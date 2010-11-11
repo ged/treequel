@@ -73,8 +73,18 @@ end # module Treequel::LDAPControlExtensions
 
 describe Treequel::TimeExtensions do
 
+	before( :all ) do
+		# Make the local timezone PDT so offsets show up correctly
+		@real_tz = ENV['TZ']
+		ENV['TZ'] = ':PST8PDT'
+	end
+
 	before( :each ) do
 		@time = Time.parse( "Fri Aug 20 08:21:35.1876455 -0700 2010" )
+	end
+
+	after( :all ) do
+		ENV['TZ'] = @real_tz
 	end
 
 	describe "RFC4517 LDAP Generalized Time method" do

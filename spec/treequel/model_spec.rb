@@ -43,12 +43,12 @@ describe Treequel::Model do
 	end
 
 	before( :each ) do
-		@top_oc    = @schema.object_classes[:top]
-		@iphost_oc = @schema.object_classes[:ipHost]
-		@device_oc = @schema.object_classes[:device]
+		# @top_oc    = @schema.object_classes[:top]
+		# @iphost_oc = @schema.object_classes[:ipHost]
+		# @device_oc = @schema.object_classes[:device]
 
-		@iphost_oc.stub( :ancestors ).and_return([ @iphost_oc, @top_oc ])
-		@device_oc.stub( :ancestors ).and_return([ @device_oc, @top_oc ])
+		# @iphost_oc.stub( :ancestors ).and_return([ @iphost_oc, @top_oc ])
+		# @device_oc.stub( :ancestors ).and_return([ @device_oc, @top_oc ])
 
 		@simple_entry = {
 			'dn' => TEST_HOST_DN,
@@ -239,16 +239,8 @@ describe Treequel::Model do
 				model_objectclasses :ipHost
 				def fqdn; "some.home.example.com"; end
 			end
-			@directory.stub( :convert_to_object ).with( Treequel::OIDS::OID_SYNTAX, 'ipHost' ).
-				and_return( 'ipHost' )
-			@directory.stub( :convert_to_object ).
-				with( Treequel::OIDS::DIRECTORY_STRING_SYNTAX, 'Slappy the Frog' ).
-				and_return( 'Slappy the Frog' )
 			@obj = Treequel::Model.new( @directory, TEST_PERSON_DN )
 		end
-
-		# after( :each ) do
-		# end
 
 		it "correctly dispatches to methods added via extension that are called before its " +
 		     "entry is loaded" do
