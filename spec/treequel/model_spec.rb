@@ -29,13 +29,9 @@ describe Treequel::Model do
 	include Treequel::SpecHelpers,
 	        Treequel::Matchers
 
-	SCHEMA_DUMPFILE = Pathname( __FILE__ ).dirname.parent + 'data' + 'schema.yml'
-	SCHEMAHASH      = LDAP::Schema.new( YAML.load_file(SCHEMA_DUMPFILE) )
 
 	before( :all ) do
 		setup_logging( :fatal )
-
-		@schema = Treequel::Schema.new( SCHEMAHASH )
 	end
 
 	after( :all ) do
@@ -43,19 +39,12 @@ describe Treequel::Model do
 	end
 
 	before( :each ) do
-		# @top_oc    = @schema.object_classes[:top]
-		# @iphost_oc = @schema.object_classes[:ipHost]
-		# @device_oc = @schema.object_classes[:device]
-
-		# @iphost_oc.stub( :ancestors ).and_return([ @iphost_oc, @top_oc ])
-		# @device_oc.stub( :ancestors ).and_return([ @device_oc, @top_oc ])
-
 		@simple_entry = {
 			'dn' => TEST_HOST_DN,
 			'objectClass' => ['ipHost', 'device']
 		}
-		@directory = mock( "treequel directory", :schema => @schema )
-		@directory.stub( :convert_to_object ).and_return {|oid,value| value }
+		@conn = double( "LDAP connection", :set_option => true, :bound? => false )
+		@directory = get_fixtured_directory( @conn )
 	end
 
 	after( :each ) do

@@ -399,6 +399,16 @@ class Treequel::Branchset
 	end
 
 
+	### Return a clone of the receiving Branchset that will perform its search from
+	### +other_dn+ instead of its own.
+	### @param [String, #dn]  other_dn  the new base DN of the search
+	def from( other_dn )
+		newset = self.clone
+		other_dn = other_dn.dn if other_dn.respond_to?( :dn )
+		newset.branch = newset.branch.class.new( self.branch.directory, other_dn )
+		return newset
+	end
+
 end # class Treequel::Branchset
 
 

@@ -25,12 +25,6 @@ require 'treequel/control'
 #####################################################################
 
 describe Treequel::Branchset do
-	include Treequel::SpecHelpers
-
-	# Make the specs read more clearly
-	class << self
-		alias_method :they, :it
-	end
 
 	DEFAULT_PARAMS = {
 		:limit           => 0,
@@ -49,19 +43,19 @@ describe Treequel::Branchset do
 	end
 
 	before( :each ) do
-		@directory = mock( "treequel directory ", :registered_controls => [] )
-		@branch = mock( "treequel branch", :dn => 'thedn' )
-		@branch.stub( :directory ).and_return( @directory )
+		@conn = double( "LDAP connection", :set_option => true, :bound? => false )
+		@directory = get_fixtured_directory( @conn )
+		@branch = @directory.base
 		@params = DEFAULT_PARAMS.dup
 	end
 
 
-	describe "instances" do
+	context "an instance" do
 		before( :each ) do
 			@branchset = Treequel::Branchset.new( @branch )
 		end
 
-		they "are Enumerable" do
+		it "is Enumerable" do
 			resultbranch = mock( "Result Branch" )
 
 			@branch.should_receive( :search ).
@@ -75,7 +69,7 @@ describe Treequel::Branchset do
 		# 
 		# #empty?
 		# 
-		they "know that they are empty if they don't match at least one entry" do
+		it "is empty if it doesn't match at least one entry" do
 			params = @params.merge( :limit => 1 )
 			@branch.should_receive( :search ).
 				with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, params ).
@@ -84,7 +78,7 @@ describe Treequel::Branchset do
 			@branchset.should be_empty()
 		end
 
-		they "know that they are empty if they match at least one entry" do
+		it "isn't empty if it matches at least one entry" do
 			params = @params.merge( :limit => 1 )
 			@branch.should_receive( :search ).
 				with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, params ).
@@ -96,7 +90,7 @@ describe Treequel::Branchset do
 		# 
 		# #map
 		# 
-		they "can be mapped into an Array of attribute values" do
+		it "can be mapped into an Array of attribute values" do
 			resultbranch = mock( "Result Branch" )
 			resultbranch2 = mock( "Result Branch 2" )
 
@@ -113,7 +107,7 @@ describe Treequel::Branchset do
 		# 
 		# #to_hash
 		# 
-		they "can be mapped into a Hash of entries keyed by one of their attributes" do
+		it "can be mapped into a Hash of entries keyed by one of its attributes" do
 			resultbranch = mock( "Result Branch" )
 			resultbranch2 = mock( "Result Branch 2" )
 
@@ -135,7 +129,7 @@ describe Treequel::Branchset do
 		end
 
 
-		they "can be mapped into a Hash of tuples using two attributes" do
+		it "can be mapped into a Hash of tuples using two attributes" do
 			resultbranch = mock( "Result Branch" )
 			resultbranch2 = mock( "Result Branch 2" )
 
@@ -161,7 +155,7 @@ describe Treequel::Branchset do
 		#
 		# #+
 		#
-		they "can be combined into a BranchCollection by adding them together" do
+		it "can be combined with another instance into a BranchCollection by adding them together" do
 			other_branch = mock( "second treequel branch", :dn => 'theotherdn' )
 			other_branch.stub( :directory ).and_return( @directory )
 			other_branchset = Treequel::Branchset.new( other_branch )
@@ -172,7 +166,7 @@ describe Treequel::Branchset do
 			result.branchsets.should include( @branchset, other_branchset )
 		end
 
-		they "return the results of the search with the additional Branch if one is added to it" do
+		it "returns the results of the search with the additional Branch if one is added to it" do
 			other_branch = mock( "additional treequel branch", :dn => 'theotherdn' )
 			other_branch.stub( :to_ary ).and_return( [other_branch] )
 			resultbranch = mock( "Result Branch" )
@@ -190,7 +184,7 @@ describe Treequel::Branchset do
 		#
 		# #-
 		#
-		they "return the results of the search without the specified object if an object is " +
+		it "returns the results of the search without the specified object if an object is " +
 		     "subtracted from it" do
 				resultbranch = stub( "Result Branch", :dn => TEST_PERSON_DN )
 				resultbranch2 = stub( "Result Branch 2", :dn => TEST_PERSON2_DN )
@@ -208,7 +202,7 @@ describe Treequel::Branchset do
 
 	end
 
-	describe "instance with no filter, options, or scope set" do
+	context "instance with no filter, options, or scope set" do
 
 		before( :each ) do
 			@branchset = Treequel::Branchset.new( @branch )
@@ -430,7 +424,8 @@ describe Treequel::Branchset do
 		# 
 		# #as
 		# 
-		it "can create a new branchset cloned from itself that will return instances of a different branch class" do
+		it "can create a new branchset cloned from itself that will return instances of a " +
+		   "different branch class" do
 			subclass = Class.new( Treequel::Branch )
 			@branch.stub( :directory ).and_return( :the_directory )
 			@branch.stub( :dn ).and_return( TEST_HOSTS_DN )
@@ -438,9 +433,26 @@ describe Treequel::Branchset do
 			newset.branch.should be_an_instance_of( subclass )
 		end
 
+
+		#
+		# from
+		#
+		it "can create a new branchset cloned from itself with a different base DN (String)" do
+			newset = @branchset.from( TEST_SUBHOSTS_DN )
+			newset.base_dn.should == TEST_SUBHOSTS_DN
+		end
+
+		it "can create a new branchset cloned from itself with a different base DN " +
+		   "(Treequel::Branch)" do
+			branch = Treequel::Branch.new( @directory, TEST_SUBHOSTS_DN )
+			newset = @branchset.from( branch )
+			newset.base_dn.should == TEST_SUBHOSTS_DN
+		end
+
 	end
 
-	describe "instance with no filter, and scope set to 'onelevel'" do
+
+	context "instance with no filter, and scope set to 'onelevel'" do
 
 		before( :each ) do
 			@branchset = Treequel::Branchset.new( @branch, :scope => :onelevel )
@@ -461,7 +473,7 @@ describe Treequel::Branchset do
 
 	end
 
-	describe "created for a directory with registered controls" do
+	context "created for a directory with registered controls" do
 
 		before( :all ) do
 			@control = Module.new {

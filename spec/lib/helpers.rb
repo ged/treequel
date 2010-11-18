@@ -23,6 +23,10 @@ require 'spec/lib/matchers'
 module Treequel::SpecHelpers
 	include Treequel::TestConstants
 
+	SCHEMA_DUMPFILE = Pathname( __FILE__ ).dirname.parent + 'data' + 'schema.yml'
+	SCHEMAHASH      = LDAP::Schema.new( YAML.load_file(SCHEMA_DUMPFILE) )
+	SCHEMA          = Treequel::Schema.new( SCHEMAHASH )
+
 	class ArrayLogger
 		### Create a new ArrayLogger that will append content to +array+.
 		def initialize( array )
@@ -88,6 +92,19 @@ module Treequel::SpecHelpers
 		end
 	end
 
+
+	### Make a Treequel::Directory that will use the given +conn+ object as its
+	### LDAP connection. Also pre-loads the schema object and fixtures some other
+	### external data.
+	def get_fixtured_directory( conn )
+		LDAP::SSLConn.stub( :new ).and_return( @conn )
+		conn.stub( :root_dse ).and_return( nil )
+		directory = Treequel.directory( TEST_LDAPURI )
+		directory.stub( :schema ).and_return( SCHEMA )
+
+		return directory
+	end
+
 end
 
 
@@ -101,8 +118,6 @@ Rspec.configure do |c|
 	c.filter_run_excluding( :ruby_1_8_only => true ) if
 		Treequel::SpecHelpers.vvec( RUBY_VERSION ) >= Treequel::SpecHelpers.vvec('1.9.1')
 end
-
-
 
 # vim: set nosta noet ts=4 sw=4:
 

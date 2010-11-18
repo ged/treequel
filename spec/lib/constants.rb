@@ -15,6 +15,7 @@ module Treequel::TestConstants # :nodoc:all
 		TEST_HOST             = 'ldap.example.com'
 		TEST_PORT             = LDAP::LDAP_PORT
 		TEST_BASE_DN          = 'dc=acme,dc=com'
+		TEST_LDAPURI          = "ldap://#{TEST_HOST}:#{TEST_PORT}/#{TEST_BASE_DN}"
 
 		TEST_BIND_DN          = "cn=admin,#{TEST_BASE_DN}"
 		TEST_BIND_PASS        = 'passomaquoddy'
