@@ -190,7 +190,6 @@ RDOC_OPTIONS = [
   ]
 YARD_OPTIONS = [
 	'--use-cache',
-	'--no-private',
 	'--protected',
 	'-r', README_FILE,
 	'--exclude', 'extconf\\.rb',
@@ -214,25 +213,25 @@ GEM_PUBHOST = 'rubygems.org'
 
 # Gem dependencies: gemname => version
 DEPENDENCIES = {
-	'ruby-ldap' => '>= 0.9.9',
+	'ruby-ldap' => '~> 0.9.9',
 }
 
 # Developer Gem dependencies: gemname => version
 DEVELOPMENT_DEPENDENCIES = {
-	'rake'         => '>= 0.8.7',
-	'rcodetools'   => '>= 0.7.0.0',
-	'rcov'         => '>= 0.8.1.2.0',
-	'rdoc'         => '>= 2.4.3',
-	'RedCloth'     => '>= 4.0.3',
-	'rspec'        => '>= 1.2.6',
-	'ruby-termios' => '>= 0.9.6',
-	'text-format'  => '>= 1.0.0',
-	'tmail'        => '>= 1.2.3.1',
-	'diff-lcs'     => '>= 1.1.2',
-	'columnize' => '>= 0.3.1',
-	'ruby-termios' => '>= 0.9.6',
-	'diff-lcs' => '>= 1.1.2',
-	'ruby-terminfo' => '>= 0.1.1',
+	'rake'          => '~> 0.8.7',
+	'rcodetools'    => '~> 0.7.0.0',
+	'rcov'          => '~> 0.8.1.2.0',
+	'yard'          => '~> 0.6.1',
+	'RedCloth'      => '~> 4.2.3',
+	'rspec'         => '~> 2.0.1',
+	'ruby-termios'  => '~> 0.9.6',
+	'text-format'   => '~> 1.0.0',
+	'tmail'         => '~> 1.2.3.1',
+	'columnize' => '~> 0.3.1',
+	'diff-lcs' => '~> 1.1.2',
+	'ruby-termios' => '~> 0.9.6',
+	'rspec' => '~> 2.0.1',
+	'ruby-terminfo' => '~> 0.1.1',
 }
 
 # Non-gem requirements: packagename => version
@@ -260,9 +259,10 @@ GEMSPEC   = Gem::Specification.new do |gem|
 		"    - diff-lcs",
 	  ].join( "\n" )
 
-	gem.authors           = "Michael Granger, Mahlon E. Smith"
+	gem.authors           = ["Michael Granger", "Mahlon E. Smith"]
 	gem.email             = ["mahlon@martini.nu", "ged@FaerieMUD.org"]
 	gem.homepage          = 'http://deveiate.org/projects/Treequel'
+	gem.licenses          = ["BSD"]
 
 	gem.has_rdoc          = true
 	gem.rdoc_options      = RDOC_OPTIONS
