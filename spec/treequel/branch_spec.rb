@@ -71,6 +71,28 @@ describe Treequel::Branch do
 		branch.entry.should == entry
 	end
 
+	it "can be constructed from an entry with Symbol keys"  do
+		entry = {
+			:dn                 => [TEST_PERSON_DN],
+			TEST_PERSON_DN_ATTR => TEST_PERSON_DN_VALUE,
+		}
+		branch = Treequel::Branch.new_from_entry( entry, @directory )
+
+		branch.rdn_attributes.should == { TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE] }
+		branch.entry.should == {
+			'dn'                => [TEST_PERSON_DN],
+			TEST_PERSON_DN_ATTR => TEST_PERSON_DN_VALUE,
+		}
+	end
+
+	it "can be instantiated with a Hash with Symbol keys"  do
+		branch = Treequel::Branch.new( @directory, TEST_PERSON_DN,
+			TEST_PERSON_DN_ATTR.to_sym => TEST_PERSON_DN_VALUE )
+		branch.entry.should == {
+			TEST_PERSON_DN_ATTR => TEST_PERSON_DN_VALUE,
+		}
+	end
+
 	it "raises an exception if constructed with something other than a Hash entry" do
 		expect {
 			Treequel::Branch.new( @directory, TEST_PEOPLE_DN, 18 )

@@ -17,7 +17,8 @@ class Treequel::Branch
 	include Comparable,
 	        Treequel::Loggable,
 	        Treequel::Constants,
-	        Treequel::Constants::Patterns
+	        Treequel::Constants::Patterns,
+	        Treequel::HashUtilities
 
 	extend Treequel::Delegation,
 	       Treequel::AttributeDeclarations
@@ -52,6 +53,7 @@ class Treequel::Branch
 	### 
 	### @return [Treequel::Branch]  The new branch object.
 	def self::new_from_entry( entry, directory )
+		entry = Treequel::HashUtilities.stringify_keys( entry )
 		return self.new( directory, entry['dn'].first, entry )
 	end
 
@@ -76,7 +78,7 @@ class Treequel::Branch
 
 		@directory = directory
 		@dn        = dn
-		@entry     = entry
+		@entry     = entry ? stringify_keys( entry ) : nil
 		@values    = {}
 
 		@include_operational_attrs = self.class.include_operational_attrs?
