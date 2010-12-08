@@ -328,22 +328,29 @@ class Treequel::Model < Treequel::Branch
 	### Apply mixins that are applicable considering the receiver's DN and the 
 	### objectClasses from its entry.
 	def apply_applicable_mixins( dn, entry )
+		self.log.debug "Applying mixins applicable to %s" % [ dn ]
 		schema = self.directory.schema
 
 		ocs = entry['objectClass'].collect do |oc_oid|
 			explicit_oc = schema.object_classes[ oc_oid ]
 			explicit_oc.ancestors.collect {|oc| oc.name }
 		end.flatten.uniq
+		self.log.debug "  got %d candidate objectClasses: %p" % [ ocs.length, ocs ]
 
 		oc_mixins = self.class.mixins_for_objectclasses( *ocs )
 		dn_mixins = self.class.mixins_for_dn( dn )
+		self.log.debug "  found %d mixins by objectclass (%s), and %d by base (%s)" % [
+			oc_mixins.length,
+			oc_mixins.map(&:name).join(', '),
+			dn_mixins.length,
+			dn_mixins.map(&:name).join(', ')
+		]
 
 		# The applicable mixins are those in the intersection of the ones
 		# inferred by its objectclasses and those that apply to its DN
 		mixins = ( oc_mixins & dn_mixins )
+		self.log.debug "  %d mixins remain after intersection: %p" % [ mixins.length, mixins ]
 
-		self.log.debug "Applying %d mixins to %s: %p" %
-			[ mixins.length, dn, mixins.collect(&:inspect) ]
 		mixins.each {|mod| self.extend(mod) }
 	end
 
