@@ -163,6 +163,27 @@ describe Treequel::Branch do
 		end
 
 
+		it "knows that it hasn't loaded its entry yet if it's nil" do
+			@branch.loaded?.should be_false()
+		end
+
+		it "knows that it has loaded its entry if it's non-nil" do
+			@branch.instance_variable_set( :@entry, {} )
+			@branch.loaded?.should be_true()
+		end
+
+		it "knows that it exists in the directory if it can fetch its entry" do
+			@directory.should_receive( :get_entry ).with( @branch ).exactly( :once ).
+				and_return( :the_entry )
+			@branch.exists?.should be_true()
+		end
+
+		it "knows that it doesn't exist in the directory if it can't fetch its entry" do
+			@directory.should_receive( :get_entry ).with( @branch ).exactly( :once ).
+				and_return( nil )
+			@branch.exists?.should be_false()
+		end
+
 		it "fetch their LDAP::Entry from the directory if they don't already have one" do
 			@directory.should_receive( :get_entry ).with( @branch ).exactly( :once ).
 				and_return( :the_entry )

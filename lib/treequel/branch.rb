@@ -155,6 +155,13 @@ class Treequel::Branch
 	end
 
 
+	### Returns +true+ if the Branch's entry has been fetched from the directory.
+	### @return [Boolean]
+	def loaded?
+		return @entry ? true : false
+	end
+
+
 	### Return the RDN of the branch.
 	### @return [String]
 	def rdn
