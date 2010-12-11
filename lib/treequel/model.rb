@@ -182,10 +182,13 @@ class Treequel::Model < Treequel::Branch
 
 	### Return a human-readable representation of the receiving object, suitable for debugging.
 	def inspect
-		return "#<%s:0x%x (%s)>" % [
+		return "#<%s:0x%x (%s): %s>" % [
 			self.class.name,
 			self.object_id * 2,
-			self.extensions.map( &:name ).join( ', ' )
+			self.loaded? ?
+			    self.extensions.map( &:name ).join( ', ' ) :
+			    'not yet loaded',
+			self.dn
 		]
 	end
 
