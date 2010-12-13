@@ -236,7 +236,7 @@ class Treequel::Model < Treequel::Branch
 		self.log.debug "  checking to see if it's a traversal call"
 		# Next, super to rdn-traversal if it looks like a reader but has arguments
 		plainsym, methodtype = attribute_from_method( sym )
-		self.log.debug "    method look like a %p" % [ methodtype ]
+		self.log.debug "    method looks like a %p" % [ methodtype ]
 		return super if methodtype == :reader && !args.empty?
 		self.log.debug "  ...but it doesn't have any arguments. Finding attr type."
 

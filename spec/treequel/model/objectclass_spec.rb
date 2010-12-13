@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -68,6 +68,15 @@ describe Treequel::Model::ObjectClass do
 			end
 
 			mixin.model_objectclasses.should == [:inetOrgPerson]
+		end
+
+		they "can declare a required objectClass as a String" do
+			mixin = Module.new do
+				extend Treequel::Model::ObjectClass
+				model_objectclasses 'apple-computer-list'
+			end
+
+			mixin.model_objectclasses.should == [:'apple-computer-list']
 		end
 
 		they "can declare multiple required objectClasses" do

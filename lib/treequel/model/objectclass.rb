@@ -52,12 +52,12 @@ module Treequel::Model::ObjectClass
 	### Set or get objectClasses that the mixin requires. Also registers the mixin with
 	### Treequel::Model.
 	### 
-	### @param [Array<Symbol>] objectclasses  the objectClasses the mixin will apply to, as an
-	###                                       array of Symbols
+	### @param [Array<#to_sym>] objectclasses  the objectClasses the mixin will apply to, as an
+	###         array of Symbols (or objects that respond to #to_sym)
 	### @return [Array<Symbol>] the objectClasses that the module requires
 	def model_objectclasses( *objectclasses )
 		unless objectclasses.empty?
-			@model_objectclasses = objectclasses
+			@model_objectclasses = objectclasses.map( &:to_sym )
 			@model_class.register_mixin( self )
 		end
 		return @model_objectclasses.dup
