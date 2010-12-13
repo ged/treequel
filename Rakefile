@@ -33,7 +33,6 @@ hoespec = Hoe.spec 'treequel' do
 		  ].join( "\n" )
 
 	self.require_ruby_version( '>=1.8.7' )
-	self.extra_rdoc_files << 'MANUAL.textile'
 
 	self.yard_title = 'Treequel'
 	self.yard_opts = [ '--use-cache', '--protected', '--verbose' ]
