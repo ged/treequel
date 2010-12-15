@@ -98,7 +98,7 @@ module Treequel::SpecHelpers
 	### external data.
 	def get_fixtured_directory( conn )
 		LDAP::SSLConn.stub( :new ).and_return( @conn )
-		conn.stub( :root_dse ).and_return( nil )
+		conn.stub( :root_dse ).and_return( TEST_DSE )
 		conn.stub( :set_option )
 		directory = Treequel.directory( TEST_LDAPURI )
 		directory.stub( :schema ).and_return( SCHEMA )

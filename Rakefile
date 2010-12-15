@@ -15,7 +15,6 @@ hoespec = Hoe.spec 'treequel' do
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
 
-
 	self.extra_deps <<
 		['ruby-ldap', '~> 0.9.11']
 	self.extra_dev_deps <<
@@ -35,27 +34,12 @@ hoespec = Hoe.spec 'treequel' do
     self.spec_extras[:signing_key] = '/Volumes/Keys/ged-private_gem_key.pem'
 
 	self.require_ruby_version( '>=1.8.7' )
-
 	self.hg_sign_tags = true
-
 	self.yard_opts = [ '--use-cache', '--protected', '--verbose' ]
+	self.rdoc_locations << "deveiate:/usr/local/www/public/code/#{remote_rdoc_dir}"
 end
 
 ENV['VERSION'] ||= hoespec.spec.version.to_s
 
 include Hoe::MercurialHelpers
-
-### Task: prerelease
-desc "Append the package build number to package versions"
-task :pre do
-	rev = get_numeric_rev()
-	trace "Current rev is: %p" % [ rev ]
-	hoespec.spec.version.version << "pre#{rev}"
-	Rake::Task[:gem].clear
-
-	Gem::PackageTask.new( hoespec.spec ) do |pkg|
-		pkg.need_zip = true
-		pkg.need_tar = true
-	end
-end
 

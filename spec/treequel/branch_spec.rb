@@ -325,6 +325,14 @@ describe Treequel::Branch do
 			branchset.filter_string.should =~ /\(cn=acme\)/
 		end
 
+		it "can create a Treequel::Branchset from itself that returns instances of another class" do
+			otherclass = Class.new( Treequel::Branch )
+			branchset = @branch.as( otherclass )
+
+			branchset.should be_a( Treequel::Branchset )
+			branchset.branch.should be_a( otherclass )
+		end
+
 		it "doesn't restrict the number of arguments passed to #filter (bugfix)" do
 			branchset = @branch.filter( :uid => [:rev, :grumpy, :glee] )
 

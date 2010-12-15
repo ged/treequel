@@ -47,7 +47,7 @@ module Treequel::PagedResultsControl
 
 	### Add the control's instance variables to including Branchsets.
 	def initialize
-		@paged_results_cookie = ''
+		@paged_results_cookie = nil
 		@paged_results_setsize = nil
 	end
 
@@ -75,8 +75,10 @@ module Treequel::PagedResultsControl
 		newset = self.clone
 
 		if setsize.nil? || setsize.zero?
+			self.log.debug "Removing paged results control."
 			newset.paged_results_setsize = nil
 		else
+			self.log.debug "Adding paged results control with page size = %d." % [ setsize ]
 			newset.paged_results_setsize = setsize
 		end
 
@@ -96,7 +98,7 @@ module Treequel::PagedResultsControl
 	### Remove any paging control associated with the receiving Branchset.
 	### @return [void]
 	def without_paging!
-		self.paged_results_cookie = ''
+		self.paged_results_cookie = nil
 		self.paged_results_setsize = nil
 	end
 

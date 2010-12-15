@@ -77,9 +77,17 @@ class Treequel::Branchset
 	def initialize( branch, options={} )
 		@branch = branch
 		@options = DEFAULT_OPTIONS.merge( options )
+		self.log.debug "Setting up %p for branch %p with options: %p" %
+			[ self.class, @branch, @options ]
 
-		self.extend( *@branch.directory.registered_controls ) unless
-			@branch.directory.registered_controls.empty?
+		if @branch.directory.registered_controls.empty?
+			self.log.debug "  no registered controls."
+		else
+			@branch.directory.registered_controls.each do |control|
+				self.log.debug "  extending with %p" % [ control ]
+				self.extend( control )
+			end
+		end
 
 		super()
 	end

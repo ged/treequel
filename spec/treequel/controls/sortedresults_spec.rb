@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -12,12 +12,11 @@ BEGIN {
 
 require 'rspec'
 
-require 'spec/lib/constants'
 require 'spec/lib/helpers'
-require 'spec/lib/control_behavior'
 
 require 'treequel'
 require 'treequel/branchset'
+require 'treequel/behavior/control'
 require 'treequel/controls/sortedresults'
 
 
@@ -25,20 +24,19 @@ require 'treequel/controls/sortedresults'
 ###	C O N T E X T S
 #####################################################################
 describe Treequel::SortedResultsControl do
-	include Treequel::SpecHelpers
 
 	before( :all ) do
 		setup_logging( :fatal )
 	end
 
 	before( :each ) do
-		@branch = mock( "Branch", :dn => 'cn=example,dc=acme,dc=com' )
-		@directory = mock( "Directory" )
+		@conn = mock( "ldap connection object" )
+		@conn.stub( :bound? ).and_return( false )
+		@directory = get_fixtured_directory( @conn )
+		@directory.register_controls( Treequel::SortedResultsControl )
 
-		@branch.stub( :directory ).and_return( @directory )
-		@directory.stub( :registered_controls ).and_return([ Treequel::SortedResultsControl ])
-		@branchset = Treequel::Branchset.new( @branch )
-
+		@branch = Treequel::Branch.new( @directory, TEST_PEOPLE_DN )
+		@branchset = @branch.branchset
 	end
 
 	after( :all ) do

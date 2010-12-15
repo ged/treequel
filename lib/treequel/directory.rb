@@ -99,7 +99,7 @@ class Treequel::Directory
 
 
 	#################################################################
-	###	C L A S S   M E T H O D S
+	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
 	### Create a new Treequel::Directory with the given +options+. Options is a hash with one
@@ -565,6 +565,7 @@ class Treequel::Directory
 			end
 		end
 	end
+	alias_method :register_control, :register_controls
 
 
 	### Map the specified LDAP +attribute+ to its Ruby datatype if one is registered for the given 

@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -12,11 +12,10 @@ BEGIN {
 
 require 'rspec'
 
-require 'spec/lib/constants'
 require 'spec/lib/helpers'
-require 'spec/lib/control_behavior'
 
 require 'treequel'
+require 'treequel/behavior/control'
 require 'treequel/controls/pagedresults'
 
 
@@ -24,19 +23,19 @@ require 'treequel/controls/pagedresults'
 ###	C O N T E X T S
 #####################################################################
 describe Treequel::PagedResultsControl do
-	include Treequel::SpecHelpers
 
 	before( :all ) do
 		setup_logging( :fatal )
 	end
 
 	before( :each ) do
-		@branch = mock( "Branch", :dn => 'cn=example,dc=acme,dc=com' )
-		@directory = mock( "Directory" )
+		@conn = mock( "ldap connection object" )
+		@conn.stub( :bound? ).and_return( false )
+		@directory = get_fixtured_directory( @conn )
+		@directory.register_controls( Treequel::PagedResultsControl )
 
-		@branch.stub( :directory ).and_return( @directory )
-		@directory.stub( :registered_controls ).and_return([ Treequel::PagedResultsControl ])
-		@branchset = Treequel::Branchset.new( @branch )
+		@branch = Treequel::Branch.new( @directory, TEST_PEOPLE_DN )
+		@branchset = @branch.branchset
 	end
 
 	after( :all ) do
@@ -78,6 +77,23 @@ describe Treequel::PagedResultsControl do
 		paged_branchset = @branchset.with_paged_results( 25 )
 		paged_branchset.without_paging!
 		paged_branchset.paged_results_setsize.should == nil
+	end
+
+	it "knows that there are (potentially) more paged results if the cookie isn't set" do
+		paged_branchset = @branchset.with_paged_results( 25 )
+		paged_branchset.should_not be_done_paging()
+	end
+
+	it "knows that there are more paged results if the cookie is set" do
+		paged_branchset = @branchset.with_paged_results( 25 )
+		paged_branchset.paged_results_cookie = "\230\t\000\000\000\000\000\000"
+		paged_branchset.should_not be_done_paging()
+	end
+
+	it "knows that there are no more paged results if the cookie is blank" do
+		paged_branchset = @branchset.with_paged_results( 25 )
+		paged_branchset.paged_results_cookie = ''
+		paged_branchset.should be_done_paging()
 	end
 
 	it "injects the correct server-control structure into the search when iterating" do

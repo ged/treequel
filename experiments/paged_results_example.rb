@@ -17,16 +17,17 @@ page_size = ARGV[0].to_i
 dir = Treequel.directory
 dir.register_controls( Treequel::PagedResultsControl )
 
+#Treequel.logger.level = Logger::DEBUG
 people = dir.ou( :people ).filter( :objectClass => 'person' ).with_paged_results( page_size )
 
 count = page = 0
-while people.has_more_results?
+begin
 	records = people.all
 	count += records.length
 	page += 1
 
 	$stderr.puts "Page %d has %d entries." % [ page, records.length ],
 		"That's %d entries in total." % [ count ]
-	$stderr.puts "Cookie is: %p" % [ people.paged_results_cookie ]
-end
+	$stderr.puts "Cookie is: 0x%s" % [ people.paged_results_cookie.unpack('H*').first ]
+end while people.has_more_results?
 
