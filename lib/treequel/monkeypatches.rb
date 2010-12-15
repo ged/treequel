@@ -26,6 +26,27 @@ class LDAP::Control
 end
 
 
+### Extensions to LDAP::Mods to make them grok ==.
+module Treequel::LDAPModExtensions
+
+	### Returns +true+ if the +other+ LDAP::Record is equivalent to the receiver.
+	def ==( other )
+		return ( other.class == self.class ) &&
+			( self.mod_op == other.mod_op ) &&
+			( self.mod_type == other.mod_type ) &&
+			( self.mod_vals == other.mod_vals )
+	end
+
+end # module Treequel::LDAPModExtensions
+
+
+# Include Treequel-specific extensions as a mixin.
+# @private
+class LDAP::Mod
+	include Treequel::LDAPModExtensions
+end
+
+
 ### Extensions to the Time class to add LDAP (RFC4517) Generalized Time syntax
 module Treequel::TimeExtensions
 

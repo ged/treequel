@@ -20,6 +20,7 @@ require 'spec/lib/constants'
 ### RSpec matchers
 module Treequel::Matchers
 
+    ### A matcher for unordered array contents
 	class ArrayIncludingMatcher
 		def initialize( expected )
 			@expected = expected

@@ -291,7 +291,7 @@ class Treequel::Model < Treequel::Branch
 			return lambda {|newvalue| self[attrname] = newvalue }
 		else
 			self.log.debug "  attribute isn't SINGLE, so generating an array writer..."
-			return lambda {|*newvalues| self[attrname] = newvalues }
+			return lambda {|*newvalues| self[attrname] = newvalues.flatten }
 		end
 	end
 

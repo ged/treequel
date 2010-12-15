@@ -54,6 +54,7 @@ class Treequel::Branch
 	### @return [Treequel::Branch]  The new branch object.
 	def self::new_from_entry( entry, directory )
 		entry = Treequel::HashUtilities.stringify_keys( entry )
+		Treequel.logger.debug "Creating Branch from entry: %p in directory: %p" % [ entry, directory ]
 		return self.new( directory, entry['dn'].first, entry )
 	end
 
@@ -82,6 +83,8 @@ class Treequel::Branch
 		@values    = {}
 
 		@include_operational_attrs = self.class.include_operational_attrs?
+
+		self.log.debug "New branch (%s): entry = %p, directory = %p" % [ @dn, @entry, @directory ]
 	end
 
 
@@ -108,6 +111,7 @@ class Treequel::Branch
 	# Whether or not to include operational attributes when fetching the Branch's entry
 	predicate_attr :include_operational_attrs
 	alias_method :include_operational_attributes?, :include_operational_attrs?
+
 
 	### Change the DN the Branch uses to look up its entry.
 	### 
@@ -792,7 +796,7 @@ class Treequel::Branch
 	def get_converted_attribute( attrsym, object )
 		if attribute = self.directory.schema.attribute_types[ attrsym ]
 			self.log.debug "converting %p object to a %p attribute" %
-				[ attrsym, attribute.syntax.oid ]
+				[ attrsym, attribute.syntax.desc ]
 			return self.directory.convert_to_attribute( attribute.syntax.oid, object )
 		else
 			self.log.info "no attributeType for %p" % [ attrsym ]
@@ -804,6 +808,7 @@ class Treequel::Branch
 	### Clear any cached values when the structural state of the object changes.
 	### @return [void]
 	def clear_caches
+        self.log.debug "Clearing entry and values caches."
 		@entry = nil
 		@values.clear
 	end

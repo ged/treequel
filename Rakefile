@@ -15,6 +15,7 @@ hoespec = Hoe.spec 'treequel' do
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
 
+
 	self.extra_deps <<
 		['ruby-ldap', '~> 0.9.11']
 	self.extra_dev_deps <<
@@ -31,10 +32,12 @@ hoespec = Hoe.spec 'treequel' do
 			"    - ruby-terminfo",
 			"    - columnize",
 		  ].join( "\n" )
+    self.spec_extras[:signing_key] = '/Volumes/Keys/ged-private_gem_key.pem'
 
 	self.require_ruby_version( '>=1.8.7' )
 
-	self.yard_title = 'Treequel'
+	self.hg_sign_tags = true
+
 	self.yard_opts = [ '--use-cache', '--protected', '--verbose' ]
 end
 

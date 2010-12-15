@@ -424,8 +424,9 @@ class Treequel::Directory
 		results = []
 		self.conn.search_ext2( base_dn, scope, filter, *parameters ).each do |entry|
 			branch = collectclass.new_from_entry( entry, self )
-			branch.include_operational_attrs = base.include_operational_attrs? if
-				base.respond_to?( :include_operational_attrs? )
+			branch.include_operational_attrs = true if
+				base.respond_to?( :include_operational_attrs? ) &&
+				base.include_operational_attrs?
 
 			if block_given?
 				results << yield( branch )

@@ -24,12 +24,12 @@ include Treequel::TestConstants
 include Treequel::Constants
 
 #####################################################################
-###	C O N T E X T S
+### C O N T E X T S
 #####################################################################
 
 describe Treequel::Branch do
 	include Treequel::SpecHelpers,
-	        Treequel::Matchers
+			Treequel::Matchers
 
 
 	before( :all ) do
@@ -41,7 +41,8 @@ describe Treequel::Branch do
 	end
 
 	before( :each ) do
-		@directory = mock( "treequel directory", :get_entry => :an_entry_hash )
+		@conn = mock( "ldap connection object" )
+		@directory = get_fixtured_directory( @conn )
 	end
 
 	after( :each ) do
@@ -60,9 +61,9 @@ describe Treequel::Branch do
 		}.to raise_error( ArgumentError, /invalid dn/i )
 	end
 
-	it "can be constructed from an entry returned from LDAP::Conn.search_ext2"  do
+	it "can be constructed from an entry returned from LDAP::Conn.search_ext2"	do
 		entry = {
-			'dn'                => [TEST_PERSON_DN],
+			'dn'				=> [TEST_PERSON_DN],
 			TEST_PERSON_DN_ATTR => TEST_PERSON_DN_VALUE,
 		}
 		branch = Treequel::Branch.new_from_entry( entry, @directory )
@@ -71,16 +72,16 @@ describe Treequel::Branch do
 		branch.entry.should == entry
 	end
 
-	it "can be constructed from an entry with Symbol keys"  do
+	it "can be constructed from an entry with Symbol keys"	do
 		entry = {
-			:dn                 => [TEST_PERSON_DN],
+			:dn					=> [TEST_PERSON_DN],
 			TEST_PERSON_DN_ATTR => TEST_PERSON_DN_VALUE,
 		}
 		branch = Treequel::Branch.new_from_entry( entry, @directory )
 
 		branch.rdn_attributes.should == { TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE] }
 		branch.entry.should == {
-			'dn'                => [TEST_PERSON_DN],
+			'dn'				=> [TEST_PERSON_DN],
 			TEST_PERSON_DN_ATTR => TEST_PERSON_DN_VALUE,
 		}
 	end
@@ -110,18 +111,18 @@ describe Treequel::Branch do
 	describe "instances" do
 
 		before( :each ) do
+			@entry = {
+				'description' => ["A string", "another string"],
+				'l' => [ 'Antartica', 'Galapagos' ],
+				'objectClass' => ['organizationalUnit'],
+				'rev' => ['03eca02ba232'],
+				'ou' => ['Hosts'],
+			}
+			@conn.stub( :bound? ).and_return( false )
+			@conn.stub( :search_ext2 ).
+				with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				and_return([ @entry ])
 			@branch = Treequel::Branch.new( @directory, TEST_HOSTS_DN )
-
-			@schema = mock( "treequel schema" )
-			@entry = mock( "entry object" )
-			@directory.stub( :schema ).and_return( @schema )
-			@directory.stub( :get_entry ).and_return( @entry )
-			@directory.stub( :base_dn ).and_return( TEST_BASE_DN )
-			@schema.stub( :attribute_types ).
-				and_return({ :cn => :a_value, :ou => :a_value })
-
-			@syntax = stub( "attribute ldapSyntax object", :oid => OIDS::STRING_SYNTAX )
-			@attribute_type = mock( "schema attribute type object", :syntax => @syntax )
 		end
 
 
@@ -143,7 +144,6 @@ describe Treequel::Branch do
 		end
 
 		it "can return itself as an ldap:// URI" do
-			@directory.should_receive( :uri ).and_return( URI.parse("ldap://#{TEST_HOST}/#{TEST_BASE_DN}") )
 			@branch.uri.to_s.should == "ldap://#{TEST_HOST}/#{TEST_HOSTS_DN}?"
 		end
 
@@ -173,48 +173,66 @@ describe Treequel::Branch do
 		end
 
 		it "knows that it exists in the directory if it can fetch its entry" do
-			@directory.should_receive( :get_entry ).with( @branch ).exactly( :once ).
-				and_return( :the_entry )
 			@branch.exists?.should be_true()
 		end
 
 		it "knows that it doesn't exist in the directory if it can't fetch its entry" do
-			@directory.should_receive( :get_entry ).with( @branch ).exactly( :once ).
-				and_return( nil )
+			@conn.stub( :search_ext2 ).
+				with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				and_return([])
 			@branch.exists?.should be_false()
 		end
 
 		it "fetch their LDAP::Entry from the directory if they don't already have one" do
-			@directory.should_receive( :get_entry ).with( @branch ).exactly( :once ).
-				and_return( :the_entry )
+			@conn.should_receive( :search_ext2 ).
+				with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				exactly( :once ).
+				and_return([ @entry ])
 
-			@branch.entry.should == :the_entry
-			@branch.entry.should == :the_entry # this should fetch the cached one
+			@branch.entry.should == @entry
+			@branch.entry.should == @entry # this should fetch the cached one
 		end
 
 		it "fetch their LDAP::Entry with operational attributes if include_operational_attrs is set" do
-			@branch.include_operational_attrs = true
-			@directory.should_not_receive( :get_entry )
-			@directory.should_receive( :get_extended_entry ).with( @branch ).exactly( :once ).
-				and_return( :the_extended_entry )
+			@conn.should_receive( :search_ext2 ).
+				with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)", ["*", "+"] ).once.
+				and_return([ @entry ])
 
-			@branch.entry.should == :the_extended_entry
+			@branch.include_operational_attrs = true
+			@branch.entry.should == @entry
 		end
 
 		it "can search its directory for values using itself as a base" do
-			@directory.should_receive( :search ).with( @branch, :one, '(objectClass=*)', {} ).
-				and_return( :entries )
-			@branch.search( :one, '(objectClass=*)' ).should == :entries
+			subentry = {'objectClass' => ['ipHost'], 'dn' => [TEST_HOST_DN] }
+			@conn.should_receive( :search_ext2 ).
+				with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_ONELEVEL, "(objectClass=*)", 
+					  ["*"], false, nil, nil, 0, 0, 0, "", nil ).
+				and_return([ subentry ])
+
+			branches = @branch.search( :one, '(objectClass=*)' )
+
+			branches.should have( 1 ).member
+			branches.first.should be_a( Treequel::Branch )
+			branches.first.dn.should == TEST_HOST_DN
 		end
 
 		it "can search its directory for values with a block" do
-			@directory.should_receive( :search ).with( @branch, :one, '(objectClass=*)', {} ).
-				and_yield( :an_entry )
+			subentry = {
+				'objectClass' => ['ipHost'],
+				TEST_HOST_DN_ATTR => [TEST_HOST_DN_VALUE],
+				'dn' => [TEST_HOST_DN],
+			}
+			@conn.should_receive( :search_ext2 ).
+				with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_ONELEVEL, "(objectClass=*)", 
+					  ["*"], false, nil, nil, 0, 0, 0, "", nil ).
+				and_return([ subentry ])
+
 			yielded_val = nil
 			@branch.search( :one, '(objectClass=*)' ) do |val|
 				yielded_val = val
 			end
-			yielded_val.should == :an_entry
+			yielded_val.should be_a( Treequel::Branch )
+			yielded_val.entry.should == subentry
 		end
 
 		it "clears any cached values if its include_operational_attrs attribute is changed" do
@@ -254,9 +272,6 @@ describe Treequel::Branch do
 		end
 
 		it "create sub-branches for messages that match valid attributeType OIDs" do
-			@schema.should_receive( :attribute_types ).twice.
-				and_return({ :cn => :a_value, :ou => :a_value })
-
 			rval = @branch.cn( 'rondori' )
 			rval.dn.should == "cn=rondori,#{TEST_HOSTS_DN}"
 
@@ -265,9 +280,6 @@ describe Treequel::Branch do
 		end
 
 		it "create sub-branches for messages with additional attribute pairs" do
-			@schema.should_receive( :attribute_types ).
-				and_return({ :cn => :a_value, :ou => :a_value, :l => :a_value })
-
 			rval = @branch.cn( 'rondori', :l => 'Portland' )
 			rval.dn.should == "cn=rondori+l=Portland,#{TEST_HOSTS_DN}"
 
@@ -276,21 +288,17 @@ describe Treequel::Branch do
 		end
 
 		it "don't create sub-branches for messages that don't match valid attributeType OIDs" do
-			@schema.should_receive( :attribute_types ).
-				and_return({ :cn => :a_value, :ou => :a_value })
-
-			lambda {
+			@conn.stub( :bound? ).and_return( false )
+			expect {
 				@branch.facelart( 'sbc' )
-			}.should raise_exception( NoMethodError, /undefined method.*facelart/i )
+			}.to raise_exception( NoMethodError, /undefined method.*facelart/i )
 		end
 
 		it "don't create sub-branches for multi-value RDNs with an invalid attribute" do
-			@schema.should_receive( :attribute_types ).
-				and_return({ :cn => :a_value, :ou => :a_value })
-
-			lambda {
+			@conn.stub( :bound? ).and_return( false )
+			expect {
 				@branch.cn( 'benchlicker', :facelart => 'sbc' )
-			}.should raise_exception( NoMethodError, /invalid secondary attribute.*facelart/i )
+			}.to raise_exception( NoMethodError, /invalid secondary attribute.*facelart/i )
 		end
 
 		it "can return all of its immediate children as Branches" do
@@ -300,308 +308,256 @@ describe Treequel::Branch do
 		end
 
 		it "can return its parent as a Branch" do
-			parent_branch = stub( "parent branch object" )
-			@branch.should_receive( :class ).and_return( Treequel::Branch )
-			Treequel::Branch.should_receive( :new ).with( @directory, TEST_BASE_DN ).
-				and_return( parent_branch )
-			@branch.parent.should == parent_branch
+			@branch.parent.should be_a( Treequel::Branch )
+			@branch.parent.dn.should == TEST_BASE_DN
 		end
 
 
 		it "can construct a Treequel::Branchset that uses it as its base" do
-			branchset = stub( "branchset" )
-			Treequel::Branchset.should_receive( :new ).with( @branch ).
-				and_return( branchset )
-
-			@branch.branchset.should == branchset
+			@branch.branchset.should be_a( Treequel::Branchset )
+			@branch.branchset.base_dn.should == @branch.dn
 		end
 
 		it "can create a filtered Treequel::Branchset for itself" do
-			branchset = mock( "filtered branchset" )
-			Treequel::Branchset.should_receive( :new ).with( @branch ).
-				and_return( branchset )
-			branchset.should_receive( :filter ).with( {:cn => 'acme'} ).
-				and_return( :a_filtered_branchset )
+			branchset = @branch.filter( :cn => 'acme' )
 
-			@branch.filter( :cn => 'acme' ).should == :a_filtered_branchset
+			branchset.should be_a( Treequel::Branchset )
+			branchset.filter_string.should =~ /\(cn=acme\)/
 		end
 
 		it "doesn't restrict the number of arguments passed to #filter (bugfix)" do
-			branchset = mock( "filtered branchset" )
-			Treequel::Branchset.should_receive( :new ).with( @branch ).
-				and_return( branchset )
-			branchset.should_receive( :filter ).with( :uid, [:glumpy, :grumpy, :glee] ).
-				and_return( :a_filtered_branchset )
+			branchset = @branch.filter( :uid => [:rev, :grumpy, :glee] )
 
-			@branch.filter( :uid, [:glumpy, :grumpy, :glee] ).should == :a_filtered_branchset
+			branchset.should be_a( Treequel::Branchset )
+			branchset.filter_string.should =~ /\(\|\(uid=rev\)\(uid=grumpy\)\(uid=glee\)\)/i
 		end
 
 		it "can create a scoped Treequel::Branchset for itself" do
-			branchset = mock( "scoped branchset" )
-			Treequel::Branchset.should_receive( :new ).with( @branch ).
-				and_return( branchset )
-			branchset.should_receive( :scope ).with( :onelevel ).
-				and_return( :a_scoped_branchset )
+			branchset = @branch.scope( :onelevel )
 
-			@branch.scope( :onelevel ).should == :a_scoped_branchset
+			branchset.should be_a( Treequel::Branchset )
+			branchset.scope.should == :onelevel
 		end
 
 		it "can create a selective Treequel::Branchset for itself" do
-			branchset = mock( "selective branchset" )
-			Treequel::Branchset.should_receive( :new ).with( @branch ).
-				and_return( branchset )
-			branchset.should_receive( :select ).with( :uid, :l, :familyName, :givenName ).
-				and_return( :a_selective_branchset )
+			branchset = @branch.select( :uid, :l, :familyName, :givenName )
 
-			@branch.select( :uid, :l, :familyName, :givenName ).should == :a_selective_branchset
+			branchset.should be_a( Treequel::Branchset )
+			branchset.select.should == %w[uid l familyName givenName]
 		end
 
 		it "knows which objectClasses it has" do
-			oc_attr = mock( "objectClass attributeType object" )
-			string_syntax = stub( "string ldapSyntax object", :oid => OIDS::STRING_SYNTAX )
-			@schema.should_receive( :attribute_types ).and_return({ :objectClass => oc_attr })
-			oc_attr.should_receive( :single? ).and_return( false )
-			oc_attr.should_receive( :syntax ).at_least( :once ).
-				and_return( string_syntax )
-
-			@entry.should_receive( :[] ).with( 'objectClass' ).at_least( :once ).
-				and_return([ 'organizationalUnit', 'extensibleObject' ])
-
-			@directory.should_receive( :convert_to_object ).
-				with( OIDS::STRING_SYNTAX, 'organizationalUnit' ).
-				and_return( 'organizationalUnit' )
-			@directory.should_receive( :convert_to_object ).
-				with( OIDS::STRING_SYNTAX, 'extensibleObject' ).
-				and_return( 'extensibleObject' )
-
-			@schema.should_receive( :object_classes ).twice.and_return({
-					:organizationalUnit => :ou_objectclass,
-					:extensibleObject => :extobj_objectclass,
-				})
-
-			@branch.object_classes.should == [ :ou_objectclass, :extobj_objectclass ]
+			@branch.object_classes.
+				should include( @directory.schema.object_classes[:organizationalUnit] )
 		end
 
 		it "knows what operational attributes it has" do
-			op_attrs = MINIMAL_OPERATIONAL_ATTRIBUTES.inject({}) do |hash, oa|
-				hash[ oa ] = mock("#{oa} attributeType object")
-				hash
-			end
-			@schema.should_receive( :operational_attribute_types ).and_return( op_attrs.values )
+			op_attrs = @directory.schema.attribute_types.values.select do |attrtype|
+				attrtype.operational?
+			end.uniq
 
-			@branch.operational_attribute_types.should == op_attrs.values
+			@branch.operational_attribute_types.should have( op_attrs.length ).members
+			@branch.operational_attribute_types.should include( *op_attrs )
 		end
 
 		it "knows what the OIDs of its operational attributes are" do
-			op_attrs = MINIMAL_OPERATIONAL_ATTRIBUTES.inject({}) do |hash, oa|
-				hash[ oa ] = stub("#{oa} attributeType object", :oid => :an_oid )
-				hash
-			end
-			@schema.should_receive( :operational_attribute_types ).at_least( :once ).
-				and_return( op_attrs.values )
+			op_oids = @directory.schema.attribute_types.values.select do |attrtype|
+				attrtype.operational?
+			end.uniq.map( &:oid )
 
-			@branch.operational_attribute_oids.should have( op_attrs.length ).members
-			@branch.operational_attribute_oids.should include( :an_oid )
+			@branch.operational_attribute_oids.should have( op_oids.length ).members
+			@branch.operational_attribute_oids.should include( *op_oids )
 		end
 
 		it "can return the set of all its MUST attributes' OIDs based on which objectClasses " +
 		   "it has" do
-			oc1 = mock( "first objectclass" )
-			oc2 = mock( "second objectclass" )
-
-			@branch.should_receive( :object_classes ).and_return([ oc1, oc2 ])
-			oc1.should_receive( :must_oids ).at_least( :once ).and_return([ :oid1, :oid2 ])
-			oc2.should_receive( :must_oids ).at_least( :once ).and_return([ :oid1, :oid3 ])
+			@conn.stub( :search_ext2 ).
+				with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				and_return([ {'objectClass' => %w[ipHost device ieee802device]} ])
 
 			must_oids = @branch.must_oids
 			must_oids.should have( 3 ).members
-			must_oids.should include( :oid1, :oid2, :oid3 )
+			must_oids.should include( :objectClass, :cn, :ipHostNumber )
 		end
 
 		it "can return the set of all its MUST attributeTypes based on which objectClasses it has" do
-			oc1 = mock( "first objectclass", :name => 'first_oc' )
-			oc2 = mock( "second objectclass", :name => 'second_oc' )
+			@conn.stub( :search_ext2 ).
+				with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				and_return([ {'objectClass' => %w[ipHost device ieee802device]} ])
 
-			@branch.should_receive( :object_classes ).and_return([ oc1, oc2 ])
-			oc1.should_receive( :must ).at_least( :once ).and_return([ :cn, :uid ])
-			oc2.should_receive( :must ).at_least( :once ).and_return([ :cn, :l ])
+			expected_attrtypes = @directory.schema.attribute_types.
+				values_at( :objectClass, :cn, :ipHostNumber )
 
 			must_attrs = @branch.must_attribute_types
 			must_attrs.should have( 3 ).members
-			must_attrs.should include( :cn, :uid, :l )
+			must_attrs.should include( *expected_attrtypes )
 		end
 
 		it "can return a Hash pre-populated with pairs that correspond to its MUST attributes" do
-			cn_attrtype = mock( "cn attribute type", :single? => false )
-			l_attrtype = mock( "l attribute type", :single? => true )
-			objectClass_attrtype = mock( "objectClass attribute type", :single? => false )
-
-			cn_attrtype.should_receive( :name ).at_least( :once ).and_return( :cn )
-			l_attrtype.should_receive( :name ).at_least( :once ).and_return( :l )
-			objectClass_attrtype.should_receive( :name ).at_least( :once ).and_return( :objectClass )
-
-			@branch.should_receive( :must_attribute_types ).at_least( :once ).
-				and_return([ cn_attrtype, l_attrtype, objectClass_attrtype ])
+			@conn.stub( :search_ext2 ).
+				with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				and_return([ {'objectClass' => %w[ipHost device ieee802device]} ])
 
 			@branch.must_attributes_hash.
-				should == { :cn => [''], :l => '', :objectClass => [:top] }
+				should include({ :cn => [''], :ipHostNumber => [''], :objectClass => [:top] })
 		end
 
 
 		it "can return the set of all its MAY attributes' OIDs based on which objectClasses " +
 		   "it has" do
-			oc1 = mock( "first objectclass" )
-			oc2 = mock( "second objectclass" )
-
-			@branch.should_receive( :object_classes ).and_return([ oc1, oc2 ])
-			oc1.should_receive( :may_oids ).at_least( :once ).and_return([ :oid1, :oid2 ])
-			oc2.should_receive( :may_oids ).at_least( :once ).and_return([ :oid1, :oid3 ])
+			@conn.stub( :search_ext2 ).
+				with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				and_return([ {'objectClass' => %w[ipHost device ieee802device]} ])
 
 			must_oids = @branch.may_oids
-			must_oids.should have( 3 ).members
-			must_oids.should include( :oid1, :oid2, :oid3 )
+			must_oids.should have( 9 ).members
+			must_oids.should include( :l, :description, :manager, :serialNumber, :seeAlso, 
+				:owner, :ou, :o, :macAddress )
 		end
 
 		it "can return the set of all its MAY attributeTypes based on which objectClasses it has" do
-			oc1 = mock( "first objectclass" )
-			oc2 = mock( "second objectclass" )
+			@conn.should_receive( :search_ext2 ).
+				with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				and_return([ {'objectClass' => %w[ipHost device ieee802device]} ])
 
-			@branch.should_receive( :object_classes ).and_return([ oc1, oc2 ])
-			oc1.should_receive( :may ).and_return([ :description, :mobilePhone ])
-			oc2.should_receive( :may ).and_return([ :chunktype ])
+			expected_attrtypes = @directory.schema.attribute_types.values_at( :l, :description, 
+				:manager, :serialNumber, :seeAlso, :owner, :ou, :o, :macAddress )
 
-			must_attrs = @branch.may_attribute_types
-			must_attrs.should have( 3 ).members
-			must_attrs.should include( :description, :mobilePhone, :chunktype )
+			@branch.may_attribute_types.should include( *expected_attrtypes )
 		end
 
 		it "can return a Hash pre-populated with pairs that correspond to its MAY attributes" do
-			cn_attrtype = mock( "cn attribute type", :single? => false )
-			l_attrtype = mock( "l attribute type", :single? => true )
+			@conn.should_receive( :search_ext2 ).
+				with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				and_return([ {'objectClass' => %w[ipHost device ieee802device]} ])
 
-			cn_attrtype.should_receive( :name ).at_least( :once ).and_return( :cn )
-			l_attrtype.should_receive( :name ).at_least( :once ).and_return( :l )
-
-			@branch.should_receive( :may_attribute_types ).at_least( :once ).
-				and_return([ cn_attrtype, l_attrtype ])
-
-			@branch.may_attributes_hash.
-				should == { :cn => [], :l => nil }
+			@branch.may_attributes_hash.should include({
+				:l			  => [],
+				:description  => [],
+				:manager	  => [],
+				:serialNumber => [],
+				:seeAlso	  => [],
+				:owner		  => [],
+				:ou			  => [],
+				:o			  => [],
+				:macAddress	  => []
+			})
 		end
 
 		it "can return the set of all of its valid attributeTypes, which is a union of its " +
 		   "MUST and MAY attributes plus the directory's operational attributes" do
-			@branch.should_receive( :must_attribute_types ).
-				and_return([ :cn, :l, :uid ])
-			@branch.should_receive( :may_attribute_types ).
-				and_return([ :description, :mobilePhone, :chunktype ])
-			@branch.should_receive( :operational_attribute_types ).
-				and_return([ :createTimestamp, :creatorsName ])
-
 			all_attrs = @branch.valid_attribute_types
 
-			all_attrs.should have( 8 ).members
-			all_attrs.should include( :cn, :uid, :l, :description, :mobilePhone,
-				:chunktype, :createTimestamp, :creatorsName )
+			all_attrs.should have( 54 ).members
+			all_attrs.should include( @directory.schema.attribute_types[:ou] )
+			all_attrs.should include( @directory.schema.attribute_types[:l] )
 		end
+
 
 		it "can return a Hash pre-populated with pairs that correspond to all of its valid " +
 		   "attributes" do
-			@branch.should_receive( :must_attributes_hash ).at_least( :once ).
-				and_return({ :cn => [''], :l => '', :objectClass => [:top] })
-			@branch.should_receive( :may_attributes_hash ).at_least( :once ).
-				and_return({ :description => nil, :givenName => [], :cn => nil })
-
 			@branch.valid_attributes_hash.should == {
-				:cn => [''],
-				:l => '',
-				:objectClass => [:top],
-				:description => nil,
-				:givenName => [],
+				:objectClass				=> [:top],
+				:ou							=> [''],
+				:userPassword				=> [],
+				:searchGuide				=> [],
+				:seeAlso					=> [],
+				:businessCategory			=> [],
+				:x121Address				=> [],
+				:registeredAddress			=> [],
+				:destinationIndicator		=> [],
+				:telexNumber				=> [],
+				:teletexTerminalIdentifier	=> [],
+				:telephoneNumber			=> [],
+				:internationaliSDNNumber	=> [],
+				:facsimileTelephoneNumber	=> [],
+				:street						=> [],
+				:postOfficeBox				=> [],
+				:postalCode					=> [],
+				:postalAddress				=> [],
+				:physicalDeliveryOfficeName => [],
+				:st							=> [],
+				:l							=> [],
+				:description				=> [],
+				:preferredDeliveryMethod	=> nil,
 			}
 		end
 
 
 		it "can return the set of all of its valid attribute OIDs, which is a union of its " +
 		   "MUST and MAY attribute OIDs" do
-			@branch.should_receive( :must_oids ).
-				and_return([ :must_oid1, :must_oid2 ])
-			@branch.should_receive( :may_oids ).
-				and_return([ :may_oid1, :may_oid2, :must_oid1 ])
-
 			all_attr_oids = @branch.valid_attribute_oids
 
-			all_attr_oids.should have( 4 ).members
-			all_attr_oids.should include( :must_oid1, :must_oid2, :may_oid1, :may_oid2 )
+			all_attr_oids.should have( 23 ).members all_attr_oids.should include( 
+				:objectClass, :ou,
+				:userPassword, :searchGuide, :seeAlso, :businessCategory, :x121Address,
+				:registeredAddress, :destinationIndicator, :telexNumber, :teletexTerminalIdentifier,
+				:telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber, :street,
+				:postOfficeBox, :postalCode, :postalAddress, :physicalDeliveryOfficeName, :st, :l,
+				:description, :preferredDeliveryMethod
+			 )
 		end
 
 		it "knows if an attribute is valid given its objectClasses" do
-			attrtype = mock( "attribute type object" )
-
-			@branch.should_receive( :valid_attribute_types ).
-				twice.
-				and_return([ attrtype ])
-
-			attrtype.should_receive( :valid_name? ).with( :uid ).and_return( true )
-			attrtype.should_receive( :valid_name? ).with( :rubberChicken ).and_return( false )
-
-			@branch.valid_attribute?( :uid ).should be_true()
+			@branch.valid_attribute?( :ou ).should be_true()
 			@branch.valid_attribute?( :rubberChicken ).should be_false()
 		end
 
 		it "can be moved to a new location within the directory" do
-			newdn = "ou=hosts,dc=admin,#{TEST_BASE_DN}"
-			@directory.should_receive( :move ).with( @branch, newdn )
+			newdn = "ou=oldhosts,#{TEST_BASE_DN}"
+			@conn.should_receive( :modrdn ).
+				with( TEST_HOSTS_DN, "ou=oldhosts", true )
 			@branch.move( newdn )
 		end
 
 
 		it "resets any cached data when its DN changes" do
-			@directory.should_receive( :get_entry ).with( @branch ).
-				and_return( :first_entry, :second_entry )
-
+			@conn.should_receive( :search_ext2 ).
+				with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				and_return([ @entry ])
 			@branch.entry
-			@branch.dn = TEST_HOSTS_DN
-			@branch.entry.should == :second_entry
+
+			@branch.dn = TEST_SUBHOSTS_DN
+
+			@conn.should_receive( :search_ext2 ).
+				with( TEST_SUBHOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				and_return([ @entry ])
+			@branch.entry
 		end
 
 
 		it "can create children under itself" do
 			newattrs = {
 				:ipHostNumber => '127.0.0.1',
-				:objectClass  => [:ipHost],
+				:objectClass  => [:ipHost, :device],
 			}
-			@directory.should_receive( :create ).
-				with( an_instance_of(Treequel::Branch), newattrs ).
-				and_return( true )
 
-			@branch.cn( :chillyt ).create( newattrs )
+			@conn.should_receive( :add ).
+				with( "cn=chillyt,#{TEST_HOSTS_DN}",
+				      "ipHostNumber"=>["127.0.0.1"],
+				      "objectClass"=>["ipHost", "device"],
+				      "cn"=>["chillyt"] )
+
+			res = @branch.cn( :chillyt ).create( newattrs )
+			res.should be_a( Treequel::Branch )
+			res.dn.should == "cn=chillyt,#{TEST_HOSTS_DN}"
 		end
 
 
 		it "can copy itself to a sibling entry" do
-			newbranch = stub( "copied sibling branch" )
-			Treequel::Branch.should_receive( :new ).with( @directory, TEST_PERSON2_DN ).
-				and_return( newbranch )
-			@entry.should_receive( :merge ).with( {} ).and_return( :merged_attributes )
-			@directory.should_receive( :create ).with( newbranch, :merged_attributes ).
-				and_return( true )
+			@conn.should_receive( :add ).with( TEST_SUBHOSTS_DN, @entry )
 
-			@branch.copy( TEST_PERSON2_DN ).should == newbranch
+			newbranch = @branch.copy( TEST_SUBHOSTS_DN )
+			newbranch.dn.should == TEST_SUBHOSTS_DN
 		end
 
 
 		it "can copy itself to a sibling entry with attribute changes" do
-			oldattrs = { :sn => "Davies", :firstName => 'David' }
-			newattrs = { :sn => "Michaels", :firstName => 'George' }
-			newbranch = stub( "copied sibling branch" )
-			Treequel::Branch.should_receive( :new ).with( @directory, TEST_PERSON2_DN ).
-				and_return( newbranch )
-			@entry.should_receive( :merge ).with( newattrs ).and_return( newattrs )
-			@directory.should_receive( :create ).with( newbranch, newattrs ).
-				and_return( true )
+			@conn.should_receive( :add ).
+				with( TEST_SUBHOSTS_DN, @entry.merge('description' => ['Hosts in a subdomain.']) )
 
-			@branch.copy( TEST_PERSON2_DN, newattrs ).should == newbranch
+			newbranch = @branch.copy( TEST_SUBHOSTS_DN, :description => ['Hosts in a subdomain.'] )
+			newbranch.dn.should == TEST_SUBHOSTS_DN
 		end
 
 
@@ -610,55 +566,47 @@ describe Treequel::Branch do
 				:displayName => 'Chilly T. Penguin',
 				:description => "A chilly little penguin.",
 			}
-
-			@directory.should_receive( :modify ).with( @branch, attributes )
+			@conn.should_receive( :modify ).
+				with( TEST_HOSTS_DN,
+				      'displayName' => ['Chilly T. Penguin'],
+				      'description' => ["A chilly little penguin."] )
 
 			@branch.merge( attributes )
 		end
 
 
 		it "can delete all values of one of its entry's individual attributes" do
-			LDAP::Mod.should_receive( :new ).with( LDAP::LDAP_MOD_DELETE, 'displayName', [] ).
-				and_return( :mod_delete )
-			@directory.should_receive( :modify ).with( @branch, [:mod_delete] )
-
+			mod = LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, 'displayName', [] )
+			@conn.should_receive( :modify ).with( TEST_HOSTS_DN, [mod] )
 			@branch.delete( :displayName )
 		end
 
 		it "can delete all values of more than one of its entry's individual attributes" do
-			LDAP::Mod.should_receive( :new ).with( LDAP::LDAP_MOD_DELETE, 'displayName', [] ).
-				and_return( :first_mod_delete )
-			LDAP::Mod.should_receive( :new ).with( LDAP::LDAP_MOD_DELETE, 'gecos', [] ).
-				and_return( :second_mod_delete )
-			@directory.should_receive( :modify ).
-				with( @branch, [:first_mod_delete, :second_mod_delete] )
+			mod1 = LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, 'displayName', [] )
+			mod2 = LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, 'gecos', [] )
+			@conn.should_receive( :modify ).with( TEST_HOSTS_DN, [mod1, mod2] )
 
 			@branch.delete( :displayName, :gecos )
 		end
 
 		it "can delete one particular value of its entry's individual attributes" do
-			LDAP::Mod.should_receive( :new ).
-				with( LDAP::LDAP_MOD_DELETE, 'objectClass', ['apple-user'] ).
-				and_return( :mod_delete )
-			@directory.should_receive( :modify ).with( @branch, [:mod_delete] )
+			mod = LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, 'objectClass', ['apple-user'] )
+			@conn.should_receive( :modify ).with( TEST_HOSTS_DN, [mod] )
 
 			@branch.delete( :objectClass => 'apple-user' )
 		end
 
 		it "can delete particular values of more than one of its entry's individual attributes" do
-			LDAP::Mod.should_receive( :new ).
-				with( LDAP::LDAP_MOD_DELETE, 'objectClass', ['apple-user', 'inetOrgPerson'] ).
-				and_return( :first_mod_delete )
-			LDAP::Mod.should_receive( :new ).
-				with( LDAP::LDAP_MOD_DELETE, 'cn', [] ).and_return( :second_mod_delete )
-			@directory.should_receive( :modify ).
-				with( @branch, array_including(:first_mod_delete, :second_mod_delete) )
+			mod1 = LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, 'objectClass',
+			                      ['apple-user', 'inetOrgPerson'] )
+			mod2 = LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, 'cn', [] )
+			@conn.should_receive( :modify ).with( TEST_HOSTS_DN, array_including(mod1, mod2) )
 
 			@branch.delete( :objectClass => ['apple-user',:inetOrgPerson], :cn => [] )
 		end
 
 		it "deletes its entry entirely if no attributes are specified" do
-			@directory.should_receive( :delete ).with( @branch )
+			@conn.should_receive( :delete ).with( TEST_HOSTS_DN )
 			@branch.delete
 		end
 
@@ -669,15 +617,13 @@ describe Treequel::Branch do
 
 
 		it "knows how to represent itself as LDIF" do
-			@entry.should_receive( :keys ).and_return([ 'description', 'l' ])
-			@entry.should_receive( :[] ).with( 'description' ).
-				and_return([ 'A chilly little penguin.' ])
-			@entry.should_receive( :[] ).with( 'l' ).
-				and_return([ 'Antartica', 'Galapagos' ])
-
 			ldif = @branch.to_ldif
 			ldif.should =~ /dn: #{TEST_HOSTS_DN_ATTR}=#{TEST_HOSTS_DN_VALUE},#{TEST_BASE_DN}/i
-			ldif.should =~ /description: A chilly little penguin./
+			ldif.should =~ /description: A string/
+			ldif.should =~ /description: another string/
+			ldif.should =~ /l: Antartica/
+			ldif.should =~ /l: Galapagos/
+			ldif.should =~ /ou: Hosts/
 		end
 
 
@@ -688,11 +634,13 @@ describe Treequel::Branch do
 			'we see the entire universe.'
 
 		it "knows how to split long lines in LDIF output" do
-			@entry.should_receive( :keys ).and_return([ 'description', 'l' ])
-			@entry.should_receive( :[] ).with( 'description' ).
-				and_return([ LONG_TEST_VALUE ])
-			@entry.should_receive( :[] ).with( 'l' ).
-				and_return([ 'Antartica', 'Galapagos' ])
+			entry = {
+				'description' => [LONG_TEST_VALUE],
+				'l' => [ 'Antartica', 'Galapagos' ]
+			}
+			@conn.stub( :search_ext2 ).
+				with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				and_return([ entry ])
 
 			ldif = @branch.to_ldif( 20 )
 			val = ldif[ /(description: (?:[^\n]|\n )+)/, 1 ]
@@ -724,11 +672,13 @@ describe Treequel::Branch do
 		END_VALUE
 
 		it "knows how to split long binary lines in LDIF output" do
-			@entry.should_receive( :keys ).and_return([ 'description', 'l' ])
-			@entry.should_receive( :[] ).with( 'description' ).
-				and_return([ LONG_BINARY_TEST_VALUE ])
-			@entry.should_receive( :[] ).with( 'l' ).
-				and_return([ 'Antartica', 'Galapagos' ])
+			entry = {
+				'description' => [LONG_BINARY_TEST_VALUE],
+				'l' => [ 'Antartica', 'Galapagos' ]
+			}
+			@conn.stub( :search_ext2 ).
+				with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				and_return([ entry ])
 
 			ldif = @branch.to_ldif( 20 )
 			ldif.scan( /^description/ ).length.should == 1
@@ -744,16 +694,12 @@ describe Treequel::Branch do
 
 
 		it "knows how to represent itself as a Hash" do
-			@entry.should_receive( :keys ).and_return([ 'description', 'dn', 'l' ])
-			@entry.should_receive( :[] ).with( 'description' ).
-				and_return([ 'A chilly little penguin.' ])
-			@entry.should_receive( :[] ).with( 'l' ).
-				and_return([ 'Antartica', 'Galapagos' ])
-
 			@branch.to_hash.should == {
-				'description' => ['A chilly little penguin.'],
+				'description' => ['A string', 'another string'],
 				'l' => [ 'Antartica', 'Galapagos' ],
-				'dn' => TEST_HOSTS_DN,
+				'objectClass' => ['organizationalUnit'],
+				'ou' => ['Hosts'],
+				'rev' => ['03eca02ba232']
 			}
 		end
 
@@ -761,12 +707,11 @@ describe Treequel::Branch do
 		   "Branch" do
 			other_branch = Treequel::Branch.new( @directory, TEST_SUBHOSTS_DN )
 
-			Treequel::Branchset.should_receive( :new ).with( @branch ).and_return( :branchset )
-			Treequel::Branchset.should_receive( :new ).with( other_branch ).and_return( :other_branchset )
-			Treequel::BranchCollection.should_receive( :new ).with( :branchset, :other_branchset ).
-				and_return( :a_collection )
+			coll = (@branch + other_branch)
 
-			(@branch + other_branch).should == :a_collection
+			coll.should be_a( Treequel::BranchCollection )
+			coll.branchsets.should have( 2 ).members
+			coll.branchsets.map( &:base_dn ).should include( TEST_HOSTS_DN, TEST_SUBHOSTS_DN )
 		end
 
 
@@ -774,61 +719,69 @@ describe Treequel::Branch do
 		describe "index fetch operator" do
 
 			it "fetches a multi-value attribute as an Array of Strings" do
-				@schema.should_receive( :attribute_types ).and_return({ :glumpy => @attribute_type })
-				@attribute_type.should_receive( :single? ).and_return( false )
-				@entry.should_receive( :[] ).with( 'glumpy' ).at_least( :once ).
-					and_return([ 'glumpa1', 'glumpa2' ])
+				entry = {
+					'description' => ["A string", "another string"],
+					'l' => [ 'Antartica', 'Galapagos' ],
+					'objectClass' => ['organizationalUnit'],
+				}
+				@conn.should_receive( :search_ext2 ).
+					with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+					and_return([ entry ])
 
-				@attribute_type.stub( :syntax ).and_return( @syntax )
-				@directory.stub( :convert_to_object ).and_return {|_,str| str }
-
-				@branch[ :glumpy ].should == [ 'glumpa1', 'glumpa2' ]
+				@branch[ :description ].should include( 'A string', 'another string' )
+				@branch[ :l ].should include( 'Galapagos', 'Antartica' )
 			end
 
 			it "fetches a single-value attribute as a scalar String" do
-				@schema.should_receive( :attribute_types ).and_return({ :glumpy => @attribute_type })
-				@attribute_type.should_receive( :single? ).and_return( true )
-				@entry.should_receive( :[] ).with( 'glumpy' ).at_least( :once ).
-					and_return([ 'glumpa1' ])
+				test_dn = "cn=ssh,cn=www,#{TEST_HOSTS_DN}"
+				entry = {
+					'ipServicePort' => ['22'],
+					'ipServiceProtocol' => ['tcp'],
+					'objectClass' => ['ipService'],
+					'cn' => ['www'],
+				}
+				@conn.should_receive( :search_ext2 ).
+					with( test_dn, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+					and_return([ entry ])
 
-				@attribute_type.stub( :syntax ).and_return( @syntax )
-				@directory.stub( :convert_to_object ).and_return {|_,str| str }
+				branch = Treequel::Branch.new( @directory, test_dn )
 
-				@branch[ :glumpy ].should == 'glumpa1'
+				branch[ :ipServicePort ].should == 22
+				branch[ :ipServiceProtocol ].should == ['tcp']
 			end
 
 			it "returns the entry without conversion if there is no such attribute in the schema" do
-				@schema.should_receive( :attribute_types ).and_return({})
-				@entry.should_receive( :[] ).with( 'glumpy' ).at_least( :once ).
-					and_return([ 'glumpa1' ])
-				@branch[ :glumpy ].should == [ 'glumpa1' ]
+				@branch[ :rev ].should == [ '03eca02ba232' ]
 			end
 
 			it "returns nil if record doesn't have the attribute set" do
-				@entry.should_receive( :[] ).with( 'glumpy' ).and_return( nil )
-				@branch[ :glumpy ].should == nil
+				@branch[ :cn ].should == nil
 			end
 
 			it "caches the value fetched from its entry" do
-				@schema.stub( :attribute_types ).and_return({ :glump => @attribute_type })
-				@attribute_type.stub( :single? ).and_return( true )
-				@attribute_type.stub( :syntax ).and_return( @syntax )
-				@directory.stub( :convert_to_object ).and_return {|_,str| str }
-				@entry.should_receive( :[] ).with( 'glump' ).once.and_return( [:a_value] )
-				2.times { @branch[ :glump ] }
+				@conn.should_receive( :search_ext2 ).
+					with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+					exactly( :once ).
+					and_return([ @entry ])
+
+				2.times { @branch[ :description ] }
 			end
 
-			it "maps attributes through its directory" do
-				@schema.should_receive( :attribute_types ).and_return({ :bvector => @attribute_type })
-				@attribute_type.should_receive( :single? ).and_return( true )
-				@entry.should_receive( :[] ).with( 'bvector' ).at_least( :once ).
-					and_return([ '010011010101B' ])
-				@syntax.stub( :oid ).and_return( OIDS::BIT_STRING_SYNTAX )
-				@directory.should_receive( :convert_to_object ).
-					with( OIDS::BIT_STRING_SYNTAX, '010011010101B' ).
-					and_return( 1237 )
+			it "converts objects via the conversions set in its directory" do
+				test_dn = "cn=ssh,cn=www,#{TEST_HOSTS_DN}"
+				entry = {
+					'ipServicePort' => ['22'],
+					'ipServiceProtocol' => ['tcp'],
+					'objectClass' => ['ipService'],
+					'cn' => ['www'],
+				}
+				@conn.should_receive( :search_ext2 ).
+					with( test_dn, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+					and_return([ entry ])
 
-				@branch[ :bvector ].should == 1237
+				branch = Treequel::Branch.new( @directory, test_dn )
+
+				branch[ :ipServicePort ].should be_a( Fixnum )
 			end
 
 		end
@@ -837,40 +790,65 @@ describe Treequel::Branch do
 		describe "index set operator" do
 
 			it "writes a single value attribute via its directory" do
-				@directory.should_receive( :modify ).with( @branch, { 'glumpy' => ['gits'] } )
-				@entry.should_receive( :[]= ).with( 'glumpy', ['gits'] )
-				@branch[ :glumpy ] = 'gits'
+				test_dn = "cn=ssh,cn=www,#{TEST_HOSTS_DN}"
+				entry = {
+					'ipServicePort' => ['22'],
+					'ipServiceProtocol' => ['tcp'],
+					'objectClass' => ['ipService'],
+					'cn' => ['www'],
+				}
+				@conn.should_receive( :search_ext2 ).
+					with( test_dn, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+					and_return([ entry ])
+				branch = Treequel::Branch.new( @directory, test_dn )
+
+				@conn.should_receive( :modify ).
+					with( test_dn, {'ipServicePort' => ['22022']} )
+
+				branch[ :ipServicePort ] = 22022
+			end
+
+			it "converts values for non-single attribute types to an Array" do
+				test_dn = "cn=laptops,ou=computerlists,ou=macosxodconfig,#{TEST_BASE_DN}"
+				entry = {
+					'dn' => [test_dn],
+					'cn' => ['laptops'],
+					'objectClass' => ['apple-computer-list'],
+					'apple-computers' => %w[chernobyl beetlejuice toronaga],
+					'apple-generateduid' => ['3f73981a-07bb-11e0-b21a-fb56fb48ba42'],
+				}
+				@conn.should_receive( :search_ext2 ).
+					with( test_dn, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+					and_return([ entry ])
+				branch = Treequel::Branch.new( @directory, test_dn )
+
+				@conn.should_receive( :modify ).
+					with( test_dn, "apple-computers" => 
+						  ["chernobyl", "beetlejuice", "toronaga", "glider", "creeper"] )
+
+				branch[ 'apple-computers' ] += %w[glider creeper]
 			end
 
 			it "writes multiple attribute values via its directory" do
-				@directory.should_receive( :modify ).with( @branch, { 'glumpy' => ['gits', 'crumps'] } )
-				@entry.should_receive( :[]= ).with( 'glumpy', ['gits', 'crumps'] )
-				@branch[ :glumpy ] = [ 'gits', 'crumps' ]
-			end
+				test_dn = "cn=ssh,cn=www,#{TEST_HOSTS_DN}"
+				branch = Treequel::Branch.new( @directory, test_dn )
 
-			it "clears the cache after a successful write" do
-				@schema.stub( :attribute_types ).and_return({ :glorpy => @attribute_type })
-				@attribute_type.stub( :single? ).and_return( true )
-				@attribute_type.stub( :syntax ).and_return( @syntax )
-				@directory.stub( :convert_to_object ).and_return {|_,val| val }
-				@entry.should_receive( :[] ).with( 'glorpy' ).and_return( [:firstval], [:secondval] )
+				@conn.should_receive( :modify ).
+					with( test_dn, 
+						  'ipServicePort' => ['56'],
+						  'ipServiceProtocol' => ['udp']
+					  )
 
-				@directory.should_receive( :modify ).with( @branch, {'glorpy' => ['chunks']} )
-				@directory.stub( :convert_to_attribute ).and_return {|_,val| val }
-				@entry.should_receive( :[]= ).with( 'glorpy', ['chunks'] )
-
-				@branch[ :glorpy ].should == :firstval
-				@branch[ :glorpy ] = 'chunks'
-				@branch[ :glorpy ].should == :secondval
+				branch.merge( :ipServicePort => 56, :ipServiceProtocol => 'udp' )
 			end
 		end
 
 		it "can fetch multiple values via #values_at" do
-			@branch.should_receive( :[] ).with( :cn ).and_return( :cn_value )
-			@branch.should_receive( :[] ).with( :desc ).and_return( :desc_value )
-			@branch.should_receive( :[] ).with( :l ).and_return( :l_value )
+			results = @branch.values_at( TEST_HOSTS_DN_ATTR, :description )
 
-			@branch.values_at( :cn, :desc, :l ).should == [ :cn_value, :desc_value, :l_value ]
+			results.should have( 2 ).members
+			results.first.should == [TEST_HOSTS_DN_VALUE]
+			results.last.should == @entry['description']
 		end
 
 	end
