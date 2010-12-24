@@ -12,29 +12,19 @@ BEGIN {
 
 require 'rspec'
 
-require 'spec/lib/constants'
 require 'spec/lib/helpers'
-require 'spec/lib/matchers'
 
 require 'treequel/model'
 require 'treequel/model/objectclass'
 require 'treequel/branchset'
 
 
-include Treequel::TestConstants
-include Treequel::Constants
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
 describe Treequel::Model::ObjectClass do
-	include Treequel::SpecHelpers,
-	        Treequel::Matchers
-
-	class << self
-		alias_method :they, :it
-	end
 
 	before( :all ) do
 		setup_logging( :fatal )
@@ -54,14 +44,14 @@ describe Treequel::Model::ObjectClass do
 	end
 
 
-	describe "modules" do
+	context "extended module" do
 
 		after( :each ) do
 			Treequel::Model.objectclass_registry.clear
 			Treequel::Model.base_registry.clear
 		end
 
-		they "can declare a required objectClass" do
+		it "can declare a required objectClass" do
 			mixin = Module.new do
 				extend Treequel::Model::ObjectClass
 				model_objectclasses :inetOrgPerson
@@ -70,7 +60,7 @@ describe Treequel::Model::ObjectClass do
 			mixin.model_objectclasses.should == [:inetOrgPerson]
 		end
 
-		they "can declare a required objectClass as a String" do
+		it "can declare a required objectClass as a String" do
 			mixin = Module.new do
 				extend Treequel::Model::ObjectClass
 				model_objectclasses 'apple-computer-list'
@@ -79,7 +69,7 @@ describe Treequel::Model::ObjectClass do
 			mixin.model_objectclasses.should == [:'apple-computer-list']
 		end
 
-		they "can declare multiple required objectClasses" do
+		it "can declare multiple required objectClasses" do
 			mixin = Module.new do
 				extend Treequel::Model::ObjectClass
 				model_objectclasses :inetOrgPerson, :acmeAccount
@@ -88,9 +78,10 @@ describe Treequel::Model::ObjectClass do
 			mixin.model_objectclasses.should == [ :inetOrgPerson, :acmeAccount ]
 		end
 
-		they "can declare a single base" do
+		it "can declare a single base" do
 			mixin = Module.new do
-				extend Treequel::Model::ObjectClass
+				extend Treequel::Model::ObjectClass,
+				       Treequel::TestConstants
 				model_objectclasses :device
 				model_bases TEST_PHONES_DN
 			end
@@ -98,7 +89,7 @@ describe Treequel::Model::ObjectClass do
 			mixin.model_bases.should == [TEST_PHONES_DN]
 		end
 
-		they "can declare base with spaces" do
+		it "can declare a base with spaces" do
 			mixin = Module.new do
 				extend Treequel::Model::ObjectClass
 				model_objectclasses :device
@@ -108,9 +99,10 @@ describe Treequel::Model::ObjectClass do
 			mixin.model_bases.should == ['ou=phones,dc=acme,dc=com']
 		end
 
-		they "can declare multiple bases" do
+		it "can declare multiple bases" do
 			mixin = Module.new do
-				extend Treequel::Model::ObjectClass
+				extend Treequel::Model::ObjectClass,
+				       Treequel::TestConstants
 				model_objectclasses :ipHost
 				model_bases TEST_HOSTS_DN,
 				            TEST_SUBHOSTS_DN
@@ -119,7 +111,7 @@ describe Treequel::Model::ObjectClass do
 			mixin.model_bases.should include( TEST_HOSTS_DN, TEST_SUBHOSTS_DN )
 		end
 
-		they "raises an exception when creating a search for a mixin that hasn't declared " +
+		it "raises an exception when creating a search for a mixin that hasn't declared " +
 		     "at least one objectClass or base"  do
 			mixin = Module.new do
 				extend Treequel::Model::ObjectClass
@@ -130,7 +122,7 @@ describe Treequel::Model::ObjectClass do
 			}.to raise_exception( Treequel::ModelError, /has no search criteria defined/ )
 		end
 
-		they "default to using Treequel::Model as their model class" do
+		it "defaults to using Treequel::Model as its model class" do
 			mixin = Module.new do
 				extend Treequel::Model::ObjectClass
 			end
@@ -138,7 +130,7 @@ describe Treequel::Model::ObjectClass do
 			mixin.model_class.should == Treequel::Model
 		end
 
-		they "can declare a model class other than Treequel::Model" do
+		it "can declare a model class other than Treequel::Model" do
 			class MyModel < Treequel::Model; end
 			mixin = Module.new do
 				extend Treequel::Model::ObjectClass
@@ -148,7 +140,7 @@ describe Treequel::Model::ObjectClass do
 			mixin.model_class.should == MyModel
 		end
 
-		they "re-register objectClasses that have already been declared when declaring a " +
+		it "re-registers objectClasses that have already been declared when declaring a " +
 		     "new model class" do
 			class MyModel < Treequel::Model; end
 
@@ -162,7 +154,7 @@ describe Treequel::Model::ObjectClass do
 			MyModel.objectclass_registry[:inetOrgPerson].should include( mixin )
 		end
 
-		they "re-register bases that have already been declared when declaring a " +
+		it "re-registers bases that have already been declared when declaring a " +
 		     "new model class" do
 			class MyModel < Treequel::Model; end
 
@@ -175,10 +167,58 @@ describe Treequel::Model::ObjectClass do
 			Treequel::Model.base_registry['ou=people,dc=acme,dc=com'].should_not include( mixin )
 			MyModel.base_registry['ou=people,dc=acme,dc=com'].should include( mixin )
 		end
+	end
+
+	context "model instantiation" do
+
+		before( :each ) do
+			@conn = mock( "ldap connection object" )
+			@directory = get_fixtured_directory( @conn )
+		end
+
+		it "can instantiate a new model object with its declared objectClasses" do
+			mixin = Module.new do
+				extend Treequel::Model::ObjectClass
+				model_objectclasses :inetOrgPerson
+			end
+
+			result = mixin.create( @directory, TEST_PERSON_DN )
+			result.should be_a( Treequel::Model )
+			result[:objectClass].should include( 'inetOrgPerson' )
+			result[TEST_PERSON_DN_ATTR].should include( TEST_PERSON_DN_VALUE )
+		end
+
+		it "merges objectClasses passed to the creation method" do
+			mixin = Module.new do
+				extend Treequel::Model::ObjectClass
+				model_objectclasses :inetOrgPerson
+			end
+
+			result = mixin.create( @directory, TEST_PERSON_DN,
+				:objectClass => [:person, :inetOrgPerson] )
+			result.should be_a( Treequel::Model )
+			result[:objectClass].should have( 2 ).members
+			result[:objectClass].should include( 'inetOrgPerson', 'person' )
+			result[TEST_PERSON_DN_ATTR].should include( TEST_PERSON_DN_VALUE )
+		end
+
+		it "handles the creation of objects with multi-value DNs" do
+			mixin = Module.new do
+				extend Treequel::Model::ObjectClass
+				model_objectclasses :ipHost, :ieee802Device, :device
+			end
+
+			result = mixin.create( @directory, TEST_HOST_MULTIVALUE_DN )
+			result.should be_a( Treequel::Model )
+			result[:objectClass].should have( 3 ).members
+			result[:objectClass].should include( 'ipHost', 'ieee802Device', 'device' )
+			result[TEST_HOST_MULTIVALUE_DN_ATTR1].should include( TEST_HOST_MULTIVALUE_DN_VALUE1 )
+			result[TEST_HOST_MULTIVALUE_DN_ATTR2].should include( TEST_HOST_MULTIVALUE_DN_VALUE2 )
+		end
 
 	end
 
-	describe "module that has one required objectClass declared" do
+	context "module that has one required objectClass declared" do
 
 		before( :each ) do
 			@mixin = Module.new do
@@ -216,7 +256,7 @@ describe Treequel::Model::ObjectClass do
 
 	end
 
-	describe "module that has more than one required objectClass declared" do
+	context "module that has more than one required objectClass declared" do
 
 		before( :each ) do
 			@mixin = Module.new do
@@ -256,10 +296,11 @@ describe Treequel::Model::ObjectClass do
 
 	end
 
-	describe "module that has one base declared" do
+	context "module that has one base declared" do
 		before( :each ) do
 			@mixin = Module.new do
-				extend Treequel::Model::ObjectClass
+				extend Treequel::Model::ObjectClass,
+				       Treequel::TestConstants
 				model_bases TEST_PEOPLE_DN
 			end
 		end
@@ -293,10 +334,11 @@ describe Treequel::Model::ObjectClass do
 
 	end
 
-	describe "module that has more than one base declared" do
+	context "module that has more than one base declared" do
 		before( :each ) do
 			@mixin = Module.new do
-				extend Treequel::Model::ObjectClass
+				extend Treequel::Model::ObjectClass,
+				       Treequel::TestConstants
 				model_bases TEST_HOSTS_DN,
 				            TEST_SUBHOSTS_DN
 			end

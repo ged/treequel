@@ -9,6 +9,8 @@ require 'treequel/constants'
 
 # Mixin that provides Treequel::Model characteristics to a mixin module.
 module Treequel::Model::ObjectClass
+	include Treequel::HashUtilities
+
 
 	### Extension callback -- add data structures to the extending +mod+.
 	### @param [Module] mod  the mixin module to be extended
@@ -72,6 +74,32 @@ module Treequel::Model::ObjectClass
 		end
 
 		return @model_bases.dup
+	end
+
+
+	### Instantiate a new Treequel::Model object with given +dn+ and the objectclasses 
+	### specified by the receiving module.
+	### @param [#to_s] dn        the DN of the new model object
+	### @param [Hash] entryhash  attributes to set on the new entry
+	def create( directory, dn, entryhash={} )
+		entryhash = stringify_keys( entryhash )
+
+		# Add the objectclasses from the mixin
+		entryhash['objectClass'] ||= []
+		entryhash['objectClass'].collect!( &:to_s )
+		entryhash['objectClass'] |= self.model_objectclasses.map( &:to_s )
+
+		# Add all the attribute pairs from the RDN bit of the DN to the entry
+		rdn_pair, _ = dn.split( /\s*,\s*/, 2 )
+		rdn_pair.split( /\+/ ).each do |attrpair|
+			k, v = attrpair.split( /\s*=\s*/ )
+			entryhash[ k ] ||= []
+			entryhash[ k ] << v
+		end
+
+		model_object = self.model_class.new( directory, dn, entryhash )
+
+		return model_object
 	end
 
 
