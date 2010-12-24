@@ -241,6 +241,7 @@ describe Treequel::Model do
 			@directory.should_receive( :get_entry ).with( @obj ).and_return( @entry )
 			@obj.cn.should == ['Slappy the Frog']
 		end
+
 	end
 
 
@@ -397,6 +398,93 @@ describe Treequel::Model do
 			@directory.stub( :convert_to_object ).and_return {|oid,str| str }
 			@obj.should respond_to( :cn )
 			@obj.should_not respond_to( :humpsize )
+		end
+
+		it "defers writing modifications via #[]= back to the directory" do
+			@conn.should_not_receive( :modify )
+			@obj[ :uid ] = 'slippy'
+			@obj.uid.should == ['slippy']
+		end
+
+		it "defers writing modifications via #merge back to the directory" do
+			@conn.should_not_receive( :modify )
+			@obj.merge( :uid => 'slippy', :givenName => 'Slippy' )
+			@obj.uid.should == ['slippy']
+			@obj.given_name.should == ['Slippy']
+		end
+
+		it "defers writing modifications via #delete back to the directory" do
+			@conn.should_not_receive( :modify )
+			@obj.delete( :uid, :givenName )
+			@obj.uid.should == []
+			@obj.given_name.should == []
+		end
+
+
+		context "with no modified attributes" do
+
+			it "knows that it hasn't been modified" do
+				@obj.should_not be_modified()
+			end
+
+			it "doesn't write anything to the directory when its #save method is called" do
+				@conn.should_not_receive( :modify )
+				@obj.save
+			end
+
+		end
+
+
+		context "with a single modified attribute" do
+
+			before( :each ) do
+				@obj.uid = 'slippy'
+			end
+
+			it "knows that is has been modified" do
+				@obj.should be_modified()
+			end
+
+			it "can return the modification as a list of LDAP::Mod objects" do
+				result = @obj.modifications
+
+				result.should be_an( Array )
+				result.should have( 1 ).member
+				result[0].should be_a( LDAP::Mod )
+				result[0].mod_op.should == LDAP::LDAP_MOD_REPLACE
+				result[0].mod_type.should == 'uid'
+				result[0].mod_vals.should == ['slippy']
+			end
+
+			it "reverts the attribute if its #revert method is called" do
+				@obj.revert
+				@obj.uid.should == @entry['uid'].first
+			end
+
+		end
+
+
+		context "with several modified attributes" do
+
+			before( :each ) do
+				@obj.uid = 'fappy'
+				@obj.given_name = 'Fappy'
+				@obj.display_name = 'Fappy the Bear'
+			end
+
+			it "knows that is has been modified" do
+				@obj.should be_modified()
+			end
+
+			it "can return the modifications as a list of LDAP::Mod objects"
+
+			it "reverts all of the attributes if its #revert method is called" do
+				@obj.revert
+				@obj.uid.should == @entry['uid'].first
+				@obj.given_name.should == @entry['givenName'].first
+				@obj.display_name.should == @entry['displayName'].first
+			end
+
 		end
 
 	end

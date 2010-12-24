@@ -140,6 +140,7 @@ class Treequel::Model < Treequel::Branch
 	### entry is set.
 	def initialize( *args )
 		super
+		@dirty = false
 		self.apply_applicable_mixins( @dn, @entry ) if @entry
 	end
 
@@ -147,6 +148,128 @@ class Treequel::Model < Treequel::Branch
 	######
 	public
 	######
+
+
+	### Tests whether the object has been modified since it was loaded from
+	### the directory.
+	def modified?
+		return @dirty ? true : false
+	end
+
+
+	### Index set operator -- set attribute +attrname+ to a new +value+.
+	### Overridden to make Model objects defer writing changes until 
+	### {Treequel::Model#save} is called.
+	### 
+	### @param [Symbol, String] attrname  attribute name
+	### @param [Object] value  the attribute value
+	def []=( attrname, value )
+		attrtype = self.find_attribute_type( attrname.to_sym )
+		value = Array( value ) unless attrtype.single?
+
+		self.mark_dirty
+		@values[ attrname.to_sym ] = value
+	end
+
+
+	### Make the changes to the object specified by the given +attributes+.
+	### Overridden to make Model objects defer writing changes until 
+	### {Treequel::Model#save} is called.
+	### 
+	### @param attributes (see Treequel::Directory#modify)
+	### @return [TrueClass] if the merge succeeded
+	def merge( attributes )
+		attributes.each do |attrname, value|
+			self[ attrname ] = value
+		end
+	end
+
+
+	### Delete the specified attributes.
+	### Overridden to make Model objects defer writing changes until 
+	### {Treequel::Model#save} is called.
+	### 
+	### @see Treequel::Branch#delete
+	def delete( *attributes )
+		return super if attributes.empty?
+
+		self.log.debug "Deleting attributes: %p" % [ attributes ]
+		self.mark_dirty
+		attributes.flatten.each do |attribute|
+
+			# With a hash, delete each value for each key
+			if attribute.is_a?( Hash )
+				attribute.collect do |key,vals|
+					vals.each do |val|
+						@values[ key ].delete( val )
+					end
+				end
+
+			# With an array of attributes to delete, replace 
+			# MULTIPLE attribute types with an empty array, and SINGLE 
+			# attribute types with nil
+			else
+				attrtype = self.find_attribute_type( attribute )
+				if attrtype.single?
+					@values[ attribute ] = nil
+				else
+					@values[ attribute ] = []
+				end
+			end
+		end
+
+		return true
+	end
+
+
+	### Write any pending changes in the model object to the directory.
+	def save
+		
+	end
+
+
+	### Return any pending changes in the model object.
+	### @return [Array<LDAP::Mod>]  the changes as LDAP modifications
+	def modifications
+		return unless self.modified?
+		self.log.debug "Gathering modifications..."
+
+		mods = []
+		entry = self.entry || {}
+		self.log.debug "  directory entry is: %p" % [ entry ]
+
+		@values.each do |attribute, vals|
+			vals = [ vals ] unless vals.is_a?( Array )
+			vals = vals.compact
+			vals.collect! {|val| self.get_converted_attribute(attribute, val) }
+			self.log.debug "  comparing %s values to entry: %p vs. %p" %
+				[ attribute, vals, entry[attribute.to_s] ]
+
+			entryvals = (entry[attribute.to_s] || [])
+
+			Diff::LCS.sdiff( entryvals.sort, vals.sort ) do |change|
+				self.log.debug "    found a change: %p" % [ change ]
+				if change.adding?
+					self.log.debug "      it's an add"
+					mods << LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute.to_s, change.element )
+				elsif change.changed?
+					self.log.debug "      it's a replace"
+					mods << LDAP::Mod.new( LDAP::LDAP_MOD_REPLACE, attribute.to_s, change.element )
+				elsif change.deleting?
+					self.log.debug "      it's a delete"
+					mods << LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute.to_s, change.element )
+				else
+					self.log.debug "      dunno what to do with %p" % [ change.action ]
+				end
+			end
+		end
+
+		self.log.debug "  mod are: %p" % [ mods ]
+		self.log.debug "  LDIF:\n%s" % [ LDAP::LDIF.mods_to_ldif(self.dn, mods) ]
+
+		return mods
+	end
+
 
 	### Override Branch#search to inject the 'objectClass' attribute to the
 	### selected attribute list if there is one.
@@ -196,6 +319,13 @@ class Treequel::Model < Treequel::Branch
 	#########
 	protected
 	#########
+
+
+	### Mark the object as having been modified.
+	def mark_dirty
+		@dirty = true
+	end
+
 
 	### Search for the Treequel::Schema::AttributeType associated with +sym+.
 	### 
