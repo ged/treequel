@@ -1,5 +1,8 @@
 #!/usr/bin/env ruby
 
+require 'diff/lcs'
+require 'diff/lcs/change'
+
 require 'ldap'
 require 'ldap/control'
 
@@ -112,4 +115,26 @@ class Time
 	include Treequel::TimeExtensions
 end
 
+
+### These three predicates use the wrong instance variable in the library.
+### :TODO: Submit a patch!
+module Treequel::DiffLCSChangeTypeTestFixes
+
+	def changed?
+		@action == '!'
+	end
+
+	def finished_a?
+		@action == '>'
+	end
+
+	def finished_b?
+		@action == '<'
+	end
+
+end
+
+class Diff::LCS::ContextChange
+	include Treequel::DiffLCSChangeTypeTestFixes
+end
 
