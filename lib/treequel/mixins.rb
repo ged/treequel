@@ -165,30 +165,30 @@ module Treequel
 			end
 
 			### Delegate debug messages to the global logger with the appropriate class name.
-			def debug( msg, &block )
+			def debug( msg=nil, &block )
 				Treequel.logger.add( Logger::DEBUG, msg, @classname, &block )
 			end
 
 			### Delegate info messages to the global logger with the appropriate class name.
-			def info( msg, &block )
+			def info( msg=nil, &block )
 				return self.debug( msg, &block ) if @force_debug
 				Treequel.logger.add( Logger::INFO, msg, @classname, &block )
 			end
 
 			### Delegate warn messages to the global logger with the appropriate class name.
-			def warn( msg, &block )
+			def warn( msg=nil, &block )
 				return self.debug( msg, &block ) if @force_debug
 				Treequel.logger.add( Logger::WARN, msg, @classname, &block )
 			end
 
 			### Delegate error messages to the global logger with the appropriate class name.
-			def error( msg, &block )
+			def error( msg=nil, &block )
 				return self.debug( msg, &block ) if @force_debug
 				Treequel.logger.add( Logger::ERROR, msg, @classname, &block )
 			end
 
 			### Delegate fatal messages to the global logger with the appropriate class name.
-			def fatal( msg, &block )
+			def fatal( msg=nil, &block )
 				Treequel.logger.add( Logger::FATAL, msg, @classname, &block )
 			end
 
