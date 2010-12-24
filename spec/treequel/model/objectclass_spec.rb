@@ -216,6 +216,36 @@ describe Treequel::Model::ObjectClass do
 			result[TEST_HOST_MULTIVALUE_DN_ATTR2].should include( TEST_HOST_MULTIVALUE_DN_VALUE2 )
 		end
 
+		it "can instantiate a new model object with its declared objectClasses" do
+			conn = mock( "ldap connection object" )
+			directory = get_fixtured_directory( conn )
+
+			mixin = Module.new do
+				extend Treequel::Model::ObjectClass
+				model_objectclasses :inetOrgPerson
+			end
+
+			result = mixin.create( directory, TEST_PERSON_DN )
+			result.should be_a( Treequel::Model )
+			result[:objectClass].should include( 'inetOrgPerson' )
+		end
+
+		it "merges objectClasses passed to the creation method" do
+			conn = mock( "ldap connection object" )
+			directory = get_fixtured_directory( conn )
+
+			mixin = Module.new do
+				extend Treequel::Model::ObjectClass
+				model_objectclasses :inetOrgPerson
+			end
+
+			result = mixin.create( directory, TEST_PERSON_DN,
+				:objectClass => [:person, :inetOrgPerson] )
+			result.should be_a( Treequel::Model )
+			result[:objectClass].should have( 2 ).members
+			result[:objectClass].should include( 'inetOrgPerson', 'person' )
+		end
+
 	end
 
 	context "module that has one required objectClass declared" do
