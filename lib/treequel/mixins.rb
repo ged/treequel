@@ -153,14 +153,6 @@ module Treequel
 	### Add logging to a Treequel class. Including classes get #log and #log_debug methods.
 	module Loggable
 
-		LEVEL = {
-			:debug => Logger::DEBUG,
-			:info  => Logger::INFO,
-			:warn  => Logger::WARN,
-			:error => Logger::ERROR,
-			:fatal => Logger::FATAL,
-		  }
-
 		### A logging proxy class that wraps calls to the logger into calls that include
 		### the name of the calling class.
 		### @private
@@ -172,13 +164,34 @@ module Treequel
 				@force_debug = force_debug
 			end
 
-			### Delegate calls the global logger with the class name as the 'progname' 
-			### argument.
-			def method_missing( sym, msg=nil, &block )
-				return super unless LEVEL.key?( sym )
-				sym = :debug if @force_debug
-				Treequel.logger.add( LEVEL[sym], msg, @classname, &block )
+			### Delegate debug messages to the global logger with the appropriate class name.
+			def debug( msg, &block )
+				Treequel.logger.add( Logger::DEBUG, msg, @classname, &block )
 			end
+
+			### Delegate info messages to the global logger with the appropriate class name.
+			def info( msg, &block )
+				return self.debug( msg, &block ) if @force_debug
+				Treequel.logger.add( Logger::INFO, msg, @classname, &block )
+			end
+
+			### Delegate warn messages to the global logger with the appropriate class name.
+			def warn( msg, &block )
+				return self.debug( msg, &block ) if @force_debug
+				Treequel.logger.add( Logger::WARN, msg, @classname, &block )
+			end
+
+			### Delegate error messages to the global logger with the appropriate class name.
+			def error( msg, &block )
+				return self.debug( msg, &block ) if @force_debug
+				Treequel.logger.add( Logger::ERROR, msg, @classname, &block )
+			end
+
+			### Delegate fatal messages to the global logger with the appropriate class name.
+			def fatal( msg, &block )
+				Treequel.logger.add( Logger::FATAL, msg, @classname, &block )
+			end
+
 		end # ClassNameProxy
 
 		#########
@@ -200,6 +213,7 @@ module Treequel
 		def log_debug
 			@log_debug_proxy ||= ClassNameProxy.new( self.class, true )
 		end
+
 	end # module Loggable
 
 

@@ -80,6 +80,16 @@ module Treequel
 
 
 	### Logging
+	# Log levels
+	LOG_LEVELS = {
+		'debug' => Logger::DEBUG,
+		'info'  => Logger::INFO,
+		'warn'  => Logger::WARN,
+		'error' => Logger::ERROR,
+		'fatal' => Logger::FATAL,
+	}.freeze
+	LOG_LEVEL_NAMES = LOG_LEVELS.invert.freeze
+
 	@default_logger = Logger.new( $stderr )
 	@default_logger.level = $DEBUG ? Logger::DEBUG : Logger::WARN
 

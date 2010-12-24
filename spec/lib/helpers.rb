@@ -74,8 +74,8 @@ module Treequel::SpecHelpers
 	def setup_logging( level=Logger::FATAL )
 
 		# Turn symbol-style level config into Logger's expected Fixnum level
-		if Treequel::Loggable::LEVEL.key?( level )
-			level = Treequel::Loggable::LEVEL[ level ]
+		if Treequel::LOG_LEVELS.key?( level.to_s )
+			level = Treequel::LOG_LEVELS[ level.to_s ]
 		end
 
 		logger = Logger.new( $stderr )

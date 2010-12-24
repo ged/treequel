@@ -89,16 +89,6 @@ class Treequel::Shell
 	CLEAR_TO_EOL       = "\e[K"
 	CLEAR_CURRENT_LINE = "\e[2K"
 
-	# Log levels
-	LOG_LEVELS = {
-		'debug' => Logger::DEBUG,
-		'info'  => Logger::INFO,
-		'warn'  => Logger::WARN,
-		'error' => Logger::ERROR,
-		'fatal' => Logger::FATAL,
-	}.freeze
-	LOG_LEVEL_NAMES = LOG_LEVELS.invert.freeze
-
 	# Valid connect-type arguments
 	VALID_CONNECT_TYPES = %w[tls ssl plain]
 
@@ -135,6 +125,10 @@ class Treequel::Shell
 	### the LDAP URI.
 	def self::parse_options( argv )
 		progname = File.basename( $0 )
+		loglevels = Treequel::Loggable::LEVEL.
+			sort_by {|_,lvl| lvl }.
+			collect {|name,lvl| name.to_s }.
+			join(', ')
 		bind_as = nil
 
 		oparser = OptionParser.new( "Usage: #{progname} [OPTIONS] [LDAPURL]" ) do |oparser|
@@ -145,9 +139,8 @@ class Treequel::Shell
 			end
 
 			oparser.on( '--loglevel=LEVEL', '-l LEVEL', Treequel::Loggable::LEVEL.keys, 
-				"Set the logging level. Should be one of:",
-				Treequel::Loggable::LEVEL.keys.collect {|lvl| lvl.to_s } ) do |lvl|
-				Treequel.logger.level = Treequel::Loggable::LEVEL[ lvl.to_sym ] or
+				"Set the logging level. Should be one of:", loglevels ) do |lvl|
+				Treequel.logger.level = Treequel::LOG_LEVELS[ lvl ] or
 					raise "Invalid logging level %p" % [ lvl ]
 			end
 
@@ -232,7 +225,7 @@ class Treequel::Shell
 		# If the user said to bind as someone on the command line, invoke a
 		# 'bind' command before dropping into the command line
 		if bind_as
-			options = OpenStruct.new
+			options = OpenStruct.new # dummy options object
 			self.bind_command( options, bind_as )
 		end
 
