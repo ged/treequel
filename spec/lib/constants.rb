@@ -107,6 +107,19 @@ module Treequel::TestConstants # :nodoc:all
 		TEST_ROOM_RDN           = "#{TEST_ROOM_DN_ATTR}=#{TEST_ROOM_DN_VALUE}"
 		TEST_ROOM_DN            = "#{TEST_ROOM_RDN},#{TEST_ROOMS_DN}"
 
+		# Multivalue DN
+		TEST_HOST_MULTIVALUE_DN_ATTR1  = 'cn'
+		TEST_HOST_MULTIVALUE_DN_VALUE1 = 'honcho'
+		TEST_HOST_MULTIVALUE_DN_ATTR2  = 'l'
+		TEST_HOST_MULTIVALUE_DN_VALUE2 = 'sandiego'
+		TEST_HOST_MULTIVALUE_RDN       = "%s=%s+%s=%s" % [
+			TEST_HOST_MULTIVALUE_DN_ATTR1,
+			TEST_HOST_MULTIVALUE_DN_VALUE1,
+			TEST_HOST_MULTIVALUE_DN_ATTR2,
+			TEST_HOST_MULTIVALUE_DN_VALUE2,
+		]
+		TEST_HOST_MULTIVALUE_DN        = "#{TEST_HOST_MULTIVALUE_RDN},#{TEST_HOSTS_DN}"
+
 		constants.each do |cname|
 			const_get(cname).freeze
 		end
