@@ -209,17 +209,21 @@ class Treequel::Schema
 	end
 
 
+	### Return the schema as a human-readable english string.
+	def to_s
+		parts = [ "Schema:" ]
+		parts << self.ivar_descriptions.collect {|desc| '  ' + desc }
+		return parts.join( $/ )
+	end
+
+
 	### Return a human-readable representation of the object suitable for debugging.
 	### @return [String]
 	def inspect
-		ivar_descs = self.instance_variables.sort.collect do |ivar|
-			len = self.instance_variable_get( ivar ).length
-			"%d %s" % [ len, ivar.to_s.gsub(/_/, ' ')[1..-1] ]
-		end
 		return %{#<%s:0x%0x %s>} % [
 			self.class.name,
 			self.object_id / 2,
-			ivar_descs.join(', '),
+			self.ivar_descriptions.join( ', ' ),
 		]
 	end
 
@@ -307,6 +311,16 @@ class Treequel::Schema
 		end
 	end
 
+
+	### Return descriptions of the schema's artifacts.
+	### @return [Array<String>]  the descriptions of the schema's artifacts, and how many of each 
+	###     it has.
+	def ivar_descriptions
+		self.instance_variables.sort.collect do |ivar|
+			len = self.instance_variable_get( ivar ).length
+			"%d %s" % [ len, ivar.to_s.gsub(/_/, ' ')[1..-1] ]
+		end		
+	end
 
 end # class Treequel::Schema
 
