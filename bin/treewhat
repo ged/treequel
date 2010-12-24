@@ -1,0 +1,204 @@
+#!/usr/bin/env ruby
+
+require 'abbrev'
+require 'trollop'
+require 'highline'
+require 'shellwords'
+require 'sysexits'
+
+require 'treequel'
+require 'treequel/mixins'
+require 'treequel/constants'
+
+
+# A tool for displaying information about a directory's records and schema artifacts.
+class Treequel::What
+	extend Sysexits
+	include Sysexits,
+	        Treequel::Loggable,
+	        Treequel::ANSIColorUtilities,
+	        Treequel::Constants::Patterns,
+	        Treequel::HashUtilities
+
+	COLOR_SCHEME = HighLine::ColorScheme.new do |scheme|
+		scheme[:header]	   = [ :bold, :yellow ]
+		scheme[:subheader] = [ :bold, :white ]
+		scheme[:key]	   = [ :white ]
+		scheme[:value]	   = [ :bold, :white ]
+		scheme[:error]	   = [ :red ]
+		scheme[:warning]   = [ :yellow ]
+		scheme[:message]   = [ :reset ]
+	end
+
+
+	### Run the utility with the given +args+.
+	def self::run( args )
+		HighLine.color_scheme = COLOR_SCHEME
+
+		oparser = self.make_option_parser
+		opts = Trollop.with_standard_exception_handling( oparser ) do
+			oparser.parse( args )
+		end
+
+		pattern = Shellwords.join( opts.leftovers ) if opts.leftovers
+
+		self.new( opts ).run( pattern )
+		exit :ok
+
+	rescue => err
+		Treequel.logger.fatal "Oops: %s: %s" % [ err.class.name, err.message ]
+		Treequel.logger.debug { '  ' + err.backtrace.join("\n  ") }
+
+		exit :software_error
+	end
+
+
+	### Create and configure a command-line option parser for the command.
+	### @return [Trollop::Parser] the option parser
+	def self::make_option_parser
+		progname = File.basename( $0 )
+		default_directory = Treequel.directory_from_config
+		loglevels = Treequel::LOG_LEVELS.
+			sort_by {|name,lvl| lvl }.
+			collect {|name,lvl| name.to_s }.
+			join( ', ' )
+
+		return Trollop::Parser.new do
+			banner "Usage: #{progname} [OPTIONS] [PATTERN]"
+
+			text ''
+			text %{Search for an object in an LDAP directory that matches PATTERN and } +
+			     %{display some information about it.}
+			text ''
+			text %{The PATTERN can be the DN (or RDN relative to the base) of an entry, } +
+			     %{a search filter, or the name of an artifact in the directory's schema, } +
+			     %{such as an objectClass, matching rule, syntax, etc.}
+			text ''
+			text %{If no PATTERN is specified, general information about the directory is } +
+			     %{output instead.}
+			text ''
+
+			text 'Options:'
+			opt :ldapurl, "Specify the directory to connect to.",
+				:default => default_directory.uri.to_s
+			opt :debug, "Turn debugging on. Also sets the --debuglevel to 'debug'."
+			opt :loglevel, "Set the logging level. Must be one of: #{loglevels}",
+				:default => Treequel::LOG_LEVEL_NAMES[ Treequel.logger.level ]
+			opt :binddn, "The DN of the user to bind as. Defaults to anonymous binding.",
+				:type => :string
+		end
+	end
+
+
+	#################################################################
+	###	I N S T A N C E   M E T H O D S
+	#################################################################
+
+	### Create a new instance of the command and set it up with the given
+	### +options+.
+	def initialize( options )
+		Treequel.logger.formatter = Treequel::ColorLogFormatter.new( Treequel.logger )
+
+		if options.debug
+			$DEBUG = true
+			$VERBOSE = true
+			Treequel.logger.level = Logger::DEBUG
+		end
+
+		@options   = options
+		@prompt    = HighLine.new
+		@directory = Treequel.directory( options.ldapurl )
+
+		self.log.debug "Created new treewhat command object for %s" % [ @directory ]
+	end
+
+
+	######
+	public
+	######
+
+	# The LDAP directory the command will connect to
+	attr_reader :directory
+
+	# The Trollop options hash the command will read its configuration from
+	attr_reader :options
+
+	# The HighLine object to use for prompting and displaying stuff
+	attr_reader :prompt
+
+
+	### Display an +object+ highlighted as a header.
+	def print_header( object )
+		self.prompt.say( self.prompt.color(object.to_s, :header) )
+	end
+
+
+	### Display an array of +pairs+ of objects as a key/value table.
+	def print_kvlist( *pairs )
+		pairs.flatten!
+		# :TODO: highlight keys and values
+		string = self.prompt.list( pairs, :columns_across, 2 )
+		self.prompt.say( string )
+	end
+
+
+	### Run the command with the specified +pattern+.
+	def run( pattern=nil )
+		self.log.debug "Running with pattern = %p" % [ pattern ]
+
+		self.bind_to_directory if self.options.binddn
+
+		case pattern
+
+		# No argument
+		when NilClass
+			self.show_directory_overview
+
+		# DN/RDN if it contains an '='
+		when /=/
+			self.show_entry( pattern )
+
+		# Otherwise, try to find a schema item that matches
+		else
+			self.show_schema_artifact( pattern )
+		end
+
+	end
+
+
+	### Prompt for a password and then bind to the command's directory using the binddn in 
+	### the options. 
+	def bind_to_directory
+		binddn = self.options.binddn or
+			raise ArgumentError, "no binddn in the options hash?!"
+		self.log.debug "Attempting to bind to the directory as %s" % [ binddn ]
+
+		pass = self.prompt.ask( "password: " ) {|q| q.echo = '*' }
+		user = Treequel::Branch.new( self.directory, binddn )
+
+		self.directory.bind_as( user, pass )
+		self.log.debug "  bound as %s" % [ user ]
+
+		return true
+	end
+
+
+	### Show general information about the directory if the user doesn't give a pattern on 
+	### the command line.
+	def show_directory_overview
+		pr  = self.prompt
+		dir = self.directory
+
+		self.print_header( '[' + dir.uri.to_s + ']' )
+		$stdout.puts
+		pr.say( dir.schema.to_s )
+		$stdout.puts
+		self.print_kvlist( "DN", dir.dn )
+
+	end
+
+end # class Treequel::What
+
+
+Treequel::What.run( ARGV.dup )
+
