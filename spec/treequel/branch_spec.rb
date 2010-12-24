@@ -604,6 +604,13 @@ describe Treequel::Branch do
 			@branch.delete( :objectClass => 'apple-user' )
 		end
 
+		it "can delete one particular non-String value of its entry's individual attributes" do
+			mod = LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, 'pwdChangedTime', ['20000101201501Z'] )
+			@conn.should_receive( :modify ).with( TEST_HOSTS_DN, [mod] )
+
+			@branch.delete( :pwdChangedTime => Time.gm(2000,"jan",1,20,15,1) )
+		end
+
 		it "can delete particular values of more than one of its entry's individual attributes" do
 			mod1 = LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, 'objectClass',
 			                      ['apple-user', 'inetOrgPerson'] )

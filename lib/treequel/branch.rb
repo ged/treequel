@@ -374,7 +374,8 @@ class Treequel::Branch
 			mods = attributes.flatten.collect do |attribute|
 				if attribute.is_a?( Hash )
 					attribute.collect do |key,vals|
-						vals = Array( vals ).collect {|val| val.to_s }
+						vals = [ vals ] unless vals.is_a?( Array )
+						vals.collect! {|val| self.get_converted_attribute(key, val) }
 						LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, key.to_s, vals )
 					end
 				else
