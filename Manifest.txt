@@ -6,6 +6,7 @@ examples/company-directory.rb
 examples/ldap-rack-auth.rb
 examples/ldap_state.rb
 lib/treequel.rb
+lib/treequel/behavior/control.rb
 lib/treequel/branch.rb
 lib/treequel/branchcollection.rb
 lib/treequel/branchset.rb
@@ -33,7 +34,6 @@ lib/treequel/utils.rb
 spec/data/objectClasses.yml
 spec/data/schema.yml
 spec/lib/constants.rb
-spec/lib/control_behavior.rb
 spec/lib/helpers.rb
 spec/lib/matchers.rb
 spec/treequel/branch_spec.rb
