@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'yaml'
 require 'ldap'
 require 'treequel'
 
@@ -51,6 +52,9 @@ module Treequel::TestConstants # :nodoc:all
 		}]
 		TEST_DSE.first.keys.each {|key| TEST_DSE.first[key].freeze }
 
+		SCHEMA_DUMPFILE = Pathname( __FILE__ ).dirname.parent + 'data' + 'schema.yml'
+		SCHEMAHASH      = LDAP::Schema.new( YAML.load_file(SCHEMA_DUMPFILE) )
+		SCHEMA          = Treequel::Schema.new( SCHEMAHASH )
 
 		TEST_HOSTS_DN_ATTR      = 'ou'
 		TEST_HOSTS_DN_VALUE     = 'Hosts'

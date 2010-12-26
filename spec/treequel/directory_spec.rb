@@ -46,17 +46,22 @@ describe Treequel::Directory do
 		}
 		@conn = mock( "LDAP connection", :set_option => true, :bound? => false )
 		LDAP::SSLConn.stub( :new ).and_return( @conn )
-		@conn.stub( :root_dse ).and_return( nil )
+
+		@conn.stub( :schema ).and_return( SCHEMAHASH )
 	end
 
 
 	it "is created with reasonable default options if none are specified" do
+		@conn.stub( :search_ext2 ).
+			with( "", 0, "(objectClass=*)", ["+"], false, nil, nil, 0, 0, 0, "", nil ).
+			and_return( TEST_DSE )
+
 		dir = Treequel::Directory.new
 
 		dir.host.should == 'localhost'
 		dir.port.should == 389
 		dir.connect_type.should == :tls
-		dir.base_dn.should == ''
+		dir.base_dn.should == 'dc=acme,dc=com'
 	end
 
 	it "is created with the specified options if options are specified" do
@@ -80,36 +85,37 @@ describe Treequel::Directory do
 	end
 
 	it "uses the first namingContext from the Root DSE if no base is specified" do
-		conn = mock( "LDAP connection", :set_option => true )
-		LDAP::Conn.stub( :new ).and_return( conn )
-		conn.should_receive( :root_dse ).and_return( TEST_DSE )
+		LDAP::Conn.stub( :new ).and_return( @conn )
+		@conn.stub( :search_ext2 ).
+			with( "", 0, "(objectClass=*)", ["+"], false, nil, nil, 0, 0, 0, "", nil ).
+			and_return( TEST_DSE )
 
-		@dir = Treequel::Directory.new( @options.merge(:base_dn => nil) )
-		@dir.base_dn.should == TEST_BASE_DN
+		dir = Treequel::Directory.new( @options.merge(:base_dn => nil) )
+		dir.base_dn.should == TEST_BASE_DN
 	end
 
 	it "can return its root element as a Branch instance" do
-		@dir = Treequel::Directory.new( @options )
-		@dir.base.should be_a( Treequel::Branch )
-		@dir.base.dn.should == TEST_BASE_DN
+		dir = Treequel::Directory.new( @options )
+		dir.base.should be_a( Treequel::Branch )
+		dir.base.dn.should == TEST_BASE_DN
 	end
 
 	it "can return its root element as an instance of its results class if it's been set" do
 		subtype = Class.new( Treequel::Branch )
-		@dir = Treequel::Directory.new( @options )
+		dir = Treequel::Directory.new( @options )
 
-		@dir.results_class = subtype
+		dir.results_class = subtype
 
-		@dir.base.should be_a( subtype )
-		@dir.base.dn.should == TEST_BASE_DN
+		dir.base.should be_a( subtype )
+		dir.base.dn.should == TEST_BASE_DN
 	end
 
 
 	describe "instances without existing connections" do
 
 		before( :each ) do
+			@conn = mock( "ldap connection", :bound? => false, :set_option => true )
 			@dir = Treequel::Directory.new( @options )
-			@conn = mock( "ldap connection", :set_option => true )
 		end
 
 
@@ -596,7 +602,9 @@ describe Treequel::Directory do
 		describe "to a server that supports controls introspection" do
 			before( :each ) do
 				@control = Module.new { include Treequel::Control }
-				@conn.should_receive( :root_dse ).and_return( TEST_DSE )
+				@conn.stub( :search_ext2 ).
+					with( "", 0, "(objectClass=*)", ["+"], false, nil, nil, 0, 0, 0, "", nil ).
+					and_return( TEST_DSE )
 			end
 
 
@@ -635,7 +643,9 @@ describe Treequel::Directory do
 
 		describe "to a server that supports extensions introspection" do
 			before( :each ) do
-				@conn.should_receive( :root_dse ).and_return( TEST_DSE )
+				@conn.stub( :search_ext2 ).
+					with( "", 0, "(objectClass=*)", ["+"], false, nil, nil, 0, 0, 0, "", nil ).
+					and_return( TEST_DSE )
 			end
 
 
@@ -653,7 +663,9 @@ describe Treequel::Directory do
 
 		describe "to a server that supports features introspection" do
 			before( :each ) do
-				@conn.should_receive( :root_dse ).and_return( TEST_DSE )
+				@conn.stub( :search_ext2 ).
+					with( "", 0, "(objectClass=*)", ["+"], false, nil, nil, 0, 0, 0, "", nil ).
+					and_return( TEST_DSE )
 			end
 
 
@@ -670,7 +682,9 @@ describe Treequel::Directory do
 
 		describe "to a server that doesn't support features introspection" do
 			before( :each ) do
-				@conn.should_receive( :root_dse ).and_return( TEST_DSE )
+				@conn.stub( :search_ext2 ).
+					with( "", 0, "(objectClass=*)", ["+"], false, nil, nil, 0, 0, 0, "", nil ).
+					and_return( TEST_DSE )
 			end
 
 

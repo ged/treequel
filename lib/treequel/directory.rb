@@ -132,13 +132,13 @@ class Treequel::Directory
 		@conn                  = nil
 		@bound_user            = nil
 
-		@base_dn               = options[:base_dn] || self.get_default_base_dn
-
-		@base                  = nil
 
 		@object_conversions    = DEFAULT_OBJECT_CONVERSIONS.dup
 		@attribute_conversions = DEFAULT_ATTRIBUTE_CONVERSIONS.dup
 		@registered_controls   = []
+
+		@base_dn               = options[:base_dn] || self.get_default_base_dn
+		@base                  = nil
 
 		# Immediately bind if credentials are passed to the initializer.
 		if ( options[:bind_dn] && options[:pass] )
@@ -155,7 +155,7 @@ class Treequel::Directory
 	def_method_delegators :base, *DELEGATED_BRANCH_METHODS
 
 	# Delegate some methods to the connection via the #conn method
-	def_method_delegators :conn, :controls, :referrals, :root_dse
+	def_method_delegators :conn, :controls, :referrals
 
 
 	# The host to connect to.
@@ -185,6 +185,12 @@ class Treequel::Directory
 	# The DN of the user the directory is bound as
 	# @return [String]
 	attr_reader :bound_user
+
+
+	### Fetch the root DSE as a Treequel::Branch.
+	def root_dse
+		return self.search( '', :base, '(objectClass=*)', :selectattrs => ['+'] ).first
+	end
 
 
 	### Fetch the Branch for the base node of the directory.
@@ -606,7 +612,7 @@ class Treequel::Directory
 	### Return an Array of OID strings representing the controls supported by the Directory, 
 	### as listed in the directory's root DSE.
 	def supported_control_oids
-		return self.conn.root_dse.first['supportedControl']
+		return self.root_dse[:supportedControl]
 	end
 
 
@@ -621,7 +627,7 @@ class Treequel::Directory
 	### Return an Array of OID strings representing the extensions supported by the Directory, 
 	### as listed in the directory's root DSE.
 	def supported_extension_oids
-		return self.conn.root_dse.first['supportedExtension']
+		return self.root_dse[:supportedExtension]
 	end
 
 
@@ -636,7 +642,7 @@ class Treequel::Directory
 	### Return an Array of OID strings representing the features supported by the Directory, 
 	### as listed in the directory's root DSE.
 	def supported_feature_oids
-		return self.conn.root_dse.first['supportedFeatures']
+		return self.root_dse[:supportedFeatures]
 	end
 
 
@@ -676,9 +682,7 @@ class Treequel::Directory
 
 	### Fetch the default base dn for the server from the server's Root DSE.
 	def get_default_base_dn
-		dse = self.root_dse
-		return '' if dse.nil? || dse.empty?
-		return dse.first['namingContexts'].first
+		return self.root_dse[:namingContexts].first.dn
 	end
 
 

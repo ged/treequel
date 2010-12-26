@@ -12,7 +12,6 @@ BEGIN {
 
 require 'rspec'
 
-require 'yaml'
 require 'treequel'
 
 require 'spec/lib/constants'
@@ -22,10 +21,6 @@ require 'spec/lib/matchers'
 ### RSpec helper functions.
 module Treequel::SpecHelpers
 	include Treequel::TestConstants
-
-	SCHEMA_DUMPFILE = Pathname( __FILE__ ).dirname.parent + 'data' + 'schema.yml'
-	SCHEMAHASH      = LDAP::Schema.new( YAML.load_file(SCHEMA_DUMPFILE) )
-	SCHEMA          = Treequel::Schema.new( SCHEMAHASH )
 
 	class ArrayLogger
 		### Create a new ArrayLogger that will append content to +array+.
@@ -98,8 +93,12 @@ module Treequel::SpecHelpers
 	### external data.
 	def get_fixtured_directory( conn )
 		LDAP::SSLConn.stub( :new ).and_return( @conn )
-		conn.stub( :root_dse ).and_return( TEST_DSE )
+		conn.stub( :search_ext2 ).
+			with( "", 0, "(objectClass=*)", ["+"], false, nil, nil, 0, 0, 0, "", nil ).
+			and_return( TEST_DSE )
 		conn.stub( :set_option )
+
+		# Avoid parsing the whole schema with every example
 		directory = Treequel.directory( TEST_LDAPURI )
 		directory.stub( :schema ).and_return( SCHEMA )
 
