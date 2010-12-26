@@ -189,11 +189,9 @@ class Treequel::What
 		pr  = self.prompt
 		dir = self.directory
 
-		self.print_header( '[' + dir.uri.to_s + ']' )
-		$stdout.puts
+		self.print_header( dir.uri.to_s )
+		pr.say( "\n" )
 		pr.say( dir.schema.to_s )
-		$stdout.puts
-		self.print_kvlist( "DN", dir.dn )
 
 	end
 
