@@ -1,6 +1,6 @@
 ^commit\-msg\.txt$
-docs/manual/output
-docs/api
+manual/output
+doc/
 ^pkg$
 ChangeLog$
 coverage/
