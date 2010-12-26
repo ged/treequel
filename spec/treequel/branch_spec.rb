@@ -782,6 +782,35 @@ describe Treequel::Branch do
 				2.times { @branch[ :description ] }
 			end
 
+			it "freezes the values fetched from its entry by default to prevent accidental " +
+			   "in-place modification" do
+				@conn.should_receive( :search_ext2 ).
+					with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+					exactly( :once ).
+					and_return([ @entry ])
+
+				expect {
+					@branch[ :description ] << "Another description"
+				}.to raise_error( /can't modify frozen/i )
+			end
+
+			it "doesn't freeze the values fetched from its entry if it's told not to" do
+				@conn.should_receive( :search_ext2 ).
+					with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+					exactly( :once ).
+					and_return([ @entry ])
+
+				begin
+					Treequel::Branch.freeze_converted_values = false
+
+					expect {
+						@branch[ :description ] << "Another description"
+					}.to_not raise_error()
+				ensure
+					Treequel::Branch.freeze_converted_values = true
+				end
+			end
+
 			it "converts objects via the conversions set in its directory" do
 				test_dn = "cn=ssh,cn=www,#{TEST_HOSTS_DN}"
 				entry = {

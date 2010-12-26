@@ -131,6 +131,9 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
+	### Never freeze converted values in Model objects.
+	def freeze_converted_values?; false; end
+
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -199,10 +202,14 @@ class Treequel::Model < Treequel::Branch
 
 			# With a hash, delete each value for each key
 			if attribute.is_a?( Hash )
-				attribute.collect do |key,vals|
-					vals.each do |val|
-						@values[ key ].delete( val )
-					end
+				self.log.debug "  hash-delete..."
+				attribute.collect do |key, vals|
+					# Ensure the value exists, and its values converted and cached, as
+					# the delete needs Ruby object instead of string comparison
+					next unless self[ key ]
+					self.log.debug "    deleting %p: %p" % [ key, vals ]
+
+					@values[ key ].delete_if {|val| vals.include?(val) }
 				end
 
 			# With an array of attributes to delete, replace 
@@ -251,23 +258,32 @@ class Treequel::Model < Treequel::Branch
 				self.log.debug "    found a change: %p" % [ change ]
 				if change.adding?
 					self.log.debug "      it's an add"
-					mods << LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute.to_s, change.element )
+					mods << LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute.to_s, [change.new_element] )
 				elsif change.changed?
 					self.log.debug "      it's a replace"
-					mods << LDAP::Mod.new( LDAP::LDAP_MOD_REPLACE, attribute.to_s, change.element )
+					mods << LDAP::Mod.new( LDAP::LDAP_MOD_REPLACE, attribute.to_s, [change.new_element] )
 				elsif change.deleting?
 					self.log.debug "      it's a delete"
-					mods << LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute.to_s, change.element )
+					mods << LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute.to_s, [change.old_element] )
 				else
 					self.log.debug "      dunno what to do with %p" % [ change.action ]
 				end
 			end
 		end
 
-		self.log.debug "  mod are: %p" % [ mods ]
+		self.log.debug "  mods are: %p" % [ mods ]
 		self.log.debug "  LDIF:\n%s" % [ LDAP::LDIF.mods_to_ldif(self.dn, mods) ]
 
 		return mods
+	end
+
+
+	### Revert to the attributes in the directory, discarding any pending changes.
+	def revert
+		self.clear_caches
+		@dirty = false
+
+		return true
 	end
 
 
@@ -464,6 +480,7 @@ class Treequel::Model < Treequel::Branch
 		self.log.debug "Applying mixins applicable to %s" % [ dn ]
 		schema = self.directory.schema
 
+		self.log.debug "  entry is: %p" % [ entry ]
 		ocs = entry['objectClass'].collect do |oc_oid|
 			explicit_oc = schema.object_classes[ oc_oid ]
 			explicit_oc.ancestors.collect {|oc| oc.name }
@@ -499,9 +516,9 @@ class Treequel::Model < Treequel::Branch
 	def attribute_from_method( methodname )
 
 		case methodname.to_s
-		when /^(?:has_)?([a-z]\w+)\?$/i
+		when /^(?:has_)?([a-z]\w*)\?$/i
 			return $1.to_sym, :predicate
-		when /^([a-z]\w+)(=)?$/i
+		when /^([a-z]\w*)(=)?$/i
 			return $1.to_sym, ($2 ? :writer : :reader )
 		end
 	end

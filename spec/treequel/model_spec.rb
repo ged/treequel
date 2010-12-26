@@ -30,6 +30,18 @@ describe Treequel::Model do
 	        Treequel::Matchers
 
 
+	# Shorthand methods for creating LDAP::Mod objects
+	def ldap_mod_delete( attribute, value )
+		return LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute, value )
+	end
+	def ldap_mod_replace( attribute, value )
+		return LDAP::Mod.new( LDAP::LDAP_MOD_REPLACE, attribute, value )
+	end
+	def ldap_mod_add( attribute, value )
+		return LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute, value )
+	end
+
+
 	before( :all ) do
 		setup_logging( :fatal )
 	end
@@ -59,6 +71,7 @@ describe Treequel::Model do
 			and_return( [:inetOrgPerson] )
 		mixin.should_receive( :model_bases ).at_least( :once ).
 			and_return( [] )
+
 		Treequel::Model.register_mixin( mixin )
 		Treequel::Model.mixins_for_objectclasses( :inetOrgPerson ).should include( mixin )
 	end
@@ -69,6 +82,7 @@ describe Treequel::Model do
 			and_return( [:inetOrgPerson, :organizationalPerson] )
 		mixin.should_receive( :model_bases ).at_least( :once ).
 			and_return( [] )
+
 		Treequel::Model.register_mixin( mixin )
 		Treequel::Model.mixins_for_objectclasses( :inetOrgPerson, :organizationalPerson ).
 			should include( mixin )
@@ -80,6 +94,7 @@ describe Treequel::Model do
 			and_return( [] )
 		mixin.should_receive( :model_bases ).at_least( :once ).
 			and_return( [TEST_PEOPLE_DN] )
+
 		Treequel::Model.register_mixin( mixin )
 		Treequel::Model.mixins_for_dn( TEST_PEOPLE_DN ).should include( mixin )
 	end
@@ -90,6 +105,7 @@ describe Treequel::Model do
 			and_return( [] )
 		mixin.should_receive( :model_bases ).at_least( :once ).
 			and_return( [TEST_PEOPLE_DN] )
+
 		Treequel::Model.register_mixin( mixin )
 		Treequel::Model.mixins_for_dn( TEST_PERSON_DN ).should include( mixin )
 	end
@@ -101,7 +117,6 @@ describe Treequel::Model do
 		mixin.should_receive( :model_bases ).at_least( :once ).and_return( [] )
 
 		Treequel::Model.register_mixin( mixin )
-
 		Treequel::Model.mixins_for_dn( TEST_PERSON_DN ).should include( mixin )
 	end
 
@@ -257,7 +272,8 @@ describe Treequel::Model do
 				'l'           => ['a forest in England'],
 				'title'       => ['Forest Fire Prevention Advocate'],
 				'displayName' => ['Slappy the Frog'],
-				'logonTime'   => 'a time string',
+				'logonTime'   => ['1293167318'],
+				'description' => ['Smokey the Bear is much more intense in person.', 'Alright.' ],
 				'objectClass' => %w[
 					top
 					person
@@ -276,103 +292,63 @@ describe Treequel::Model do
 
 
 		it "provides readers for valid attributes" do
-			attrtype = stub( "Treequel attributeType object", :name => :uid )
-
-			@obj.should_receive( :valid_attribute_type ).with( :uid ).and_return( attrtype )
-			@obj.should_receive( :[] ).with( :uid ).and_return( ['slappy'] )
-
 			@obj.uid.should == ['slappy']
 		end
 
+		it "provides readers for single-letter attributes" do
+			@obj.l.should == ['a forest in England']
+		end
+
 		it "normalizes underbarred readers for camelCased attributes" do
-			attrtype = stub( "Treequel attributeType object", :name => :givenName )
-
-			@obj.should_receive( :valid_attribute_type ).with( :given_name ).and_return( nil )
-			@obj.should_receive( :valid_attribute_type ).with( :givenName ).and_return( attrtype )
-			@obj.should_receive( :[] ).with( :givenName ).and_return( ['Slappy'] )
-
 			@obj.given_name.should == ['Slappy']
 		end
 
 		it "falls through to branch-traversal for a reader with arguments" do
-			@obj.should_not_receive( :valid_attribute_type )
-			@obj.should_not_receive( :[] )
-
-			@obj.should_receive( :traverse_branch ).
-				with( :dc, :admin, {} ).and_return( :a_child_branch )
-
-			@obj.dc( :admin ).should == :a_child_branch
+			result = @obj.dc( :admin )
+			result.should be_a( Treequel::Model )
+			result.dn.should == "dc=admin,#{@entry['dn'].first}"
 		end
 
 		it "accommodates branch-traversal from its auto-generated readers" do
-			@obj.should_receive( :[] ).with( :uid ).and_return( ['slappy'] )
-			@obj.uid.should == ['slappy']
-
+			@obj.uid # Generate the reader, which should then do traversal, too
 			@obj.uid( :slappy ).should be_a( Treequel::Model )
 		end
 
 		it "provides writers for valid singular attributes" do
-			attrtype = stub( "Treequel attributeType object", :name => :logonTime, :single? => true )
-
-			@obj.should_receive( :valid_attribute_type ).with( :logonTime ).and_return( attrtype )
-			@obj.should_receive( :[]= ).with( :logonTime, 'stampley' )
-
-			@obj.logonTime = 'stampley'
+			@obj.logonTime.should equal( 1293167318 )
 		end
 
 		it "provides writers for valid non-singular attributes that accept a non-array" do
-			attrtype = stub( "Treequel attributeType object", :name => :uid, :single? => false )
-
-			@obj.should_receive( :valid_attribute_type ).with( :uid ).and_return( attrtype )
-			@obj.should_receive( :[]= ).with( :uid, ['stampley'] )
-
 			@obj.uid = 'stampley'
+			@obj.uid.should == ['stampley']
 		end
 
 		it "provides a predicate that tests true for valid singular attributes that are set" do
-			attrtype = stub( "Treequel attributeType object", :name => :activated, :single? => true )
-
-			@obj.should_receive( :valid_attribute_type ).with( :activated ).and_return( attrtype )
-			@obj.should_receive( :[] ).with( :activated ).and_return( :a_time_object )
-
-			@obj.should be_activated()
+			@obj.display_name?.should be_true()
 		end
 
 		it "provides a predicate that tests false for valid singular attributes that are not set" do
-			attrtype = stub( "Treequel attributeType object", :name => :deactivated, :single? => true )
-
-			@obj.should_receive( :valid_attribute_type ).with( :deactivated ).and_return( attrtype )
-			@obj.should_receive( :[] ).with( :deactivated ).and_return( nil )
-
-			@obj.should_not be_deactivated()
+			@obj.delete( :displayName )
+			@obj.display_name?.should be_false()
 		end
 
 		it "provides a predicate that tests true for valid non-singular attributes that have " +
 		   "at least one value" do
-			attrtype = stub( "Treequel attributeType object", :name => :description, :single? => false )
+			@obj.should have_given_name()
+		end
 
-			@obj.should_receive( :valid_attribute_type ).with( :description ).and_return( attrtype )
-			@obj.should_receive( :[] ).with( :description ).
-				and_return([ 'Racoon City', 'St-Michael Clock Tower' ])
-
-			@obj.should have_description()
+		it "provides a predicate that tests true for single-letter non-singular attributes " +
+		   "that have at least one value" do
+			@obj.should have_l()
 		end
 
 		it "provides a predicate that tests false for valid non-singular attributes that don't " +
 		   "have at least one value" do
-			attrtype = stub( "Treequel attributeType object", :name => :l, :single? => false )
-
-			@obj.should_receive( :valid_attribute_type ).with( :locality_name ).and_return( attrtype )
-			@obj.should_receive( :[] ).with( :l ).
-				and_return([])
-
-			@obj.should_not have_locality_name()
+			@obj.delete( :givenName )
+			@obj.should_not have_given_name()
 		end
 
 		it "falls through to the default proxy method for invalid attributes" do
-			@obj.stub( :valid_attribute_type ).and_return( nil )
-			@entry.should_not_receive( :[] )
-
 			expect {
 				@obj.nonexistant
 			}.to raise_exception( NoMethodError, /undefined method/i )
@@ -380,22 +356,23 @@ describe Treequel::Model do
 
 		it "adds the objectClass attribute to the attribute list when executing a search that " +
 		   "contains a select" do
-			@directory.stub( :convert_to_object ).and_return {|oid,str| str }
-			@directory.should_receive( :search ).
-				with( @obj, :scope, :filter, :selectattrs => ['cn', 'objectClass'] )
-			@obj.search( :scope, :filter, :selectattrs => ['cn'] )
+			@conn.should_receive( :search_ext2 ).
+			 	with( @entry['dn'].first, LDAP::LDAP_SCOPE_ONELEVEL, "(cn=magnelion)",
+			          ["cn", "objectClass"], false, nil, nil, 0, 0, 0, "", nil ).
+				and_return( [] )
+			@obj.search( :one, '(cn=magnelion)', :selectattrs => ['cn'] )
 		end
 
 		it "doesn't add the objectClass attribute to the attribute list when the search " +
 		   "doesn't contain a select" do
-			@directory.stub( :convert_to_object ).and_return {|oid,str| str }
-			@directory.should_receive( :search ).
-				with( @obj, :scope, :filter, :selectattrs => [] )
-			@obj.search( :scope, :filter, :selectattrs => [] )
+			@conn.should_receive( :search_ext2 ).
+			 	with( @entry['dn'].first, LDAP::LDAP_SCOPE_ONELEVEL, "(cn=ephelion)",
+			          ['*'], false, nil, nil, 0, 0, 0, "", nil ).
+				and_return( [] )
+			@obj.search( :one, '(cn=ephelion)' )
 		end
 
 		it "knows which attribute methods it responds to" do
-			@directory.stub( :convert_to_object ).and_return {|oid,str| str }
 			@obj.should respond_to( :cn )
 			@obj.should_not respond_to( :humpsize )
 		end
@@ -450,15 +427,18 @@ describe Treequel::Model do
 
 				result.should be_an( Array )
 				result.should have( 1 ).member
-				result[0].should be_a( LDAP::Mod )
-				result[0].mod_op.should == LDAP::LDAP_MOD_REPLACE
-				result[0].mod_type.should == 'uid'
-				result[0].mod_vals.should == ['slippy']
+				result.should include( LDAP::Mod.new(LDAP::LDAP_MOD_REPLACE, 'uid', ['slippy']) )
 			end
 
 			it "reverts the attribute if its #revert method is called" do
+				@conn.should_receive( :search_ext2 ).
+					with( @entry['dn'].first, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+					and_return([ @entry ])
+
 				@obj.revert
-				@obj.uid.should == @entry['uid'].first
+
+				@obj.uid.should == @entry['uid']
+				@obj.should_not be_modified()
 			end
 
 		end
@@ -470,19 +450,53 @@ describe Treequel::Model do
 				@obj.uid = 'fappy'
 				@obj.given_name = 'Fappy'
 				@obj.display_name = 'Fappy the Bear'
+				@obj.delete( :l )
+				@obj.delete( :description => 'Alright.' )
+				@obj.description << "The new mascot."
 			end
 
 			it "knows that is has been modified" do
 				@obj.should be_modified()
 			end
 
-			it "can return the modifications as a list of LDAP::Mod objects"
+			it "returns the modified values via its accessors" do
+				@obj.uid.should == ['fappy']
+				@obj.given_name.should == ['Fappy']
+				@obj.display_name.should == 'Fappy the Bear' # SINGLE
+				@obj.l.should == []
+				@obj.description.should have( 2 ).members
+				@obj.description.should include(
+					"Smokey the Bear is much more intense in person.",
+					"The new mascot."
+				  )
+			end
+
+			it "can return the modifications as a list of LDAP::Mod objects" do
+				result = @obj.modifications
+
+				result.should be_an( Array )
+				result.should have( 6 ).members
+				result.should include( ldap_mod_replace 'uid', ['fappy'] )
+				result.should include( ldap_mod_replace 'givenName', ['Fappy'] )
+				result.should include( ldap_mod_replace 'displayName', ['Fappy the Bear'] )
+				result.should include( ldap_mod_add 'description', ['The new mascot.'] )
+				result.should include( ldap_mod_delete 'description', ['Alright.'] )
+				result.should include( ldap_mod_delete 'l', ['a forest in England'] )
+
+			end
 
 			it "reverts all of the attributes if its #revert method is called" do
+				@conn.should_receive( :search_ext2 ).
+					with( @entry['dn'].first, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+					and_return([ @entry ])
+
 				@obj.revert
-				@obj.uid.should == @entry['uid'].first
-				@obj.given_name.should == @entry['givenName'].first
-				@obj.display_name.should == @entry['displayName'].first
+
+				@obj.uid.should == @entry['uid']
+				@obj.given_name.should == @entry['givenName']
+				@obj.display_name.should == @entry['displayName'].first # SINGLE
+				@obj.l.should == @entry['l']
+				@obj.should_not be_modified()
 			end
 
 		end

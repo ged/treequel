@@ -38,11 +38,17 @@ class Treequel::Branch
 	# [Boolean] Whether or not to include operational attributes by default.
 	@include_operational_attrs = false
 
+	# [Boolean] Whether or not to freeze values cached in @values. This helps
+	#   prevent you from accidentally doing branch[:attr] << 'value', which
+	#   modifies the cached values, but not the entry.
+	@freeze_converted_values = true
+
 	# Whether or not to include operational attributes when fetching the
 	# entry for branches.
 	class << self
 		extend Treequel::AttributeDeclarations
 		predicate_attr :include_operational_attrs
+		predicate_attr :freeze_converted_values
 	end
 
 
@@ -299,14 +305,16 @@ class Treequel::Branch
 	def []( attrname )
 		attrsym = attrname.to_sym
 
-		unless @values.key?( attrsym )
+		if @values.key?( attrsym )
+			self.log.debug "  value for %p is cached." % [ attrname ]
+		else
 			self.log.debug "  value for %p is NOT cached." % [ attrsym ]
 			value = self.get_converted_object( attrsym )
 			self.log.debug "  converted value is: %p" % [ value ]
-			value.freeze if value.respond_to?( :freeze )
+			value.freeze if
+				self.class.freeze_converted_values? &&
+				value.respond_to?( :freeze )
 			@values[ attrsym ] = value
-		else
-			self.log.debug "  value for %p is cached." % [ attrname ]
 		end
 
 		return @values[ attrsym ]
