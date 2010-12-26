@@ -5,6 +5,7 @@ require 'hoe'
 Hoe.plugin :mercurial
 Hoe.plugin :yard
 Hoe.plugin :signing
+Hoe.plugin :manualgen
 
 Hoe.plugins.delete :rubyforge
 
@@ -36,6 +37,8 @@ hoespec = Hoe.spec 'treequel' do
 	self.require_ruby_version( '>=1.8.7' )
 
 	self.hg_sign_tags = true if self.respond_to?( :hg_sign_tags= )
+
+	self.manual_source_dir = 'src'
 
 	self.yard_opts = [ '--use-cache', '--protected', '--verbose' ]
 	self.rdoc_locations << "deveiate:/usr/local/www/public/code/#{remote_rdoc_dir}"
