@@ -1,0 +1,143 @@
+---
+title: Models
+layout: default
+index: 7
+filters:
+  - erb
+  - links
+  - examples
+  - editorial
+  - api
+  - textile
+example_prelude: |-
+  require 'treequel'
+  dir = Treequel.directory
+---
+
+<div id="auto-toc"></div>
+
+h2(#models). Models
+
+A common pattern when you're using any kind of datastore is to represent the data contained within it as a "domain model":http://www.martinfowler.com/eaaCatalog/domainModel.html. For relational databases, Martin Fowler's "Active Record" pattern has become the _de facto_ standard, and because of its popularity, a few people have tried to apply the same pattern to LDAP. However, LDAP records aren't of fixed dimensionality, and don't need to be grouped together in the directory, so applying the logic of relational sets only works for the simplest cases.
+
+Treequel comes with its own set of tools for constructing domain models, tools that take advantage of Ruby's flexible object model to reflect the flexibility and organic nature of LDAP data.
+
+h3(#modeling-objectclass). Modeling ObjectClasses
+
+The principle component is a class called <?api Treequel::Model ?>, which provides the usual attribute accessors for the entry that it wraps, as well as a mechanism for layering functionality onto an object based on what its @objectClass@ attributes are.
+
+The layers are mixin Modules that extend <?api Treequel::Model::ObjectClass ?>, each of which is associated with a particular combination of objectClasses and bases. Here's a fairly simple example that adds a method that expands any _labeledUri_ attributes of entries under @ou=people,dc=acme,dc=com@ that have the @inetOrgPerson@ objectClass:
+
+<?example { language: ruby, caption: "Add url-expansion to @inetOrgPerson@ entries." } ?>
+require 'treequel/model'
+require 'treequel/model/objectclass'
+
+module ACME::InetOrgPerson
+	extend Treequel::Model::ObjectClass
+
+	model_class Treequel::Model
+	model_bases 'ou=people,dc=acme,dc=com'
+	model_objectclasses :inetOrgPerson
+
+
+	### Return the person's URIs as values in a Hash keyed by either the
+	### associated label (if there is one), or a number if there's no
+	### label.
+	def labeled_uris
+		counter = 0
+		return self.labeled_uri.inject({}) do |hash, luri|
+			uri, label = luri.split( /\s+/, 2 )
+			unless label
+				label = counter
+				counter += 1
+			end
+			hash[ label ] = URI( uri )
+			hash
+		end
+	end
+
+end # module ACME::InetOrgPerson
+
+<?end?>
+
+The module first extends Treequel::Model::ObjectClass [line 5], and then registers itself with a model class [line 7]. The next two lines set which objectClasses and base DNs the mixin will apply to [lines 8 and 9], and then the code that follows declares the method that's added to applicable model objects.
+
+For example, if the above code was in a file called @acme/inetorgperson.rb@:
+
+<?example { language: irb, caption: "Get the labeledUris associated with the 'jonh' user." } ?>
+require 'treequel/model'
+require 'acme/inetorgperson'
+
+directory = Treequel.directory_from_config
+jonh = Treequel::Model.search( directory ).
+	filter( :uid => 'jonh', :objectClass => :inetOrgPerson ).first
+jonh.labeled_uris
+# => {"My Homepage"=>#<URI::HTTP:0x00000102841f68 URL:http://example.com/>} 
+<?end?>
+
+h3(#model-associations). Model Associations
+
+You can use the methods of the mixins to associate entries with one another, as well. For attributes that contain a full DN, fetching the value will automatically return another <?api Treequel::Model ?> instance, but for less-restrictive attributes like @memberUid@ that are just plain strings, you'll need to map them into the corresponding entry yourself:
+
+<?example { language: ruby, caption: "Associate posixGroup memberUids with posixAccount uids." } ?>
+require 'treequel/model'
+require 'treequel/model/objectclass'
+
+$directory = Treequel.directory_from_config
+
+module ACME::PosixAccount
+	extend Treequel::Model::ObjectClass
+
+	model_class Treequel::Model
+	model_bases 'ou=people,dc=acme,dc=com'
+	model_objectclasses :posixAccount
+
+	### Return ACME::PosixGroup objects for the groups the account is a member of.
+	def groups
+		return ACME::PosixGroup.search( $directory ).filter( :memberUid => self.uid ).all
+	end
+
+end # module ACME::PosixAccount
+
+
+module ACME::PosixGroup
+	extend Treequel::Model::ObjectClass
+
+	model_class Treequel::Model
+	model_bases 'ou=groups,dc=acme,dc=com'
+	model_objectclasses :posixGroup
+
+	### Return ACME::PosixAccount objects for the group's members
+	def members
+		return ACME::PosixAccount.search( $directory ).filter( :uid => self.memberUid ).all
+	end
+
+end # module ACME::PosixGroup
+<?end?>
+
+If you want to make the associations a bit more useful, you can return a <?api Treequel::Branchset ?> from the association methods instead of calling @.all@ on it immediately, which will allow the results to be filtered further by chaining additional filter methods:
+
+<?example { language: ruby, caption: "Find all sysadmin accounts that don't have a password." } ?>
+require 'treequel/model'
+require 'treequel/model/objectclass'
+
+$directory = Treequel.directory_from_config
+
+# Re-open to modify the association to return a Branchset instead
+module ACME::PosixGroup
+	def members
+		return ACME::PosixAccount.search( $directory ).filter( :uid => self.memberUid )
+	end
+end # module ACME::PosixGroup
+
+sysadmin_group = ACME::PosixGroup.search( $directory ).
+	filter( :cn => 'sysadmin' ).first
+sysadmin_group.members.filter( ~:userPassword ).all
+
+# => [#<Treequel::Model:0x100b0a2d8 uid=mahlon,ou=People,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>]
+<?end ?>
+
+Mahlon appears to be violating ACME Company policy [line 17]. He will be flogged in accordance with company handbook section C, paragraph 2.
+
+If the functionality you wish to define requires attributes of two or more different _objectClasses_ , you can put all of them in the @model_objectclasses@ statement, and then the mixin will only apply to entries that have *all* of them. The @model_bases@ attribute can also take multiple values; entries will be limited to children of *any* of them.
+

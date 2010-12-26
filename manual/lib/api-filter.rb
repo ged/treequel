@@ -7,11 +7,6 @@
 # * Mahlon E. Smith <mahlon@martini.nu>
 # 
 
-### Avoid declaring the class if the tasklib hasn't been loaded yet.
-unless Object.const_defined?( :Manual )
-	raise LoadError, "not intended for standalone use: try the 'manual.rb' rake tasklib"
-end
-
 
 ### A filter for generating links from the generated API documentation. This allows you to refer
 ### to class documentation by simply referencing a class name.
@@ -21,7 +16,7 @@ end
 ###   <?api Class::Name ?>
 ###   <?api "click here":Class::Name ?>
 ### 
-class APIFilter < Manual::Page::Filter
+class APIFilter < Hoe::ManualGen::Page::Filter
 
 	# PI	   ::= '<?' PITarget (S (Char* - (Char* '?>' Char*)))? '?>'
 	ApiPI = %r{

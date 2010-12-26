@@ -8,12 +8,6 @@
 # 
 # 
 
-### Avoid declaring the class if the tasklib hasn't been loaded yet.
-unless Object.const_defined?( :Manual )
-	raise LoadError, "not intended for standalone use: try the 'manual.rb' rake tasklib"
-end
-
-
 
 ### A filter for generating links from the page catalog. This allows you to refer to other pages
 ### in the source and have them automatically updated as the structure of the manual changes.
@@ -37,7 +31,7 @@ end
 ### The second form links to a page by its path relative to the base manual source directory.
 ### Again, the link text defaults to the page title, or can be overriden via a prepended string,
 ### and you can link into a page with an appended ID.
-class LinksFilter < Manual::Page::Filter
+class LinksFilter < Hoe::ManualGen::Page::Filter
 
 	# PI	   ::= '<?' PITarget (S (Char* - (Char* '?>' Char*)))? '?>'
 	LinkPI = %r{

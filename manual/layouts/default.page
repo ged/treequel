@@ -1,11 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<!DOCTYPE HTML>
+<html lang="en">
 <head>
-	<title>Treequel Manual — <%= page.config['title'] || "untitled" %></title>
+	<title>Treequel Manual - <%= page.config['title'] || "untitled" %></title>
+	<meta charset="utf-8" />
 	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 	
 	<script type="text/javascript" src="<%= @basepath %>/js/jquery-1.3.2.min.js"></script>
+	<script type="text/javascript" src="<%= @basepath %>/js/sh.js"></script>
 	<script type="text/javascript" src="<%= @basepath %>/js/manual.js"></script>
 
     <link rel="stylesheet" type="text/css" href="<%= @basepath %>/css/manual.css"
@@ -13,28 +14,32 @@
 </head>
 <body class="manual">
 
-	<div id="header">
-		<h1><a href="<%= @basepath %>/">Treequel</a></h1>
+	<header>
+		<hgroup>
+			<h1><a href="<%= @basepath %>/">Treequel</a></h1>
+			<h2 id="tagline"><%= page.config['tagline'] || "" %></h2>
+		</hgroup>
 
+		<nav>
 		<%= page.make_index_html %>
+		</nav>
 
-		<div id="tagline"><%= page.config['tagline'] || "" %></div>
-	</div>
+	</header>
 
-	<div id="content">
+	<section>
         <p id="version">Version: <%= metadata.version %></p>
 
 		<!-- Generated content -->
 		<%= content %>
 		<!-- end of generated content -->
 
-	</div>
+	</section>
  
-	<div id="footer">
+	<footer>
 		<div class="copyright">Copyright &copy; 2008-<%= Time.now.year %> Michael Granger.</div>
 		<div class="vcsrev">Rev: <%= `hg id` %></div>
 		<div class="timestamp">Built: <%= Time.now.strftime("%Y%m%d %H:%M:%S %Z") %></div>
-	</div>
+	</footer>
 	
 </body>
 </html>
