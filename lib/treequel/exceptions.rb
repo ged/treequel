@@ -26,6 +26,24 @@ module Treequel
 	### other problem.
 	class ModelError < Treequel::Error; end
 
+	### Exception class raised when +raise_on_save_failure+ is set and validation fails
+	class ValidationFailed < Treequel::ModelError
+
+		### Create a new Treequel::ValidationFailed exception with the given +errors+.
+		### @param [Treequel::Model::Errors, String] errors  the validaton errors
+		def initialize( errors )
+			if errors.respond_to?( :full_messages )
+				@errors = errors
+				super( errors.full_messages.join(', ') )
+			else
+				super
+			end
+		end
+
+		# @return [Treequel::Model::Errors] the validation errors
+		attr_reader :errors
+	end
+
 end # module Treequel
 
 
