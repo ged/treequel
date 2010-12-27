@@ -543,8 +543,7 @@ describe Treequel::Branch do
 			@conn.should_receive( :add ).
 				with( "cn=chillyt,#{TEST_HOSTS_DN}",
 				      "ipHostNumber"=>["127.0.0.1"],
-				      "objectClass"=>["ipHost", "device"],
-				      "cn"=>["chillyt"] )
+				      "objectClass"=>["ipHost", "device"] )
 
 			res = @branch.cn( :chillyt ).create( newattrs )
 			res.should be_a( Treequel::Branch )
