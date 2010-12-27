@@ -40,7 +40,7 @@ class Treequel::What
 			oparser.parse( args )
 		end
 
-		pattern = Shellwords.join( opts.leftovers ) if opts.leftovers
+		pattern = Shellwords.join( oparser.leftovers ) if oparser.leftovers
 
 		self.new( opts ).run( pattern )
 		exit :ok
@@ -166,8 +166,8 @@ class Treequel::What
 	end
 
 
-	### Prompt for a password and then bind to the command's directory using the binddn in 
-	### the options. 
+	### Prompt for a password and then bind to the command's directory using the binddn in
+	### the options.
 	def bind_to_directory
 		binddn = self.options.binddn or
 			raise ArgumentError, "no binddn in the options hash?!"
@@ -183,7 +183,7 @@ class Treequel::What
 	end
 
 
-	### Show general information about the directory if the user doesn't give a pattern on 
+	### Show general information about the directory if the user doesn't give a pattern on
 	### the command line.
 	def show_directory_overview
 		pr  = self.prompt
@@ -194,6 +194,67 @@ class Treequel::What
 		pr.say( dir.schema.to_s )
 
 	end
+
+
+	SCHEMA_ARTIFACT_TYPES = [
+		:object_classes,
+		:attribute_types,
+		:ldap_syntaxes,
+		:matching_rules,
+		:matching_rule_uses,
+	  ]
+
+	### Find an artifact in the directory's schema that matches +pattern+, and display it
+	### if it exists.
+	def show_schema_artifact( pattern )
+		pr        = self.prompt
+		schema    = self.directory.schema
+		artifacts = SCHEMA_ARTIFACT_TYPES.
+			collect {|type| schema.send( type ).values.uniq }.flatten
+
+		if match = find_exact_matching_artifact( artifacts, pattern )
+			self.display_schema_artifact( match )
+		elsif match = find_substring_matching_artifact( artifacts, pattern )
+			pr.say( "No exact match. Falling back to substring match:" )
+			self.display_schema_artifact( match )
+		else
+			pr.say( pr.color("No match.", :error) )
+		end
+	end
+
+
+	### Display a schema artifact in a readable way.
+	def display_schema_artifact( artifact )
+		self.prompt.say( artifact.class.name.sub(/.*::/, '') + ' ' )
+		self.prompt.say( artifact.to_s )
+	end
+
+
+	### Try to find an artifact in +artifacts+ whose name or oid matches +pattern+ exactly.
+	### Returns the first matching artifact.
+	def find_exact_matching_artifact( artifacts, pattern )
+		self.log.debug "Trying to find an exact match for %p in %d artifacts." %
+			[ pattern, artifacts.length ]
+		return artifacts.find do |obj|
+			(obj.respond_to?( :names ) && obj.names.map(&:to_s).include?(pattern) ) ||
+			(obj.respond_to?( :name )  && obj.name.to_s == pattern ) ||
+			(obj.respond_to?( :oid )   && obj.oid == pattern )
+		end
+	end
+
+
+	### Try to find an artifact in +artifacts+ whose name or oid contains +pattern+.
+	### Returns the first matching artifact.
+	def find_substring_matching_artifact( artifacts, pattern )
+		pattern = Regexp.new( Regexp.escape(pattern), Regexp::IGNORECASE )
+
+		return artifacts.find do |obj|
+			(obj.respond_to?( :names ) && obj.names.find {|name| name.to_s =~ pattern} ) ||
+			(obj.respond_to?( :name )  && obj.name.to_s =~ pattern ) ||
+			(obj.respond_to?( :oid )   && obj.oid =~ pattern )
+		end
+	end
+
 
 end # class Treequel::What
 
