@@ -478,28 +478,13 @@ class Treequel::Directory
 
 
 	### Create the entry for the given +branch+, setting its attributes to +newattrs+.
+	### @param [Treequel::Branch, #to_s] branch   the branch to create (or a DN string)
+	### @param [Hash, Array<LDAP::Mod>] newattrs  the attributes to create the entry with. This
+	###                                   can be either a Hash of attributes, or an Array of
+	###                                   LDAP::Mod objects.
 	def create( branch, newattrs={} )
-		newdn = branch.dn
-		schema = self.schema
-
-		# Merge RDN attributes with existing ones, combining any that exist in both
-		self.log.debug "Smushing rdn attributes %p into %p" % [ branch.rdn_attributes, newdn ]
-		newattrs.merge!( branch.rdn_attributes ) do |key, *values|
-			values.flatten.uniq
-		end
-
-		normattrs = self.normalize_attributes( newattrs )
-		raise ArgumentError, "Can't create an entry with no objectClasses" unless
-			normattrs.key?( 'objectClass' )
-		normattrs['objectClass'].each do |oc|
-			raise ArgumentError, "No such objectClass #{oc.inspect}" unless
-				schema.object_classes.key?(oc.to_sym)
-		end
-		raise ArgumentError, "Can't create an entry with no structural objectClass" unless
-			normattrs['objectClass'].any? {|oc| schema.object_classes[oc.to_sym].structural? }
-
-		self.log.debug "Creating an entry at %s with the attributes: %p" % [ newdn, normattrs ]
-		self.conn.add( newdn, normattrs )
+		newattrs = self.normalize_attributes( newattrs ) if newattrs.is_a?( Hash )
+		self.conn.add( branch.to_s, newattrs )
 
 		return true
 	end

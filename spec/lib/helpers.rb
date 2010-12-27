@@ -105,6 +105,24 @@ module Treequel::SpecHelpers
 		return directory
 	end
 
+	### Shorthand method for creating LDAP::Mod DELETE objects 
+	def ldap_mod_delete( attribute, *values )
+		return LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute.to_s, values.flatten )
+	end
+
+
+	### Shorthand method for creating LDAP::Mod REPLACE objects 
+	def ldap_mod_replace( attribute, *values )
+		return LDAP::Mod.new( LDAP::LDAP_MOD_REPLACE, attribute.to_s, values.flatten )
+	end
+
+
+	### Shorthand method for creating LDAP::Mod ADD objects 
+	def ldap_mod_add( attribute, *values )
+		return LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute.to_s, values.flatten )
+	end
+
+
 end
 
 

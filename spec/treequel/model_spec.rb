@@ -30,18 +30,6 @@ describe Treequel::Model do
 	        Treequel::Matchers
 
 
-	# Shorthand methods for creating LDAP::Mod objects
-	def ldap_mod_delete( attribute, value )
-		return LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute, value )
-	end
-	def ldap_mod_replace( attribute, value )
-		return LDAP::Mod.new( LDAP::LDAP_MOD_REPLACE, attribute, value )
-	end
-	def ldap_mod_add( attribute, value )
-		return LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute, value )
-	end
-
-
 	before( :all ) do
 		setup_logging( :fatal )
 	end

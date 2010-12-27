@@ -488,62 +488,30 @@ describe Treequel::Directory do
 				:desc => 'Audi like Jetta',
 				:objectClass => :room,
 			}
-			rdn_attrs = {
-				TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE]
-			}
-			addattrs = {
+
+			branch = Treequel::Branch.new( @directory, TEST_PERSON_DN, newattrs )
+
+			@conn.should_receive( :add ).with( TEST_PERSON_DN, {
 				'cn' => ['Chilly T'],
 				'desc' => ['Audi like Jetta'],
 				'objectClass' => ['room'],
-				TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE],
-			}
-
-			branch = mock( "new person branch" )
-			branch.should_receive( :dn ).and_return( TEST_PERSON_DN )
-			branch.should_receive( :rdn_attributes ).at_least( :once ).and_return( rdn_attrs )
-
-			room_objectclass = stub( 'room objectClass', :structural? => true )
-			@schema.should_receive( :object_classes ).at_least( :once ).and_return({ 
-				:room => room_objectclass,
 			})
-
-			@conn.should_receive( :add ).with( TEST_PERSON_DN, addattrs )
 
 			@dir.create( branch, newattrs )
 		end
 
 
-		it "doesn't include duplicates when smushing RDN attributes" do
-			newattrs = {
-				TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE],
-				:cn => 'Chilly T',
-				:desc => 'Audi like Jetta',
-				:objectClass => :room,
-			}
-			rdn_attrs = {
-				TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE]
-			}
-			addattrs = {
-				'cn' => ['Chilly T'],
-				'desc' => ['Audi like Jetta'],
-				'objectClass' => ['room'],
-				TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE],
-			}
+		it "can create an entry with a DN and LDAP::Mod objects instead of an attribute hash" do
+			mods = [
+				ldap_mod_add( :cn, 'Chilly T' ),
+				ldap_mod_add( :desc, 'Audi like Jetta' ),
+				ldap_mod_add( :objectClass, 'room' ),
+			]
 
-			branch = mock( "new person branch" )
-			branch.should_receive( :dn ).and_return( TEST_PERSON_DN )
-			branch.should_receive( :rdn_attributes ).at_least( :once ).and_return( rdn_attrs )
+			@conn.should_receive( :add ).with( TEST_PERSON_DN, mods )
 
-			room_objectclass = stub( 'room objectClass', :structural? => true )
-			@schema.should_receive( :object_classes ).at_least( :once ).and_return({ 
-				:room => room_objectclass,
-			})
-
-			@conn.should_receive( :add ).with( TEST_PERSON_DN, addattrs )
-
-			@dir.create( branch, newattrs )
+			@dir.create( TEST_PERSON_DN, mods )
 		end
-
 
 		it "can move a record to a new dn within the same branch" do
 			@dir.stub( :bound? ).and_return( false )
