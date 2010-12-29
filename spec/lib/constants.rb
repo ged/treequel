@@ -87,7 +87,7 @@ module Treequel::TestConstants # :nodoc:all
 		TEST_PEOPLE_DN          = "#{TEST_PEOPLE_RDN},#{TEST_BASE_DN}"
 
 		TEST_PERSON_DN_ATTR     = 'uid'
-		TEST_PERSON_DN_VALUE    = 'arogers'
+		TEST_PERSON_DN_VALUE    = 'jrandom'
 		TEST_PERSON_RDN         = "#{TEST_PERSON_DN_ATTR}=#{TEST_PERSON_DN_VALUE}"
 		TEST_PERSON_DN          = "#{TEST_PERSON_RDN},#{TEST_PEOPLE_DN}"
 

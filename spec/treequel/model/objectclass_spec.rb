@@ -30,6 +30,11 @@ describe Treequel::Model::ObjectClass do
 		setup_logging( :fatal )
 	end
 
+	after( :each ) do
+		Treequel::Model.objectclass_registry.clear
+		Treequel::Model.base_registry.clear
+	end
+
 	after( :all ) do
 		reset_logging()
 	end
@@ -45,11 +50,6 @@ describe Treequel::Model::ObjectClass do
 
 
 	context "extended module" do
-
-		after( :each ) do
-			Treequel::Model.objectclass_registry.clear
-			Treequel::Model.base_registry.clear
-		end
 
 		it "can declare a required objectClass" do
 			mixin = Module.new do

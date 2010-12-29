@@ -10,17 +10,48 @@ require 'treequel/branchset'
 
 # An object interface to LDAP entries.
 class Treequel::Model < Treequel::Branch
+	require 'treequel/model/objectclass'
+	require 'treequel/model/errors'
+	require 'treequel/model/schemavalidations'
+
 	include Treequel::Loggable,
 	        Treequel::Constants,
 	        Treequel::Normalization,
-	        Treequel::Constants::Patterns
-
-	require 'treequel/model/objectclass'
+	        Treequel::Constants::Patterns,
+	        Treequel::Model::SchemaValidations
 
 
 	# A prototype Hash that autovivifies its members as Sets, for use in
 	# the objectclass_registry and the base_registry
 	SET_HASH = Hash.new {|h,k| h[k] = Set.new }
+
+
+	# The hooks that are called before an action
+	BEFORE_HOOKS = [
+		:before_create,
+		:before_update,
+		:before_save,
+		:before_destroy,
+		:before_validation,
+	  ]
+
+	# The hooks that are called after an action
+	AFTER_HOOKS = [
+		:after_initialize,
+		:after_create,
+		:after_update,
+		:after_save,
+		:after_destroy,
+		:after_validation,
+	  ]
+
+	# Hooks the user can override
+	HOOKS = BEFORE_HOOKS + AFTER_HOOKS
+
+	# Defaults for #validate options
+	DEFAULT_VALIDATION_OPTIONS = {
+		:with_schema => true,
+	}
 
 
 	#################################################################
@@ -132,7 +163,23 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Never freeze converted values in Model objects.
-	def freeze_converted_values?; false; end
+	def self::freeze_converted_values?; false; end
+
+
+	### Create a new Treequel::Model object with the given +entry+ hash from the 
+	### specified +directory+. Overrides Treequel::Branch.new_from_entry to pass the
+	### +from_directory+ flag to mark it as unmodified.
+	### 
+	### @see Treequel::Branch.new_from_entry
+	def self::new_from_entry( entry, directory )
+		entry = Treequel::HashUtilities.stringify_keys( entry )
+		dnvals = entry.delete( 'dn' ) or
+			raise ArgumentError, "no 'dn' attribute for entry"
+
+		Treequel.logger.debug "Creating %p from entry: %p in directory: %s" %
+			[ self, dnvals.first, directory ]
+		return self.new( directory, dnvals.first, entry, true )
+	end
 
 
 	#################################################################
@@ -141,10 +188,25 @@ class Treequel::Model < Treequel::Branch
 
 	### Override the default to extend new instances with applicable mixins if their
 	### entry is set.
-	def initialize( *args )
+	def initialize( directory, dn, entry=nil, from_directory=false )
+		if from_directory
+			super( directory, dn, entry )
+		else
+			super( directory, dn )
+			@values = entry ? symbolify_keys( entry ) : {}
+			@dirty  = true
+		end
+
+		self.apply_applicable_mixins( @dn, @entry )
+		self.after_initialize
+	end
+
+
+	### Copy initializer -- re-apply mixins to duplicates, too.
+	def initialize_copy( other )
 		super
-		@dirty = false
-		self.apply_applicable_mixins( @dn, @entry ) if @entry
+		self.apply_applicable_mixins( @dn, @entry )
+		self.after_initialize
 	end
 
 
@@ -152,11 +214,24 @@ class Treequel::Model < Treequel::Branch
 	public
 	######
 
+	### Set up the empty hook methods
+	HOOKS.each do |hook|
+		define_method( hook ) do |*args|
+			self.log.debug "#{hook} default hook called."
+		end
+	end
+
 
 	### Tests whether the object has been modified since it was loaded from
 	### the directory.
 	def modified?
 		return @dirty ? true : false
+	end
+
+
+	### Mark the object as unmodified.
+	def reset_dirty_flag
+		@dirty = false
 	end
 
 
@@ -167,11 +242,12 @@ class Treequel::Model < Treequel::Branch
 	### @param [Symbol, String] attrname  attribute name
 	### @param [Object] value  the attribute value
 	def []=( attrname, value )
-		attrtype = self.find_attribute_type( attrname.to_sym )
+		attrtype = self.find_attribute_type( attrname.to_sym ) or
+			raise ArgumentError, "unknown attribute %p" % [ attrname ]
 		value = Array( value ) unless attrtype.single?
 
 		self.mark_dirty
-		@values[ attrname.to_sym ] = value
+		@values[ attrtype.name.to_sym ] = value
 	end
 
 
@@ -198,30 +274,26 @@ class Treequel::Model < Treequel::Branch
 
 		self.log.debug "Deleting attributes: %p" % [ attributes ]
 		self.mark_dirty
+
 		attributes.flatten.each do |attribute|
 
 			# With a hash, delete each value for each key
 			if attribute.is_a?( Hash )
-				self.log.debug "  hash-delete..."
-				attribute.collect do |key, vals|
-					# Ensure the value exists, and its values converted and cached, as
-					# the delete needs Ruby object instead of string comparison
-					next unless self[ key ]
-					self.log.debug "    deleting %p: %p" % [ key, vals ]
-
-					@values[ key ].delete_if {|val| vals.include?(val) }
-				end
+				self.delete_specific_values( attribute )
 
 			# With an array of attributes to delete, replace 
 			# MULTIPLE attribute types with an empty array, and SINGLE 
 			# attribute types with nil
-			else
-				attrtype = self.find_attribute_type( attribute )
+			elsif attribute.respond_to?( :to_sym )
+				attrtype = self.find_attribute_type( attribute.to_sym )
 				if attrtype.single?
-					@values[ attribute ] = nil
+					@values[ attribute.to_sym ] = nil
 				else
-					@values[ attribute ] = []
+					@values[ attribute.to_sym ] = []
 				end
+			else
+				raise ArgumentError,
+					"can't convert a %p to a Symbol or a Hash" % [ attribute.class ]
 			end
 		end
 
@@ -229,9 +301,67 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
+	### Returns the validation errors associated with this object.
+	### @see Treequel::Model::Errors.
+	def errors
+		return @errors ||= Treequel::Model::Errors.new
+	end
+
+
+	### Return +true+ if the model object passes all of its validations.
+	def valid?( opts={} )
+		self.errors.clear
+
+		return false if self.before_validation == false
+		self.validate
+		self.after_validation
+
+		return self.errors.empty? ? true : false
+	end
+
+
+	### Validate the object with the specified +options+.
+	### @param [Hash] options  options for validation.
+	### @option options [Boolean] :with_schema  whether or not to run the schema validations
+	def validate( options={} )
+		options = DEFAULT_VALIDATION_OPTIONS.merge( options )
+
+		self.errors.add( :objectClass, 'must have at least one' ) if self.object_classes.empty?
+
+		super( options )
+	end
+
+
 	### Write any pending changes in the model object to the directory.
 	def save
-		
+		self.log.debug "Saving %s..." % [ self.dn ]
+		raise Treequel::ValidationFailed, self.errors unless self.valid?
+		self.log.debug "  validation succeeded."
+
+		unless mods = self.modifications
+			self.log.debug "  no modifications... no save necessary."
+			return false
+		end
+
+		self.log.debug "  got %d modifications." % [ mods.length ]
+		self.before_save( mods ) or return nil
+
+		if self.exists?
+			self.log.debug "    entry already exists: updating..."
+			self.before_update( mods ) or return nil
+			self.modify( mods )
+			self.after_update( mods )
+
+		else
+			self.log.debug "    entry doesn't exist: creating..."
+			self.before_create( mods ) or return nil
+			self.create( mods )
+			self.after_create( mods )
+		end
+
+		self.after_save( mods )
+
+		return true
 	end
 
 
@@ -245,7 +375,7 @@ class Treequel::Model < Treequel::Branch
 		entry = self.entry || {}
 		self.log.debug "  directory entry is: %p" % [ entry ]
 
-		@values.each do |attribute, vals|
+		@values.sort_by {|k, _| k.to_s }.each do |attribute, vals|
 			vals = [ vals ] unless vals.is_a?( Array )
 			vals = vals.compact
 			vals.collect! {|val| self.get_converted_attribute(attribute, val) }
@@ -343,6 +473,22 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
+	### Delete specific key/value +pairs+ from the entry.
+	### @param [Hash] pairs  key/value pairs to delete from the entry.
+	def delete_specific_values( pairs )
+		self.log.debug "  hash-delete..."
+
+		# Ensure the value exists, and its values converted and cached, as
+		# the delete needs Ruby object instead of string comparison
+		pairs.each do |key, vals|
+			next unless self[ key ]
+			self.log.debug "    deleting %p: %p" % [ key, vals ]
+
+			@values[ key ].delete_if {|val| vals.include?(val) }
+		end
+	end
+
+
 	### Search for the Treequel::Schema::AttributeType associated with +sym+.
 	### 
 	### @param [Symbol,String] name  the name of the attribute to find
@@ -351,7 +497,7 @@ class Treequel::Model < Treequel::Branch
 	def find_attribute_type( name )
 		attrtype = nil
 
-		# If the attribute doesn't match as-is, try the camelCased version of it
+		# Try both the name as-is, and the camelCased version of it
 		camelcased_sym = name.to_s.gsub( /_(\w)/ ) { $1.upcase }.to_sym
 		attrtype = self.valid_attribute_type( name ) ||
 		           self.valid_attribute_type( camelcased_sym )
@@ -475,8 +621,12 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Apply mixins that are applicable considering the receiver's DN and the 
-	### objectClasses from its entry.
-	def apply_applicable_mixins( dn, entry )
+	### objectClasses from the given entry merged with any unsaved values.
+	def apply_applicable_mixins( dn, entry=nil )
+		entry ||= {}
+		entry.merge!( stringify_keys(@values) )
+		return unless entry['objectClass']
+
 		self.log.debug "Applying mixins applicable to %s" % [ dn ]
 		schema = self.directory.schema
 

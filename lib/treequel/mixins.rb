@@ -285,6 +285,22 @@ module Treequel
 			end
 		end
 
+		### Normalize the attributes in +hash+ to be of the form expected by the
+		### LDAP library (i.e., keys as Strings, values as Arrays of Strings)
+		def normalize_attributes( hash )
+			normhash = {}
+			hash.each do |key,val|
+				val = [ val ] unless val.is_a?( Array )
+				val.collect! {|obj| obj.to_s }
+
+				normhash[ key.to_s ] = val
+			end
+
+			normhash.delete( 'dn' )
+
+			return normhash
+		end
+
 	end # HashUtilities
 
 

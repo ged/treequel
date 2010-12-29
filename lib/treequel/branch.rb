@@ -60,8 +60,12 @@ class Treequel::Branch
 	### @return [Treequel::Branch]  The new branch object.
 	def self::new_from_entry( entry, directory )
 		entry = Treequel::HashUtilities.stringify_keys( entry )
-		Treequel.logger.debug "Creating Branch from entry: %p in directory: %p" % [ entry, directory ]
-		return self.new( directory, entry['dn'].first, entry )
+		dnvals = entry.delete( 'dn' ) or
+			raise ArgumentError, "no 'dn' attribute for entry"
+
+		Treequel.logger.debug "Creating Branch from entry: %p in directory: %s" %
+			[ dnvals.first, directory ]
+		return self.new( directory, dnvals.first, entry )
 	end
 
 
@@ -412,9 +416,10 @@ class Treequel::Branch
 	### Create the entry for this Branch with the specified +attributes+. The +attributes+ should,
 	### at a minimum, contain the pair `:objectClass => :someStructuralObjectClass`.
 	### 
-	### @param [Hash<Symbol,String => Object>] attributes
+	### @see Treequel::Directory#create
 	def create( attributes={} )
 		self.directory.create( self, attributes )
+		self.clear_caches
 		return self
 	end
 
@@ -450,7 +455,10 @@ class Treequel::Branch
 	### @param [Hash<String, Symbol => Object>] attributes 
 	def move( rdn )
 		self.log.debug "Asking the directory to move me to an entry called %p" % [ rdn ]
-		return self.directory.move( self, rdn )
+		self.directory.move( self, rdn )
+		self.clear_caches
+
+		return self
 	end
 
 
@@ -511,7 +519,6 @@ class Treequel::Branch
 		schema = self.directory.schema
 
 		oc_oids = self[:objectClass] || []
-		self.log.debug "  objectClass OIDs are: %p" % [ oc_oids ]
 		oc_oids |= additional_classes.collect {|str| str.to_sym }
 		oc_oids << :top if oc_oids.empty?
 
@@ -522,7 +529,7 @@ class Treequel::Branch
 			oclasses << oc
 		end
 
-		self.log.debug "  found %d objectClasses: %p" % [  oclasses.length, oclasses ]
+		self.log.debug "  found %d objectClasses: %p" % [  oclasses.length, oclasses.map(&:name) ]
 		return oclasses.uniq
 	end
 
@@ -557,7 +564,7 @@ class Treequel::Branch
 		 	[ oclasses.map(&:name) ]
 
 		oclasses.each do |oc|
-			self.log.debug "  adding %p from %p" % [ oc.must, oc ]
+			self.log.debug "  adding %p from %p" % [ oc.must.map(&:name), oc.name ]
 			types |= oc.must
 		end
 

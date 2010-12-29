@@ -463,7 +463,7 @@ class Treequel::Directory
 			self.log.debug "Modifying %s with LDAP mod objects: %p" % [ branch.dn, mods ]
 			self.conn.modify( branch.dn, mods )
 		else
-			normattrs = self.normalize_attributes( mods )
+			normattrs = normalize_attributes( mods )
 			self.log.debug "Modifying %s with: %p" % [ branch.dn, normattrs ]
 			self.conn.modify( branch.dn, normattrs )
 		end
@@ -483,7 +483,7 @@ class Treequel::Directory
 	###                                   can be either a Hash of attributes, or an Array of
 	###                                   LDAP::Mod objects.
 	def create( branch, newattrs={} )
-		newattrs = self.normalize_attributes( newattrs ) if newattrs.is_a?( Hash )
+		newattrs = normalize_attributes( newattrs ) if newattrs.is_a?( Hash )
 		self.conn.add( branch.to_s, newattrs )
 
 		return true
@@ -681,23 +681,6 @@ class Treequel::Directory
 	ensure
 		self.log.info "  restoring original connection %p." % [ original_conn ]
 		@conn = original_conn
-	end
-
-
-	### Normalize the attributes in +hash+ to be of the form expected by the
-	### LDAP library (i.e., keys as Strings, values as Arrays of Strings)
-	def normalize_attributes( hash )
-		normhash = {}
-		hash.each do |key,val|
-			val = [ val ] unless val.is_a?( Array )
-			val.collect! {|obj| obj.to_s }
-
-			normhash[ key.to_s ] = val
-		end
-
-		normhash.delete( 'dn' )
-
-		return normhash
 	end
 
 

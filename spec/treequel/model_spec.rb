@@ -145,6 +145,29 @@ describe Treequel::Model do
 		obj.should_not be_a( mixin3 )
 	end
 
+	it "extends dups of new instances with registered mixins" do
+		mixin1 = Module.new do
+			extend Treequel::Model::ObjectClass
+			model_bases TEST_HOSTS_DN, TEST_SUBHOSTS_DN
+			model_objectclasses :ipHost
+		end
+		mixin2 = Module.new do
+			extend Treequel::Model::ObjectClass
+			model_bases TEST_HOSTS_DN
+			model_objectclasses :device
+		end
+		mixin3 = Module.new do
+			extend Treequel::Model::ObjectClass
+			model_objectclasses :person
+		end
+
+		obj = Treequel::Model.new( @directory, TEST_SUBHOST_DN, @simple_entry ).dup
+
+		obj.should be_a( mixin1 )
+		obj.should_not be_a( mixin2 )
+		obj.should_not be_a( mixin3 )
+	end
+
 	it "extends new instances with mixins that are implied by objectClass SUP attributes, too" do
 		inherited_mixin = Module.new do
 			extend Treequel::Model::ObjectClass
@@ -248,21 +271,27 @@ describe Treequel::Model do
 	end
 
 
-	describe "objects created from entries" do
+	describe "objects loaded from entries" do
 
 		before( :all ) do
 			@entry = {
-				'dn'          => ['uid=slappy,ou=people,dc=acme,dc=com'],
-				'uid'         => ['slappy'],
-				'cn'          => ['Slappy the Frog'],
-				'givenName'   => ['Slappy'],
-				'sn'          => ['Frog'],
-				'l'           => ['a forest in England'],
-				'title'       => ['Forest Fire Prevention Advocate'],
-				'displayName' => ['Slappy the Frog'],
-				'logonTime'   => ['1293167318'],
-				'description' => ['Smokey the Bear is much more intense in person.', 'Alright.' ],
-				'objectClass' => %w[
+				'dn'            => ['uid=slappy,ou=people,dc=acme,dc=com'],
+				'uid'           => ['slappy'],
+				'cn'            => ['Slappy the Frog'],
+				'givenName'     => ['Slappy'],
+				'sn'            => ['Frog'],
+				'l'             => ['a forest in England'],
+				'title'         => ['Forest Fire Prevention Advocate'],
+				'displayName'   => ['Slappy the Frog'],
+				'logonTime'     => ['1293167318'],
+				'uidNumber'     => ['1121'],
+				'gidNumber'     => ['200'],
+				'homeDirectory' => ['/u/j/jrandom'],
+				'description'   => [
+					'Smokey the Bear is much more intense in person.', 
+					'Alright.'
+				],
+				'objectClass'   => %w[
 					top
 					person
 					organizationalPerson
@@ -385,6 +414,10 @@ describe Treequel::Model do
 			@obj.given_name.should == []
 		end
 
+		it "knows if any validation errors have been encountered" do
+			@obj.errors.should be_a( Hash )
+		end
+
 
 		context "with no modified attributes" do
 
@@ -427,6 +460,12 @@ describe Treequel::Model do
 
 				@obj.uid.should == @entry['uid']
 				@obj.should_not be_modified()
+			end
+
+			it "updates the modified attribute when saved" do
+				@conn.should_receive( :modify ).
+					with( "uid=slappy,ou=people,dc=acme,dc=com", [ldap_mod_replace(:uid, 'slippy')] )
+				@obj.save
 			end
 
 		end
@@ -487,6 +526,56 @@ describe Treequel::Model do
 				@obj.should_not be_modified()
 			end
 
+		end
+
+	end
+
+	describe "objects created in memory" do
+
+		before( :all ) do
+			@entry = {
+				'uid'           => ['jrandom'],
+				'cn'            => ['James'],
+				'sn'            => ['Hacker'],
+				'l'             => ['a forest in England'],
+				'displayName'   => ['J. Random Hacker'],
+				'uidNumber'     => ['1121'],
+				'gidNumber'     => ['200'],
+				'homeDirectory' => ['/u/j/jrandom'],
+				'objectClass'   => %w[
+					person
+					inetOrgPerson
+					posixAccount
+				],
+			}
+		end
+
+		before( :each ) do
+			@obj = Treequel::Model.new( @directory, TEST_PERSON_DN, @entry )
+		end
+
+
+		it "creates the entry in the directory when saved" do
+			@conn.stub( :search_ext2 ).
+				with( TEST_PERSON_DN, LDAP::LDAP_SCOPE_BASE, '(objectClass=*)').
+				and_return( [] )
+
+			@conn.should_receive( :add ).
+				with( TEST_PERSON_DN, [
+					ldap_mod_add("cn", "James"),
+					ldap_mod_add("displayName", "J. Random Hacker"),
+					ldap_mod_add("gidNumber", "200"),
+					ldap_mod_add("homeDirectory", "/u/j/jrandom"),
+					ldap_mod_add("l", "a forest in England"),
+					ldap_mod_add("objectClass", "inetOrgPerson"),
+					ldap_mod_add("objectClass", "person"),
+					ldap_mod_add("objectClass", "posixAccount"),
+					ldap_mod_add("sn", "Hacker"),
+					ldap_mod_add("uid", "jrandom"),
+					ldap_mod_add("uidNumber", "1121")
+				] )
+
+			@obj.save
 		end
 
 	end

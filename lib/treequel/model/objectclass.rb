@@ -97,9 +97,7 @@ module Treequel::Model::ObjectClass
 			entryhash[ k ] << v
 		end
 
-		model_object = self.model_class.new( directory, dn, entryhash )
-
-		return model_object
+		return self.model_class.new( directory, dn, entryhash )
 	end
 
 

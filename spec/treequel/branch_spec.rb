@@ -41,7 +41,7 @@ describe Treequel::Branch do
 	end
 
 	before( :each ) do
-		@conn = mock( "ldap connection object" )
+		@conn = mock( "ldap connection object", :bound? => false )
 		@directory = get_fixtured_directory( @conn )
 	end
 
@@ -69,7 +69,8 @@ describe Treequel::Branch do
 		branch = Treequel::Branch.new_from_entry( entry, @directory )
 
 		branch.rdn_attributes.should == { TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE] }
-		branch.entry.should == entry
+		branch.entry.should == { TEST_PERSON_DN_ATTR => TEST_PERSON_DN_VALUE }
+		branch.dn.should == entry['dn'].first
 	end
 
 	it "can be constructed from an entry with Symbol keys"	do
@@ -81,9 +82,9 @@ describe Treequel::Branch do
 
 		branch.rdn_attributes.should == { TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE] }
 		branch.entry.should == {
-			'dn'				=> [TEST_PERSON_DN],
 			TEST_PERSON_DN_ATTR => TEST_PERSON_DN_VALUE,
 		}
+		branch.dn.should == entry[:dn].first
 	end
 
 	it "can be instantiated with a Hash with Symbol keys"  do
@@ -232,7 +233,10 @@ describe Treequel::Branch do
 				yielded_val = val
 			end
 			yielded_val.should be_a( Treequel::Branch )
-			yielded_val.entry.should == subentry
+			yielded_val.entry.should == {
+				'objectClass' => ['ipHost'],
+				TEST_HOST_DN_ATTR => [TEST_HOST_DN_VALUE],
+			}
 		end
 
 		it "clears any cached values if its include_operational_attrs attribute is changed" do
