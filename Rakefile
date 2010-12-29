@@ -49,6 +49,8 @@ ENV['VERSION'] ||= hoespec.spec.version.to_s
 begin
 	include Hoe::MercurialHelpers
 
+	task 'hg:precheckin' => :spec
+
 	### Task: prerelease
 	desc "Append the package build number to package versions"
 	task :pre do
