@@ -37,10 +37,10 @@ hoespec = Hoe.spec 'treequel' do
 	self.require_ruby_version( '>=1.8.7' )
 
 	self.hg_sign_tags = true if self.respond_to?( :hg_sign_tags= )
+	self.manual_source_dir = 'src' if self.respond_to?( :manual_source_dir= )
+	self.yard_opts = [ '--use-cache', '--protected', '--verbose' ] if
+		self.respond_to?( :yard_opts= )
 
-	self.manual_source_dir = 'src'
-
-	self.yard_opts = [ '--use-cache', '--protected', '--verbose' ]
 	self.rdoc_locations << "deveiate:/usr/local/www/public/code/#{remote_rdoc_dir}"
 end
 
