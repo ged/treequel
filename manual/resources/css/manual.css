@@ -1,10 +1,5 @@
-/* @override 
-	http://localhost/Treequel/css/manual.css
-	http://gont.ljc.laika.com/Treequel/css/manual.css
-*/
-
 /* 
- *	Redleaf Manual Stylesheet
+ *	Treequel Manual Stylesheet
  *	$Id$
  *  
  */
@@ -186,24 +181,32 @@ td, th {
 	margin-left: 0;
 }
 
-#header {
+body > header {
 	position: relative;
-	padding: 0.25em 15em 0.25em 0;
+	padding: 0.25em 0.25em 0;
 	border-bottom: 1px solid #787890;
-	background: #484860 url(../images/shadows/smallest-30-down.png) repeat-x 0 bottom;
+	text-align: center;
 }
-#header h1 {
+header h1 {
+	color: white;
 	display: inline;
-	font-size: 1.75em;
-	padding: 0.2em 1em;
-	background: #f3f3f3;
+	font-size: 3.75em;
+	padding: 0.5em 1em;
+	position: relative;
+	top: -1em;
+	text-shadow: 2px 2px 3px rgba(25,25,25, 0.4);
 	font-weight: bold;
 	-webkit-border-top-right-radius: 1em;
 	-moz-border-radius-topright: 1em;
 }
-#header div {
+header div {
 	display: inline;
 }
+header hgroup h2 {
+	margin: 0;
+	font-size:  1em;
+}
+
 #tagline {
 	position: absolute;
 	right: 1em;
@@ -212,10 +215,10 @@ td, th {
 	color: #f3f3f3;
 }
 
-#header .index {
+header .index {
 	display: inline;
 }
-#header .index h2 {
+header .index h2 {
 	display: inline;
 	font-size: 1.5em;
 	color: white;
@@ -223,13 +226,13 @@ td, th {
 	padding: 2px 0.5em;
 }
 
-#header .index ul {
+header .index ul {
 	list-style-type: none;
 	padding: 0;
 	display: none;
 }
 
-#header .index ul.current-index-section {
+header .index ul.current-index-section {
 	position: absolute;
 	display: inline;
 	left: 0;
@@ -237,16 +240,16 @@ td, th {
 	margin-left: 11em;
 	font-weight: bold;
 }
-#header .index ul li {
+header .index ul li {
 	font-size: 0.8em;
 	display: inline;
 	padding: 0 0.5em;
 }
-#header .index ul li + li {
+header .index ul li + li {
 	border-left: 1px solid #999;
 	padding-left: 0.75em;
 }
-#header .index a {
+header .index a {
 	color: inherit;
 }
 
@@ -264,7 +267,7 @@ td, th {
 	color: #999;
 }
 
-#footer {
+footer {
 	margin: 2em 0 0;
 	background-color: #fff;
 	border-top: 1px solid #c0c0d5;
@@ -277,19 +280,19 @@ td, th {
 	width: 100%;
 }
 
-#footer p {
+footer p {
 	margin: 0;
 }
-#footer .copyright {
+footer .copyright {
 	position: absolute;
 	left: 1em;
 	top: 0.5em;
 }
-#footer .vcsrev {
+footer .vcsrev {
 	margin: 0.5em auto;
 	text-align: center;
 }
-#footer .timestamp {
+footer .timestamp {
 	position: absolute;
 	right: 1em;
 	top: 0.5em;
