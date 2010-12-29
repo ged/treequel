@@ -1,7 +1,10 @@
+History.md
+LICENSE
 README.md
 Rakefile
 bin/treeirb
 bin/treequel
+bin/treewhat
 examples/company-directory.rb
 examples/ldap-rack-auth.rb
 examples/ldap_state.rb
@@ -20,7 +23,9 @@ lib/treequel/exceptions.rb
 lib/treequel/filter.rb
 lib/treequel/mixins.rb
 lib/treequel/model.rb
+lib/treequel/model/errors.rb
 lib/treequel/model/objectclass.rb
+lib/treequel/model/schemavalidations.rb
 lib/treequel/monkeypatches.rb
 lib/treequel/schema.rb
 lib/treequel/schema/attributetype.rb
@@ -46,7 +51,9 @@ spec/treequel/controls/sortedresults_spec.rb
 spec/treequel/directory_spec.rb
 spec/treequel/filter_spec.rb
 spec/treequel/mixins_spec.rb
+spec/treequel/model/errors_spec.rb
 spec/treequel/model/objectclass_spec.rb
+spec/treequel/model/schemavalidations_spec.rb
 spec/treequel/model_spec.rb
 spec/treequel/monkeypatches_spec.rb
 spec/treequel/schema/attributetype_spec.rb
