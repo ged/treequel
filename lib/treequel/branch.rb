@@ -798,14 +798,16 @@ class Treequel::Branch
 	### directory has a conversion rule, and return it.
 	def get_converted_object( attrsym )
 		return nil unless self.entry
-		value = self.entry[ attrsym.to_s ] or return nil
+		value = self.entry[ attrsym.to_s ]
 
 		if attribute = self.directory.schema.attribute_types[ attrsym ]
+			syntax_oid = attribute.syntax.oid
+
 			if attribute.single?
-				value = self.directory.convert_to_object( attribute.syntax.oid, value.first )
+				value = self.directory.convert_to_object( syntax_oid, value.first ) if value
 			else
-				value = value.collect do |raw|
-					self.directory.convert_to_object( attribute.syntax.oid, raw )
+				value = Array( value ).collect do |raw|
+					self.directory.convert_to_object( syntax_oid, raw )
 				end
 			end
 		else

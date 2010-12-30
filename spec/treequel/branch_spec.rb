@@ -772,8 +772,12 @@ describe Treequel::Branch do
 				@branch[ :rev ].should == [ '03eca02ba232' ]
 			end
 
-			it "returns nil if record doesn't have the attribute set" do
-				@branch[ :cn ].should == nil
+			it "returns an empty Array if a record doesn't have an attribute set" do
+				@branch[ :cn ].should == []
+			end
+
+			it "returns nil if a record doesn't have a SINGLE-type attribute set" do
+				@branch[ :displayName ].should == nil
 			end
 
 			it "caches the value fetched from its entry" do
