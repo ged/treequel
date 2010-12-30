@@ -6,14 +6,13 @@ BEGIN {
 
 	libdir = basedir + "lib"
 
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
+	$LOAD_PATH.unshift( basedir.to_s ) unless $LOAD_PATH.include?( basedir.to_s )
+	$LOAD_PATH.unshift( libdir.to_s ) unless $LOAD_PATH.include?( libdir.to_s )
 }
 
 require 'time'
-
 require 'rspec'
 
-require 'spec/lib/constants'
 require 'spec/lib/helpers'
 
 require 'treequel'
@@ -119,6 +118,53 @@ describe Treequel::TimeExtensions do
 
 		it "uses 'Z' for the timezone of times in UTC" do
 			@time.utc.ldap_utc.should == "100820152135Z"
+		end
+
+	end
+
+end
+
+
+describe Treequel::DateExtensions do
+
+	before( :all ) do
+		# Make the local timezone PDT so offsets show up correctly
+		@real_tz = ENV['TZ']
+		ENV['TZ'] = ':PST8PDT'
+	end
+
+	before( :each ) do
+		@date = Date.parse( "2010-08-05" )
+	end
+
+	after( :all ) do
+		ENV['TZ'] = @real_tz
+	end
+
+	describe "RFC4517 LDAP Generalized Time method" do
+
+		it "returns the time in 'Generalized Time' format" do
+			@date.ldap_generalized.should == "20100805000001-0800"
+		end
+
+		it "can include fractional seconds if the optional fractional digits argument is given" do
+			@date.ldap_generalized( 3 ).should == "20100805000001.000-0800"
+		end
+
+		it "doesn't include the decimal if fractional digits is specified but zero" do
+			@date.ldap_generalized( 0 ).should == "20100805000001-0800"
+		end
+
+		it "zero-fills any digits after six in the fractional digits" do
+			@date.ldap_generalized( 11 ).should == "20100805000001.00000000000-0800"
+		end
+
+	end
+
+	describe "RFC4517 UTC Time method" do
+
+		it "returns the time in 'UTC Time' format" do
+			@date.ldap_utc.should == "100805000001-0800"
 		end
 
 	end
