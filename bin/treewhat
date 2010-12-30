@@ -151,7 +151,7 @@ class Treequel::What
 		case pattern
 
 		# No argument
-		when NilClass
+		when NilClass, ''
 			self.show_directory_overview
 
 		# DN/RDN if it contains an '='
