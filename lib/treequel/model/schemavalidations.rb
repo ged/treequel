@@ -21,8 +21,13 @@ module Treequel::Model::SchemaValidations
 	### Validate that all attributes that MUST be included according to the entry's
 	### objectClasses have at least one value.
 	def validate_must_attributes
-		self.must_oids.each do |oid|
-			self.errors.add( oid, "MUST have at least one value" ) unless self[ oid ]
+		self.must_attribute_types.each do |attrtype|
+			oid = attrtype.name
+			if attrtype.single?
+				self.errors.add( oid, "MUST have a value" ) unless self[ oid ]
+			else
+				self.errors.add( oid, "MUST have at least one value" ) if self[ oid ].empty?
+			end
 		end
 	end
 

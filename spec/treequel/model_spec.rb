@@ -210,6 +210,37 @@ describe Treequel::Model do
 		obj.should_not be_a( mixin3 )
 	end
 
+	it "applies applicable mixins to instances which have objectClasses added to them" do
+		mixin1 = Module.new do
+			extend Treequel::Model::ObjectClass
+			model_bases TEST_HOSTS_DN, TEST_SUBHOSTS_DN
+			model_objectclasses :ipHost
+		end
+		mixin2 = Module.new do
+			extend Treequel::Model::ObjectClass
+			model_bases TEST_HOSTS_DN
+			model_objectclasses :device
+		end
+
+		@conn.stub( :search_ext2 ).
+			with( TEST_HOST_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+			and_return( [] )
+		obj = Treequel::Model.new( @directory, TEST_HOST_DN )
+
+		obj.extensions.should be_empty()
+
+		obj.object_class += [ :ipHost ]
+		obj.extensions.should have( 1 ).member
+		obj.should be_a( mixin1 )
+		obj.should_not be_a( mixin2 )
+
+		obj.object_class += [ :device ]
+		obj.extensions.should have( 2 ).members
+		obj.should be_a( mixin1 )
+		obj.should be_a( mixin2 )
+
+	end
+
 	it "doesn't try to apply objectclasses to non-existant entries" do
 		mixin1 = Module.new do
 			extend Treequel::Model::ObjectClass
@@ -447,8 +478,9 @@ describe Treequel::Model do
 				result = @obj.modifications
 
 				result.should be_an( Array )
-				result.should have( 1 ).member
-				result.should include( LDAP::Mod.new(LDAP::LDAP_MOD_REPLACE, 'uid', ['slippy']) )
+				result.should have( 2 ).members
+				result.should include( ldap_mod_add 'uid', 'slippy' )
+				result.should include( ldap_mod_delete 'uid', 'slappy' )
 			end
 
 			it "reverts the attribute if its #revert method is called" do
@@ -464,7 +496,8 @@ describe Treequel::Model do
 
 			it "updates the modified attribute when saved" do
 				@conn.should_receive( :modify ).
-					with( "uid=slappy,ou=people,dc=acme,dc=com", [ldap_mod_replace(:uid, 'slippy')] )
+					with( "uid=slappy,ou=people,dc=acme,dc=com",
+					     [ldap_mod_delete(:uid, 'slappy'), ldap_mod_add(:uid, 'slippy')] )
 				@obj.save
 			end
 
@@ -502,13 +535,16 @@ describe Treequel::Model do
 				result = @obj.modifications
 
 				result.should be_an( Array )
-				result.should have( 6 ).members
-				result.should include( ldap_mod_replace 'uid', ['fappy'] )
-				result.should include( ldap_mod_replace 'givenName', ['Fappy'] )
-				result.should include( ldap_mod_replace 'displayName', ['Fappy the Bear'] )
-				result.should include( ldap_mod_add 'description', ['The new mascot.'] )
-				result.should include( ldap_mod_delete 'description', ['Alright.'] )
-				result.should include( ldap_mod_delete 'l', ['a forest in England'] )
+				result.should have( 9 ).members
+				result.should include( ldap_mod_delete :uid, 'slappy' )
+				result.should include( ldap_mod_add :uid, 'fappy' )
+				result.should include( ldap_mod_delete :givenName, 'Slappy' )
+				result.should include( ldap_mod_add :givenName, 'Fappy' )
+				result.should include( ldap_mod_delete :displayName, 'Slappy the Frog' )
+				result.should include( ldap_mod_add :displayName, 'Fappy the Bear' )
+				result.should include( ldap_mod_add :description, 'The new mascot.' )
+				result.should include( ldap_mod_delete :description, 'Alright.' )
+				result.should include( ldap_mod_delete :l, 'a forest in England' )
 
 			end
 
@@ -567,9 +603,7 @@ describe Treequel::Model do
 					ldap_mod_add("gidNumber", "200"),
 					ldap_mod_add("homeDirectory", "/u/j/jrandom"),
 					ldap_mod_add("l", "a forest in England"),
-					ldap_mod_add("objectClass", "inetOrgPerson"),
-					ldap_mod_add("objectClass", "person"),
-					ldap_mod_add("objectClass", "posixAccount"),
+					ldap_mod_add("objectClass", "inetOrgPerson", "person", "posixAccount"),
 					ldap_mod_add("sn", "Hacker"),
 					ldap_mod_add("uid", "jrandom"),
 					ldap_mod_add("uidNumber", "1121")

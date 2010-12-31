@@ -248,6 +248,16 @@ class Treequel::Model < Treequel::Branch
 
 		self.mark_dirty
 		@values[ attrtype.name.to_sym ] = value
+
+		# If the objectClasses change, we (may) need to re-apply mixins
+		if attrname.to_s.downcase == 'objectclass'
+			self.log.debug "  objectClass change -- reapplying mixins"
+			self.apply_applicable_mixins( self.dn )
+		else
+			self.log.debug "  no objectClass changes -- no need to reapply mixins"
+		end
+
+		return value
 	end
 
 
@@ -383,22 +393,26 @@ class Treequel::Model < Treequel::Branch
 				[ attribute, vals, entry[attribute.to_s] ]
 
 			entryvals = (entry[attribute.to_s] || [])
+			attrmods = { :add => [], :delete => [] }
 
 			Diff::LCS.sdiff( entryvals.sort, vals.sort ) do |change|
 				self.log.debug "    found a change: %p" % [ change ]
 				if change.adding?
-					self.log.debug "      it's an add"
-					mods << LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute.to_s, [change.new_element] )
+					attrmods[:add] << change.new_element
 				elsif change.changed?
-					self.log.debug "      it's a replace"
-					mods << LDAP::Mod.new( LDAP::LDAP_MOD_REPLACE, attribute.to_s, [change.new_element] )
+					attrmods[:add] << change.new_element
+					attrmods[:delete] << change.old_element
 				elsif change.deleting?
-					self.log.debug "      it's a delete"
-					mods << LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute.to_s, [change.old_element] )
-				else
-					self.log.debug "      dunno what to do with %p" % [ change.action ]
+					attrmods[:delete] << change.old_element
+				# else
+				# 	self.log.debug "      no mod necessary for %p" % [ change.action ]
 				end
 			end
+
+			mods << LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute.to_s, attrmods[:delete] ) unless
+				attrmods[:delete].empty?
+			mods << LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute.to_s, attrmods[:add] ) unless
+				attrmods[:add].empty?
 		end
 
 		self.log.debug "  mods are: %p" % [ mods ]
@@ -560,13 +574,13 @@ class Treequel::Model < Treequel::Branch
 	def make_reader( attrtype )
 		self.log.debug "Generating an attribute reader for %p" % [ attrtype ]
 		attrname = attrtype.name
-		return lambda {|*args|
+		return lambda do |*args|
 			if args.empty?
 				self[ attrname ]
 			else
 				self.traverse_branch( attrname, *args )
 			end
-		}
+		end
 	end
 
 

@@ -750,6 +750,17 @@ describe Treequel::Branch do
 				@branch[ :l ].should include( 'Galapagos', 'Antartica' )
 			end
 
+			it "fetches an empty Array if a record doesn't have an attribute set" do
+				@branch[ :cn ].should == []
+			end
+
+			it "fetches an empty Array for an attribute if the entry doesn't exist" do
+				@conn.stub( :search_ext2 ).
+					with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+					and_return( [] )
+				@branch[ :cn ].should == []
+			end
+
 			it "fetches a single-value attribute as a scalar String" do
 				test_dn = "cn=ssh,cn=www,#{TEST_HOSTS_DN}"
 				entry = {
@@ -770,10 +781,6 @@ describe Treequel::Branch do
 
 			it "returns the entry without conversion if there is no such attribute in the schema" do
 				@branch[ :rev ].should == [ '03eca02ba232' ]
-			end
-
-			it "returns an empty Array if a record doesn't have an attribute set" do
-				@branch[ :cn ].should == []
 			end
 
 			it "returns nil if a record doesn't have a SINGLE-type attribute set" do

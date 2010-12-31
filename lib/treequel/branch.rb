@@ -310,7 +310,7 @@ class Treequel::Branch
 		attrsym = attrname.to_sym
 
 		if @values.key?( attrsym )
-			self.log.debug "  value for %p is cached." % [ attrname ]
+			self.log.debug "  value for %p is cached (%p)." % [ attrname, @values[attrsym] ]
 		else
 			self.log.debug "  value for %p is NOT cached." % [ attrsym ]
 			value = self.get_converted_object( attrsym )
@@ -797,8 +797,7 @@ class Treequel::Branch
 	### Get the value associated with +attrsym+, convert it to a Ruby object if the Branch's
 	### directory has a conversion rule, and return it.
 	def get_converted_object( attrsym )
-		return nil unless self.entry
-		value = self.entry[ attrsym.to_s ]
+		value = self.entry ? self.entry[ attrsym.to_s ] : nil
 
 		if attribute = self.directory.schema.attribute_types[ attrsym ]
 			syntax_oid = attribute.syntax.oid
