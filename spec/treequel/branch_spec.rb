@@ -317,6 +317,11 @@ describe Treequel::Branch do
 		end
 
 
+		it "returns nil if a Branch for the base DN is asked for its parent" do
+			@branch.parent.parent.should be_nil()
+		end
+
+
 		it "can construct a Treequel::Branchset that uses it as its base" do
 			@branch.branchset.should be_a( Treequel::Branchset )
 			@branch.branchset.base_dn.should == @branch.dn
@@ -411,7 +416,7 @@ describe Treequel::Branch do
 				and_return([ {'objectClass' => %w[ipHost device ieee802device]} ])
 
 			@branch.must_attributes_hash.
-				should include({ :cn => [''], :ipHostNumber => [''], :objectClass => [:top] })
+				should include({ :cn => [''], :ipHostNumber => [''], :objectClass => ['top'] })
 		end
 
 
@@ -469,7 +474,7 @@ describe Treequel::Branch do
 		it "can return a Hash pre-populated with pairs that correspond to all of its valid " +
 		   "attributes" do
 			@branch.valid_attributes_hash.should == {
-				:objectClass				=> [:top],
+				:objectClass				=> ['top'],
 				:ou							=> [''],
 				:userPassword				=> [],
 				:searchGuide				=> [],

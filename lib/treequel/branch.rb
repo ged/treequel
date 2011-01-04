@@ -82,6 +82,7 @@ class Treequel::Branch
 	### @param [String] dn  The DN of the entry the Branch is wrapping.
 	### @param [LDAP::Entry, Hash] entry  The entry object if it's already been fetched.
 	def initialize( directory, dn, entry=nil )
+		raise ArgumentError, "nil DN" unless dn
 		raise ArgumentError, "invalid DN" unless
 			dn.match( Patterns::DISTINGUISHED_NAME ) || dn.empty?
 		raise ArgumentError, "can't cast a %s to an LDAP::Entry" % [entry.class.name] unless
@@ -214,7 +215,8 @@ class Treequel::Branch
 	### Return the Branch's immediate parent node.
 	### @return [Treequel::Branch]
 	def parent
-		return self.class.new( self.directory, self.parent_dn )
+		pardn = self.parent_dn or return nil
+		return self.class.new( self.directory, pardn )
 	end
 
 
@@ -277,7 +279,7 @@ class Treequel::Branch
 		self.log.debug "  making LDIF from an entry: %p" % [ entry ]
 
 		entry.keys.reject {|k| k == 'dn' }.each do |attribute|
-			entry[ attribute ].each do |val|
+			Array( entry[attribute] ).each do |val|
 				ldif << ldif_for_attr( attribute, val, width )
 			end
 		end
@@ -520,7 +522,7 @@ class Treequel::Branch
 
 		oc_oids = self[:objectClass] || []
 		oc_oids |= additional_classes.collect {|str| str.to_sym }
-		oc_oids << :top if oc_oids.empty?
+		oc_oids << 'top' if oc_oids.empty?
 
 		oclasses = []
 		oc_oids.each do |oid|
@@ -599,7 +601,7 @@ class Treequel::Branch
 			self.log.debug "  adding attrtype %p to the MUST attributes hash" % [ attrtype ]
 
 			if attrtype.name == :objectClass
-				attrhash[ :objectClass ] = [:top] | additional_object_classes
+				attrhash[ :objectClass ] = ['top'] | additional_object_classes
 			elsif attrtype.single?
 				attrhash[ attrtype.name ] = ''
 			else
@@ -821,8 +823,8 @@ class Treequel::Branch
 	### and return it.
 	def get_converted_attribute( attrsym, object )
 		if attribute = self.directory.schema.attribute_types[ attrsym ]
-			self.log.debug "converting %p object to a %p attribute" %
-				[ attrsym, attribute.syntax.desc ]
+			self.log.debug "converting %p object (a %p) to a %p attribute" %
+				[ attrsym, object.class, attribute.syntax.desc ]
 			return self.directory.convert_to_attribute( attribute.syntax.oid, object )
 		else
 			self.log.info "no attributeType for %p" % [ attrsym ]

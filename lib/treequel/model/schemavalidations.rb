@@ -52,7 +52,7 @@ module Treequel::Model::SchemaValidations
 	### the syntax rule for it.
 	def validate_attribute_syntax
 		@values.each do |attribute, values|
-			Array( values ).each do |value|
+			[ values ].flatten.each do |value|
 				begin
 					self.get_converted_attribute( attribute.to_sym, value )
 				rescue => err

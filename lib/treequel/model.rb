@@ -416,9 +416,15 @@ class Treequel::Model < Treequel::Branch
 		end
 
 		self.log.debug "  mods are: %p" % [ mods ]
-		self.log.debug "  LDIF:\n%s" % [ LDAP::LDIF.mods_to_ldif(self.dn, mods) ]
 
 		return mods
+	end
+
+
+	### Return the pending modifications for the object as an LDIF string.
+	def modification_ldif
+		mods = self.modifications
+		return LDAP::LDIF.mods_to_ldif( self.dn, mods )
 	end
 
 
@@ -641,29 +647,29 @@ class Treequel::Model < Treequel::Branch
 		entry.merge!( stringify_keys(@values) )
 		return unless entry['objectClass']
 
-		self.log.debug "Applying mixins applicable to %s" % [ dn ]
+		# self.log.debug "Applying mixins applicable to %s" % [ dn ]
 		schema = self.directory.schema
 
-		self.log.debug "  entry is: %p" % [ entry ]
+		# self.log.debug "  entry is: %p" % [ entry ]
 		ocs = entry['objectClass'].collect do |oc_oid|
 			explicit_oc = schema.object_classes[ oc_oid ]
 			explicit_oc.ancestors.collect {|oc| oc.name }
 		end.flatten.uniq
-		self.log.debug "  got %d candidate objectClasses: %p" % [ ocs.length, ocs ]
+		# self.log.debug "  got %d candidate objectClasses: %p" % [ ocs.length, ocs ]
 
 		oc_mixins = self.class.mixins_for_objectclasses( *ocs )
 		dn_mixins = self.class.mixins_for_dn( dn )
-		self.log.debug "  found %d mixins by objectclass (%s), and %d by base (%s)" % [
-			oc_mixins.length,
-			oc_mixins.map(&:name).join(', '),
-			dn_mixins.length,
-			dn_mixins.map(&:name).join(', ')
-		]
+		# self.log.debug "  found %d mixins by objectclass (%s), and %d by base (%s)" % [
+		# 	oc_mixins.length,
+		# 	oc_mixins.map(&:name).join(', '),
+		# 	dn_mixins.length,
+		# 	dn_mixins.map(&:name).join(', ')
+		# ]
 
 		# The applicable mixins are those in the intersection of the ones
 		# inferred by its objectclasses and those that apply to its DN
 		mixins = ( oc_mixins & dn_mixins )
-		self.log.debug "  %d mixins remain after intersection: %p" % [ mixins.length, mixins ]
+		# self.log.debug "  %d mixins remain after intersection: %p" % [ mixins.length, mixins ]
 
 		mixins.each {|mod| self.extend(mod) }
 	end

@@ -173,8 +173,6 @@ class Date
 end
 
 
-
-
 ### These three predicates use the wrong instance variable in the library.
 ### :TODO: Submit a patch!
 module Treequel::DiffLCSChangeTypeTestFixes
