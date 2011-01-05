@@ -449,19 +449,19 @@ class Treequel::Shell
 				Treequel.logger.level = LOG_LEVELS[ newlevel ]
 				message "Set log level to: %s" % [ newlevel ]
 			else
-				levelnames = LOG_LEVEL_NAMES.keys.sort.join(', ')
+				levelnames = Treequel::LOG_LEVEL_NAMES.keys.sort.join(', ')
 				raise "Invalid log level %p: valid values are:\n   %s" % [ newlevel, levelnames ]
 			end
 		else
 			message "Log level is currently: %s" %
-				[ LOG_LEVEL_NAMES[Treequel.logger.level] ]
+				[ Treequel::LOG_LEVEL_NAMES[Treequel.logger.level] ]
 		end
 	end
 	set_options :log do |oparser, options|
 		oparser.banner = "log [LEVEL]"
 		oparser.separator 'Set the logging level, or display the current level if no level ' +
 		                  "is given. Valid log levels are: %s" %
-		                  LOG_LEVEL_NAMES.keys.sort.join(', ')
+		                  Treequel::LOG_LEVEL_NAMES.keys.sort.join(', ')
 	end
 
 
