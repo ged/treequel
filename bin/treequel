@@ -125,7 +125,7 @@ class Treequel::Shell
 	### the LDAP URI.
 	def self::parse_options( argv )
 		progname = File.basename( $0 )
-		loglevels = Treequel::Loggable::LEVEL.
+		loglevels = Treequel::LOG_LEVELS.
 			sort_by {|_,lvl| lvl }.
 			collect {|name,lvl| name.to_s }.
 			join(', ')
@@ -138,7 +138,7 @@ class Treequel::Shell
 				bind_as = dn
 			end
 
-			oparser.on( '--loglevel=LEVEL', '-l LEVEL', Treequel::Loggable::LEVEL.keys, 
+			oparser.on( '--loglevel=LEVEL', '-l LEVEL', Treequel::LOG_LEVELS.keys,
 				"Set the logging level. Should be one of:", loglevels ) do |lvl|
 				Treequel.logger.level = Treequel::LOG_LEVELS[ lvl ] or
 					raise "Invalid logging level %p" % [ lvl ]
@@ -445,8 +445,8 @@ class Treequel::Shell
 	def log_command( options, *args )
 		newlevel = args.shift
 		if newlevel
-			if LOG_LEVELS.key?( newlevel )
-				Treequel.logger.level = LOG_LEVELS[ newlevel ]
+			if Treequel::LOG_LEVELS.key?( newlevel )
+				Treequel.logger.level = Treequel::LOG_LEVELS[ newlevel ]
 				message "Set log level to: %s" % [ newlevel ]
 			else
 				levelnames = Treequel::LOG_LEVEL_NAMES.keys.sort.join(', ')
