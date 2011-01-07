@@ -15,8 +15,6 @@ module Treequel::Model::ObjectClass
 	### Extension callback -- add data structures to the extending +mod+.
 	### @param [Module] mod  the mixin module to be extended
 	def self::extended( mod )
-		# mod.instance_variable_set( :@model_directory, nil )
-		# mod.instance_variable_set( :@model_bases, [] )
 		mod.instance_variable_set( :@model_class, Treequel::Model )
 		mod.instance_variable_set( :@model_objectclasses, [] )
 		mod.instance_variable_set( :@model_bases, [] )
