@@ -598,7 +598,7 @@ class Treequel::Branch
 		attrhash = {}
 
 		self.must_attribute_types( *additional_object_classes ).each do |attrtype|
-			self.log.debug "  adding attrtype %p to the MUST attributes hash" % [ attrtype ]
+			# self.log.debug "  adding attrtype %p to the MUST attributes hash" % [ attrtype.name ]
 
 			if attrtype.name == :objectClass
 				attrhash[ :objectClass ] = ['top'] | additional_object_classes
@@ -652,7 +652,7 @@ class Treequel::Branch
 		attrhash = {}
 
 		self.may_attribute_types( *additional_object_classes ).each do |attrtype|
-			self.log.debug "  adding attrtype %p to the MAY attributes hash" % [ attrtype ]
+			# self.log.debug "  adding attrtype %p to the MAY attributes hash" % [ attrtype.named ]
 
 			if attrtype.single?
 				attrhash[ attrtype.name ] = nil

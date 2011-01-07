@@ -82,7 +82,7 @@ class Treequel::What
 			text 'Options:'
 			opt :ldapurl, "Specify the directory to connect to.",
 				:default => default_directory.uri.to_s
-			opt :debug, "Turn debugging on. Also sets the --debuglevel to 'debug'."
+			opt :debug, "Turn debugging on. Also sets the --loglevel to 'debug'."
 			opt :loglevel, "Set the logging level. Must be one of: #{loglevels}",
 				:default => Treequel::LOG_LEVEL_NAMES[ Treequel.logger.level ]
 			opt :binddn, "The DN of the user to bind as. Defaults to anonymous binding.",
@@ -104,6 +104,8 @@ class Treequel::What
 			$DEBUG = true
 			$VERBOSE = true
 			Treequel.logger.level = Logger::DEBUG
+		elsif options.loglevel
+			Treequel.logger.level = Treequel::LOG_LEVELS[ options.loglevel ]
 		end
 
 		@options   = options
