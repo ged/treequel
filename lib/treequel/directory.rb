@@ -237,6 +237,23 @@ class Treequel::Directory
 	end
 
 
+	### Drop the existing connection and establish a new one.
+	### @return [Boolean]  +true+ if the connection was re-established
+	### @raise [RuntimeError]  if the re-connection failed
+	def reconnect
+		self.log.info "Reconnecting to %s..." % [ self.uri ]
+		@conn = self.connect
+		self.log.info "...reconnected."
+
+		return true
+	rescue LDAP::ResultError => err
+		self.log.error "%s while attempting to reconnect to %s: %s" %
+			[ err.class.name, self.uri, err.message ]
+		raise "Couldn't reconnect to %s: %s: %s" %
+			[ self.uri, err.class.name, err.message ]
+	end
+
+
 	### Return the URI object that corresponds to the directory.
 	### @return [URI::LDAP]
 	def uri

@@ -350,6 +350,35 @@ describe Treequel::Directory do
 			}.to raise_error( LDAP::ResultError, /can't contact/i )
 		end
 
+
+		it "can reconnect if its underlying connection goes away" do
+			@conn.stub( :search_ext2 ).and_raise( LDAP::ResultError.new("Can't contact LDAP server") )
+
+			second_conn = mock( "LDAP connection", :set_option => true, :bound? => false )
+			LDAP::Conn.should_receive( :new ).and_return( second_conn )
+			second_conn.should_receive( :search_ext2 ).and_return([])
+
+			already_tried_reconnect = false
+			begin
+				@dir.search( TEST_PEOPLE_DN, :base, '(objectClass=*)' )
+			rescue
+				unless already_tried_reconnect
+					already_tried_reconnect = true
+					@dir.reconnect and retry
+				end
+			end
+		end
+
+		it "re-raises an exception rescued during a reconnect as a RuntimeError" do
+			LDAP::Conn.should_receive( :new ).
+				and_raise( LDAP::ResultError.new("Can't contact LDAP server") )
+
+			expect {
+				@dir.reconnect
+			}.to raise_exception( RuntimeError, /couldn't reconnect/i )
+		end
+
+
 		describe "and a custom search results class" do
 
 			before( :each ) do
