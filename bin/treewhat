@@ -136,14 +136,6 @@ class Treequel::What
 	end
 
 
-	### Display an array of +pairs+ of objects as a key/value table.
-	def print_kvlist( *pairs )
-		pairs.flatten!
-		# :TODO: highlight keys and values
-		string = self.prompt.list( pairs, :columns_across, 2 )
-		self.prompt.say( string )
-	end
-
 
 	### Run the command with the specified +pattern+.
 	def run( pattern=nil )
@@ -157,7 +149,7 @@ class Treequel::What
 		when NilClass, ''
 			self.show_directory_overview
 
-		# DN/RDN if it contains an '='
+		# DN/RDN or filter if it contains a '='
 		when /=/
 			self.show_entry( pattern )
 
@@ -206,14 +198,23 @@ class Treequel::What
 
 	### Fetch an entry from the directory and display it like Treequel's editing mode.
 	def show_entry( pattern )
-		branch = Treequel::Branch.new( self.directory, pattern )
+		dir = self.directory
+		branch = Treequel::Branch.new( dir, pattern )
 
-		if branch.exists?
-			yaml = self.branch_as_yaml( branch )
-			self.prompt.say( yaml )
-		else
+		if !branch.exists?
+			branch = Treequel::Branch.new( dir, pattern + ',' + dir.base_dn )
+		end
+
+		if !branch.exists?
+			branch = dir.filter( pattern ).first
+		end
+
+		if !branch
 			self.prompt.say( self.prompt.color("No match.", :error) )
 		end
+
+		yaml = self.branch_as_yaml( branch )
+		self.prompt.say( yaml )
 	end
 
 
