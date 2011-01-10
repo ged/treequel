@@ -16,21 +16,27 @@ hoespec = Hoe.spec 'treequel' do
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
 
-	self.extra_deps <<
-		['ruby-ldap', '~> 0.9.11']
-	self.extra_dev_deps <<
-		['rspec', '~> 2.1.0'] <<
-		['ruby-termios', '~> 0.9.6'] <<
-		['ruby-terminfo', '~> 0.1.1'] <<
-		['yard', '~> 0.6.1']
+	self.extra_deps.push *{
+		'ruby-ldap' => '~> 0.9.11'
+	}
+	self.extra_dev_deps.push *{
+		'rspec'         => '~> 2.4.0',
+		'ruby-termios'  => '~> 0.9.6',
+		'ruby-terminfo' => '~> 0.1.1',
+		'columnize'     => '~> 0.3.1',
+	}
 
 	self.spec_extras[:licenses] = ["BSD"]
 	self.spec_extras[:post_install_message] = [
 		"If you want to use the included 'treequel' LDAP shell, you'll need to install",
 		"the following libraries as well:",
+		'',
 		"    - termios",
 		"    - ruby-terminfo",
 		"    - columnize",
+		'',
+		"You can install those automatically if you use the --development flag when",
+		"installing Treequel."
 	  ].join( "\n" )
 	self.spec_extras[:signing_key] = '/Volumes/Keys/ged-private_gem_key.pem'
 
