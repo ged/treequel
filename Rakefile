@@ -24,6 +24,7 @@ hoespec = Hoe.spec 'treequel' do
 		'ruby-termios'  => '~> 0.9.6',
 		'ruby-terminfo' => '~> 0.1.1',
 		'columnize'     => '~> 0.3.1',
+		'sysexits'      => '~> 1.0.2',
 	}
 
 	self.spec_extras[:licenses] = ["BSD"]
