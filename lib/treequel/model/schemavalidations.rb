@@ -12,9 +12,18 @@ module Treequel::Model::SchemaValidations
 	def validate( options={} )
 		return unless options[:with_schema]
 
+		self.validate_structural_objectclass
 		self.validate_must_attributes
 		self.validate_may_attributes
 		self.validate_attribute_syntax
+	end
+
+
+	### Ensure that the object has at least one structural objectClass.
+	def validate_structural_objectclass
+		unless self.object_classes.any? {|oc| oc.structural? }
+			self.errors.add( :entry, "must have at least one structural objectClass" )
+		end
 	end
 
 

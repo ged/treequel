@@ -47,11 +47,11 @@ class Treequel::Model::Errors < ::Hash
 	end
 
 
-	### Adds an error for the given +attribute+.
-	### @param [Symbol, #to_sym] attribute  the attribute with an error
+	### Adds an error for the given +subject+.
+	### @param [Symbol, #to_sym] subject    the subject of the error
 	### @param [String] message             the description of the error condition
-	def add( attribute, message )
-		self[ attribute ] << message
+	def add( subject, message )
+		self[ subject ] << message
 	end
 
 

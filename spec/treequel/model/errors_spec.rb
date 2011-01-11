@@ -47,8 +47,8 @@ describe Treequel::Model::Errors do
 
 	it "knows how many errors there are" do
 		@errors.add( :l, "is not valid" )
-		@errors.add( :description, "must " )
-		@errors.add( :description, "must have at least one description" )
+		@errors.add( :description, "must be this tall to ride" )
+		@errors.add( :description, "must have at least one value" )
 
 		@errors.count.should == 3
 	end

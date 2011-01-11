@@ -45,10 +45,23 @@ describe Treequel::Model::SchemaValidations do
 	# 	MUST ( sn $ cn ) 
 	# 	MAY ( userPassword $ telephoneNumber $ seeAlso $ description ) )
 
+	it "adds an error if the object doesn't have at least one structural objectClass" do
+		@conn.stub( :search_ext2 ).and_return( [] )
+		@modelobj.object_class = ['ipHost', 'ieee802device']
+		@modelobj.cn = 'testhost'
+		@modelobj.ip_host_number = '127.0.0.1'
+
+		@modelobj.should_not be_valid()
+		@modelobj.errors.should have( 1 ).member
+		@modelobj.errors.full_messages.
+			should include( 'entry must have at least one structural objectClass' )
+	end
+
 	it "adds an error if the object doesn't have at least one value for all of its MUST attributes" do
 		@conn.stub( :search_ext2 ).and_return( [] )
 		@modelobj.object_class = 'person'
-		@modelobj.validate
+
+		@modelobj.should_not be_valid()
 		@modelobj.errors.should have( 2 ).members
 		@modelobj.errors.full_messages.should include( 'cn MUST have at least one value' )
 		@modelobj.errors.full_messages.should include( 'sn MUST have at least one value' )
@@ -66,7 +79,7 @@ describe Treequel::Model::SchemaValidations do
 
 		# ..then remove the objectclass that grants it and validate
 		@modelobj.object_class -= ['inetOrgPerson']
-		@modelobj.validate
+		@modelobj.should_not be_valid()
 
 		@modelobj.errors.full_messages.
 			should == [%{displayName is not allowed by entry's objectClasses}]
@@ -92,7 +105,7 @@ describe Treequel::Model::SchemaValidations do
 		@modelobj.uid_number = "something that's not a number"
 		@modelobj.gid_number = "also not a number"
 
-		@modelobj.validate
+		@modelobj.should_not be_valid()
 
 		@modelobj.errors.should have( 2 ).members
 		@modelobj.errors.full_messages.should include( "uidNumber isn't a valid Integer value" )
