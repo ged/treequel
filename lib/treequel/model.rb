@@ -53,6 +53,16 @@ class Treequel::Model < Treequel::Branch
 		:with_schema => true,
 	}
 
+	# Defaults for #save options
+	DEFAULT_SAVE_OPTIONS = {
+		:raise_on_failure => true,
+	}
+
+	# Defaults for #destroy options
+	DEFAULT_DESTROY_OPTIONS = {
+		:raise_on_failure => true,
+	}
+
 
 	#################################################################
 	###	C L A S S   M E T H O D S
@@ -218,6 +228,7 @@ class Treequel::Model < Treequel::Branch
 	HOOKS.each do |hook|
 		define_method( hook ) do |*args|
 			self.log.debug "#{hook} default hook called."
+			true
 		end
 	end
 
@@ -322,8 +333,9 @@ class Treequel::Model < Treequel::Branch
 	def valid?( opts={} )
 		self.errors.clear
 
-		return false if self.before_validation == false
-		self.validate
+		self.before_validation or
+			raise Treequel::BeforeHookFailed, :validation
+		self.validate( opts )
 		self.after_validation
 
 		return self.errors.empty? ? true : false
@@ -343,9 +355,14 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Write any pending changes in the model object to the directory.
-	def save
+	### @param [Hash] opts  save options
+	### @option opts [Boolean] :raise_on_failure  (true) raise a Treequel::ValidationFailed or
+	###      Treequel::BeforeHookFailed if either the validations or before_{save,create}
+	def save( opts={} )
+		opts = DEFAULT_SAVE_OPTIONS.merge( opts )
+
 		self.log.debug "Saving %s..." % [ self.dn ]
-		raise Treequel::ValidationFailed, self.errors unless self.valid?
+		raise Treequel::ValidationFailed, self.errors unless self.valid?( opts )
 		self.log.debug "  validation succeeded."
 
 		unless mods = self.modifications
@@ -354,24 +371,25 @@ class Treequel::Model < Treequel::Branch
 		end
 
 		self.log.debug "  got %d modifications." % [ mods.length ]
-		self.before_save( mods ) or return nil
+		self.before_save( mods ) or
+			raise Treequel::BeforeHookFailed, :save
 
 		if self.exists?
-			self.log.debug "    entry already exists: updating..."
-			self.before_update( mods ) or return nil
-			self.modify( mods )
-			self.after_update( mods )
-
+			self.update( mods )
 		else
-			self.log.debug "    entry doesn't exist: creating..."
-			self.before_create( mods ) or return nil
 			self.create( mods )
-			self.after_create( mods )
 		end
 
 		self.after_save( mods )
 
 		return true
+	rescue Treequel::BeforeHookFailed => err
+		self.log.info( err.message )
+		raise if opts[:raise_on_failure]
+	rescue Treequel::ValidationFailed => err
+		self.log.error( "Save aborted: validation failed." )
+		self.log.info( err.errors.full_messages.join(', ') )
+		raise if opts[:raise_on_failure]
 	end
 
 
@@ -437,6 +455,21 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
+	### Like #delete, but runs destroy hooks before and after deleting.
+	def destroy( opts={} )
+		opts = DEFAULT_DESTROY_OPTIONS.merge( opts )
+
+		self.before_destroy or raise Treequel::BeforeHookFailed, :destroy
+		self.delete
+		self.after_destroy
+
+		return true
+	rescue Treequel::BeforeHookFailed => err
+		self.log.info( err.message )
+		raise if opts[:raise_on_failure]
+	end
+
+
 	### Override Branch#search to inject the 'objectClass' attribute to the
 	### selected attribute list if there is one.
 	def search( scope=:subtree, filter='(objectClass=*)', parameters={}, &block )
@@ -490,6 +523,28 @@ class Treequel::Model < Treequel::Branch
 	### Mark the object as having been modified.
 	def mark_dirty
 		@dirty = true
+	end
+
+
+	### Update the object's entry with the specified +mods+.
+	### @param [Array<LDAP::Mod>] mods  the modifications to make
+	def update( mods )
+		self.log.debug "    entry already exists: updating..."
+		self.before_update( mods ) or
+			raise Treequel::BeforeHookFailed, :update
+		self.modify( mods )
+		self.after_update( mods )
+	end
+
+
+	### Create the entry for the object, using the specified +mods+ to set the attributes.
+	### @param [Array<LDAP::Mod>] mods  the modifications to set attributes
+	def create( mods )
+		self.log.debug "    entry doesn't exist: creating..."
+		self.before_create( mods ) or
+			raise Treequel::BeforeHookFailed, :create
+		super( mods )
+		self.after_create( mods )
 	end
 
 

@@ -40,9 +40,34 @@ module Treequel
 			end
 		end
 
+		######
+		public
+		######
+
 		# @return [Treequel::Model::Errors] the validation errors
 		attr_reader :errors
-	end
+
+	end # class ValidationFailed
+
+	### Exception class raised when a before_* hooks returns a false value when saving
+	### or destroying a Treequel::Model object.
+	class BeforeHookFailed < Treequel::ModelError
+
+		### Create a new Treequel::BeforeHookFailed exception that indicates that the
+		### specified +hook+ returned a false value.
+		def initialize( hook )
+			@hook = hook.to_sym
+			super "The 'before' hook failed when trying to %s" % [ hook ]
+		end
+
+		######
+		public
+		######
+
+		# The hook that failed
+		attr_reader :hook
+
+	end # class BeforeHookFailed
 
 end # module Treequel
 

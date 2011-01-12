@@ -449,6 +449,52 @@ describe Treequel::Model do
 			@obj.errors.should be_a( Hash )
 		end
 
+		it "can delete its entry with callbacks" do
+			class << @obj; attr_reader :callbacks; end
+			@obj.instance_variable_set( :@callbacks, [] )
+			def @obj.before_destroy
+				self.callbacks << :before_destroy
+			end
+			def @obj.after_destroy
+				self.callbacks << :after_destroy
+			end
+
+			@conn.should_receive( :delete ).with( @obj.dn )
+
+			@obj.destroy
+			@obj.callbacks.should == [ :before_destroy, :after_destroy ]
+		end
+
+		it "doesn't delete its entry if the destroy callback returns something falseish" do
+			def @obj.before_destroy
+				false
+			end
+			def @obj.after_destroy
+				fail "shouldn't call the after_destroy hook, either"
+			end
+
+			@conn.should_not_receive( :delete )
+
+			expect {
+				@obj.destroy
+			}.to raise_error( Treequel::BeforeHookFailed, /destroy/i )
+		end
+
+		it "doesn't raise a BeforeHookFailed if destroyed without :raise_on_failure" do
+			def @obj.before_destroy
+				false
+			end
+
+			@conn.should_not_receive( :delete )
+
+			result = nil
+			expect {
+				result = @obj.destroy( :raise_on_failure => false )
+			}.to_not raise_error()
+
+			result.should be_false()
+		end
+
 
 		context "with no modified attributes" do
 
@@ -501,6 +547,54 @@ describe Treequel::Model do
 				@obj.save
 			end
 
+
+			it "calls update hooks when saved" do
+				class << @obj; attr_reader :callbacks; end
+				@obj.instance_variable_set( :@callbacks, [] )
+				def @obj.before_update( mods )
+					self.callbacks << :before_update
+				end
+				def @obj.after_update( mods )
+					self.callbacks << :after_update
+				end
+
+				@conn.should_receive( :modify )
+
+				@obj.save
+				@obj.callbacks.should == [ :before_update, :after_update ]
+			end
+
+			it "doesn't modify its entry if the before_update callback returns something falseish" do
+				def @obj.before_update( mods )
+					false
+				end
+				def @obj.after_update( mods )
+					fail "shouldn't call the after_update hook, either"
+				end
+
+				@conn.should_not_receive( :modify )
+
+				expect {
+					@obj.save
+				}.to raise_error( Treequel::BeforeHookFailed, /update/i )
+			end
+
+			it "doesn't raise a BeforeHookFailed if saved without :raise_on_failure" do
+				def @obj.before_update( mods )
+					false
+				end
+
+				@conn.stub( :search_ext2 ).with( @obj.dn, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+					and_return( [] )
+				@conn.should_not_receive( :modify )
+
+				result = nil
+				expect {
+					result = @obj.save( :raise_on_failure => false )
+				}.to_not raise_error()
+
+				result.should be_false()
+			end
 		end
 
 
@@ -593,11 +687,11 @@ describe Treequel::Model do
 
 		it "creates the entry in the directory when saved" do
 			@conn.stub( :search_ext2 ).
-				with( TEST_PERSON_DN, LDAP::LDAP_SCOPE_BASE, '(objectClass=*)').
+				with( @obj.dn, LDAP::LDAP_SCOPE_BASE, '(objectClass=*)').
 				and_return( [] )
 
 			@conn.should_receive( :add ).
-				with( TEST_PERSON_DN, [
+				with( @obj.dn, [
 					ldap_mod_add("cn", "James"),
 					ldap_mod_add("displayName", "J. Random Hacker"),
 					ldap_mod_add("gidNumber", "200"),
@@ -610,6 +704,58 @@ describe Treequel::Model do
 				] )
 
 			@obj.save
+		end
+
+		it "calls creation hooks when saved" do
+			class << @obj; attr_reader :callbacks; end
+			@obj.instance_variable_set( :@callbacks, [] )
+			def @obj.before_create( mods )
+				self.callbacks << :before_create
+			end
+			def @obj.after_create( mods )
+				self.callbacks << :after_create
+			end
+
+			@conn.stub( :search_ext2 ).with( @obj.dn, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				and_return( [] )
+			@conn.should_receive( :add )
+
+			@obj.save
+			@obj.callbacks.should == [ :before_create, :after_create ]
+		end
+
+		it "doesn't add its entry if the before_create callback returns something falseish" do
+			def @obj.before_create( mods )
+				false
+			end
+			def @obj.after_create( mods )
+				fail "shouldn't call the after_create hook, either"
+			end
+
+			@conn.stub( :search_ext2 ).with( @obj.dn, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				and_return( [] )
+			@conn.should_not_receive( :add )
+
+			expect {
+				@obj.save
+			}.to raise_error( Treequel::BeforeHookFailed, /create/i )
+		end
+
+		it "doesn't raise a BeforeHookFailed if saved without :raise_on_failure" do
+			def @obj.before_create( mods )
+				false
+			end
+
+			@conn.stub( :search_ext2 ).with( @obj.dn, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+				and_return( [] )
+			@conn.should_not_receive( :add )
+
+			result = nil
+			expect {
+				result = @obj.save( :raise_on_failure => false )
+			}.to_not raise_error()
+
+			result.should be_false()
 		end
 
 	end

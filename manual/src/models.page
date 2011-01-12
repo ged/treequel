@@ -22,6 +22,7 @@ A common pattern when you're using any kind of datastore is to represent the dat
 
 Treequel comes with its own set of tools for constructing domain models, tools that take advantage of Ruby's flexible object model to reflect the flexibility and organic nature of LDAP data.
 
+
 h3(#modeling-objectclass). Modeling ObjectClasses
 
 The principle component is a class called <?api Treequel::Model ?>, which provides the usual attribute accessors for the entry that it wraps, as well as a mechanism for layering functionality onto an object based on what its @objectClass@ attributes are.
@@ -140,4 +141,52 @@ sysadmin_group.members.filter( ~:userPassword ).all
 Mahlon appears to be violating ACME Company policy [line 17]. He will be flogged in accordance with company handbook section C, paragraph 2.
 
 If the functionality you wish to define requires attributes of two or more different _objectClasses_ , you can put all of them in the @model_objectclasses@ statement, and then the mixin will only apply to entries that have *all* of them. The @model_bases@ attribute can also take multiple values; entries will be limited to children of *any* of them.
+
+h3(#saving-models). Saving Model Objects
+
+Another difference between regular @Treequel::Branch@ objects and @Treequel::Model@ is that @Model@ objects defer writing attribute changes to the directory; while changes made to @Treequel::Branch@ are written immediately, @Treequel::Model@ objects keep track of modifications made to them, and only write them to the directory when their <?api Treequel::Model#save save ?> method is called.
+
+h4(#model-validation). Model Validation
+
+Before a @Model@ object is saved, it is first checked against the schema to be sure it conforms to the restrictions defined by its @objectClasses@ (and to be sure it has at least one structural @objectClass@).
+
+You can check an object's validity at any time using the <?api Treequel::Model#valid? valid? ?> predicate, and if it isn't valid, <?api Treequel::Model#errors ?> will return a <?api Treequel::Model::Errors ?> object that can be used to diagnose the problem, build error messages for display, etc:
+
+<?example { language: ruby, caption: "Check a Model object for validity, and display error messages if it isn't valid." } ?>
+require 'acme/posixaccount'
+
+# Create a new account
+account = ACME::PosixAccount.create( directory, 'uid=jbernam,ou=people,dc=acme,dc=com' )
+
+account.cn = 'James Bernam'
+account.uid_number = 511
+account.gid_number = 500
+
+unless account.valid?
+	$stderr.puts "Couldn't save #{account}:",
+		*account.errors.full_messages
+end
+<?end?>
+
+Since the @posixAccount@ objectClass has @homeDirectory@ as one of its @MUST@ attributes, this outputs:
+
+	Couldn't save uid=jbernam,ou=people,dc=acme,dc=com:
+	homeDirectory MUST have a value
+
+h4(#model-hooks). Model Callbacks
+
+Treequel::Model objects also call a number of callbacks during various stages of their lifecycle, letting you take actions by declaring one or more in an ObjectClass mixin or in a @Treequel::Model@ subclass, if you wish them to be run for every instance. The hooks are (in the order they're typically executed):
+
+* #after_initialize
+* #before_validation
+* #after_validation
+* #before_save
+* #before_create/#before_update
+* #after_create/#after_update
+* #after_save
+* #before_destroy
+* #after_destroy
+
+_TODO: continue_
+
 
