@@ -201,6 +201,7 @@ class Treequel::Model < Treequel::Branch
 	def initialize( directory, dn, entry=nil, from_directory=false )
 		if from_directory
 			super( directory, dn, entry )
+			@dirty = false
 		else
 			super( directory, dn )
 			@values = entry ? symbolify_keys( entry ) : {}
