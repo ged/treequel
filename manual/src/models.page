@@ -148,7 +148,10 @@ Another difference between regular @Treequel::Branch@ objects and @Treequel::Mod
 
 h4(#model-validation). Model Validation
 
-Before a @Model@ object is saved, it is first checked against the schema to be sure it conforms to the restrictions defined by its @objectClasses@ (and to be sure it has at least one structural @objectClass@).
+Before a @Model@ object is saved, it is first checked against a list of validations. Validations are 
+
+
+the schema to be sure it conforms to the restrictions defined by its @objectClasses@ (and to be sure it has at least one structural @objectClass@). 
 
 You can check an object's validity at any time using the <?api Treequel::Model#valid? valid? ?> predicate, and if it isn't valid, <?api Treequel::Model#errors ?> will return a <?api Treequel::Model::Errors ?> object that can be used to diagnose the problem, build error messages for display, etc:
 
@@ -187,6 +190,25 @@ Treequel::Model objects also call a number of callbacks during various stages of
 * #before_destroy
 * #after_destroy
 
-_TODO: continue_
+You can cause the hooked action to be aborted by returning a false value from any of the @before_@ hooks, in which case a @Treequel::BeforeHookFailed@ exception is raised unless you call the action with @:raise_on_failure => false@, so you could write the above like this instead:
 
+<?example { language: ruby, caption: "Use exception-handling for catching failed saves." } ?>
+require 'acme/posixaccount'
+
+# Create a new account
+account = ACME::PosixAccount.create( directory, 'uid=jbernam,ou=people,dc=acme,dc=com' )
+
+account.cn = 'James Bernam'
+account.uid_number = 511
+account.gid_number = 500
+
+begin
+	account.save
+rescue Treequel::ValidationFailed => exception
+	$stderr.puts "Couldn't save #{account}:",
+		*exception.errors.full_messages
+rescue Treequel::BeforeHookFailed => exception
+	$stderr.puts "Couldn't save #{account}: the before_#{exception.hook} failed."
+end
+<?end?>
 
