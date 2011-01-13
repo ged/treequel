@@ -446,7 +446,7 @@ describe Treequel::Model do
 		end
 
 		it "knows if any validation errors have been encountered" do
-			@obj.errors.should be_a( Hash )
+			@obj.errors.should be_a( Treequel::Model::Errors )
 		end
 
 		it "can delete its entry with callbacks" do

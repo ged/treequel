@@ -332,25 +332,24 @@ class Treequel::Model < Treequel::Branch
 	### Return +true+ if the model object passes all of its validations.
 	def valid?( opts={} )
 		self.errors.clear
-
-		self.before_validation or
-			raise Treequel::BeforeHookFailed, :validation
 		self.validate( opts )
-		self.after_validation
-
 		return self.errors.empty? ? true : false
 	end
 
 
-	### Validate the object with the specified +options+.
+	### Validate the object with the specified +options+. Appending validation errors onto
+	### the #errors object.
 	### @param [Hash] options  options for validation.
 	### @option options [Boolean] :with_schema  whether or not to run the schema validations
 	def validate( options={} )
 		options = DEFAULT_VALIDATION_OPTIONS.merge( options )
 
+		self.before_validation or
+			raise Treequel::BeforeHookFailed, :validation
 		self.errors.add( :objectClass, 'must have at least one' ) if self.object_classes.empty?
 
 		super( options )
+		self.after_validation
 	end
 
 
