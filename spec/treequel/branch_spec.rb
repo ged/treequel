@@ -801,6 +801,15 @@ describe Treequel::Branch do
 				2.times { @branch[ :description ] }
 			end
 
+			it "doesn't cache nil values that don't correspond to an attribute type in the schema" do
+				@conn.should_receive( :search_ext2 ).
+					with( TEST_HOSTS_DN, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+					and_return([ @entry ])
+
+				@branch[ :string_beans ]
+				@branch.instance_variable_get( :@values ).should_not have_key( :string_beans )
+			end
+
 			it "freezes the values fetched from its entry by default to prevent accidental " +
 			   "in-place modification" do
 				@conn.should_receive( :search_ext2 ).

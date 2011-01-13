@@ -320,7 +320,7 @@ class Treequel::Branch
 			value.freeze if
 				self.class.freeze_converted_values? &&
 				value.respond_to?( :freeze )
-			@values[ attrsym ] = value
+			@values[ attrsym ] = value if value
 		end
 
 		return @values[ attrsym ]
