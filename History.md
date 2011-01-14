@@ -1,4 +1,4 @@
-## 1.3.0 [2011-01-07] Michael Granger <ged@FaerieMUD.org>
+## 1.3.0 [2011-01-13] Michael Granger <ged@FaerieMUD.org>
 
 Enhancements:
 
@@ -12,6 +12,17 @@ Enhancements:
   - Treequel::Model#errors
   - Treequel::Model#revert
   - Treequel::Model#modified?
+  - Treequel::Model#after_initialize
+  - Treequel::Model#before_validation
+  - Treequel::Model#after_validation
+  - Treequel::Model#before_save
+  - Treequel::Model#before_create
+  - Treequel::Model#before_update
+  - Treequel::Model#after_create
+  - Treequel::Model#after_update
+  - Treequel::Model#after_save
+  - Treequel::Model#before_destroy
+  - Treequel::Model#after_destroy
   New classes:
   - Treequel::Model::Errors
   - Treequel::ValidationFailed
@@ -36,6 +47,7 @@ Bugfixes:
   - Check for explicit nil DN in .new
   - Check for nil parent_dn in #parent
   - Use 'top' instead of :top as objectClass default
+  - Don't cache attempts to fetch invalid attributes
 
 
 ## 1.2.2 [2010-12-14] Michael Granger <ged@FaerieMUD.org>
