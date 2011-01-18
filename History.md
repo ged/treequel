@@ -1,3 +1,8 @@
+## 1.3.1 [2011-01-17] Michael Granger <ged@FaerieMUD.org>
+
+Fixed a bug that caused DN attributes in objects created via Treequel::Model.new_from_entry to be doubled.
+
+
 ## 1.3.0 [2011-01-13] Michael Granger <ged@FaerieMUD.org>
 
 Enhancements:
