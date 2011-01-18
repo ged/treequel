@@ -1,6 +1,6 @@
 ---
 title: Introduction
-layout: intro
+layout: default
 tagline: An honest LDAP library.
 index: 1
 filters:
