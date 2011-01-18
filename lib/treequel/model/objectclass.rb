@@ -92,7 +92,7 @@ module Treequel::Model::ObjectClass
 		rdn_pair.split( /\+/ ).each do |attrpair|
 			k, v = attrpair.split( /\s*=\s*/ )
 			entryhash[ k ] ||= []
-			entryhash[ k ] << v
+			entryhash[ k ] << v unless entryhash[ k ].include?( v )
 		end
 
 		return self.model_class.new( directory, dn, entryhash )

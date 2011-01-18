@@ -185,7 +185,21 @@ describe Treequel::Model::ObjectClass do
 			result = mixin.create( @directory, TEST_PERSON_DN )
 			result.should be_a( Treequel::Model )
 			result[:objectClass].should include( 'inetOrgPerson' )
-			result[TEST_PERSON_DN_ATTR].should include( TEST_PERSON_DN_VALUE )
+			result[TEST_PERSON_DN_ATTR].should == [ TEST_PERSON_DN_VALUE ]
+		end
+
+		it "doesn't add the extracted DN attribute if it's already present in the entry" do
+			mixin = Module.new do
+				extend Treequel::Model::ObjectClass
+				model_objectclasses :inetOrgPerson
+			end
+
+			result = mixin.create( @directory, TEST_PERSON_DN,
+				TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE] )
+			result.should be_a( Treequel::Model )
+			result[:objectClass].should include( 'inetOrgPerson' )
+			result[TEST_PERSON_DN_ATTR].should have( 1 ).member
+			result[TEST_PERSON_DN_ATTR].should == [ TEST_PERSON_DN_VALUE ]
 		end
 
 		it "merges objectClasses passed to the creation method" do
@@ -199,6 +213,7 @@ describe Treequel::Model::ObjectClass do
 			result.should be_a( Treequel::Model )
 			result[:objectClass].should have( 2 ).members
 			result[:objectClass].should include( 'inetOrgPerson', 'person' )
+			result[TEST_PERSON_DN_ATTR].should have( 1 ).member
 			result[TEST_PERSON_DN_ATTR].should include( TEST_PERSON_DN_VALUE )
 		end
 
@@ -214,36 +229,6 @@ describe Treequel::Model::ObjectClass do
 			result[:objectClass].should include( 'ipHost', 'ieee802Device', 'device' )
 			result[TEST_HOST_MULTIVALUE_DN_ATTR1].should include( TEST_HOST_MULTIVALUE_DN_VALUE1 )
 			result[TEST_HOST_MULTIVALUE_DN_ATTR2].should include( TEST_HOST_MULTIVALUE_DN_VALUE2 )
-		end
-
-		it "can instantiate a new model object with its declared objectClasses" do
-			conn = mock( "ldap connection object" )
-			directory = get_fixtured_directory( conn )
-
-			mixin = Module.new do
-				extend Treequel::Model::ObjectClass
-				model_objectclasses :inetOrgPerson
-			end
-
-			result = mixin.create( directory, TEST_PERSON_DN )
-			result.should be_a( Treequel::Model )
-			result[:objectClass].should include( 'inetOrgPerson' )
-		end
-
-		it "merges objectClasses passed to the creation method" do
-			conn = mock( "ldap connection object" )
-			directory = get_fixtured_directory( conn )
-
-			mixin = Module.new do
-				extend Treequel::Model::ObjectClass
-				model_objectclasses :inetOrgPerson
-			end
-
-			result = mixin.create( directory, TEST_PERSON_DN,
-				:objectClass => [:person, :inetOrgPerson] )
-			result.should be_a( Treequel::Model )
-			result[:objectClass].should have( 2 ).members
-			result[:objectClass].should include( 'inetOrgPerson', 'person' )
 		end
 
 	end
