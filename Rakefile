@@ -38,6 +38,7 @@ hoespec = Hoe.spec 'treequel' do
 		"    - termios",
 		"    - ruby-terminfo",
 		"    - columnize",
+		"    - sysexits",
 		'',
 		"You can install those automatically if you use the --development flag when",
 		"installing Treequel."
@@ -46,6 +47,7 @@ hoespec = Hoe.spec 'treequel' do
 
 	self.require_ruby_version( '>=1.8.7' )
 
+	self.rspec_options += ['-cfd'] if self.respond_to?( :rspec_options= )
 	self.hg_sign_tags = true if self.respond_to?( :hg_sign_tags= )
 	self.manual_source_dir = 'src' if self.respond_to?( :manual_source_dir= )
 	self.yard_opts = [ '--use-cache', '--protected', '--verbose' ] if
