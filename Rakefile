@@ -7,6 +7,8 @@ Hoe.plugin :yard
 Hoe.plugin :signing
 Hoe.plugin :manualgen
 
+
+
 Hoe.plugins.delete :rubyforge
 
 hoespec = Hoe.spec 'treequel' do
@@ -17,7 +19,8 @@ hoespec = Hoe.spec 'treequel' do
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
 
 	self.extra_deps.push *{
-		'ruby-ldap' => '~> 0.9.11'
+		'ruby-ldap' => '~> 0.9.11',
+		'diff-lcs'  => '~> 1.1.2',
 	}
 	self.extra_dev_deps.push *{
 		'rspec'         => '~> 2.4.0',
