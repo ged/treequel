@@ -6,6 +6,32 @@
 
 @import url(baseline.compress.css);
 
+/* Elements */
+
+a {
+	color: #4c87cb;
+	text-decoration: inherit;
+	border-bottom: 1px dotted;
+	border-color: rgba(76,135,203,0.5);
+}
+a:hover {
+	border-color: #4c87cb;
+	background-color: rgba(253,255,132,0.5);
+}
+
+h1, h2, h3, h4, h5, h6 {
+	margin-bottom: 0.2em;
+}
+
+p + p {
+	margin-top: 1em;
+}
+
+code {
+	background-color: rgba(179,179,179,0.4);
+}
+
+/* IDed elements */
 #page {
 	margin: 0 auto;
 }
@@ -55,7 +81,11 @@ header a {
 }
 
 footer {
+	color: #444;
 	clear: both;
+	padding: 2em;
+	background: #a5a5a5;
+	border-top: 2px solid rgba( 25,25,25, 0.2 );
 }
 
 
