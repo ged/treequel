@@ -696,17 +696,16 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Apply mixins that are applicable considering the receiver's DN and the 
-	### objectClasses from the given entry merged with any unsaved values.
-	def apply_applicable_mixins( dn, entry=nil )
-		entry ||= {}
-		entry.merge!( stringify_keys(@values) )
-		return unless entry['objectClass']
+	### objectClasses from the given +entryhash+ merged with any unsaved values.
+	def apply_applicable_mixins( dn, entryhash=nil )
+		objectclasses = @values[:objectClass] ||
+			(entryhash && entryhash['objectClass'])
+		return unless objectclasses
 
 		# self.log.debug "Applying mixins applicable to %s" % [ dn ]
 		schema = self.directory.schema
 
-		# self.log.debug "  entry is: %p" % [ entry ]
-		ocs = entry['objectClass'].collect do |oc_oid|
+		ocs = objectclasses.collect do |oc_oid|
 			explicit_oc = schema.object_classes[ oc_oid ]
 			explicit_oc.ancestors.collect {|oc| oc.name }
 		end.flatten.uniq
