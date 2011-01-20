@@ -16,7 +16,7 @@
 ###   <?api Class::Name ?>
 ###   <?api "click here":Class::Name ?>
 ### 
-class APIFilter < Hoe::ManualGen::Page::Filter
+class Hoe::ManualGen::APIFilter < Hoe::ManualGen::Page::Filter
 
 	# PI	   ::= '<?' PITarget (S (Char* - (Char* '?>' Char*)))? '?>'
 	ApiPI = %r{
@@ -30,8 +30,8 @@ class APIFilter < Hoe::ManualGen::Page::Filter
 			\s+
 		\?>
 	  }x
-	
-	
+
+
 	######
 	public
 	######
@@ -46,12 +46,12 @@ class APIFilter < Hoe::ManualGen::Page::Filter
 			# Grab the tag values
 			link_text = $1
 			classname = $2
-			
+
 			self.generate_link( page, apipath, classname, link_text )
 		end
 	end
-	
-	
+
+
 	### Create an HTML link fragment from the parsed ApiPI.
 	###
 	def generate_link( current_page, apipath, classname, link_text=nil )

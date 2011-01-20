@@ -685,45 +685,36 @@ class Treequel::Model < Treequel::Branch
 	### has been looked up.
 	### @return [LDAP::Entry]  the fetched entry object
 	def lookup_entry
-		if entry = super
-			self.log.debug "  applying mixins to %p" % [ entry ]
-			self.apply_applicable_mixins( self.dn, entry )
-		else
-			self.log.debug "  failed to fetch the entry."
+		if entryhash = super
+			self.apply_applicable_mixins( self.dn, entryhash )
 		end
-		return entry
+
+		return entryhash
 	end
 
 
 	### Apply mixins that are applicable considering the receiver's DN and the 
-	### objectClasses from the given entry merged with any unsaved values.
-	def apply_applicable_mixins( dn, entry=nil )
-		entry ||= {}
-		entry.merge!( stringify_keys(@values) )
-		return unless entry['objectClass']
+	### objectClasses from the given +entryhash+ merged with any unsaved values.
+	def apply_applicable_mixins( dn, entryhash=nil )
+		objectclasses = @values[:objectClass] ||
+			(entryhash && entryhash['objectClass'])
+		return unless objectclasses
 
 		# self.log.debug "Applying mixins applicable to %s" % [ dn ]
 		schema = self.directory.schema
 
-		# self.log.debug "  entry is: %p" % [ entry ]
-		ocs = entry['objectClass'].collect do |oc_oid|
+		ocs = objectclasses.collect do |oc_oid|
 			explicit_oc = schema.object_classes[ oc_oid ]
 			explicit_oc.ancestors.collect {|oc| oc.name }
 		end.flatten.uniq
 		# self.log.debug "  got %d candidate objectClasses: %p" % [ ocs.length, ocs ]
 
-		oc_mixins = self.class.mixins_for_objectclasses( *ocs )
-		dn_mixins = self.class.mixins_for_dn( dn )
-		# self.log.debug "  found %d mixins by objectclass (%s), and %d by base (%s)" % [
-		# 	oc_mixins.length,
-		# 	oc_mixins.map(&:name).join(', '),
-		# 	dn_mixins.length,
-		# 	dn_mixins.map(&:name).join(', ')
-		# ]
-
 		# The applicable mixins are those in the intersection of the ones
 		# inferred by its objectclasses and those that apply to its DN
+		oc_mixins = self.class.mixins_for_objectclasses( *ocs )
+		dn_mixins = self.class.mixins_for_dn( dn )
 		mixins = ( oc_mixins & dn_mixins )
+
 		# self.log.debug "  %d mixins remain after intersection: %p" % [ mixins.length, mixins ]
 
 		mixins.each {|mod| self.extend(mod) }

@@ -144,7 +144,7 @@ If the functionality you wish to define requires attributes of two or more diffe
 
 h3(#saving-models). Saving Model Objects
 
-Another difference between regular @Treequel::Branch@ objects and @Treequel::Model@ is that @Model@ objects defer writing attribute changes to the directory; while changes made to @Treequel::Branch@ are written immediately, @Treequel::Model@ objects keep track of modifications made to them, and only write them to the directory when their <?api Treequel::Model#save save ?> method is called.
+Another difference between regular @Treequel::Branch@ objects and @Treequel::Model@ is that @Model@ objects defer writing attribute changes to the directory; while changes made to @Treequel::Branch@ are written immediately, @Treequel::Model@ objects keep track of modifications made to them, and only write them to the directory when their @Treequel::Model#save@ method is called.
 
 h4(#model-validation). Model Validation
 
@@ -153,7 +153,7 @@ Before a @Model@ object is saved, it is first checked against a list of validati
 
 the schema to be sure it conforms to the restrictions defined by its @objectClasses@ (and to be sure it has at least one structural @objectClass@). 
 
-You can check an object's validity at any time using the <?api Treequel::Model#valid? valid? ?> predicate, and if it isn't valid, <?api Treequel::Model#errors ?> will return a <?api Treequel::Model::Errors ?> object that can be used to diagnose the problem, build error messages for display, etc:
+You can check an object's validity at any time using the @Treequel::Model#valid?@ predicate, and if it isn't valid, @Treequel::Model#errors@ will return a <?api Treequel::Model::Errors ?> object that can be used to diagnose the problem, build error messages for display, etc:
 
 <?example { language: ruby, caption: "Check a Model object for validity, and display error messages if it isn't valid." } ?>
 require 'acme/posixaccount'
