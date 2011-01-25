@@ -29,7 +29,6 @@ include Treequel::Constants
 #####################################################################
 
 describe Treequel, "mixin" do
-	include Treequel::SpecHelpers
 
 	describe Treequel::Loggable, "mixed into a class" do
 		before(:each) do
@@ -63,10 +62,6 @@ describe Treequel, "mixin" do
 			@logfile.read.should =~ /sexydrownwatch/
 		end
 	end
-
-	#################################################################
-	###	E X A M P L E S
-	#################################################################
 
 	describe Treequel::HashUtilities do
 		it "includes a function for stringifying Hash keys" do
