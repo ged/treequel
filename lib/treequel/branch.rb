@@ -440,7 +440,7 @@ class Treequel::Branch
 		self.log.debug "Creating a copy of %p at %p" % [ self.dn, newdn ]
 		newbranch = self.class.new( self.directory, newdn )
 
-		attributes = self.entry.merge( attributes )
+		attributes = self.entry.merge( stringify_keys(attributes) )
 
 		self.log.debug "  merged attributes: %p" % [ attributes ]
 		self.directory.create( newbranch, attributes )
