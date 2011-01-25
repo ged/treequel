@@ -256,6 +256,13 @@ class Treequel::Shell
 		self.save_history
 
 		message "done."
+
+	rescue => err
+		error_message( err.class.name, err.message )
+		err.backtrace.each do |frame|
+			self.log.debug "  " + frame
+		end
+
 	ensure
 		system( 'stty', @original_tty_settings.chomp )
 	end
@@ -292,13 +299,26 @@ class Treequel::Shell
 		else
 			self.handle_missing_cmd( command )
 		end
+	rescue LDAP::ResultError => err
+		case err.message
+		when /can't contact ldap server/i
+			if @dir.connected?
+				error_message( "LDAP connection went away." )
+			else
+				error_message( "Couldn't connect to the server." )
+			end
+			ask_for_confirmation( "Attempt to reconnect?" ) do
+				@dir.reconnect
+			end
+			retry
 
-	rescue => err
-		error_message( err.class.name, err.message )
-		err.backtrace.each do |frame|
-			self.log.debug "  " + frame
+		when /invalid credentials/i
+			error_message( "Authentication failed." )
+		else
+			raise # Re-raise if it's something else
 		end
 	end
+
 
 
 	#########
