@@ -351,6 +351,12 @@ describe Treequel::Directory do
 		end
 
 
+		it "knows if a connection has been established" do
+			@dir.should be_connected()
+			@dir.instance_variable_set( :@conn, nil )
+			@dir.should_not be_connected()
+		end
+
 		it "can reconnect if its underlying connection goes away" do
 			@conn.stub( :search_ext2 ).and_raise( LDAP::ResultError.new("Can't contact LDAP server") )
 

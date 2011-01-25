@@ -237,6 +237,15 @@ class Treequel::Directory
 	end
 
 
+	### Returns +true+ if a connection has been established. This does not necessarily mean
+	### that the connection is still valid, it just means it successfully established one
+	### at some point.
+	### @return [Boolean]
+	def connected?
+		return @conn ? true : false
+	end
+
+
 	### Drop the existing connection and establish a new one.
 	### @return [Boolean]  +true+ if the connection was re-established
 	### @raise [RuntimeError]  if the re-connection failed
