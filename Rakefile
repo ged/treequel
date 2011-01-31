@@ -40,7 +40,7 @@ hoespec = Hoe.spec 'treequel' do
 		"    - columnize",
 		"    - sysexits",
 		'',
-		"You can install those automatically if you use the --development flag when",
+		"You can install them automatically if you use the --development flag when",
 		"installing Treequel."
 	  ].join( "\n" )
 	self.spec_extras[:signing_key] = '/Volumes/Keys/ged-private_gem_key.pem'

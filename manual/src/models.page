@@ -148,12 +148,36 @@ Another difference between regular @Treequel::Branch@ objects and @Treequel::Mod
 
 h4(#model-validation). Model Validation
 
-Before a @Model@ object is saved, it is first checked against a list of validations. Validations are 
+Before a @Model@ object is saved, it is first checked against its validations. Validations are a way of expressing additional constraints on values contained in an entry, or on the structure of entries themselves, constraints that are not always enforceable in the directory itself because attributes in LDAP are often free-form strings.
 
+You define validations by overriding the @#validate@ method, and then adding to the object's @#errors@ if any problems are detected.
 
-the schema to be sure it conforms to the restrictions defined by its @objectClasses@ (and to be sure it has at least one structural @objectClass@). 
+For example, if we wanted to be sure that the company's @posixAccount@ entries followed an established standard, we could add that like so:
 
-You can check an object's validity at any time using the @Treequel::Model#valid?@ predicate, and if it isn't valid, @Treequel::Model#errors@ will return a <?api Treequel::Model::Errors ?> object that can be used to diagnose the problem, build error messages for display, etc:
+<?example { language: ruby, caption: "Defining a custom validation." } ?>
+require 'treequel/model/objectclass'
+
+# Re-open the PosixAccount class from above to add validations
+module ACME::PosixAccount
+
+	def validate( options={} )
+		# Enforce consistent home directory location based on first initial and uid
+		expected_homedir = "/home/%s/%s" % [ self.uid[0,1], self.uid ]
+		self.errors.add( :homeDirectory, "doesn't follow company convention" ) unless
+			self.home_directory == expected_homedir
+
+		# Make sure the account has a GECOS set, effectively treating a MAY attribute
+		# as a MUST.
+		self.errors.add( :gecos, "isn't set" ) unless self.gecos
+
+		# Be sure to super so other validations run
+		super
+	end
+
+end
+<?end?>
+
+You can check an object's validity at any time using the @Treequel::Model#valid?@ predicate. If it isn't valid, @Treequel::Model#errors@ will contain a <?api Treequel::Model::Errors ?> object that can be used to diagnose the problem, build error messages for display, etc.
 
 <?example { language: ruby, caption: "Check a Model object for validity, and display error messages if it isn't valid." } ?>
 require 'acme/posixaccount'
@@ -171,14 +195,18 @@ unless account.valid?
 end
 <?end?>
 
-Since the @posixAccount@ objectClass has @homeDirectory@ as one of its @MUST@ attributes, this outputs:
+Since the @posixAccount@ objectClass declares @homeDirectory@ as one of its @MUST@ attributes in the LDAP schema, this outputs:
 
 	Couldn't save uid=jbernam,ou=people,dc=acme,dc=com:
 	homeDirectory MUST have a value
+	homeDirectory doesn't follow company convention
+	gecos isn't set
+
+The default validations are provided by the @Treequel::Model::SchemaValidations@ module, and as its name suggests, they check the entry against the schema loaded from the directory. They are intended to prevent sending data to the directory that would result in a obvious error. If you want to skip them, you can pass the @:with_schema => false@ option to @#save@, @#valid?@, or @#validate@, which will still check any additional validations you've defined.
 
 h4(#model-hooks). Model Callbacks
 
-Treequel::Model objects also call a number of callbacks during various stages of their lifecycle, letting you take actions by declaring one or more in an ObjectClass mixin or in a @Treequel::Model@ subclass, if you wish them to be run for every instance. The hooks are (in the order they're typically executed):
+@Treequel::Model@ objects also call a number of callbacks during various stages of their lifecycle, letting you take actions by declaring one or more in an @ObjectClass@ mixin or in a @Treequel::Model@ subclass, if you wish them to be run for every instance. The hooks are (in the order they're typically executed):
 
 * #after_initialize
 * #before_validation
@@ -190,7 +218,11 @@ Treequel::Model objects also call a number of callbacks during various stages of
 * #before_destroy
 * #after_destroy
 
-You can cause the hooked action to be aborted by returning a false value from any of the @before_@ hooks, in which case a @Treequel::BeforeHookFailed@ exception is raised unless you call the action with @:raise_on_failure => false@, so you could write the above like this instead:
+Typically you'll use a hook to do things like encrypt values before saving, 
+
+You can cause the hooked action to be aborted by returning a false value from any of the @before_@ hooks. This causes a @Treequel::BeforeHookFailed@ exception to be raised unless you call the action with @:raise_on_failure => false@.
+
+Using hooks, you could rewrite the previous example like this:
 
 <?example { language: ruby, caption: "Use exception-handling for catching failed saves." } ?>
 require 'acme/posixaccount'
