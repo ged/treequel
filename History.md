@@ -1,3 +1,23 @@
+## 1.4.0 [2011-01-31] Michael Granger <ged@FaerieMUD.org>
+
+Enhancements:
+
+* Added a new method: Treequel::Directory#connected?
+* Adding reconnect support to the treequel shell
+
+Bugfixes:
+
+* Fixed a bug in Treequel::Branch#copy.
+* Escape filter metacharacters in simple filter components
+
+
+## 1.3.2
+
+Bugfix:
+
+* Ensure the entry hash that's passed to Treequel::Model#apply_applicable_mixins isn't modified; fixes a bug when modifying a new unsaved Model object.
+
+
 ## 1.3.1 [2011-01-17] Michael Granger <ged@FaerieMUD.org>
 
 Fixed a bug that caused DN attributes in objects created via Treequel::Model.new_from_entry to be doubled.
