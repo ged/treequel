@@ -240,7 +240,7 @@ module Treequel::Constants
 
 		### These are inlined for simplicity
 		#	NULL    = %x00 ; null (0)
-		NULL = '\x00'
+		NUL = NULL = '\x00'
 
 		#	SPACE   = %x20 ; space (" ")
 		SPACE = '\x20'
@@ -587,6 +587,9 @@ module Treequel::Constants
 
 		# escaped        = ESC HEX HEX
 		ESCAPED = %r{ #{ESC} [[:xdigit:]]{2} }x
+
+		# characters which must be escaped in filter values
+		UNESCAPED = %r{[#{NUL}#{LPAREN}#{RPAREN}#{ASTERISK}#{ESC}]}
 
 		# valueencoding  = 0*(normal / escaped)
 		VALUEENCODING = %r{ (?:#{NORMAL} | #{ESCAPED})* }x

@@ -70,6 +70,11 @@ describe Treequel::Filter do
 		Treequel::Filter.new( :uid, 'bigthung' ).to_s.should == '(uid=bigthung)'
 	end
 
+	it "escapes filter metacharacters in simple item equal filters" do
+		Treequel::Filter.new( :nisNetgroupTriple, '(blarney.acme.org,,)' ).to_s.
+			should == '(nisNetgroupTriple=\28blarney.acme.org,,\29)'
+	end
+
 	it "parses a String+value hash as a simple item equal filter" do
 		Treequel::Filter.new( 'uid' => 'bigthung' ).to_s.should == '(uid=bigthung)'
 	end

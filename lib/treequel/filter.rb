@@ -196,6 +196,7 @@ class Treequel::Filter
 	###   greater    = ">="
 	###   less       = "<="
 	class SimpleItemComponent < Treequel::Filter::ItemComponent
+		include Treequel::Constants::Patterns
 
 		# The valid values for +filtertype+ and the equivalent operator
 		FILTERTYPE_OP = {
@@ -277,7 +278,12 @@ class Treequel::Filter
 
 		### Stringify the component
 		def to_s
-			return [ self.attribute, self.filtertype_op, self.value ].join
+			# Escape all the filter metacharacters
+			escaped_val = self.value.to_s.gsub( UNESCAPED ) do |char|
+				'\\' + char.unpack('C*').first.to_s(16)
+			end
+
+			return [ self.attribute, self.filtertype_op, escaped_val ].join
 		end
 
 	end # class SimpleItemComponent
@@ -330,7 +336,8 @@ class Treequel::Filter
 		###	I N S T A N C E   M E T H O D S
 		#############################################################
 
-		### Create a new 'presence' item filter component for the given +attribute+.
+		### Create a new 'substring' item filter component that will match the specified +pattern+ 
+		### against the given +attribute+.
 		def initialize( attribute, pattern, options=nil )
 			@attribute = attribute
 			@pattern   = pattern
@@ -591,10 +598,16 @@ class Treequel::Filter
 				attribute, value = *expression.args
 
 				# Turn :sn.like( 'bob' ) into (cn~=bob) 'cause it has no asterisks
-				if op == :like && value !~ /\*/
-					Treequel.logger.debug \
-						"    turning a LIKE expression with no wildcards into an 'approx' filter"
-					equivalent = :approx
+				if op == :like 
+					if value.index( '*' )
+						Treequel.logger.debug \
+							"    turning a LIKE expression with an asterisk into a substring filter"
+						return Treequel::Filter::SubstringItemComponent.new( attribute, value )
+					else
+						Treequel.logger.debug \
+							"    turning a LIKE expression with no wildcards into an 'approx' filter"
+						equivalent = :approx
+					end
 				end
 
 				return Treequel::Filter::SimpleItemComponent.new( attribute, value, equivalent )
@@ -604,20 +617,17 @@ class Treequel::Filter
 				return Treequel::Filter::NotComponent.new( contents )
 
 			elsif op == :'not like'
-				equivalent = nil
-				attribute, value = *expression.args
 				Treequel.logger.debug "  making a NOT LIKE expression out of: %p" % [ expression ]
+				attribute, value = *expression.args
+				component = nil
 
-				if value !~ /\*/
-					Treequel.logger.debug \
-						"    turning a NOT LIKE expression with no wildcards into an 'approx' filter"
-					equivalent = :approx
+				if value.index( '*' )
+					component = Treequel::Filter::SubstringItemComponent.new( attribute, value )
 				else
-					equivalent = :equal
+					component = Treequel::Filter::SimpleItemComponent.new( attribute, value, :approx )
 				end
 
-				comp = Treequel::Filter::SimpleItemComponent.new( attribute, value, equivalent )
-				filter = Treequel::Filter.new( comp )
+				filter = Treequel::Filter.new( component )
 				return Treequel::Filter::NotComponent.new( filter )
 
 			elsif LOGICAL_COMPONENTS.key?( op )
