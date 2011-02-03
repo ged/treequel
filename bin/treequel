@@ -70,6 +70,10 @@ module IRB # :nodoc:
 end
 
 # The Treequel shell.
+#
+#	TODO:
+#   * Make more commands use the convert_to_branchsets utility function
+#
 class Treequel::Shell
 	include Readline,
 	        Treequel::Loggable,
@@ -321,7 +325,7 @@ class Treequel::Shell
 		end
 
 	rescue => err
-		error_message( err.class.name, err.message )
+		error_message( err.message )
 		self.log.debug { "  " + err.backtrace.join("  \n") }
 	end
 
@@ -423,6 +427,10 @@ class Treequel::Shell
 	def show_completions_command
 		message "Completions:", @completions.inspect
 	end
+	set_options :show_completions do |oparser, options|
+		oparser.banner = "show_completions"
+		oparser.separator 'Show the list of command completions (for debugging the shell)'
+	end
 
 
 	### Show help text for the specified command, or a list of all available commands 
@@ -433,9 +441,11 @@ class Treequel::Shell
 			message colorize( "Available commands", :bold, :white ),
 				*columnize(@commands)
 		else
-			cmd = args.shift.to_sym
-			if @@option_parsers.key?( cmd )
-				oparser, _ = @@option_parsers[ cmd ]
+			cmd = args.shift
+			full_command = @completions[ cmd ]
+
+			if @@option_parsers.key?( full_command.to_sym )
+				oparser, _ = @@option_parsers[ full_command.to_sym ]
 				self.log.debug "Setting summary width to: %p" % [ @columns ]
 				oparser.summary_width = @columns
 				output = oparser.to_s.sub( /^(.*?)\n/ ) do |match|
@@ -445,7 +455,7 @@ class Treequel::Shell
 				$stderr.puts
 				message( output )
 			else
-				error_message( "No help for '#{cmd.inspect}'" )
+				error_message( "No help for '#{cmd}'" )
 			end
 		end
 	end
@@ -493,6 +503,7 @@ class Treequel::Shell
 
 	### Display LDIF for the specified RDNs.
 	def cat_command( options, *args )
+		validate_rdns( *args )
 		args.each do |rdn|
 			extended = rdn.chomp!( '+' )
 
@@ -517,6 +528,7 @@ class Treequel::Shell
 
 	### Display YAML for the specified RDNs.
 	def yaml_command( options, *args )
+		validate_rdns( *args )
 		args.each do |rdn|
 			branch = @currbranch.get_child( rdn )
 			message( branch_as_yaml(branch) )
@@ -539,6 +551,7 @@ class Treequel::Shell
 
 		# Otherwise, list each one specified
 		else
+			validate_rdns( *args )
 			args.each do |rdn|
 				if branch = @currbranch.get_child( rdn )
 					targets << branch
@@ -550,11 +563,13 @@ class Treequel::Shell
 
 		# Fetch each branch's children, sort them, format them in columns, and highlight them
 		targets.each do |branch|
+			header( branch.dn ) if targets.length > 1
 			if options.longform
 				message self.make_longform_ls_output( branch, options )
 			else
 				message self.make_shortform_ls_output( branch, options )
 			end
+			message if targets.length > 1
 		end
 	end
 	set_options :ls do |oparser, options|
@@ -580,46 +595,6 @@ class Treequel::Shell
 	end
 
 
-	### Generate long-form output lines for the 'ls' command for the given +branch+.
-	def make_longform_ls_output( branch, options )
-		children = branch.children
-		header = colorize( :underscore, :cyan ) { "total %d" % [children.length] }
-
-		# Calcuate column widths
-		oclen = children.map do |subbranch|
-			subbranch.include_operational_attrs = true
-			subbranch[:structuralObjectClass] ? subbranch[:structuralObjectClass].length : 0
-		end.max
-
-		# Set up sorting by collecting all the requested sort criteria as Proc objects which
-		# will be applied
-		sortfuncs = []
-		sortfuncs << lambda {|subbranch| subbranch[:hasSubordinates] ? 0 : 1 } if options.dirsort
-		sortfuncs << lambda {|subbranch| subbranch[:modifyTimestamp] } if options.timesort
- 		sortfuncs << lambda {|subbranch| subbranch.rdn.downcase }
-
-		rows = children.
-			sort_by {|subbranch| sortfuncs.collect {|func| func.call(subbranch) } }.
-			collect {|subbranch| self.format_description(subbranch, oclen) }
-
-		return [ header ] + (options.reversesort ? rows.reverse : rows)
-	end
-
-
-	### Generate short-form 'ls' output for the given +branch+ and return it.
-	def make_shortform_ls_output( branch, options )
-		branch.include_operational_attrs = true
-		entries = branch.children.
-			collect {|b| b.rdn + (b[:hasSubordinates] ? '/' : '') }.
-			sort_by {|rdn| rdn.downcase }
-		self.log.debug "Displaying %d entries in short form." % [ entries.length ]
-
-		return columnize( entries ).gsub( /#{ATTRIBUTE_TYPE}=\s*\S+/ ) do |rdn|
-			format_rdn( rdn )
-		end
-	end
-
-
 	### Change the current working DN to +rdn+.
 	def cdn_command( options, rdn=nil, *args )
 		if rdn.nil?
@@ -629,7 +604,7 @@ class Treequel::Shell
 
 		return self.parent_command( options ) if rdn == '..'
 
-		raise "invalid RDN %p" % [ rdn ] unless RELATIVE_DISTINGUISHED_NAME.match( rdn )
+		validate_rdns( rdn )
 
 		pairs = rdn.split( /\s*,\s*/ )
 		pairs.each do |dnpair|
@@ -660,6 +635,7 @@ class Treequel::Shell
 
 	# ### Create the entry specified by +rdn+.
 	def create_command( options, rdn )
+		validate_rdns( rdn )
 		branch = @currbranch.get_child( rdn )
 
 		raise "#{branch.dn}: already exists." if branch.exists?
@@ -673,6 +649,7 @@ class Treequel::Shell
 
 	### Edit the entry specified by +rdn+.
 	def edit_command( options, rdn )
+		validate_rdns( rdn )
 		branch = @currbranch.get_child( rdn )
 
 		raise "#{branch.dn}: no such entry. Did you mean to 'create' it instead? " unless
@@ -692,6 +669,7 @@ class Treequel::Shell
 
 	### Change the DN of an entry
 	def mv_command( options, rdn, newdn )
+		validate_rdns( rdn, newdn )
 		branch = @currbranch.get_child( rdn )
 
 		raise "#{branch.dn}: no such entry" unless branch.exists?
@@ -707,6 +685,8 @@ class Treequel::Shell
 
 	### Copy an entry
 	def cp_command( options, rdn, newrdn )
+		# Can't validate as RDNs because they might be full DNs
+
 		base_dn = @currbranch.directory.base_dn
 
 		# If the RDN includes the base, it's a DN
@@ -742,6 +722,7 @@ class Treequel::Shell
 
 	### Remove the entry specified by +rdn+.
 	def rm_command( options, *rdns )
+		validate_rdns( *rdns )
 		branchsets = self.convert_to_branchsets( *rdns )
 		coll = Treequel::BranchCollection.new( *branchsets )
 
@@ -843,7 +824,9 @@ class Treequel::Shell
 		if args.empty?
 			branch = @currbranch
 		else
-			branch = @currbranch.get_child( args.first )
+			rdn = args.first
+			validate_rdns( rdn )
+			branch = @currbranch.get_child( rdn )
 		end
 
 		self.log.debug "Setting up IRb shell"
@@ -874,6 +857,10 @@ class Treequel::Shell
 	end
 
 
+	#################################################################
+	###	U T I L I T Y   M E T H O D S
+	#################################################################
+
 	### Convert the given +patterns+ to branchsets relative to the current branch and return
 	### them. This is used to map shell arguments like 'cn=*', 'Hosts', 'cn=dav*' into
 	### branchsets that will find matching entries.
@@ -887,9 +874,45 @@ class Treequel::Shell
 	end
 
 
-	#################################################################
-	###	U T I L I T Y   M E T H O D S
-	#################################################################
+	### Generate long-form output lines for the 'ls' command for the given +branch+.
+	def make_longform_ls_output( branch, options )
+		children = branch.children
+		totalmsg = "total %d" % [ children.length ]
+
+		# Calcuate column widths
+		oclen = children.map do |subbranch|
+			subbranch.include_operational_attrs = true
+			subbranch[:structuralObjectClass] ? subbranch[:structuralObjectClass].length : 0
+		end.max
+
+		# Set up sorting by collecting all the requested sort criteria as Proc objects which
+		# will be applied
+		sortfuncs = []
+		sortfuncs << lambda {|subbranch| subbranch[:hasSubordinates] ? 0 : 1 } if options.dirsort
+		sortfuncs << lambda {|subbranch| subbranch[:modifyTimestamp] } if options.timesort
+ 		sortfuncs << lambda {|subbranch| subbranch.rdn.downcase }
+
+		rows = children.
+			sort_by {|subbranch| sortfuncs.collect {|func| func.call(subbranch) } }.
+			collect {|subbranch| self.format_description(subbranch, oclen) }
+
+		return [ totalmsg ] + (options.reversesort ? rows.reverse : rows)
+	end
+
+
+	### Generate short-form 'ls' output for the given +branch+ and return it.
+	def make_shortform_ls_output( branch, options )
+		branch.include_operational_attrs = true
+		entries = branch.children.
+			collect {|b| b.rdn + (b[:hasSubordinates] ? '/' : '') }.
+			sort_by {|rdn| rdn.downcase }
+		self.log.debug "Displaying %d entries in short form." % [ entries.length ]
+
+		return columnize( entries ).gsub( /#{ATTRIBUTE_TYPE}=\s*\S+/ ) do |rdn|
+			format_rdn( rdn )
+		end
+	end
+
 
 	### Return the description of the specified +branch+ suitable for displaying in
 	### the directory listing.
@@ -1006,6 +1029,13 @@ class Treequel::Shell
 		end
 
 		return table
+	end
+
+
+	### Output a header containing the given +text+.
+	def header( text )
+		header = colorize( text, :underscore, :cyan )
+		$stderr.puts( header )
 	end
 
 
@@ -1187,6 +1217,14 @@ class Treequel::Shell
 	### Make an easily-comparable version vector out of +ver+ and return it.
 	def vvec( ver )
 		return ver.split('.').collect {|char| char.to_i }.pack('N*')
+	end
+
+
+	### Raise a RuntimeError if the specified +rdn+ is invalid.
+	def validate_rdns( *rdns )
+		rdns.flatten.each do |rdn|
+			raise "invalid RDN %p" % [ rdn ] unless RELATIVE_DISTINGUISHED_NAME.match( rdn )
+		end
 	end
 
 
