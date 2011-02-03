@@ -315,7 +315,8 @@ class Treequel::Shell
 		when /invalid credentials/i
 			error_message( "Authentication failed." )
 		else
-			raise # Re-raise if it's something else
+			error_message( err.class.name, err.message )
+			self.log.debug { "  " + err.backtrace.join("  \n") }
 		end
 	end
 
