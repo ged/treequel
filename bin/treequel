@@ -299,6 +299,7 @@ class Treequel::Shell
 		else
 			self.handle_missing_cmd( command )
 		end
+
 	rescue LDAP::ResultError => err
 		case err.message
 		when /can't contact ldap server/i
@@ -318,6 +319,10 @@ class Treequel::Shell
 			error_message( err.class.name, err.message )
 			self.log.debug { "  " + err.backtrace.join("  \n") }
 		end
+
+	rescue => err
+		error_message( err.class.name, err.message )
+		self.log.debug { "  " + err.backtrace.join("  \n") }
 	end
 
 
