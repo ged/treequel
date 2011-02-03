@@ -460,7 +460,7 @@ class Treequel::Shell
 		message "Okay, exiting."
 		self.quit = true
 	end
-	set_options :help do |oparser, options|
+	set_options :quit do |oparser, options|
 		oparser.banner = "quit"
 		oparser.separator 'Exit the shell.'
 	end
