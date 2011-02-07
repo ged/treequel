@@ -105,6 +105,9 @@ class Treequel::Shell
 	# Number of items to store in history by default
 	DEFAULT_HISTORY_SIZE = 100
 
+	# The default editor, in case ENV['VISUAL'] and ENV['EDITOR'] are unset
+	DEFAULT_EDITOR = 'vi'
+
 
 	#################################################################
 	###	C L A S S   M E T H O D S
