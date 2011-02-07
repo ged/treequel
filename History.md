@@ -1,3 +1,22 @@
+## 1.4.2 [2011-02-07] Michael Granger <ged@FaerieMUD.org>
+
+Fixed missing DEFAULT_EDITOR constant.
+
+
+## 1.4.1 [2011-02-02] Michael Granger <ged@FaerieMUD.org>
+
+More Treequel shell cleanup based on feedback from Michael Hix.
+
+* Fix the signature of the 'quit' command.
+* Consistently verify RDN arguments where they're used.
+
+
+## 1.4.1 [2011-02-02] Michael Granger <ged@FaerieMUD.org>
+
+Bugfix:
+
+* Fixed result error as fatal exception in Treequel shell
+
 ## 1.4.0 [2011-01-31] Michael Granger <ged@FaerieMUD.org>
 
 Enhancements:
