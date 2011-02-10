@@ -427,6 +427,8 @@ class Treequel::Model < Treequel::Branch
 				end
 			end
 
+			self.log.debug "  attribute %p has %d adds and %d deletes" %
+				[ attribute, attrmods[:add].length, attrmods[:delete].length ]
 			mods << LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute.to_s, attrmods[:delete] ) unless
 				attrmods[:delete].empty?
 			mods << LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute.to_s, attrmods[:add] ) unless

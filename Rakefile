@@ -7,8 +7,6 @@ Hoe.plugin :yard
 Hoe.plugin :signing
 Hoe.plugin :manualgen
 
-
-
 Hoe.plugins.delete :rubyforge
 
 hoespec = Hoe.spec 'treequel' do
@@ -57,6 +55,9 @@ hoespec = Hoe.spec 'treequel' do
 end
 
 ENV['VERSION'] ||= hoespec.spec.version.to_s
+
+# Tests use RSpec
+task :test => :spec
 
 begin
 	include Hoe::MercurialHelpers

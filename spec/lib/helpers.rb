@@ -17,6 +17,41 @@ require 'treequel'
 require 'spec/lib/constants'
 require 'spec/lib/matchers'
 
+### IRb.start_session, courtesy of Joel VanderWerf in [ruby-talk:42437].
+require 'irb'
+require 'irb/completion'
+
+module IRB # :nodoc:
+	def self.start_session( obj )
+		unless @__initialized
+			args = ARGV
+			ARGV.replace( ARGV.dup )
+			IRB.setup( nil )
+			ARGV.replace( args )
+			@__initialized = true
+		end
+
+		workspace = WorkSpace.new( obj )
+		irb = Irb.new( workspace )
+
+		@CONF[:IRB_RC].call( irb.context ) if @CONF[:IRB_RC]
+		@CONF[:MAIN_CONTEXT] = irb.context
+
+		begin
+			prevhandler = Signal.trap( 'INT' ) do
+				irb.signal_handle
+			end
+
+			catch( :IRB_EXIT ) do
+				irb.eval_input
+			end
+		ensure
+			Signal.trap( 'INT', prevhandler )
+		end
+
+	end
+end
+
 
 ### RSpec helper functions.
 module Treequel::SpecHelpers

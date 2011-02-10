@@ -14,17 +14,12 @@ require 'rspec'
 require 'spec/lib/helpers'
 require 'treequel/model'
 
-include Treequel::TestConstants
-include Treequel::Constants
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
 describe Treequel::Model do
-	include Treequel::SpecHelpers,
-	        Treequel::Matchers
-
 
 	before( :all ) do
 		setup_logging( :fatal )
