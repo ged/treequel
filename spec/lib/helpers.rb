@@ -129,6 +129,9 @@ end
 ### Mock with Rspec
 Rspec.configure do |c|
 	c.mock_with :rspec
+
+	c.extend( Treequel::TestConstants )
+
 	c.include( Treequel::TestConstants )
 	c.include( Treequel::SpecHelpers )
 	c.include( Treequel::Matchers )

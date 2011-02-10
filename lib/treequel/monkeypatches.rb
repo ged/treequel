@@ -49,7 +49,35 @@ end # module Treequel::LDAPModExtensions
 # @private
 class LDAP::Mod
 	include Treequel::LDAPModExtensions
-end
+
+	# The following is a nasty hack to work around memory-corruption issues in
+	# LDAP::Mod. The RSTRING_PTR of the second argument to LDAP::Mod#initialize 
+	# is used without strdup()ing it, which means if the String object that was
+	# passed to it is garbage-collected, the attribute name of the Mod object
+	# gets corrupted. This hack works around that by storing the String as an
+	# instance variable of the Mod object, ensuring it doesn't get collected
+	# until the Mod object itself does. Ick.
+
+	# Turn off warnings, alias away the C initialize, then restore the verbose
+	# level to what it was before
+	begin
+		oldwarnlvl = $VERBOSE
+		$VERBOSE = nil
+		alias :_initialize_ext :initialize
+		remove_method :initialize
+	ensure
+		$VERBOSE = oldwarnlvl
+	end
+
+	### Override the initializer to keep the +attribute+ around while the object
+	### is alive to prevent the underlying C String pointer from going away.
+	### @see line 151 of mod.c.
+	def initialize( op, attribute, vals )
+		@attribute = attribute
+		_initialize_ext( op, attribute, vals )
+	end
+
+end # class LDAP::Mod
 
 
 ### Extensions to the Time class to add LDAP (RFC4517) Generalized Time syntax

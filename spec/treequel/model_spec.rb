@@ -11,11 +11,7 @@ BEGIN {
 }
 
 require 'rspec'
-
-require 'spec/lib/constants'
 require 'spec/lib/helpers'
-require 'spec/lib/matchers'
-
 require 'treequel/model'
 
 include Treequel::TestConstants
