@@ -1,6 +1,8 @@
+.gemtest
 ChangeLog
 History.md
 LICENSE
+Manifest.txt
 README.md
 Rakefile
 bin/treeirb
