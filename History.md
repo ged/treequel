@@ -1,3 +1,10 @@
+## 1.4.3 [2011-02-10] Michael Granger <ged@FaerieMUD.org>
+
+* Added gem-testers support
+* Added a monkeypatch to work around a memory-corruption issue in 
+  ruby-ldap.
+
+
 ## 1.4.2 [2011-02-07] Michael Granger <ged@FaerieMUD.org>
 
 Fixed missing DEFAULT_EDITOR constant.
