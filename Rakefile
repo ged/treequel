@@ -17,15 +17,16 @@ hoespec = Hoe.spec 'treequel' do
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
 
 	self.extra_deps.push *{
-		'ruby-ldap' => '~> 0.9.11',
-		'diff-lcs'  => '~> 1.1.2',
+		'ruby-ldap' => '~> 0.9',
+		'diff-lcs'  => '~> 1.1',
 	}
 	self.extra_dev_deps.push *{
-		'rspec'         => '~> 2.4.0',
-		'ruby-termios'  => '~> 0.9.6',
-		'ruby-terminfo' => '~> 0.1.1',
-		'columnize'     => '~> 0.3.1',
-		'sysexits'      => '~> 1.0.2',
+		'rspec'         => '~> 2.4',
+		'ruby-termios'  => '~> 0.9',
+		'ruby-terminfo' => '~> 0.1',
+		'columnize'     => '~> 0.3',
+		'sysexits'      => '~> 1.0',
+		'sequel'        => '~> 3.20',
 	}
 
 	self.spec_extras[:licenses] = ["BSD"]
@@ -33,7 +34,7 @@ hoespec = Hoe.spec 'treequel' do
 		"If you want to use the included 'treequel' LDAP shell, you'll need to install",
 		"the following libraries as well:",
 		'',
-		"    - termios",
+		"    - ruby-termios",
 		"    - ruby-terminfo",
 		"    - columnize",
 		"    - sysexits",
