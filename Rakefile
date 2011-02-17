@@ -12,6 +12,7 @@ Hoe.plugins.delete :rubyforge
 hoespec = Hoe.spec 'treequel' do
 	self.name = 'treequel'
 	self.readme_file = 'README.md'
+	self.history_file = 'History.md'
 
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
