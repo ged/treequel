@@ -28,9 +28,6 @@ include Treequel::Constants
 #####################################################################
 
 describe Treequel::Branch do
-	include Treequel::SpecHelpers,
-			Treequel::Matchers
-
 
 	before( :all ) do
 		setup_logging( :fatal )
@@ -241,13 +238,13 @@ describe Treequel::Branch do
 
 		it "clears any cached values if its include_operational_attrs attribute is changed" do
 			@directory.should_receive( :get_entry ).with( @branch ).exactly( :once ).
-				and_return( :the_entry )
+				and_return( TEST_PEOPLE_ENTRY.dup )
 			@directory.should_receive( :get_extended_entry ).with( @branch ).exactly( :once ).
-				and_return( :the_extended_entry )
+				and_return( TEST_OPERATIONAL_PEOPLE_ENTRY.dup )
 
-			@branch.entry.should == :the_entry
+			@branch.entry.should == TEST_PEOPLE_ENTRY.dup.tap {|entry| entry.delete('dn') }
 			@branch.include_operational_attrs = true
-			@branch.entry.should == :the_extended_entry
+			@branch.entry.should == TEST_OPERATIONAL_PEOPLE_ENTRY.dup.tap {|entry| entry.delete('dn') }
 		end
 
 		it "returns a human-readable representation of itself for #inspect" do

@@ -87,7 +87,7 @@ module Treequel::TestConstants # :nodoc:all
 		TEST_PEOPLE_DN          = "#{TEST_PEOPLE_RDN},#{TEST_BASE_DN}"
 
 		TEST_PERSON_DN_ATTR     = 'uid'
-		TEST_PERSON_DN_VALUE    = 'jrandom'
+		TEST_PERSON_DN_VALUE    = 'slappy'
 		TEST_PERSON_RDN         = "#{TEST_PERSON_DN_ATTR}=#{TEST_PERSON_DN_VALUE}"
 		TEST_PERSON_DN          = "#{TEST_PERSON_RDN},#{TEST_PEOPLE_DN}"
 
@@ -123,6 +123,67 @@ module Treequel::TestConstants # :nodoc:all
 			TEST_HOST_MULTIVALUE_DN_VALUE2,
 		]
 		TEST_HOST_MULTIVALUE_DN        = "#{TEST_HOST_MULTIVALUE_RDN},#{TEST_HOSTS_DN}"
+
+		# Test entry hashes
+		TEST_HOSTS_ENTRY = {
+			'dn'               => [TEST_HOSTS_DN],
+			TEST_HOSTS_DN_ATTR => [TEST_HOSTS_DN_VALUE], 
+			'objectClass'      => ['top', 'organizationalUnit'],
+			'description'      => ['Hosts under acme.com'],
+		}
+
+		TEST_PEOPLE_ENTRY = {
+			'dn'               => [TEST_PEOPLE_DN],
+			TEST_PEOPLE_DN_ATTR => [TEST_PEOPLE_DN_VALUE], 
+			'objectClass'      => ['top', 'organizationalUnit'],
+			'description'      => ['Acme.com employees'],
+		}
+
+		TEST_PERSON_ENTRY = {
+			'dn'                => [TEST_PERSON_DN],
+			TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE],
+			'cn'                => ['Slappy the Frog'],
+			'givenName'         => ['Slappy'],
+			'sn'                => ['Frog'],
+			'l'                 => ['a forest in England'],
+			'title'             => ['Forest Fire Prevention Advocate'],
+			'displayName'       => ['Slappy the Frog'],
+			'logonTime'         => ['1293167318'],
+			'uidNumber'         => ['1121'],
+			'gidNumber'         => ['200'],
+			'homeDirectory'     => ['/u/j/jrandom'],
+			'description'       => [
+				'Smokey the Bear is much more intense in person.', 
+				'Alright.'
+			],
+			'objectClass'       => %w[
+				top
+				person
+				organizationalPerson
+				inetOrgPerson
+				posixAccount
+				shadowAccount
+				apple-user
+			],
+		}
+
+		TEST_OPERATIONAL_PEOPLE_ENTRY = {
+			TEST_PEOPLE_DN_ATTR     => [TEST_PEOPLE_DN_VALUE], 
+			'structuralObjectClass' => ['organizationalUnit'],
+			'entryUUID'             => ['5035e674-bae3-102b-992e-e9e937d524d6'],
+			'creatorsName'          => ['cn=admin,dc=laika,dc=com'],
+			'createTimestamp'       => ['20070629232213Z'],
+			'entryCSN'              => ['20070629232213.000000Z#000000#000#000000'],
+			'modifiersName'         => ['cn=admin,dc=laika,dc=com'],
+			'modifyTimestamp'       => ['20070629232213Z'],
+			'entryDN'               => [TEST_PEOPLE_DN],
+			'subschemaSubentry'     => ['cn=Subschema'],
+			'hasSubordinates'       => ['TRUE'],
+			'dn'                    => [TEST_PEOPLE_DN],
+			'objectClass'           => ['top', 'organizationalUnit'],
+			'description'           => ['Acme.com employees'],
+		}
+
 
 		constants.each do |cname|
 			const_get(cname).freeze

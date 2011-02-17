@@ -791,6 +791,7 @@ class Treequel::Branch
 			entry = self.directory.get_entry( self )
 		end
 
+		entry.delete( 'dn' ) if entry
 		self.log.debug "  entry is: %p" % [ entry ]
 		return entry
 	end

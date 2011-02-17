@@ -203,7 +203,7 @@ class Treequel::Branchset
 	### @return [Array<Treequel::Branch>]
 	def -( other_object )
 		other_dn = other_object.dn
-		return self.reject {|branch| branch.dn == other_dn }
+		return self.reject {|branch| branch.dn.downcase == other_dn.downcase }
 	end
 
 
@@ -269,10 +269,19 @@ class Treequel::Branchset
 			key = branch[ keyattr ]
 			key = key.first if key.respond_to?( :first )
 
-			value = valueattr ? branch[ valueattr ] : branch.entry
-			value = value.first if value.respond_to?( :first )
+			# Extract either the valueattr, or the whole entry hash if no valueattr was given.
+			if valueattr
+				self.log.debug "  extracting value for attribute %p" % [ valueattr ]
+				if branch[ valueattr ].respond_to?( :first )
+					hash[ key ] = branch[ valueattr ].first
+				else
+					hash[ key ] = branch[ valueattr ]
+				end
+			else
+				self.log.debug "  using the whole entry hash (%p)"
+				hash[ key ] = branch.entry
+			end
 
-			hash[ key ] = value
 			hash
 		end
 	end

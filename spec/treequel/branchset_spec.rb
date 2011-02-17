@@ -34,6 +34,7 @@ describe Treequel::Branchset do
 		:server_controls => [],
 	}
 
+
 	before( :all ) do
 		setup_logging( :fatal )
 	end
@@ -56,12 +57,10 @@ describe Treequel::Branchset do
 		end
 
 		it "is Enumerable" do
-			resultbranch = mock( "Result Branch" )
-
-			@branch.should_receive( :search ).
-				with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, @params ).
-				and_yield( resultbranch )
-			resultbranch.should_receive( :dn ).and_return( :its_dn )
+			@conn.should_receive( :search_ext2 ).
+				with( TEST_BASE_DN, LDAP::LDAP_SCOPE_SUBTREE, "(objectClass=*)", 
+				      [], false, [], [], 0, 0, 0, "", nil ).
+				and_return([ TEST_HOSTS_ENTRY.dup ])
 
 			@branchset.all? {|b| b.dn }
 		end
@@ -70,20 +69,18 @@ describe Treequel::Branchset do
 		# #empty?
 		# 
 		it "is empty if it doesn't match at least one entry" do
-			params = @params.merge( :limit => 1 )
-			@branch.should_receive( :search ).
-				with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, params ).
-				and_return( [] )
-
+			@conn.should_receive( :search_ext2 ).
+				with( TEST_BASE_DN, LDAP::LDAP_SCOPE_SUBTREE, "(objectClass=*)", 
+				      [], false, [], [], 0, 0, 1, "", nil ).
+				and_return([ ])
 			@branchset.should be_empty()
 		end
 
 		it "isn't empty if it matches at least one entry" do
-			params = @params.merge( :limit => 1 )
-			@branch.should_receive( :search ).
-				with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, params ).
-				and_return( [:a_branch] )
-
+			@conn.should_receive( :search_ext2 ).
+				with( TEST_BASE_DN, LDAP::LDAP_SCOPE_SUBTREE, "(objectClass=*)", 
+				      [], false, [], [], 0, 0, 1, "", nil ).
+				and_return([ TEST_HOSTS_ENTRY.dup ])
 			@branchset.should_not be_empty()
 		end
 
@@ -91,16 +88,12 @@ describe Treequel::Branchset do
 		# #map
 		# 
 		it "can be mapped into an Array of attribute values" do
-			resultbranch = mock( "Result Branch" )
-			resultbranch2 = mock( "Result Branch 2" )
+			@conn.should_receive( :search_ext2 ).
+				with( TEST_BASE_DN, LDAP::LDAP_SCOPE_SUBTREE, "(objectClass=*)", 
+				      [], false, [], [], 0, 0, 0, "", nil ).
+				and_return([ TEST_HOSTS_ENTRY.dup, TEST_PEOPLE_ENTRY.dup ])
 
-			@branch.should_receive( :search ).
-				with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, @params ).
-				and_yield( resultbranch ).and_yield( resultbranch2 )
-			resultbranch.should_receive( :[] ).with( :cn ).and_return([ :first_cn ])
-			resultbranch2.should_receive( :[] ).with( :cn ).and_return([ :second_cn ])
-
-			@branchset.map( :cn ).should == [[:first_cn], [:second_cn]]
+			@branchset.map( :ou ).should == [ ['Hosts'], ['People'] ]
 		end
 
 
@@ -108,47 +101,30 @@ describe Treequel::Branchset do
 		# #to_hash
 		# 
 		it "can be mapped into a Hash of entries keyed by one of its attributes" do
-			resultbranch = mock( "Result Branch" )
-			resultbranch2 = mock( "Result Branch 2" )
+			@conn.should_receive( :search_ext2 ).
+				with( "dc=acme,dc=com", 2, "(objectClass=*)", [], false, [], [], 0, 0, 0, "", nil ).
+				and_return([ TEST_HOSTS_ENTRY.dup, TEST_PEOPLE_ENTRY.dup ])
 
-			@branch.should_receive( :search ).
-				with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, @params ).
-				and_yield( resultbranch ).and_yield( resultbranch2 )
+			hosthash = TEST_HOSTS_ENTRY.dup
+			hosthash.delete( 'dn' )
+			peoplehash = TEST_PEOPLE_ENTRY.dup
+			peoplehash.delete( 'dn' )
 
-			resultbranch.should_receive( :[] ).with( :email ).
-				and_return([ :first_email ])
-			resultbranch.should_receive( :entry ).and_return( :entry1 )
-			resultbranch2.should_receive( :[] ).with( :email ).
-				and_return([ :second_email, :second_second_email ])
-			resultbranch2.should_receive( :entry ).and_return( :entry2 )
-
-			@branchset.to_hash( :email ).should == {
-				:first_email => :entry1,
-				:second_email => :entry2,
+			@branchset.to_hash( :ou ).should == {
+				'Hosts'  => hosthash,
+				'People' => peoplehash,
 			}
 		end
 
 
 		it "can be mapped into a Hash of tuples using two attributes" do
-			resultbranch = mock( "Result Branch" )
-			resultbranch2 = mock( "Result Branch 2" )
+			@conn.should_receive( :search_ext2 ).
+				with( "dc=acme,dc=com", 2, "(objectClass=*)", [], false, [], [], 0, 0, 0, "", nil ).
+				and_return([ TEST_HOSTS_ENTRY.dup, TEST_PEOPLE_ENTRY.dup ])
 
-			@branch.should_receive( :search ).
-				with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, @params ).
-				and_yield( resultbranch ).and_yield( resultbranch2 )
-
-			resultbranch.should_receive( :[] ).with( :email ).
-				and_return([ :first_email ])
-			resultbranch.should_receive( :[] ).with( :cn ).
-				and_return([ :first_cn ])
-			resultbranch2.should_receive( :[] ).with( :email ).
-				and_return([ :second_email, :second_second_email ])
-			resultbranch2.should_receive( :[] ).with( :cn ).
-				and_return([ :second_cn, :second_second_cn ])
-
-			@branchset.to_hash( :email, :cn ).should == {
-				:first_email => :first_cn,
-				:second_email => :second_cn,
+			@branchset.to_hash( :ou, :description ).should == {
+				'Hosts'  => TEST_HOSTS_ENTRY['description'].first,
+				'People' => TEST_PEOPLE_ENTRY['description'].first,
 			}
 		end
 
@@ -156,8 +132,7 @@ describe Treequel::Branchset do
 		# #+
 		#
 		it "can be combined with another instance into a BranchCollection by adding them together" do
-			other_branch = mock( "second treequel branch", :dn => 'theotherdn' )
-			other_branch.stub( :directory ).and_return( @directory )
+			other_branch = @directory.ou( :people )
 			other_branchset = Treequel::Branchset.new( other_branch )
 
 			result = @branchset + other_branchset
@@ -167,18 +142,15 @@ describe Treequel::Branchset do
 		end
 
 		it "returns the results of the search with the additional Branch if one is added to it" do
-			other_branch = mock( "additional treequel branch", :dn => 'theotherdn' )
-			other_branch.stub( :to_ary ).and_return( [other_branch] )
-			resultbranch = mock( "Result Branch" )
-			resultbranch2 = mock( "Result Branch 2" )
+			@conn.should_receive( :search_ext2 ).
+				with( "dc=acme,dc=com", 2, "(objectClass=*)", [], false, [], [], 0, 0, 0, "", nil ).
+				and_return([ TEST_HOSTS_ENTRY.dup, TEST_PEOPLE_ENTRY.dup ])
 
-			@branch.should_receive( :search ).
-				with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, @params ).
-				and_yield( resultbranch ).and_yield( resultbranch2 )
+			other_branch = @directory.ou( :netgroups )
 
 			result = @branchset + other_branch
 			result.should have( 3 ).members
-			result.should include( other_branch, resultbranch, resultbranch2 )
+			result.should include( other_branch )
 		end
 
 		#
@@ -186,18 +158,15 @@ describe Treequel::Branchset do
 		#
 		it "returns the results of the search without the specified object if an object is " +
 		     "subtracted from it" do
-				resultbranch = stub( "Result Branch", :dn => TEST_PERSON_DN )
-				resultbranch2 = stub( "Result Branch 2", :dn => TEST_PERSON2_DN )
+				otherbranch = @directory.ou( :people )
 
-				otherbranch = stub( "Subtracted Branch", :dn => TEST_PERSON2_DN )
-
-				@branch.should_receive( :search ).
-					with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, @params ).
-					and_yield( resultbranch ).and_yield( resultbranch2 )
+				@conn.should_receive( :search_ext2 ).
+					with( "dc=acme,dc=com", 2, "(objectClass=*)", [], false, [], [], 0, 0, 0, "", nil ).
+					and_return([ TEST_HOSTS_ENTRY.dup, TEST_PEOPLE_ENTRY.dup ])
 
 				result = @branchset - otherbranch
 				result.should have( 1 ).members
-				result.should_not include( resultbranch2 )
+				result.should_not include( otherbranch )
 		end
 
 	end

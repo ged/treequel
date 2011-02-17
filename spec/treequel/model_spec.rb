@@ -22,11 +22,13 @@ require 'treequel/model'
 describe Treequel::Model do
 
 	before( :all ) do
+		GC.disable
 		setup_logging( :fatal )
 	end
 
 	after( :all ) do
 		reset_logging()
+		GC.enable
 	end
 
 	before( :each ) do
@@ -295,37 +297,8 @@ describe Treequel::Model do
 
 	describe "objects loaded from entries" do
 
-		before( :all ) do
-			@entry = {
-				'dn'            => ['uid=slappy,ou=people,dc=acme,dc=com'],
-				'uid'           => ['slappy'],
-				'cn'            => ['Slappy the Frog'],
-				'givenName'     => ['Slappy'],
-				'sn'            => ['Frog'],
-				'l'             => ['a forest in England'],
-				'title'         => ['Forest Fire Prevention Advocate'],
-				'displayName'   => ['Slappy the Frog'],
-				'logonTime'     => ['1293167318'],
-				'uidNumber'     => ['1121'],
-				'gidNumber'     => ['200'],
-				'homeDirectory' => ['/u/j/jrandom'],
-				'description'   => [
-					'Smokey the Bear is much more intense in person.', 
-					'Alright.'
-				],
-				'objectClass'   => %w[
-					top
-					person
-					organizationalPerson
-					inetOrgPerson
-					posixAccount
-					shadowAccount
-					apple-user
-				],
-			}
-		end
-
 		before( :each ) do
+			@entry = TEST_PERSON_ENTRY.dup
 			@obj = Treequel::Model.new_from_entry( @entry, @directory )
 		end
 
@@ -523,7 +496,7 @@ describe Treequel::Model do
 			it "reverts the attribute if its #revert method is called" do
 				@conn.should_receive( :search_ext2 ).
 					with( @entry['dn'].first, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
-					and_return([ @entry ])
+					and_return([ @entry.dup ])
 
 				@obj.revert
 
@@ -533,8 +506,8 @@ describe Treequel::Model do
 
 			it "updates the modified attribute when saved" do
 				@conn.should_receive( :modify ).
-					with( "uid=slappy,ou=people,dc=acme,dc=com",
-					     [ldap_mod_delete(:uid, 'slappy'), ldap_mod_add(:uid, 'slippy')] )
+					with( TEST_PERSON_DN, 
+					      [ ldap_mod_delete(:uid, 'slappy'),  ldap_mod_add(:uid, 'slippy') ] )
 				@obj.save
 			end
 
@@ -636,7 +609,7 @@ describe Treequel::Model do
 			it "reverts all of the attributes if its #revert method is called" do
 				@conn.should_receive( :search_ext2 ).
 					with( @entry['dn'].first, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
-					and_return([ @entry ])
+					and_return([ @entry.dup ])
 
 				@obj.revert
 
