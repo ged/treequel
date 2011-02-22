@@ -82,7 +82,7 @@ module Treequel
 				END_CODE
 			else
 				code = <<-END_CODE
-				lambda {|*args| self.#{delegate}.#{name}(*args) }
+				lambda {|*args,&block| self.#{delegate}.#{name}(*args,&block) }
 				END_CODE
 			end
 
@@ -104,7 +104,7 @@ module Treequel
 				END_CODE
 			else
 				code = <<-END_CODE
-				lambda {|*args| #{ivar}.#{name}(*args) }
+				lambda {|*args,&block| #{ivar}.#{name}(*args,&block) }
 				END_CODE
 			end
 

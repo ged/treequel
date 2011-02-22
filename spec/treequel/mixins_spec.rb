@@ -245,6 +245,14 @@ describe Treequel, "mixin" do
 				@obj.delegated_method( :arg1, :arg2 )
 			end
 
+			it "allows delegation to the delegate object's method with a block" do
+				@subobj.should_receive( :delegated_method ).with( :arg1 ).
+					and_yield( :the_block_argument )
+				blockarg = nil
+				@obj.delegated_method( :arg1 ) {|arg| blockarg = arg }
+				blockarg.should == :the_block_argument
+			end
+
 			it "reports errors from its caller's perspective", :ruby_1_8_only => true do
 				begin
 					@obj.erroring_delegated_method
@@ -289,6 +297,14 @@ describe Treequel, "mixin" do
 			it "passes any arguments through to the delegate's method" do
 				@subobj.should_receive( :delegated_method ).with( :arg1, :arg2 )
 				@obj.delegated_method( :arg1, :arg2 )
+			end
+
+			it "allows delegation to the delegate's method with a block" do
+				@subobj.should_receive( :delegated_method ).with( :arg1 ).
+					and_yield( :the_block_argument )
+				blockarg = nil
+				@obj.delegated_method( :arg1 ) {|arg| blockarg = arg }
+				blockarg.should == :the_block_argument
 			end
 
 			it "reports errors from its caller's perspective", :ruby_1_8_only => true do
