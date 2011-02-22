@@ -9,7 +9,9 @@ require 'treequel/constants'
 
 # Mixin that provides Treequel::Model characteristics to a mixin module.
 module Treequel::Model::ObjectClass
-	include Treequel::HashUtilities
+	include Enumerable,
+	        Treequel::HashUtilities
+
 	extend Treequel::Delegation
 
 
@@ -38,6 +40,7 @@ module Treequel::Model::ObjectClass
 	# Delegate Branchset methods through #search to allow ObjectClass.filter as a shortcut for
 	# ObjectClass.search.filter
 	def_method_delegators :search, 
+		:find, # Delegated directly to avoid 'LocalJumpError: break from proc-closure'
 		:collection, :map, :to_hash, :each, :first, 
 		:filter, :scope, :select, :limit, :timeout, :as, :from
 

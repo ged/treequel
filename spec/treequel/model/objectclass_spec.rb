@@ -212,9 +212,30 @@ describe Treequel::Model::ObjectClass do
 		it "delegates Branchset methods through the Branchset returned by its #search method" do
 			mixin = Module.new do
 				extend Treequel::Model::ObjectClass
+				model_objectclasses :inetOrgPerson
 			end
 
-			mixin.filter( :objectClass => :person ).should be_a( Treequel::Branchset )
+			mixin.filter( :mail ).should be_a( Treequel::Branchset )
+		end
+
+		it "delegates Branchset Enumerable methods through the Branchset returned by its " +
+		   "#search method" do
+			@conn.stub( :bound? ).and_return( true )
+			@conn.should_receive( :search_ext2 ).
+				with( TEST_BASE_DN, LDAP::LDAP_SCOPE_SUBTREE, "(objectClass=inetOrgPerson)",
+			          [], false, [], [], 0, 0, 1, "", nil ).
+				and_return([ TEST_PERSON_ENTRY ])
+
+			mixin = Module.new do
+				extend Treequel::Model::ObjectClass
+				model_objectclasses :inetOrgPerson
+			end
+
+			result = mixin.first
+
+			result.should be_a( Treequel::Model )
+			result.should be_a( mixin )
+			result.dn.should == TEST_PERSON_ENTRY['dn'].first
 		end
 
 	end
