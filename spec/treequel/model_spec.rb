@@ -43,8 +43,21 @@ describe Treequel::Model do
 	after( :each ) do
 		Treequel::Model.objectclass_registry.clear
 		Treequel::Model.base_registry.clear
+		Treequel::Model.directory = nil
 	end
 
+
+	it "allows a Treequel::Directory object to be set as the default directory to use for searches" do
+		Treequel::Model.directory = @directory
+		@directory.results_class.should == Treequel::Model
+	end
+
+	it "can return a Treequel::Directory object configured to use the system directory if " +
+	   "none has been set" do
+		Treequel.should_receive( :directory_from_config ).and_return( @directory )
+		Treequel::Model.directory.should == @directory
+		@directory.results_class.should == Treequel::Model
+	end
 
 	it "knows which mixins should be applied for a single objectClass" do
 		mixin = Module.new

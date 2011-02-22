@@ -10,6 +10,7 @@ require 'treequel/constants'
 # Mixin that provides Treequel::Model characteristics to a mixin module.
 module Treequel::Model::ObjectClass
 	include Treequel::HashUtilities
+	extend Treequel::Delegation
 
 
 	### Extension callback -- add data structures to the extending +mod+.
@@ -28,6 +29,17 @@ module Treequel::Model::ObjectClass
 		warn "extending %p rather than appending features to it" % [ mod ]
 		mod.extend( self )
 	end
+
+
+	#################################################################
+	###	I N S T A N C E   M E T H O D S
+	#################################################################
+
+	# Delegate Branchset methods through #search to allow ObjectClass.filter as a shortcut for
+	# ObjectClass.search.filter
+	def_method_delegators :search, 
+		:collection, :map, :to_hash, :each, :first, 
+		:filter, :scope, :select, :limit, :timeout, :as, :from
 
 
 	### Declare which Treequel::Model subclasses the mixin will register itself with. If this is
@@ -75,11 +87,30 @@ module Treequel::Model::ObjectClass
 	end
 
 
-	### Instantiate a new Treequel::Model object with given +dn+ and the objectclasses 
-	### specified by the receiving module.
-	### @param [#to_s] dn        the DN of the new model object
-	### @param [Hash] entryhash  attributes to set on the new entry
-	def create( directory, dn, entryhash={} )
+	### @overload create( dn, entryhash={} )
+	###   Create a new instance of the mixin's model_class in the model_class's default
+	###   directory with the given +dn+ and the objectclasses specified by the mixin. If the
+	###   optional +entryhash+ is given, it will be used as the initial attributes of the
+	###   new entry.
+	###   @param [#to_s] dn                       the DN of the new model object
+	###   @param [Hash] entryhash                 attributes to set on the new entry
+	### @overload create( directory, dn, entryhash={} )
+	###   Create a new instance of the mixin's model_class in the specified +directory+
+	###   with the given +dn+ and the objectclasses specified by the mixin. If the
+	###   optional +entryhash+ is given, it will be used as the initial attributes of the
+	###   new entry.
+	###   @param [Treequel::Directory] directory  the directory to create the entry in (optional)
+	###   @param [#to_s] dn                       the DN of the new model object
+	###   @param [Hash] entryhash                 attributes to set on the new entry
+	def create( directory, dn=nil, entryhash={} )
+
+		# Shift the arguments if the first one isn't a directory
+		unless directory.is_a?( Treequel::Directory )
+			entryhash = dn || {}
+			dn = directory
+			directory = self.model_class.directory
+		end
+
 		entryhash = stringify_keys( entryhash )
 
 		# Add the objectclasses from the mixin
@@ -103,17 +134,20 @@ module Treequel::Model::ObjectClass
 	### base) that can be used to search the given +directory+ for entries to which
 	### the receiver applies.
 	###
-	### @param [Treequel::Directory] directory  the directory to search
+	### @param [Treequel::Directory] directory  the directory to search; if not given, this defaults
+	###                                         to the directory associated with the module's
+	###                                         model_class.
 	### @return [Treequel::Branchset, Treequel::BranchCollection]  the encapsulated search
-	def search( directory )
+	def search( directory=nil )
+		directory ||= self.model_class.directory
 		bases = self.model_bases
 		objectclasses = self.model_objectclasses
 
 		raise Treequel::ModelError, "%p has no search criteria defined" % [ self ] if
 			bases.empty? && objectclasses.empty?
 
-		Treequel.log.debug "Creating search for %s using model class %p" %
-			[ self.name, self.model_class ]
+		Treequel.log.debug "Creating search for %p using model class %p" %
+			[ self, self.model_class ]
 
 		# Start by making a Branchset or BranchCollection for the mixin's bases. If
 		# the mixin doesn't have any bases, just use the base DN of the directory

@@ -70,10 +70,30 @@ class Treequel::Model < Treequel::Branch
 
 	@objectclass_registry = SET_HASH.dup
 	@base_registry = SET_HASH.dup
+	@directory = nil
 
 	class << self
 		attr_reader :objectclass_registry
 		attr_reader :base_registry
+	end
+
+
+	### Return the Treequel::Directory the Model will use for searches, creating it if it 
+	### hasn't been created already. The default Directory will be created by calling
+	### Treequel.directory_from_config.
+	### @return [Treequel::Directory]  the default directory
+	def self::directory
+		self.directory = Treequel.directory_from_config unless @directory
+		return @directory
+	end
+
+
+	### Set the Treequel::Directory that should be used for searches. The receiving class will also
+	### be set as the #results_class of the +newdirectory+.
+	### @param [Treequel::Directory] newdirectory
+	def self::directory=( newdirectory )
+		@directory = newdirectory
+		@directory.results_class = self if @directory
 	end
 
 

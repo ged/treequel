@@ -104,7 +104,7 @@ class Treequel::Branch
 	######
 
 	# Delegate some other methods to a new Branchset via the #branchset method
-	def_method_delegators :branchset, :filter, :scope, :select, :limit, :timeout, :order, :as
+	def_method_delegators :branchset, :filter, :scope, :select, :limit, :timeout, :as, :from
 
 	# Delegate some methods to the Branch's directory via its accessor
 	def_method_delegators :directory, :controls, :referrals
