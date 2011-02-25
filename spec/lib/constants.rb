@@ -167,8 +167,7 @@ module Treequel::TestConstants # :nodoc:all
 			],
 		}
 
-		TEST_OPERATIONAL_PEOPLE_ENTRY = {
-			TEST_PEOPLE_DN_ATTR     => [TEST_PEOPLE_DN_VALUE], 
+		TEST_OPERATIONAL_PEOPLE_ENTRY = TEST_PEOPLE_ENTRY.merge(
 			'structuralObjectClass' => ['organizationalUnit'],
 			'entryUUID'             => ['5035e674-bae3-102b-992e-e9e937d524d6'],
 			'creatorsName'          => ['cn=admin,dc=laika,dc=com'],
@@ -178,11 +177,21 @@ module Treequel::TestConstants # :nodoc:all
 			'modifyTimestamp'       => ['20070629232213Z'],
 			'entryDN'               => [TEST_PEOPLE_DN],
 			'subschemaSubentry'     => ['cn=Subschema'],
-			'hasSubordinates'       => ['TRUE'],
-			'dn'                    => [TEST_PEOPLE_DN],
-			'objectClass'           => ['top', 'organizationalUnit'],
-			'description'           => ['Acme.com employees'],
-		}
+			'hasSubordinates'       => ['TRUE']
+		)
+
+		TEST_OPERATIONAL_PERSON_ENTRY = TEST_PERSON_ENTRY.merge(
+			'structuralObjectClass' => ['inetOrgPerson'],
+			'entryUUID'             => ['65acd5dc-b146-102f-8d60-c1597577de09'],
+			'creatorsName'          => ['cn=admin,dc=laika,dc=com'],
+			'createTimestamp'       => ['20110110204609Z'],
+			'entryCSN'              => ['20110224232421.753555Z#000000#000#000000'],
+			'modifiersName'         => ['cn=admin,dc=laika,dc=com'],
+			'modifyTimestamp'       => ['20110224232421Z'],
+			'entryDN'               => [TEST_PEOPLE_DN],
+			'subschemaSubentry'     => ['cn=Subschema'],
+			'hasSubordinates'       => ['FALSE']
+		)
 
 
 		constants.each do |cname|

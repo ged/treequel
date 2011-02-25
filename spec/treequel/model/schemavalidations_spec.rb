@@ -68,22 +68,25 @@ describe Treequel::Model::SchemaValidations do
 	end
 
 	it "adds an error if the object has a value for an attribute that isn't in one of its MAY attributes" do
-		# First set the object classes to include one which MAY have a 'displayName'
-		entry = {
-			'objectClass' => ['person', 'inetOrgPerson'],
-			'cn'          => ['J. Random'],
-			'sn'          => ['Hacker'],
-			'displayName' => ['Trinket the Trivial']
-		}
-		@conn.stub( :search_ext2 ).and_return([ entry ])
+		@conn.stub( :search_ext2 ).and_return([ TEST_PERSON_ENTRY.dup ])
 
 		# ..then remove the objectclass that grants it and validate
 		@modelobj.object_class -= ['inetOrgPerson']
 		@modelobj.should_not be_valid()
 
 		@modelobj.errors.full_messages.
-			should == [%{displayName is not allowed by entry's objectClasses}]
+			should include( "displayName is not allowed by entry's objectClasses" )
 	end
+
+	it "doesn't add errors for operational attributes" do
+		@conn.stub( :search_ext2 ).and_return([ TEST_OPERATIONAL_PERSON_ENTRY.dup ])
+		@modelobj.l = ['Birmingham']
+		@modelobj.validate
+		# @modelobj.operational_attribute_oids.should == []
+		# @modelobj.should be_valid()
+		@modelobj.errors.full_messages.should == []
+	end
+
 
 	# AuxiliaryObjectClass ( 1.3.6.1.1.1.2.0 NAME 'posixAccount' 
 	# 	DESC 'Abstraction of an account with POSIX attributes' 

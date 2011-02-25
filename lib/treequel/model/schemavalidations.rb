@@ -7,6 +7,14 @@ require 'treequel/model'
 # A collection of schema-based validations for LDAP model objects.
 module Treequel::Model::SchemaValidations
 
+	# OpenLDAP servers with syncrepl include 'entryCSN' and 'contextCSN' attributes, but
+	# don't define its attribute type in the subschema. This is a list of operational
+	# attribute types that don't appear in the subschema that shouldn't be considered when 
+	# validating MUST and MAY attributes. 
+	# (http://www.openldap.org/its/index.cgi/Development?id=5573)
+	IGNORED_OPERATIONAL_ATTRS = [ :entryCSN, :contextCSN ]
+
+
 	### Entrypoint -- run all the validations, adding any errors to the
 	### object's #error collector.
 	def validate( options={} )
@@ -46,7 +54,9 @@ module Treequel::Model::SchemaValidations
 	def validate_may_attributes
 		hash = (self.entry || {} ).merge( @values )
 		attributes = hash.keys.map( &:to_sym ).uniq
-		valid_attributes = self.valid_attribute_oids
+		valid_attributes = self.valid_attribute_oids +
+			self.operational_attribute_oids +
+			IGNORED_OPERATIONAL_ATTRS
 
 		self.log.debug "Validating MAY attributes: %p against the list of valid OIDs: %p" %
 			[ attributes, valid_attributes ]

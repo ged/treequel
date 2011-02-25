@@ -375,9 +375,14 @@ describe Treequel::Branch do
 		end
 
 		it "knows what the OIDs of its operational attributes are" do
-			op_oids = @directory.schema.attribute_types.values.select do |attrtype|
+			op_numeric_oids = @directory.schema.attribute_types.values.select do |attrtype|
 				attrtype.operational?
 			end.uniq.map( &:oid )
+			op_names = @directory.schema.attribute_types.values.select do |attrtype|
+				attrtype.operational?
+			end.uniq.map( &:names ).flatten
+
+			op_oids = op_numeric_oids + op_names
 
 			@branch.operational_attribute_oids.should have( op_oids.length ).members
 			@branch.operational_attribute_oids.should include( *op_oids )
@@ -462,7 +467,7 @@ describe Treequel::Branch do
 		   "MUST and MAY attributes plus the directory's operational attributes" do
 			all_attrs = @branch.valid_attribute_types
 
-			all_attrs.should have( 54 ).members
+			all_attrs.should have( 57 ).members
 			all_attrs.should include( @directory.schema.attribute_types[:ou] )
 			all_attrs.should include( @directory.schema.attribute_types[:l] )
 		end

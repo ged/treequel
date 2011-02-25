@@ -547,7 +547,10 @@ class Treequel::Branch
 	### Return OIDs (numeric OIDs as Strings, named OIDs as Symbols) for each of the 
 	### receiver's operational attributes.
 	def operational_attribute_oids
-		return self.operational_attribute_types.map( &:oid )
+		return self.operational_attribute_types.inject([]) do |oids, attrtype|
+			oids.push( *attrtype.names )
+			oids << attrtype.oid
+		end
 	end
 
 

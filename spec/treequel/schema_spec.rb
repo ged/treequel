@@ -51,13 +51,13 @@ describe Treequel::Schema do
 
 		schema = Treequel::Schema.new( schemahash )
 
-		schema.object_classes.should have( 298 ).members
-		schema.attribute_types.should have( 1085 ).members
-		schema.matching_rules.should have( 72 ).members
+		schema.object_classes.should have( 308 ).members
+		schema.attribute_types.should have( 1193 ).members
+		schema.matching_rules.should have( 74 ).members
 		schema.matching_rule_uses.should have( 54 ).members
-		schema.ldap_syntaxes.should have( 31 ).members
+		schema.ldap_syntaxes.should have( 32 ).members
 
-		schema.operational_attribute_types.should have( 31 ).members
+		schema.operational_attribute_types.should have( 34 ).members
 	end
 
 
@@ -73,13 +73,13 @@ describe Treequel::Schema do
 			schema = Treequel::Schema.new( schemahash )
 		end.join
 
-		schema.object_classes.should have( 298 ).members
-		schema.attribute_types.should have( 1085 ).members
-		schema.matching_rules.should have( 72 ).members
+		schema.object_classes.should have( 308 ).members
+		schema.attribute_types.should have( 1193 ).members
+		schema.matching_rules.should have( 74 ).members
 		schema.matching_rule_uses.should have( 54 ).members
-		schema.ldap_syntaxes.should have( 31 ).members
+		schema.ldap_syntaxes.should have( 32 ).members
 
-		schema.operational_attribute_types.should have( 31 ).members
+		schema.operational_attribute_types.should have( 34 ).members
 	end
 
 
