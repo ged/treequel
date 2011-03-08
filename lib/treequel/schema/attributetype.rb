@@ -69,6 +69,7 @@ class Treequel::Schema::AttributeType
 		# Normalize the attributes
 		names = Treequel::Schema.parse_names( names )
 		desc  = Treequel::Schema.unquote_desc( desc )
+		# syntax_oid  = Treequel::Schema.unquote_desc( syntax_oid ) # For AD
 
 		sup_oid = Treequel::Schema.parse_oid( sup_oid ) if sup_oid
 		eqmatch_oid = Treequel::Schema.parse_oid( eqmatch_oid ) if eqmatch_oid
@@ -243,7 +244,7 @@ class Treequel::Schema::AttributeType
 			self.oid,
 			self.desc,
 			self.is_single? ? '(SINGLE) ' : '',
-			self.syntax,
+			self.syntax || self.syntax_oid,
 			self.syntax_len ? self.syntax_len : 'unlimited',
 		]
 	end

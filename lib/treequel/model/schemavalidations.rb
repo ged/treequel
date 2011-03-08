@@ -78,7 +78,8 @@ module Treequel::Model::SchemaValidations
 					self.log.error "validation for %p failed: %s: %s" %
 						[ attribute, err.class.name, err.message ]
 					attrtype = self.find_attribute_type( attribute )
-					self.errors.add( attribute, "isn't a valid %s value" % [attrtype.syntax.desc] )
+					self.errors.add( attribute, "isn't a valid %s value" %
+					 	[ attrtype.syntax ? attrtype.syntax.desc : attrtype.syntax_oid ] )
 				end
 			end
 		end

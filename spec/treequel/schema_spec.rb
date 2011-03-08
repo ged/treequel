@@ -44,42 +44,68 @@ describe Treequel::Schema do
 	TEST_DESCR      = 'objectClass'
 	TEST_OIDLIST    = %:( #{TEST_DESCR} $ objectCaste $ #{TEST_NUMERICOID} )  :
 
-	it "can parse the schema structure returned from LDAP::Conn#schema" do
-		schema_dumpfile = @datadir + 'schema.yml'
-		hash = YAML.load_file( schema_dumpfile )
-		schemahash = LDAP::Schema.new( hash )
+	context "OpenLDAP schema" do
+		before( :all ) do
+			@schema_dumpfile = @datadir + 'schema.yml'
+			@hash = YAML.load_file( @schema_dumpfile )
+			@schemahash = LDAP::Schema.new( @hash )
+			@schemahash.freeze
+			@schema = Treequel::Schema.new( @schemahash )
+		end
 
-		schema = Treequel::Schema.new( schemahash )
+		it "can parse the schema structure returned from LDAP::Conn#schema" do
+			@schema.object_classes.values.uniq.should have( @hash['objectClasses'].length ).members
+			@schema.attribute_types.values.uniq.should have( @hash['attributeTypes'].length ).members
+			@schema.matching_rules.values.uniq.should have( @hash['matchingRules'].length ).members
+			@schema.matching_rule_uses.values.uniq.should have( @hash['matchingRuleUse'].length ).members
+			@schema.ldap_syntaxes.values.uniq.should have( @hash['ldapSyntaxes'].length ).members
 
-		schema.object_classes.should have( 308 ).members
-		schema.attribute_types.should have( 1193 ).members
-		schema.matching_rules.should have( 74 ).members
-		schema.matching_rule_uses.should have( 54 ).members
-		schema.ldap_syntaxes.should have( 32 ).members
+			dirop_count = @hash['attributeTypes'].
+				count {|type| type.index('USAGE directoryOperation') }
+			dsaop_count = @hash['attributeTypes'].
+				count {|type| type.index('USAGE dSAOperation') }
+			distop_count = @hash['attributeTypes'].
+				count {|type| type.index('USAGE distributedOperation') }
+			op_attrcount = dirop_count + dsaop_count + distop_count
 
-		schema.operational_attribute_types.should have( 34 ).members
+			@schema.operational_attribute_types.should have( op_attrcount ).members
+		end
+
+
+		it "can parse the schema structure returned from LDAP::Conn#schema even under $SAFE >= 1" do
+			schema = nil
+			Thread.new do
+				Thread.current.abort_on_exception = true
+				$SAFE = 1
+				schemahash = LDAP::Schema.new( @hash )
+				schema = Treequel::Schema.new( schemahash )
+			end.join
+
+			schema.should be_an_instance_of( Treequel::Schema )
+		end
 	end
 
+	context "ActiveDirectory schema" do
 
-	it "can parse the schema structure returned from LDAP::Conn#schema even under $SAFE >= 1" do
-		schema_dumpfile = @datadir + 'schema.yml'
-		hash = YAML.load_file( schema_dumpfile )
+		before( :all ) do
+			@schema_dumpfile = @datadir + 'ad_schema.yml'
+			@hash = YAML.load_file( @schema_dumpfile )
+			@schemahash = LDAP::Schema.new( @hash )
+			@schema = Treequel::Schema.new( @schemahash )
+		end
 
-		schema = nil
-		Thread.new do
-			Thread.current.abort_on_exception = true
-			$SAFE = 1
-			schemahash = LDAP::Schema.new( hash )
-			schema = Treequel::Schema.new( schemahash )
-		end.join
+		it "can parse an ActiveDirectory schema structure, too" do
+			@schema.object_classes.values.uniq.should have( @hash['objectClasses'].length ).members
+			@schema.attribute_types.values.uniq.should have( @hash['attributeTypes'].length ).members
 
-		schema.object_classes.should have( 308 ).members
-		schema.attribute_types.should have( 1193 ).members
-		schema.matching_rules.should have( 74 ).members
-		schema.matching_rule_uses.should have( 54 ).members
-		schema.ldap_syntaxes.should have( 32 ).members
+			# AD doesn't have these in its subSchema
+			@schema.matching_rules.should be_empty()
+			@schema.matching_rule_uses.should be_empty()
+			@schema.ldap_syntaxes.should be_empty()
+			@schema.operational_attribute_types.should be_empty()
+		end
 
-		schema.operational_attribute_types.should have( 34 ).members
+
 	end
 
 
