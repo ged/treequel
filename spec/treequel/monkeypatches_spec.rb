@@ -130,7 +130,7 @@ describe Treequel::DateExtensions do
 	before( :all ) do
 		# Make the local timezone PDT so offsets show up correctly
 		@real_tz = ENV['TZ']
-		ENV['TZ'] = ':PST8PDT'
+		ENV['TZ'] = ':GMT'
 	end
 
 	before( :each ) do
@@ -144,19 +144,19 @@ describe Treequel::DateExtensions do
 	describe "RFC4517 LDAP Generalized Time method" do
 
 		it "returns the time in 'Generalized Time' format" do
-			@date.ldap_generalized.should == "20100805000001-0800"
+			@date.ldap_generalized.should == "20100805000001+0000"
 		end
 
 		it "can include fractional seconds if the optional fractional digits argument is given" do
-			@date.ldap_generalized( 3 ).should == "20100805000001.000-0800"
+			@date.ldap_generalized( 3 ).should == "20100805000001.000+0000"
 		end
 
 		it "doesn't include the decimal if fractional digits is specified but zero" do
-			@date.ldap_generalized( 0 ).should == "20100805000001-0800"
+			@date.ldap_generalized( 0 ).should == "20100805000001+0000"
 		end
 
 		it "zero-fills any digits after six in the fractional digits" do
-			@date.ldap_generalized( 11 ).should == "20100805000001.00000000000-0800"
+			@date.ldap_generalized( 11 ).should == "20100805000001.00000000000+0000"
 		end
 
 	end
@@ -164,7 +164,7 @@ describe Treequel::DateExtensions do
 	describe "RFC4517 UTC Time method" do
 
 		it "returns the time in 'UTC Time' format" do
-			@date.ldap_utc.should == "100805000001-0800"
+			@date.ldap_utc.should == "100805000001+0000"
 		end
 
 	end
