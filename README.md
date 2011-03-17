@@ -110,6 +110,10 @@ the following license terms:
 A special thanks to Ben Bleything, who was part of the initial brainstorm that
 led to the creation of this library.
 
+Thanks also to Ben Cooksley of the KDE project, who has been full of great 
+ideas for the Model side of Treequel; it's vastly better for his
+suggestions.
+
 
 [examples]:http://deveiate.org/projects/Treequel/browser/examples
 [hgrepo]:http://repo.deveiate.org/Treequel

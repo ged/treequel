@@ -1,3 +1,38 @@
+## 1.5.2 [2011-03-17] Michael Granger <ged@FaerieMUD.org>
+
+* Manual updates
+* Fixing bad time tests uncovered by the DST switch
+* Adding an ActiveDirectory schema dump for testing
+* Fix for Github issue [ged/treequel GH-1] (closes #7)
+
+
+## 1.5.1 [2011-02-25] Michael Granger <ged@FaerieMUD.org>
+
+* Adding handling of operational attributes to Treequel::Model schema
+  validations, updated the subschema test data to a recent OpenLDAP.
+
+
+## 1.5.0 [2011-02-24] Michael Granger <ged@FaerieMUD.org>
+
+* Make Treequel::Model::ObjectClass Enumerable
+* Add a default directory to Treequel::Model for creating and
+  searching
+* Fix delegation to a method that takes a block for
+  Treequel::Delegation
+* Consistently delete the DN from the entry hash when constructing
+  branches and model objects
+* Fix Treequel::Branch#-
+* Fix Treequel::Branchset#to_hash
+* Make dependencies not so pessimistic.
+
+
+## 1.4.4 [2011-02-10] Michael Granger <ged@FaerieMUD.org>
+
+* Add the .gemtest and Manifest to the manifest, bump patch version.
+* Make Treequel testable via Gem Testers
+* Hack to work around the pointer-mismanagement of LDAP::Mod
+
+
 ## 1.4.3 [2011-02-10] Michael Granger <ged@FaerieMUD.org>
 
 * Added gem-testers support
