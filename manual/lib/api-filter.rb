@@ -1,22 +1,14 @@
 #!/usr/bin/ruby 
-# 
-# A manual filter to generate links from the Darkfish API.
-# 
-# Authors:
-# * Michael Granger <ged@FaerieMUD.org>
-# * Mahlon E. Smith <mahlon@martini.nu>
-# 
 
-
-### A filter for generating links from the generated API documentation. This allows you to refer
-### to class documentation by simply referencing a class name.
-###
-### Links are XML processing instructions. Pages can be referenced as such:
-###
-###   <?api Class::Name ?>
-###   <?api "click here":Class::Name ?>
-### 
-class Hoe::ManualGen::APIFilter < Hoe::ManualGen::Page::Filter
+# A filter for generating links from the generated API documentation. This allows you to refer
+# to class documentation by simply referencing a class name.
+#
+# Links are XML processing instructions. Pages can be referenced as such:
+#
+#   <?api Class::Name ?>
+#   <?api "click here":Class::Name ?>
+# 
+class Hoe::ManualGen::APIFilter < Hoe::ManualGen::PageFilter
 
 	# PI	   ::= '<?' PITarget (S (Char* - (Char* '?>' Char*)))? '?>'
 	ApiPI = %r{

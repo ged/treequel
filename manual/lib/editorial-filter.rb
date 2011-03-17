@@ -17,7 +17,7 @@
 ###   <?ed "This is an editor's note." ?>
 ###   <?ed verify:"this content needs checking or verification" ?>
 ### 
-class Hoe::ManualGen::EditorialFilter < Hoe::ManualGen::Page::Filter
+class Hoe::ManualGen::EditorialFilter < Hoe::ManualGen::PageFilter
 	
 	# PI	   ::= '<?' PITarget (S (Char* - (Char* '?>' Char*)))? '?>'
 	LinkPI = %r{

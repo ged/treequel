@@ -32,7 +32,7 @@
 ###	  any errors to the output.
 ### caption::
 ###   A small blurb to put below the pulled-out example in the HTML.
-class Hoe::ManualGen::ExamplesFilter < Hoe::ManualGen::Page::Filter
+class Hoe::ManualGen::ExamplesFilter < Hoe::ManualGen::PageFilter
 	
 	DEFAULTS = {
 		:language     => :ruby,

@@ -31,7 +31,7 @@
 ### The second form links to a page by its path relative to the base manual source directory.
 ### Again, the link text defaults to the page title, or can be overriden via a prepended string,
 ### and you can link into a page with an appended ID.
-class Hoe::ManualGen::LinksFilter < Hoe::ManualGen::Page::Filter
+class Hoe::ManualGen::LinksFilter < Hoe::ManualGen::PageFilter
 	
 	# PI	   ::= '<?' PITarget (S (Char* - (Char* '?>' Char*)))? '?>'
 	LinkPI = %r{
