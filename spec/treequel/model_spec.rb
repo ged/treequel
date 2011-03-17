@@ -340,7 +340,7 @@ describe Treequel::Model do
 		end
 
 		it "provides writers for valid singular attributes" do
-			@obj.logonTime.should equal( 1293167318 )
+			@obj.logonTime.should == 1293167318
 		end
 
 		it "provides writers for valid non-singular attributes that accept a non-array" do
