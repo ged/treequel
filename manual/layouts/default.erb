@@ -1,5 +1,15 @@
 <!DOCTYPE html>  
+<!--
 
+	Main Manual Layout
+	$Id$
+	
+	Author: Michael Granger <ged@FaerieMUD.org>
+	Two column fluid layout adapted from Matthew James Taylor's "Perfect 'Left Menu' 
+	2 Column Liquid Layout":
+	http://matthewjamestaylor.com/blog/perfect-2-column-left-menu.htm
+
+  -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -10,7 +20,6 @@
   <link rel="stylesheet" href="css/manual.css">
 
   <script src="js/jquery-1.4.4.min.js"></script>
-  <script src="js/modernizr-1.6.min.js"></script>
   <script src="js/sh.js"></script>
   <script src="js/manual.js"></script>
 
@@ -28,7 +37,16 @@
 		</hgroup>
 	</header>
 
-	<aside id="sidebar" class="column width1 first">
+	<div class="colmask leftmenu">
+		<div class="colleft">
+
+			<section id="content" class="col1">
+				<!-- Generated content -->
+				<%= content %>
+				<!-- end of generated content -->
+			</section>
+
+			<aside id="sidebar" class="col2">
 				<nav>
 		<%
 					@catalog.traverse_page_hierarchy( self ) do |type, title, path|
@@ -55,19 +73,14 @@
 				</nav>
 	</aside>
 
-	<section id="content" class="column width3">
-		<!-- Generated content -->
-		<%= content %>
-		<!-- end of generated content -->
-	</section>
+		</div>
+	</div>
  
-</div>
-
-<footer>
-	<div class="copyright">Copyright &copy; 2008-<%= Time.now.year %> Michael Granger, Mahlon E. Smith.</div>
-	<div class="vcsrev">Rev: $Revision$</div>
-	<div class="timestamp">Built: <%= Time.now.strftime("%Y%m%d %H:%M:%S %Z") %></div>
-</footer>
+	<footer>
+		<div class="copyright">Copyright &copy; 2008-<%= Time.now.year %> Michael Granger, Mahlon E. Smith.</div>
+		<div class="vcsrev">Rev: $Revision$</div>
+		<div class="timestamp">Built: <%= Time.now.strftime("%Y%m%d %H:%M:%S %Z") %></div>
+	</footer>
 
 </body>
 </html>

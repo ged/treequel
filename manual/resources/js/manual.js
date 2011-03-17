@@ -3,9 +3,9 @@
 //
 function generate_toc() {
 
-	$('#auto-toc').append('<ul></ul>');
+	$('#auto-toc').append('<h2>Contents</h2><ul></ul>');
 
-	$('section#content h2').each( function() {
+	$('section#content h3').each( function() {
 		var header = $(this);
 		var html = header.html().replace( /^\s*|\s*$/g, '' );
 		var newid = html.toLowerCase().replace( /\W+/g, '-' );

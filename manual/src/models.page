@@ -65,13 +65,12 @@ The module first extends Treequel::Model::ObjectClass [line 5], and then registe
 
 For example, if the above code was in a file called @acme/inetorgperson.rb@:
 
-<?example { language: irb, caption: "Get the labeledUris associated with the 'jonh' user." } ?>
+<?example { language: ruby, caption: "Get the labeledUris associated with the 'jonh' user." } ?>
 require 'treequel/model'
 require 'acme/inetorgperson'
 
-directory = Treequel.directory_from_config
-jonh = Treequel::Model.search( directory ).
-	filter( :uid => 'jonh', :objectClass => :inetOrgPerson ).first
+Treequel::Model.directory = Treequel.directory_from_config
+jonh = ACME::InetOrgPerson.filter( :uid => 'jonh' ).first
 jonh.labeled_uris
 # => {"My Homepage"=>#<URI::HTTP:0x00000102841f68 URL:http://example.com/>} 
 <?end?>
@@ -84,7 +83,7 @@ You can use the methods of the mixins to associate entries with one another, as 
 require 'treequel/model'
 require 'treequel/model/objectclass'
 
-$directory = Treequel.directory_from_config
+Treequel::Model.directory = Treequel.directory_from_config
 
 module ACME::PosixAccount
 	extend Treequel::Model::ObjectClass
@@ -95,7 +94,7 @@ module ACME::PosixAccount
 
 	### Return ACME::PosixGroup objects for the groups the account is a member of.
 	def groups
-		return ACME::PosixGroup.search( $directory ).filter( :memberUid => self.uid ).all
+		return ACME::PosixGroup.filter( :memberUid => self.uid ).all
 	end
 
 end # module ACME::PosixAccount
@@ -110,7 +109,7 @@ module ACME::PosixGroup
 
 	### Return ACME::PosixAccount objects for the group's members
 	def members
-		return ACME::PosixAccount.search( $directory ).filter( :uid => self.memberUid ).all
+		return ACME::PosixAccount.filter( :uid => self.memberUid ).all
 	end
 
 end # module ACME::PosixGroup
@@ -122,17 +121,16 @@ If you want to make the associations a bit more useful, you can return a <?api T
 require 'treequel/model'
 require 'treequel/model/objectclass'
 
-$directory = Treequel.directory_from_config
+Treequel::Model.directory = Treequel.directory_from_config
 
 # Re-open to modify the association to return a Branchset instead
 module ACME::PosixGroup
 	def members
-		return ACME::PosixAccount.search( $directory ).filter( :uid => self.memberUid )
+		return ACME::PosixAccount.filter( :uid => self.memberUid )
 	end
 end # module ACME::PosixGroup
 
-sysadmin_group = ACME::PosixGroup.search( $directory ).
-	filter( :cn => 'sysadmin' ).first
+sysadmin_group = ACME::PosixGroup.filter( :cn => 'sysadmin' ).first
 sysadmin_group.members.filter( ~:userPassword ).all
 
 # => [#<Treequel::Model:0x100b0a2d8 uid=mahlon,ou=People,dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>]
@@ -182,8 +180,10 @@ You can check an object's validity at any time using the @Treequel::Model#valid?
 <?example { language: ruby, caption: "Check a Model object for validity, and display error messages if it isn't valid." } ?>
 require 'acme/posixaccount'
 
+Treequel::Model.directory = Treequel.directory_from_config
+
 # Create a new account
-account = ACME::PosixAccount.create( directory, 'uid=jbernam,ou=people,dc=acme,dc=com' )
+account = ACME::PosixAccount.create( 'uid=jbernam,ou=people,dc=acme,dc=com' )
 
 account.cn = 'James Bernam'
 account.uid_number = 511
@@ -197,10 +197,10 @@ end
 
 Since the @posixAccount@ objectClass declares @homeDirectory@ as one of its @MUST@ attributes in the LDAP schema, this outputs:
 
-	Couldn't save uid=jbernam,ou=people,dc=acme,dc=com:
-	homeDirectory MUST have a value
-	homeDirectory doesn't follow company convention
-	gecos isn't set
+bc. Couldn't save uid=jbernam,ou=people,dc=acme,dc=com:
+homeDirectory MUST have a value
+homeDirectory doesn't follow company convention
+gecos isn't set
 
 The default validations are provided by the @Treequel::Model::SchemaValidations@ module, and as its name suggests, they check the entry against the schema loaded from the directory. They are intended to prevent sending data to the directory that would result in a obvious error. If you want to skip them, you can pass the @:with_schema => false@ option to @#save@, @#valid?@, or @#validate@, which will still check any additional validations you've defined.
 
@@ -218,7 +218,7 @@ h4(#model-hooks). Model Callbacks
 * #before_destroy
 * #after_destroy
 
-Typically you'll use a hook to do things like encrypt values before saving, 
+Typically you'll use a hook to do things like encrypt sensitive data before saving, normalize specially-formatted values, fill in defaults, etc.
 
 You can cause the hooked action to be aborted by returning a false value from any of the @before_@ hooks. This causes a @Treequel::BeforeHookFailed@ exception to be raised unless you call the action with @:raise_on_failure => false@.
 
@@ -228,7 +228,7 @@ Using hooks, you could rewrite the previous example like this:
 require 'acme/posixaccount'
 
 # Create a new account
-account = ACME::PosixAccount.create( directory, 'uid=jbernam,ou=people,dc=acme,dc=com' )
+account = ACME::PosixAccount.create( 'uid=jbernam,ou=people,dc=acme,dc=com' )
 
 account.cn = 'James Bernam'
 account.uid_number = 511

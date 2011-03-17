@@ -1,12 +1,51 @@
 /* 
- *	treequel Manual Stylesheet
- *	Authors:
- *  - Michael Granger <ged@FaerieMUD.org>
+ * treequel Manual Stylesheet
+ *  
+ * Authors:
+ * Michael Granger <ged@FaerieMUD.org>
+ *  
+ * Two column fluid layout adapted from Matthew James Taylor's 
+ * "Perfect 'Left Menu' 2 Column Liquid Layout":
+ * http://matthewjamestaylor.com/blog/perfect-2-column-left-menu.htm
  */
 
-@import url(baseline.compress.css);
+@import url(reset.css);
 
-/* Elements */
+@font-face {
+	font-family: GraublauWeb;
+	src: url(../fonts/GraublauWeb.otf) format(truetype);
+}
+
+@font-face {
+	font-family: GraublauWeb;
+	font-weight: bold;
+	src: url(../fonts/GraublauWebBold.otf) format(truetype);
+}
+
+@font-face {
+	font-family: Inconsolata;
+	src: url(../fonts/Inconsolata.otf) format(truetype);
+}
+
+
+/* @group Elements */
+html {
+	background-color: #a5a5a5;
+}
+
+body {
+	margin: 0;
+	padding: 0;
+	min-width: 800px;
+	font-family: GraublauWeb, sans-serif;
+}
+
+nav ul.index-section {
+	list-style: none;
+	padding: 0;
+	line-height: 1.5em;
+	margin: 0;
+}
 
 a {
 	color: #4c87cb;
@@ -14,6 +53,7 @@ a {
 	border-bottom: 1px dotted;
 	border-color: rgba(76,135,203,0.5);
 }
+
 a:hover {
 	border-color: #4c87cb;
 	background-color: rgba(253,255,132,0.5);
@@ -23,17 +63,91 @@ h1, h2, h3, h4, h5, h6 {
 	margin-bottom: 0.2em;
 }
 
-p + p {
+h1 {
+	font-size: 3em;
+	font-weight: bold;
+}
+
+h2 {
+	font-size: 2em;
+	font-weight: bold;
+}
+
+h3 {
+	font-size: 1.5em;
+}
+
+p {
+	margin: 0;
+}
+p + p,
+p + ul,
+p + ol {
 	margin-top: 1em;
+}
+
+p + h2,
+p + h3 {
+	margin-top: 1em;
+}
+
+li {
+	list-style: disc;
+	margin: 0.5em 1.2em
+}
+
+code, pre {
+	font-family: Inconsolata, monospace;
 }
 
 code {
 	background-color: rgba(179,179,179,0.4);
 }
 
-/* IDed elements */
+dl {
+	margin: 0.5em 0;
+	padding: 0 0.5em;
+}
+dt {
+	padding: 0 0.25em;
+	border-top-left-radius: 0.5em;
+	border-top-right-radius: 0.5em;
+	background: -webkit-gradient(radial, 
+		20% 0, 0, 
+		20% 0, 800, 
+		color-stop(0.0,#bbb), 
+		color-stop(1.0,#cecece));
+	background: -moz-radial-gradient(
+		20% top, 
+		farthest-side, 
+		#bbb, 
+		#cecece);
+}
+dd {
+	padding: 0 0.25em;
+	border-bottom-left-radius: 0.5em;
+	border-bottom-right-radius: 0.5em;
+	margin-left: 0;
+	background: -webkit-gradient(radial, 
+		20% 0, 0, 
+		20% 0, 800, 
+		color-stop(0.0,#ddd), 
+		color-stop(1.0,#efefef));
+	background: -moz-radial-gradient(
+		20% top, 
+		farthest-side, 
+		#ddd, 
+		#efefef);
+}
+dd + dt {
+	margin-top: 0.5em;
+}
+/* @end */
+
+
+/* @group IDed elements */
 #page {
-	margin: 0 auto;
+
 }
 
 #page > header {
@@ -50,7 +164,7 @@ code {
 		#81a7d2, 
 		#6187b2);
 	color: #fff;
-	padding: 0.4em 1em;
+	padding: 0.2em 1em;
 }
 
 #page > header hgroup h1,
@@ -62,11 +176,16 @@ code {
 #page > header h1 {
 	font-size: 90px;
 	text-shadow: 1px 1px 2px rgba( 25,25,25, 0.5 );
+	z-index: 50;
 }
+
 #page > header h2.tagline {
-	font-size: 2em;
-	text-shadow: 1px 1px 2px rgba( 25,25,25, 0.5 );
-	letter-spacing: 0.15em;
+	font-weight: normal;
+	letter-spacing: 0.35em;
+	color: #eee;
+	font-size: 1.2em;
+	margin-top: -1em;
+	margin-left: 1em;
 }
 
 header a {
@@ -74,19 +193,563 @@ header a {
 	text-decoration: inherit;
 }
 
-#page > header nav {
-	position: absolute;
-	top: 4px;	
-	right: 1em;
+aside#sidebar {
+	margin: 0;
+	vertical-align: top;
+}
+aside#sidebar h3 {
+	margin: 0;
+}
+aside#sidebar nav {
 }
 
-footer {
+#auto-toc {
+	float: right;
+	margin: 1em;
+	margin-left: 2em;
+	padding: 1em;
+	background: #ddd;
+	border: 1px solid rgba(25,25,25,0.3);
+	border-radius: 4px;
+	-webkit-box-shadow: 0 0 3px #333;
+}
+#auto-toc h2 {
+	font-size: 1.2em;
+	font-weight: normal;
+	color: #999;
+}
+#auto-toc ul {
+	margin: 0;
+	padding: 0;
+}
+#auto-toc ul li {
+	margin: 0;
+	list-style: none;
+}
+
+section#content {
+	padding: 0;
+}
+
+#page > footer {
 	color: #444;
 	clear: both;
 	padding: 2em;
 	background: #a5a5a5;
+	background-image: -moz-linear-gradient(
+		top, 
+		#000000 0%, 
+		#ccc 8%, 
+		#adadad 51%, 
+		#a5a5a5 100%
+	);
+	background-image: -webkit-gradient(
+		linear, 
+		left top, 
+		left bottom, 
+		color-stop(0%,#888), 
+		color-stop(5%,#ccc), 
+		color-stop(51%,#adadad), 
+		color-stop(100%,#a5a5a5)
+	);
 	border-top: 2px solid rgba( 25,25,25, 0.2 );
+	font-size: 0.8em;
+}
+/* @end */
+
+
+
+/* @group Generic Classes */
+
+p.diagram {
+	text-align: center;
+	margin-bottom: 0;
+	clear: both;
+}
+
+p.caption {
+	text-align: center;
+	margin: 0 auto 1.5em;
+	font-size: 0.9em;
+	width: 50%;
+	font-weight: bold;
+}
+
+/* @end Generic Classes */
+
+/* @group 2-Column Fluid Layout */
+
+/* column container */
+
+.colmask {
+	position: relative;
+	clear: both;
+	float: left;
+	width: 100%;
+	overflow: hidden;
+}
+
+/* common column settings */
+
+.colright,
+.colmid,
+.colleft {
+	float: left;
+	width: 100%;
+	position: relative;
+	padding: 1.5em 0;
+}
+
+.col1,
+.col2,
+.col3 {
+	float: left;
+	position: relative;
+	padding: 0 0 1em 0;
+	overflow: hidden;
+}
+
+/* 2 Column (left menu) settings */
+
+.leftmenu {
+	background: #fff;
+}
+
+.leftmenu .colleft {
+	right: 75%;
+	background: #ddd;
+}
+
+.leftmenu .col1 {
+	width: 71%;
+	left: 102%;
+}
+
+.leftmenu .col2 {
+	width: 21%;
+	left: 6%;
+}
+
+/* @end */
+
+/* @group Examples */
+
+div.caption {
+	font-size: 0.8em;
+	text-align: center;
+	padding: 0.25em 0;
+	overflow: hidden;
+}
+
+div.example {
+	margin: 0.5em;
+	padding: 0;
+	font: 0.9em Inconsolata, Menlo, "Bitstream Vera Sans Mono", monospace;
+	overflow: hidden;
+	line-height: 1.1em;
+}
+
+div.example pre {
+	line-height: 1.2em;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+}
+
+div.example pre:hover {
+	overflow: auto;
+}
+
+pre.deveiate .line-numbers {
+	background-color: #474860;
+	color: #f3f3f3;
+	font-size: 0.8em;
+	padding: 0.3em 0;
+	letter-spacing: -0.1em;
+}
+
+pre.console-output {
+
+}
+
+/* @end Examples */
+
+/* @group Callouts */
+
+div.callout {
+	margin: 2em 0;
+	padding: 1em;
+	padding-left: 45px;
+	border: 2px solid #787890;
+	background: #cfcff8 url(../images/dialog-information.png) no-repeat 5px 1em;
+}
+
+div.callout p {
+	margin: 0;
+}
+
+div.callout p + p {
+	margin-top: 1em;
+}
+
+div.callout.caution-callout {
+	background-image: url(../images/dialog-warning.png);
+	background-color: #fdffcc;
+	border-color: #d5d96d;
+}
+
+/* @end Callouts */
+
+/* @group Syntax Highlighter */
+
+/**
+ * SyntaxHighlighter
+ * http://alexgorbatchev.com/SyntaxHighlighter
+ *
+ * SyntaxHighlighter is donationware. If you are using it, please donate.
+ * http://alexgorbatchev.com/SyntaxHighlighter/donate.html
+ *
+ * @version
+ * 3.0.83 (July 02 2010)
+ * 
+ * @copyright
+ * Copyright (C) 2004-2010 Alex Gorbatchev.
+ *
+ * @license
+ * Dual licensed under the MIT and GPL licenses.
+ */
+ 
+ /* Modified by Michael Granger */
+ 
+.syntaxhighlighter a,
+.syntaxhighlighter div,
+.syntaxhighlighter code,
+.syntaxhighlighter table,
+.syntaxhighlighter table td,
+.syntaxhighlighter table tr,
+.syntaxhighlighter table tbody,
+.syntaxhighlighter table thead,
+.syntaxhighlighter table caption,
+.syntaxhighlighter textarea {
+  -moz-border-radius: 0 0 0 0;
+  -webkit-border-radius: 0 0 0 0;
+  background: none;
+  border: 0;
+  bottom: auto;
+  float: none;
+  height: auto;
+  left: auto;
+  line-height: 1.1em;
+  margin: 0;
+  outline: 0;
+  overflow: visible;
+  padding: 0;
+  position: static;
+  right: auto;
+  text-align: left;
+  top: auto;
+  vertical-align: baseline;
+  width: auto;
+  box-sizing: content-box;
+  font-family: "Consolas", "Bitstream Vera Sans Mono", "Courier New", Courier, monospace;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 1em;
+  min-height: inherit;
+  min-height: auto;
+}
+
+.syntaxhighlighter {
+  width: 100%;
+  margin: 1em 0 1em 0;
+  position: relative;
+  overflow: auto;
+  font-size: 1em;
+}
+.syntaxhighlighter.source {
+  overflow: hidden;
+}
+.syntaxhighlighter .bold {
+  font-weight: bold;
+}
+.syntaxhighlighter .italic {
+  font-style: italic;
+}
+.syntaxhighlighter .line {
+  white-space: pre;
+}
+.syntaxhighlighter table {
+  width: 100%;
+}
+.syntaxhighlighter table caption {
+  text-align: left;
+  padding: .5em 0 0.5em 1em;
+}
+.syntaxhighlighter table td.code {
+  width: 100%;
+}
+.syntaxhighlighter table td.code .container {
+  position: relative;
+}
+.syntaxhighlighter table td.code .container textarea {
+  box-sizing: border-box;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: white;
+  padding-left: 1em;
+  overflow: hidden;
+  white-space: pre;
+}
+.syntaxhighlighter table td.gutter .line {
+  text-align: right;
+  padding: 0 0.5em 0 1em;
+}
+.syntaxhighlighter table td.code .line {
+  padding: 0 1em;
+}
+.syntaxhighlighter.nogutter td.code .container textarea, .syntaxhighlighter.nogutter td.code .line {
+  padding-left: 0em;
+}
+.syntaxhighlighter.show {
+  display: block;
+}
+.syntaxhighlighter.collapsed table {
+  display: none;
+}
+.syntaxhighlighter.collapsed .toolbar {
+  padding: 0.1em 0.8em 0em 0.8em;
+  font-size: 1em;
+  position: static;
+  width: auto;
+  height: auto;
+}
+.syntaxhighlighter.collapsed .toolbar span {
+  display: inline;
+  margin-right: 1em;
+}
+.syntaxhighlighter.collapsed .toolbar span a {
+  padding: 0;
+  display: none;
+}
+.syntaxhighlighter.collapsed .toolbar span a.expandSource {
+  display: inline;
+}
+.syntaxhighlighter .toolbar {
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  width: 11px;
+  height: 11px;
+  font-size: 10px;
+  z-index: 10;
+}
+.syntaxhighlighter .toolbar span.title {
+  display: inline;
+}
+.syntaxhighlighter .toolbar a {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  padding-top: 1px;
+}
+.syntaxhighlighter .toolbar a.expandSource {
+  display: none;
+}
+.syntaxhighlighter.ie {
+  font-size: .9em;
+  padding: 1px 0 1px 0;
+}
+.syntaxhighlighter.ie .toolbar {
+  line-height: 8px;
+}
+.syntaxhighlighter.ie .toolbar a {
+  padding-top: 0px;
+}
+.syntaxhighlighter.printing .line.alt1 .content,
+.syntaxhighlighter.printing .line.alt2 .content,
+.syntaxhighlighter.printing .line.highlighted .number,
+.syntaxhighlighter.printing .line.highlighted.alt1 .content,
+.syntaxhighlighter.printing .line.highlighted.alt2 .content {
+  background: none;
+}
+.syntaxhighlighter.printing .line .number {
+  color: #bbbbbb;
+}
+.syntaxhighlighter.printing .line .content {
+  color: black;
+}
+.syntaxhighlighter.printing .toolbar {
+  display: none;
+}
+.syntaxhighlighter.printing a {
+  text-decoration: none;
+}
+.syntaxhighlighter.printing .plain, .syntaxhighlighter.printing .plain a {
+  color: black;
+}
+.syntaxhighlighter.printing .comments, .syntaxhighlighter.printing .comments a {
+  color: #008200;
+}
+.syntaxhighlighter.printing .string, .syntaxhighlighter.printing .string a {
+  color: blue;
+}
+.syntaxhighlighter.printing .keyword {
+  color: #006699;
+  font-weight: bold;
+}
+.syntaxhighlighter.printing .preprocessor {
+  color: gray;
+}
+.syntaxhighlighter.printing .variable {
+  color: #aa7700;
+}
+.syntaxhighlighter.printing .value {
+  color: #009900;
+}
+.syntaxhighlighter.printing .functions {
+  color: #ff1493;
+}
+.syntaxhighlighter.printing .constants {
+  color: #0066cc;
+}
+.syntaxhighlighter.printing .script {
+  font-weight: bold;
+}
+.syntaxhighlighter.printing .color1, .syntaxhighlighter.printing .color1 a {
+  color: gray;
+}
+.syntaxhighlighter.printing .color2, .syntaxhighlighter.printing .color2 a {
+  color: #ff1493;
+}
+.syntaxhighlighter.printing .color3, .syntaxhighlighter.printing .color3 a {
+  color: red;
+}
+.syntaxhighlighter.printing .break, .syntaxhighlighter.printing .break a {
+  color: black;
+}
+
+.syntaxhighlighter {
+  background-color: #333;
+}
+.syntaxhighlighter .line.alt1 {
+  background-color: #333;
+}
+.syntaxhighlighter .line.alt2 {
+  background-color: #323232;
+}
+.syntaxhighlighter .line.highlighted.alt1, .syntaxhighlighter .line.highlighted.alt2 {
+  background-color: #2a3133;
+}
+.syntaxhighlighter .line.highlighted.number {
+  color: white;
+}
+.syntaxhighlighter table caption {
+  color: #d3d3d3;
+}
+.syntaxhighlighter .gutter {
+  color: #d3d3d3;
+}
+.syntaxhighlighter .gutter .line {
+  border-right: 3px solid #990000;
+}
+.syntaxhighlighter .gutter .line.highlighted {
+  background-color: #990000;
+  color: black;
+}
+.syntaxhighlighter.printing .line .content {
+  border: none;
+}
+.syntaxhighlighter.collapsed {
+  overflow: visible;
+}
+.syntaxhighlighter.collapsed .toolbar {
+  color: #ebdb8d;
+  background: black;
+  border: 1px solid #990000;
+}
+.syntaxhighlighter.collapsed .toolbar a {
+  color: #ebdb8d;
+}
+.syntaxhighlighter.collapsed .toolbar a:hover {
+  color: #ff7d27;
+}
+.syntaxhighlighter .toolbar {
+  color: white;
+  background: #990000;
+  border: none;
+}
+.syntaxhighlighter .toolbar a {
+  color: white;
+}
+.syntaxhighlighter .toolbar a:hover {
+  color: #9ccff4;
+}
+/************************************
+ * Actual syntax highlighter colors.
+ ************************************/
+
+.syntaxhighlighter .plain,
+.syntaxhighlighter .plain a {
+	color: #D3D3D3;
+}
+
+.syntaxhighlighter .comments,
+.syntaxhighlighter .comments a {
+	color: #a11;
+}
+
+.syntaxhighlighter .string,
+.syntaxhighlighter .string a {
+	color: rgba(227,207,87, 0.9);
+}
+
+.syntaxhighlighter .keyword {
+	color: rgb(0,203,205);
+}
+
+.syntaxhighlighter .preprocessor {
+	color: #AEC4DE;
+}
+
+.syntaxhighlighter .variable {
+	color: #FFAA3E;
+}
+
+.syntaxhighlighter .value {
+	color: #090;
+}
+
+.syntaxhighlighter .functions {
+	color: #81CEF9;
+}
+
+.syntaxhighlighter .constants {
+	color: #FF9E7B;
+}
+
+.syntaxhighlighter .script {
+	background-color: #990000;
+}
+
+.syntaxhighlighter .color1,
+.syntaxhighlighter .color1 a {
+	color: #EBDB8D;
+}
+
+.syntaxhighlighter .color2,
+.syntaxhighlighter .color2 a {
+	color: rgb(177,247,158);
+}
+
+.syntaxhighlighter .color3,
+.syntaxhighlighter .color3 a {
+	color: #AEC4DE;
 }
 
 
+/* @end */
 
