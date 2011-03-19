@@ -40,6 +40,13 @@ body {
 	font-family: GraublauWeb, sans-serif;
 }
 
+/* Make these block-level elements explicitly so FF<4 renders them correctly */
+section,
+article,
+aside,
+header,
+footer { display: block; }
+
 nav ul.index-section {
 	list-style: none;
 	padding: 0;
