@@ -42,7 +42,7 @@ module IRB # :nodoc:
 	def self.start_session( obj )
 		unless @__initialized
 			args = ARGV
-			ARGV.replace( ARGV.dup )
+			ARGV.replace( [] )
 			IRB.setup( nil )
 			ARGV.replace( args )
 			@__initialized = true
@@ -116,10 +116,12 @@ class Treequel::Shell
 	### Run the shell.
 	def self::run( args )
 		Treequel.logger.formatter = Treequel::ColorLogFormatter.new( Treequel.logger )
-		bind_as, uri = self.parse_options( args )
+		bind_as, plaintext, uri = self.parse_options( args )
+
+		connect_type = plaintext ? :plain : :tls
 
 		directory = if uri
-			Treequel.directory( uri )
+			Treequel.directory( uri, :connect_type => connect_type )
 		else
 			Treequel.directory_from_config
 		end
@@ -137,12 +139,18 @@ class Treequel::Shell
 			collect {|name,lvl| name.to_s }.
 			join(', ')
 		bind_as = nil
+		plaintext = false
 
 		oparser = OptionParser.new( "Usage: #{progname} [OPTIONS] [LDAPURL]" ) do |oparser|
 			oparser.separator ' '
 
 			oparser.on( '--binddn=DN', '-b DN', String, "Bind as DN" ) do |dn|
 				bind_as = dn
+			end
+
+			oparser.on( '--no-tls', FalseClass, "Use a plaintext (unencrypted) connection.",
+			 	"If you don't specify a connection URL, this option is ignored." ) do
+				plaintext = true
 			end
 
 			oparser.on( '--loglevel=LEVEL', '-l LEVEL', Treequel::LOG_LEVELS.keys,
@@ -165,7 +173,7 @@ class Treequel::Shell
 
 		remaining_args = oparser.parse( argv )
 
-		return bind_as, *remaining_args
+		return bind_as, plaintext, *remaining_args
 	end
 
 
@@ -337,21 +345,6 @@ class Treequel::Shell
 	#########
 	protected
 	#########
-
-	### Fetch a Treequel::Directory object for the directory at the given +uri+, or
-	### quit with an error if unable to do so.
-	def get_ldap_directory( uri, options )
-		if uri.port == LDAP::LDAP_PORT
-			if options.try_tls
-				return Treequel.directory( uri, :connect_type => :tls )
-			else
-				return Treequel.directory( uri, :connect_type => :plain )
-			end
-		else
-			return Treequel.directory( uri, :connect_type => :ssl )
-		end
-	end
-
 
 	### Set up Readline completion
 	def setup_completion
