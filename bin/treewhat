@@ -109,8 +109,9 @@ class Treequel::What
 		end
 
 		@options   = options
-		@prompt    = HighLine.new
 		@directory = Treequel.directory( options.ldapurl )
+		@prompt    = HighLine.new
+		@prompt.wrap_at = @prompt.output_cols - 5
 
 		self.log.debug "Created new treewhat command object for %s" % [ @directory ]
 	end
@@ -280,8 +281,34 @@ class Treequel::What
 
 	### Display a schema artifact in a readable way.
 	def display_schema_artifact( artifact )
-		self.prompt.say( artifact.class.name.sub(/.*::/, '') + ' ' )
-		self.prompt.say( artifact.to_s )
+		self.prompt.say( self.prompt.color(artifact.class.name.sub(/.*::/, ''), :header) + ' ' )
+		self.prompt.say( self.prompt.color(artifact.to_s, :subheader) )
+
+		# Display some other stuff depending on what kind of thing it is
+		case artifact
+		when Treequel::Schema::AttributeType
+			self.display_attrtype_details( artifact )
+		end
+	end
+
+
+	### Display additional details for the specified +attrtype+.
+	### @param [Treequel::Schema::AttributeType] attrtype  the attribute type object to display
+	def display_attrtype_details( attrtype )
+		ocs = self.directory.schema.object_classes.values.find_all do |oc|
+			( oc.must_oids | oc.may_oids ).include?( attrtype.name.to_sym )
+		end
+
+		if ocs.empty?
+			self.prompt.say "No objectClasses with the '%s' attribute are in the current schema." %
+				[ attrtype.name ]
+		else
+			ocnames = ocs.uniq.map( &:name ).map( &:to_s ).sort
+
+			self.prompt.say "objectClasses with the '%s' attribute in the current schema:" %
+				[ attrtype.name ]
+			self.prompt.say( self.prompt.list(ocnames, :columns_across) )
+		end
 	end
 
 
