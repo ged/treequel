@@ -79,9 +79,21 @@ class Treequel::What
 			     %{output instead.}
 			text ''
 
-			text 'Options:'
+			text 'Connection Options:'
 			opt :ldapurl, "Specify the directory to connect to.",
 				:default => default_directory.uri.to_s
+			text ''
+
+			text 'Display Options:'
+			opt :attrtypes, "Show attribute types for objects that have them."
+			opt :objectclasses, "Show objectclasses for objects that have them."
+			opt :syntaxes, "Show syntaxes for objects that have them."
+			opt :matching_rules, "Show matching rules for objects that have them."
+			opt :matching_rule_uses, "Show matching rule uses for objects that have them."
+			opt :all, "Show any of the above that are applicable."
+			text ''
+
+			text 'Other Options:'
 			opt :debug, "Turn debugging on. Also sets the --loglevel to 'debug'."
 			opt :loglevel, "Set the logging level. Must be one of: #{loglevels}",
 				:default => Treequel::LOG_LEVEL_NAMES[ Treequel.logger.level ]
@@ -109,8 +121,19 @@ class Treequel::What
 		end
 
 		@options   = options
-		@prompt    = HighLine.new
+		if @options.all?
+			@options[:attrtypes] =
+				@options[:objectclasses] =
+				@options[:syntaxes] =
+				@options[:matching_rules] =
+				@options[:matching_rule_uses] =
+				true
+		end
+
 		@directory = Treequel.directory( options.ldapurl )
+		@prompt    = HighLine.new
+
+		@prompt.wrap_at = @prompt.output_cols - 10
 
 		self.log.debug "Created new treewhat command object for %s" % [ @directory ]
 	end
@@ -134,7 +157,6 @@ class Treequel::What
 	def print_header( object )
 		self.prompt.say( self.prompt.color(object.to_s, :header) )
 	end
-
 
 
 	### Run the command with the specified +pattern+.
@@ -188,8 +210,34 @@ class Treequel::What
 		pr.say( "\n" )
 		pr.say( dir.schema.to_s )
 
+		self.show_column_list( dir.schema.attribute_types.values, 'Attribute Types' ) if
+			self.options.attrtypes
+		self.show_column_list( dir.schema.object_classes.values, "Object Classes" ) if 
+			self.options.objectclasses
+		self.show_column_list( dir.schema.ldap_syntaxes.values, "Syntaxes" ) if 
+			self.options.syntaxes
+		self.show_column_list( dir.schema.matching_rules.values, "Matching Rules" ) if 
+			self.options.matching_rules
+		self.show_column_list( dir.schema.matching_rule_uses.values, "Matching Rule Uses" ) if 
+			self.options.matching_rule_uses
 	end
 
+
+	### Show the items from the given +enum+ under the specified +subheading+ in a columnized list.
+	def show_column_list( enum, subheading )
+		pr = self.prompt
+		items = nil
+
+		if enum.first.respond_to?( :name )
+			items = enum.map( &:name ).map( &:to_s ).uniq
+		else
+			items = enum.map( &:oid ).uniq
+		end
+
+		pr.say( "\n" )
+		pr.say( pr.color(subheading, :subheader) )
+		pr.say( pr.list(items.sort_by(&:downcase), :columns_across) )
+	end
 
 
 	#
