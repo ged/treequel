@@ -1,3 +1,13 @@
+## 1.5.3 [2011-04-07] Michael Granger <ged@FaerieMUD.org>
+
+* Don't pollute the gemspec with Yard-only options
+* Adding a --no-tls flag to the treequel shell
+* Updated the 'treewhat' schema tool.
+* Show additional details for some schema objects.
+* Adding schema artifacts to the treewhat command
+* Include regular attributes (in addition to operational ones) in the
+  root_dse, as AD stores everything in regular attributes.
+
 ## 1.5.2 [2011-03-17] Michael Granger <ged@FaerieMUD.org>
 
 * Manual updates
