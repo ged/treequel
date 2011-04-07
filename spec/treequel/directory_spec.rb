@@ -53,7 +53,7 @@ describe Treequel::Directory do
 
 	it "is created with reasonable default options if none are specified" do
 		@conn.stub( :search_ext2 ).
-			with( "", 0, "(objectClass=*)", ["+"], false, nil, nil, 0, 0, 0, "", nil ).
+			with( "", 0, "(objectClass=*)", ["+", '*'], false, nil, nil, 0, 0, 0, "", nil ).
 			and_return( TEST_DSE )
 
 		dir = Treequel::Directory.new
@@ -87,7 +87,7 @@ describe Treequel::Directory do
 	it "uses the first namingContext from the Root DSE if no base is specified" do
 		LDAP::Conn.stub( :new ).and_return( @conn )
 		@conn.stub( :search_ext2 ).
-			with( "", 0, "(objectClass=*)", ["+"], false, nil, nil, 0, 0, 0, "", nil ).
+			with( "", 0, "(objectClass=*)", ["+", '*'], false, nil, nil, 0, 0, 0, "", nil ).
 			and_return( TEST_DSE )
 
 		dir = Treequel::Directory.new( @options.merge(:base_dn => nil) )
@@ -606,7 +606,7 @@ describe Treequel::Directory do
 			before( :each ) do
 				@control = Module.new { include Treequel::Control }
 				@conn.stub( :search_ext2 ).
-					with( "", 0, "(objectClass=*)", ["+"], false, nil, nil, 0, 0, 0, "", nil ).
+					with( "", 0, "(objectClass=*)", ["+", '*'], false, nil, nil, 0, 0, 0, "", nil ).
 					and_return( TEST_DSE )
 			end
 
@@ -647,7 +647,7 @@ describe Treequel::Directory do
 		describe "to a server that supports extensions introspection" do
 			before( :each ) do
 				@conn.stub( :search_ext2 ).
-					with( "", 0, "(objectClass=*)", ["+"], false, nil, nil, 0, 0, 0, "", nil ).
+					with( "", 0, "(objectClass=*)", ["+", '*'], false, nil, nil, 0, 0, 0, "", nil ).
 					and_return( TEST_DSE )
 			end
 
@@ -667,7 +667,7 @@ describe Treequel::Directory do
 		describe "to a server that supports features introspection" do
 			before( :each ) do
 				@conn.stub( :search_ext2 ).
-					with( "", 0, "(objectClass=*)", ["+"], false, nil, nil, 0, 0, 0, "", nil ).
+					with( "", 0, "(objectClass=*)", ["+", '*'], false, nil, nil, 0, 0, 0, "", nil ).
 					and_return( TEST_DSE )
 			end
 
@@ -686,7 +686,7 @@ describe Treequel::Directory do
 		describe "to a server that doesn't support features introspection" do
 			before( :each ) do
 				@conn.stub( :search_ext2 ).
-					with( "", 0, "(objectClass=*)", ["+"], false, nil, nil, 0, 0, 0, "", nil ).
+					with( "", 0, "(objectClass=*)", ["+", '*'], false, nil, nil, 0, 0, 0, "", nil ).
 					and_return( TEST_DSE )
 			end
 

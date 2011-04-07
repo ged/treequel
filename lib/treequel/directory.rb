@@ -189,7 +189,7 @@ class Treequel::Directory
 
 	### Fetch the root DSE as a Treequel::Branch.
 	def root_dse
-		return self.search( '', :base, '(objectClass=*)', :selectattrs => ['+'] ).first
+		return self.search( '', :base, '(objectClass=*)', :selectattrs => ['+', '*'] ).first
 	end
 
 

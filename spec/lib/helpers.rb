@@ -129,7 +129,7 @@ module Treequel::SpecHelpers
 	def get_fixtured_directory( conn )
 		LDAP::SSLConn.stub( :new ).and_return( conn )
 		conn.stub( :search_ext2 ).
-			with( "", 0, "(objectClass=*)", ["+"], false, nil, nil, 0, 0, 0, "", nil ).
+			with( "", 0, "(objectClass=*)", ["+", '*'], false, nil, nil, 0, 0, 0, "", nil ).
 			and_return( TEST_DSE )
 		conn.stub( :set_option )
 
