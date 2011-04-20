@@ -1,6 +1,10 @@
 #!/usr/bin/env rake
 
-require 'hoe'
+begin
+	require 'hoe'
+rescue LoadError
+	abort "This Rakefile requires hoe (gem install hoe)"
+end
 
 Hoe.plugin :mercurial
 Hoe.plugin :signing
