@@ -1,4 +1,5 @@
 #!/usr/bin/ruby
+#encoding: utf-8
 
 require 'uri'
 require 'ldap'
@@ -235,8 +236,8 @@ module Treequel::Constants
 		#	
 		#	SP      = 1*SPACE  ; one or more " "
 		#	WSP     = 0*SPACE  ; zero or more " "
-		SP = '[ ]+'
-		WSP = '[ ]*'
+		SP = '\x20+'
+		WSP = '\x20*'
 
 		### These are inlined for simplicity
 		#	NULL    = %x00 ; null (0)
