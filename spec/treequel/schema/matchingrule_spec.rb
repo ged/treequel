@@ -158,6 +158,43 @@ describe Treequel::Schema::MatchingRule do
 
 	end
 
+
+	describe "parsed from one of the matching rules from the OpenDS schema" do
+
+		TIME_BASED_MATCHINGRULE = %{( 1.3.6.1.4.1.26027.1.4.5 NAME } +
+			%{( 'relativeTimeGTOrderingMatch' 'relativeTimeOrderingMatch.gt' ) } +
+			%{SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 )}
+
+		before( :each ) do
+			@rule = Treequel::Schema::MatchingRule.parse( @schema, TIME_BASED_MATCHINGRULE )
+		end
+
+		it "knows that it's obsolete" do
+			@rule.name.should == :relativeTimeGTOrderingMatch
+			@rule.names.should include( :relativeTimeGTOrderingMatch, :'relativeTimeOrderingMatch.gt' )
+			@rule.syntax_oid.should == '1.3.6.1.4.1.1466.115.121.1.24'
+		end
+
+	end
+
+
+	describe "parsed from one of the matching rules from issue 11" do
+
+		NAME_AND_OID_MATCHINGRULE = %{( 1.3.6.1.4.1.42.2.27.9.4.0.3 } +
+			%{NAME 'caseExactOrderingMatch-2.16.840.1.113730.3.3.2.0.3' } +
+			%{SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )}
+
+		before( :each ) do
+			@rule = Treequel::Schema::MatchingRule.parse( @schema, NAME_AND_OID_MATCHINGRULE )
+		end
+
+		it "knows what its rule is" do
+			@rule.name.should == 'caseExactOrderingMatch-2.16.840.1.113730.3.3.2.0.3'.to_sym
+			@rule.syntax_oid.should == '1.3.6.1.4.1.1466.115.121.1.15'
+		end
+
+	end
+
 end
 
 

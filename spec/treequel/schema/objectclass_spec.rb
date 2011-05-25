@@ -53,7 +53,6 @@ describe Treequel::Schema::ObjectClass do
 		%{        facsimileTelephoneNumber $ street $ postOfficeBox $ postalCode $} +
 		%{        postalAddress $ physicalDeliveryOfficeName $ ou $ st $ l ) )}
 
-
 	before( :all ) do
 		setup_logging( :fatal )
 		@datadir = Pathname( __FILE__ ).dirname.parent.parent + 'data'
@@ -314,6 +313,91 @@ describe Treequel::Schema::ObjectClass do
 			# STRUCTURAL is implied...
 			@oc.to_s.sub( / STRUCTURAL/, '' ).should == ORPHAN_OBJECTCLASS
 		end
+	end
+
+
+	# Sun/Oracle OpenDS (as of 2.2, at least) "allows a non-numeric OID [as the 
+	# 'numericoid' part of an objectClass definition] for the purpose of convenience"
+	describe "Sun OpenDS compatibility workarounds (ticket #11)" do
+
+		SUN_ODS_DESCR_OID_OBJECTCLASS = 
+			%{( interwovengroup-oid NAME 'interwovengroup' SUP posixgroup } +
+			%{    STRUCTURAL MAY path X-ORIGIN 'user defined' )}
+
+		before( :each ) do
+			@oc = Treequel::Schema::ObjectClass.parse( @schema, SUN_ODS_DESCR_OID_OBJECTCLASS )
+		end
+
+
+		it "sets the oid to the non-numeric OID value" do
+			@oc.oid.should == 'interwovengroup-oid'
+			@oc.name.should == :interwovengroup
+			@oc.extensions.should == %{X-ORIGIN 'user defined'}
+		end
+
+	end
+
+
+	describe "compatibility with malformed declarations: " do
+
+		SLP_SERVICE_OBJECTCLASS = %{
+		( 1.3.6.1.4.1.6252.2.27.6.2.1
+			NAME 'slpService'
+			DESC 'parent superclass for SLP services'
+			ABSTRACT
+			SUP top
+			MUST  ( template-major-version-number $
+			        template-minor-version-number $
+			        description $
+			        template-url-syntax $
+			        service-advert-service-type $
+			        service-advert-scopes )
+			MAY   ( service-advert-url-authenticator $
+			        service-advert-attribute-authenticator ) )
+		}
+
+		it "parses the malformed objectClass from RFC 2926" do
+			oc = Treequel::Schema::ObjectClass.parse( @schema, SLP_SERVICE_OBJECTCLASS )
+
+			oc.should be_a( Treequel::Schema::ObjectClass )
+			oc.name.should == :slpService
+			oc.oid.should == '1.3.6.1.4.1.6252.2.27.6.2.1'
+		end
+
+
+		AUTH_PASSWORD_OBJECT_OBJECTCLASS = %{
+		( 1.3.6.1.4.1.4203.1.4.7 NAME 'authPasswordObject'
+			DESC 'authentication password mix in class'
+			MAY 'authPassword'
+			AUXILIARY )
+		}
+
+		it "parses the malformed authPasswordObject objectClass from RFC2696" do
+			oc = Treequel::Schema::ObjectClass.parse( @schema, AUTH_PASSWORD_OBJECT_OBJECTCLASS )
+
+			oc.should be_a( Treequel::Schema::ObjectClass )
+			oc.name.should == :authPasswordObject
+			oc.oid.should == '1.3.6.1.4.1.4203.1.4.7'
+		end
+
+		DRAFT_HOWARD_RFC2307BIS_OBJECTCLASS = %{
+		( 1.3.6.1.1.1.2.0 NAME 'posixAccount' 
+			SUP top 
+			AUXILIARY 
+			DESC 'Abstraction of an account with POSIX attributes' 
+			MUST ( cn $ uid $ uidNumber $ gidNumber $ homeDirectory ) 
+			MAY ( authPassword $ userPassword $ loginShell $ gecos $ description ) 
+			X-ORIGIN 'draft-howard-rfc2307bis' )
+		}
+
+		it "parses the malformed objectClasses from draft-howard-rfc2307bis" do
+			oc = Treequel::Schema::ObjectClass.parse( @schema, DRAFT_HOWARD_RFC2307BIS_OBJECTCLASS )
+
+			oc.should be_a( Treequel::Schema::ObjectClass )
+			oc.name.should == :posixAccount
+			oc.oid.should == '1.3.6.1.1.1.2.0'
+		end
+
 	end
 
 end

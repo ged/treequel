@@ -52,19 +52,41 @@ class Treequel::Schema
 		end
 
 
-		### Parse an ObjectClass entry from a objectClass description from a schema.
+		### Parse an ObjectClass entry from a objectClass +description+ from a +schema+.
+		### @param [String] description       the RFC4512-format objectClass description
+		### @param [Treequel::Schema] schema  the schema object the objectClass belongs to
+		### @return [Treequel::Schema::ObjectClass]  the resulting objectclass
 		def self::parse( schema, description )
-			unless match = ( LDAP_OBJECTCLASS_DESCRIPTION.match(description) )
+			oid, names, desc, obsolete, sup, kind, must, may, extensions = nil
+
+			# :FIXME: Change this to some sort of strategy that extracts the pieces from the
+			# description and checks to be sure everything was consumed instead of depending
+			# on the RFC's BNF. It appears people expect to be able to arbitrarily reorder
+			# them, and making a different Regexp for each exception isn't going to work
+			# long-term.
+			case description.gsub( /[\n\t]+/, ' ' ).squeeze( ' ' )
+			when LDAP_OBJECTCLASS_DESCRIPTION
+				oid, names, desc, obsolete, sup, kind, must, may, extensions = $~.captures
+			when LDAP_MISORDERED_KIND_OBJECTCLASS_DESCRIPTION
+				oid, names, desc, obsolete, kind, sup, must, may, extensions = $~.captures
+				self.handle_malformed_parse( "transposed KIND (#{kind}) and SUP (#{sup})",
+				                              description )
+			when LDAP_TRAILING_KIND_OBJECTCLASS_DESCRIPTION
+				oid, names, desc, obsolete, sup, must, may, kind, extensions = $~.captures
+				self.handle_malformed_parse( "misordered KIND (#{kind})", description )
+			when LDAP_MISORDERED_DESC_OBJECTCLASS_DESCRIPTION
+				oid, names, obsolete, sup, kind, desc, must, may, extensions = $~.captures
+				self.handle_malformed_parse( "misordered DESC (#{desc})", description )
+			else
 				raise Treequel::ParseError, "failed to parse objectClass from %p" % [ description ]
 			end
 
-			oid, names, desc, obsolete, sup, kind, must, may, extensions = match.captures
-
 			# Normalize the attributes
-			must_oids = Treequel::Schema.parse_oids( must )
-			may_oids  = Treequel::Schema.parse_oids( may )
-			names     = Treequel::Schema.parse_names( names )
-			desc      = Treequel::Schema.unquote_desc( desc )
+			must_oids  = Treequel::Schema.parse_oids( must )
+			may_oids   = Treequel::Schema.parse_oids( may )
+			names      = Treequel::Schema.parse_names( names )
+			desc       = Treequel::Schema.unquote_desc( desc )
+			extensions = extensions.strip
 
 			# Default the 'kind' attribute
 			kind ||= DEFAULT_OBJECTCLASS_KIND
@@ -76,6 +98,16 @@ class Treequel::Schema
 
 			return concrete_class.new( schema, oid, names, desc, obsolete, sup,
 			                           must_oids, may_oids, extensions )
+		end
+
+
+		### Handle the parse of an objectClass that matches one of the non-standard objectClass
+		### definitions found in several RFCs. If Treequel::Schema.strict_parse_mode? is +true+,
+		### this method will raise an exception.
+		def self::handle_malformed_parse( message, oc_desc )
+			raise Treequel::ParseError, "Malformed objectClass: %s: %p" % [ message, oc_desc ] if
+				Treequel::Schema.strict_parse_mode?
+			Treequel.log.info "Working around malformed objectClass: %s: %p" % [ message, oc_desc ]
 		end
 
 

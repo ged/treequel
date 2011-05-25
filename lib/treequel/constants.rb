@@ -313,9 +313,9 @@ module Treequel::Constants
 		#	UTF0    = %x80-BF
 		#	UTF1    = %x00-7F
 		#	UTF2    = %xC2-DF UTF0
-		UTF0 = /[\x80-\xbf]/
-		UTF1 = /[\x00-\x7f]/
-		UTF2 = /[\xc2-\xdf] #{UTF0}/x
+		UTF0 = /[\x80-\xbf]/n
+		UTF1 = /[\x00-\x7f]/n
+		UTF2 = /[\xc2-\xdf] #{UTF0}/xn
 
 		#	UTF3    = %xE0 %xA0-BF UTF0 / %xE1-EC 2(UTF0) / %xED %x80-9F UTF0 / %xEE-EF 2(UTF0)
 		UTF3 = /
@@ -326,7 +326,7 @@ module Treequel::Constants
 			\xed [\x80-\x9f] #{UTF0}
 			|
 			[\xee-\xef] #{UTF0}{2}
-		/x
+		/xn
 
 		#	UTF4    = %xF0 %x90-BF 2(UTF0) / %xF1-F3 3(UTF0) / %xF4 %x80-8F 2(UTF0)
 		UTF4 = /
@@ -335,7 +335,7 @@ module Treequel::Constants
 			[\xf1-\xf3] #{UTF0}{3}
 			|
 			\xf4 [\x80-\x8f] #{UTF0}{2}
-		/x
+		/xn
 
 		#	UTFMB   = UTF2 / UTF3 / UTF4
 		UTFMB = Regexp.union( UTF2, UTF3, UTF4 )
@@ -350,7 +350,8 @@ module Treequel::Constants
 		LEADKEYCHAR = /[#{ALPHA}]/
 
 		#	keychar = ALPHA / DIGIT / HYPHEN
-		KEYCHAR = /[#{ALPHA}#{DIGIT}\-]/
+		# NOTE: added literal '.' to work around OpenDS's non-standard matchingRule names
+		KEYCHAR = /[#{ALPHA}#{DIGIT}\-\.]/
 
 		#	number  = DIGIT / ( LDIGIT 1*DIGIT )
 		NUMBER = /[#{LDIGIT}]#{DIGIT}+|#{DIGIT}/ # Reversed for greediness
@@ -437,6 +438,23 @@ module Treequel::Constants
 		QDSTRINGLIST = /(?: #{QDSTRING} (?: #{SP} #{QDSTRING} )* )?/x
 		QDSTRINGS = / #{QDSTRING} | #{LPAREN} #{WSP} #{QDSTRINGLIST} #{WSP} #{RPAREN} /x
 
+		# Workaround for attributeType declarations that have unescaped single quotes 
+		# in them (e.g., "Change Record Object Class Definition",
+		#   http://tools.ietf.org/html/draft-good-ldap-changelog-04)
+		# It will accept an unquoted single quote as long as it's followed by
+		# a non-whitespace character.
+		MALFORMED_DSTRING = %r{
+			(?>
+				# An unescaped single quote followed by a non-whitespace character
+				#{SQUOTE} (?=\S)
+				|
+				# or correctly-escaped single-quoted string characters
+			 	#{DSTRING}
+			)*
+		}x
+		MALFORMED_QDSTRING = / #{SQUOTE} #{MALFORMED_DSTRING} #{SQUOTE} /x
+
+
 		# extensions = *( SP xstring SP qdstrings )
 		EXTENSIONS = /(?: #{SP} #{XSTRING} #{SP} #{QDSTRINGS} )*/x
 
@@ -456,9 +474,12 @@ module Treequel::Constants
 		#       [ SP "MAY" SP oids ]       ; attribute types
 		#       extensions WSP RPAREN
 
+		# Note: added 'descr' to the oid to support Sun OpenDS, which allows names instead of
+		# numericoids "for convenience". 
+		# (http://download.oracle.com/docs/cd/E19476-01/821-0509/object-class-description-format.html)
 		LDAP_OBJECTCLASS_DESCRIPTION = %r{
 			#{LPAREN} #{WSP}
-				(#{NUMERICOID})                         # $1 = oid
+				(#{NUMERICOID} | #{DESCR})              # $1 = oid
 				(?:#{SP} NAME #{SP} (#{QDESCRS}) )?     # $2 = name
 				(?:#{SP} DESC #{SP} (#{QDSTRING}))?     # $3 = desc
 				(?:#{SP} (OBSOLETE) )?                  # $4 = obsolete
@@ -470,17 +491,70 @@ module Treequel::Constants
 			#{WSP} #{RPAREN}
 		}x
 
+		# Support for objectClass definitions with the KIND before the SUP such as those 
+		# in RFC3712
+		LDAP_MISORDERED_KIND_OBJECTCLASS_DESCRIPTION = %r{
+			#{LPAREN} #{WSP}
+				(#{NUMERICOID} | #{DESCR})              # $1 = oid
+				(?:#{SP} NAME #{SP} (#{QDESCRS}) )?     # $2 = name
+				(?:#{SP} DESC #{SP} (#{QDSTRING}))?     # $3 = desc
+				(?:#{SP} (OBSOLETE) )?                  # $4 = obsolete
+				(?:#{SP} (#{KIND}) )?                   # $5 = kind
+				(?:#{SP} SUP #{SP} (#{OIDS}) )?         # $6 = sup
+				(?:#{SP} MUST #{SP} (#{OIDS}) )?        # $7 = must attrs
+				(?:#{SP} MAY #{SP} (#{OIDS}) )?         # $8 = may attrs
+				(#{EXTENSIONS})                         # $9 = extensions
+			#{WSP} #{RPAREN}
+		}x
+
+		# Support for objectClass definitions with the KIND after the MUST and MAY
+		# sections like RFC2696's authPasswordObject
+		LDAP_TRAILING_KIND_OBJECTCLASS_DESCRIPTION = %r{
+			#{LPAREN} #{WSP}
+				(#{NUMERICOID} | #{DESCR})              # $1 = oid
+				(?:#{SP} NAME #{SP} (#{QDESCRS}) )?     # $2 = name
+				(?:#{SP} DESC #{SP} (#{QDSTRING}))?     # $3 = desc
+				(?:#{SP} (OBSOLETE) )?                  # $4 = obsolete
+				(?:#{SP} SUP #{SP} (#{OIDS}) )?         # $5 = sup
+				(?:#{SP} MUST #{SP} (#{OIDS}) )?        # $6 = must attrs
+				(?:#{SP} MAY #{SP} (#{OIDS}) )?         # $7 = may attrs
+				(?:#{SP} (#{KIND}) )?                   # $8 = kind
+				(#{EXTENSIONS})                         # $9 = extensions
+			#{WSP} #{RPAREN}
+		}x
+
+		# Support for objectClass definitions with the DESC after the SUP and KIND
+		# like draft-howard-rfc2307bis, and a bunch of "Solaris Specific" ones from 
+		# OpenDS servers.
+		LDAP_MISORDERED_DESC_OBJECTCLASS_DESCRIPTION = %r{
+			#{LPAREN} #{WSP}
+				(#{NUMERICOID} | #{DESCR})              # $1 = oid
+				(?:#{SP} NAME #{SP} (#{QDESCRS}) )?     # $2 = name
+				(?:#{SP} (OBSOLETE) )?                  # $3 = obsolete
+				(?:#{SP} SUP #{SP} (#{OIDS}) )?         # $4 = sup
+				(?:#{SP} (#{KIND}) )?                   # $5 = kind
+				(?:#{SP} DESC #{SP} (#{QDSTRING}))?     # $6 = desc
+				(?:#{SP} MUST #{SP} (#{OIDS}) )?        # $7 = must attrs
+				(?:#{SP} MAY #{SP} (#{OIDS}) )?         # $8 = may attrs
+				(#{EXTENSIONS})                         # $9 = extensions
+			#{WSP} #{RPAREN}
+		}x
+
 
 		# usage = "userApplications"     /  ; user
 		#         "directoryOperation"   /  ; directory operational
 		#         "distributedOperation" /  ; DSA-shared operational
 		#         "dSAOperation"            ; DSA-specific operational
-		USAGE = Regexp.union(
-			'userApplications',
-			'directoryOperation',
-			'distributedOperation',
-			'dSAOperation'
-		  )
+		USAGE = %r{
+			userApplications
+			|
+			directoryOperation
+			|
+			distributedOperation
+			|
+			dSAOperation
+		  }xi
+
 
 		# Attribute Type definitions are written according to the ABNF:
 		#
@@ -499,9 +573,13 @@ module Treequel::Constants
 		#            [ SP "NO-USER-MODIFICATION" ] ; not user modifiable
 		#            [ SP "USAGE" SP usage ]       ; usage
 		#            extensions WSP RPAREN         ; extensions
+
+		# Note: added 'descr' to the oid to support Sun OpenDS, which allows names instead of
+		# numericoids "for convenience". 
+		# (https://www.opends.org/wiki/page/UnderstandingAttributeTypes)
 		LDAP_ATTRIBUTE_TYPE_DESCRIPTION = %r{
 			#{LPAREN} #{WSP}
-				(#{NUMERICOID})                         # $1  = oid
+				(#{NUMERICOID} | #{DESCR})              # $1  = oid
 				(?:#{SP} NAME #{SP} (#{QDESCRS}) )?     # $2  = name
 				(?:#{SP} DESC #{SP} (#{QDSTRING}) )?    # $3  = description
 				(?:#{SP} (OBSOLETE) )?                  # $4  = obsolete flag
@@ -510,6 +588,50 @@ module Treequel::Constants
 				(?:#{SP} ORDERING #{SP} (#{OID}) )?     # $7  = ordering matching rule oid
 				(?:#{SP} SUBSTR #{SP} (#{OID}) )?       # $8  = substring matching rule oid
 				(?:#{SP} SYNTAX #{SP} (#{NOIDLEN}) )?   # $9  = value syntax matching oid
+				(?:#{SP} (SINGLE-VALUE) )?              # $10 = single value flag
+				(?:#{SP} (COLLECTIVE) )?                # $11 = collective flag
+				(?:#{SP} (NO-USER-MODIFICATION) )?      # $12 = no user modification flag
+				(?:#{SP} USAGE #{SP} (#{USAGE}) )?      # $13 = usage type
+				(#{EXTENSIONS})                         # $14 = extensions
+			#{WSP} #{RPAREN}
+		}x
+
+		# Attribute type with an unescaped single quote in the DESC; added for schemas that
+		# include the 'changelog' attributeType from 
+		#   http://tools.ietf.org/html/draft-good-ldap-changelog-04
+		LDAP_UNESCAPE_SQUOTE_ATTRIBUTE_TYPE_DESCRIPTION = %r{
+			#{LPAREN} #{WSP}
+				(#{NUMERICOID} | #{DESCR})                     # $1  = oid
+				(?:#{SP} NAME #{SP} (#{QDESCRS}) )?            # $2  = name
+				(?:#{SP} DESC #{SP} (#{MALFORMED_QDSTRING}) )  # $3  = description
+				(?:#{SP} (OBSOLETE) )?                         # $4  = obsolete flag
+				(?:#{SP} SUP #{SP} (#{OID}) )?                 # $5  = superior type oid
+				(?:#{SP} EQUALITY #{SP} (#{OID}) )?            # $6  = equality matching rule oid
+				(?:#{SP} ORDERING #{SP} (#{OID}) )?            # $7  = ordering matching rule oid
+				(?:#{SP} SUBSTR #{SP} (#{OID}) )?              # $8  = substring matching rule oid
+				(?:#{SP} SYNTAX #{SP} (#{NOIDLEN}) )?          # $9  = value syntax matching oid
+				(?:#{SP} (SINGLE-VALUE) )?                     # $10 = single value flag
+				(?:#{SP} (COLLECTIVE) )?                       # $11 = collective flag
+				(?:#{SP} (NO-USER-MODIFICATION) )?             # $12 = no user modification flag
+				(?:#{SP} USAGE #{SP} (#{USAGE}) )?             # $13 = usage type
+				(#{EXTENSIONS})                                # $14 = extensions
+			#{WSP} #{RPAREN}
+		}x
+
+		# Support for attributeType declarations which have the SYNTAX before the EQUALITY
+		# and ORDERING (e.g., changeNumber from 
+		#   http://tools.ietf.org/html/draft-good-ldap-changelog-04 )
+		LDAP_MISORDERED_SYNTAX_ATTRIBUTE_TYPE_DESCRIPTION = %r{
+			#{LPAREN} #{WSP}
+				(#{NUMERICOID} | #{DESCR})              # $1  = oid
+				(?:#{SP} NAME #{SP} (#{QDESCRS}) )?     # $2  = name
+				(?:#{SP} DESC #{SP} (#{QDSTRING}) )?    # $3  = description
+				(?:#{SP} (OBSOLETE) )?                  # $4  = obsolete flag
+				(?:#{SP} SUP #{SP} (#{OID}) )?          # $5  = superior type oid
+				(?:#{SP} SYNTAX #{SP} (#{NOIDLEN}) )?   # $6  = value syntax matching oid
+				(?:#{SP} EQUALITY #{SP} (#{OID}) )?     # $7  = equality matching rule oid
+				(?:#{SP} ORDERING #{SP} (#{OID}) )?     # $8  = ordering matching rule oid
+				(?:#{SP} SUBSTR #{SP} (#{OID}) )?       # $9  = substring matching rule oid
 				(?:#{SP} (SINGLE-VALUE) )?              # $10 = single value flag
 				(?:#{SP} (COLLECTIVE) )?                # $11 = collective flag
 				(?:#{SP} (NO-USER-MODIFICATION) )?      # $12 = no user modification flag
@@ -528,12 +650,12 @@ module Treequel::Constants
 		# 	extensions WSP RPAREN      ; extensions
 		LDAP_MATCHING_RULE_DESCRIPTION = %r{
 			#{LPAREN} #{WSP}
-				(#{NUMERICOID})                        # $1  = oid
-				(?:#{SP} NAME #{SP} (#{QDESCRS}) )?    # $2  = name
-				(?:#{SP} DESC #{SP} (#{QDSTRING}) )?   # $3  = description
-				(?:#{SP} (OBSOLETE) )?                 # $4  = obsolete flag
-				#{SP} SYNTAX #{SP} (#{NUMERICOID})     # $5  = syntax numeric OID
-				(#{EXTENSIONS})                        # $6 = extensions
+				(#{NUMERICOID})                         # $1  = oid
+				(?:#{SP} NAME #{SP} (#{QDESCRS}) )?     # $2  = name
+				(?:#{SP} DESC #{SP} (#{QDSTRING}) )?    # $3  = description
+				(?:#{SP} (OBSOLETE) )?                  # $4  = obsolete flag
+				#{SP} SYNTAX #{SP} (#{NUMERICOID})      # $5  = syntax numeric OID
+				(#{EXTENSIONS})                         # $6 = extensions
 			#{WSP} #{RPAREN}
 		}x
 

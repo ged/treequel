@@ -52,7 +52,7 @@ describe Treequel::Schema::AttributeType do
 			%{EQUALITY objectIdentifierMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.38 )}
 
 		before( :each ) do
-			@attrtype = Treequel::Schema::AttributeType.parse( @schema, OBJECTCLASS_ATTRTYPE )
+			@attrtype = described_class.parse( @schema, OBJECTCLASS_ATTRTYPE )
 		end
 
 		it "knows what OID corresponds to the type" do
@@ -138,7 +138,7 @@ describe Treequel::Schema::AttributeType do
 			%{SYNTAX 1.3.6.1.4.1.1466.115.121.1.38 )}
 
 		before( :each ) do
-			@attrtype = Treequel::Schema::AttributeType.parse( @schema, DERIVED_ATTRTYPE )
+			@attrtype = described_class.parse( @schema, DERIVED_ATTRTYPE )
 		end
 
 		it "can fetch its superior type from its schema" do
@@ -184,7 +184,7 @@ describe Treequel::Schema::AttributeType do
 		DERIVED_NOSYN_ATTRTYPE = %{( 1.11.2.11.1 SUP aSuperType )}
 
 		before( :each ) do
-			@attrtype = Treequel::Schema::AttributeType.parse( @schema, DERIVED_NOSYN_ATTRTYPE )
+			@attrtype = described_class.parse( @schema, DERIVED_NOSYN_ATTRTYPE )
 		end
 
 		it "fetches its SYNTAX from its supertype" do
@@ -203,7 +203,7 @@ describe Treequel::Schema::AttributeType do
 		MULTINAME_ATTRIBUTETYPE = %{( 1.1.1.1 NAME ('firstName' 'secondName') )}
 
 		before( :each ) do
-			@attrtype = Treequel::Schema::AttributeType.parse( @schema, MULTINAME_ATTRIBUTETYPE )
+			@attrtype = described_class.parse( @schema, MULTINAME_ATTRIBUTETYPE )
 		end
 
 		it "knows what both names are" do
@@ -234,7 +234,7 @@ describe Treequel::Schema::AttributeType do
 			%{'This spec\\27s example, which includes a \\5c character.' )}
 
 		before( :each ) do
-			@attrtype = Treequel::Schema::AttributeType.parse( @schema, ESCAPED_DESC_ATTRIBUTETYPE )
+			@attrtype = described_class.parse( @schema, ESCAPED_DESC_ATTRIBUTETYPE )
 		end
 
 		it "unscapes the escaped characters" do
@@ -248,7 +248,7 @@ describe Treequel::Schema::AttributeType do
 		OBSOLETE_ATTRIBUTETYPE = %{( 1.1.1.1 OBSOLETE )}
 
 		before( :each ) do
-			@attrtype = Treequel::Schema::AttributeType.parse( @schema, OBSOLETE_ATTRIBUTETYPE )
+			@attrtype = described_class.parse( @schema, OBSOLETE_ATTRIBUTETYPE )
 		end
 
 		it "knows that it's obsolete" do
@@ -262,8 +262,7 @@ describe Treequel::Schema::AttributeType do
 		DIRECTORY_OPERATIONAL_ATTRIBUTETYPE = %{( 1.1.1.1 USAGE directoryOperation )}
 
 		before( :each ) do
-			@attrtype = Treequel::Schema::AttributeType.
-				parse( @schema, DIRECTORY_OPERATIONAL_ATTRIBUTETYPE )
+			@attrtype = described_class.parse( @schema, DIRECTORY_OPERATIONAL_ATTRIBUTETYPE )
 		end
 
 		it "knows that it's not a user-application attribute type" do
@@ -293,7 +292,7 @@ describe Treequel::Schema::AttributeType do
 		DISTRIBUTED_OPERATIONAL_ATTRIBUTETYPE = %{( 1.1.1.1 USAGE distributedOperation )}
 
 		before( :each ) do
-			@attrtype = Treequel::Schema::AttributeType.
+			@attrtype = described_class.
 				parse( @schema, DISTRIBUTED_OPERATIONAL_ATTRIBUTETYPE )
 		end
 
@@ -324,8 +323,7 @@ describe Treequel::Schema::AttributeType do
 		DSASPECIFIC_OPERATIONAL_ATTRIBUTETYPE = %{( 1.1.1.1 USAGE dSAOperation )}
 
 		before( :each ) do
-			@attrtype = Treequel::Schema::AttributeType.
-				parse( @schema, DSASPECIFIC_OPERATIONAL_ATTRIBUTETYPE )
+			@attrtype = described_class.parse( @schema, DSASPECIFIC_OPERATIONAL_ATTRIBUTETYPE )
 		end
 
 		it "knows that it's not a user-application attribute type" do
@@ -346,6 +344,85 @@ describe Treequel::Schema::AttributeType do
 
 		it "knows that it's a DSA-specific operational attribute type" do
 			@attrtype.should be_dsa_operational()
+		end
+
+	end
+
+	describe "parsed from the 'supportedLDAPVersion' attribute type" do
+
+		SUPPORTED_LDAP_VERSION_ATTRIBUTETYPE = %{( 1.3.6.1.4.1.1466.101.120.15 NAME } +
+			%{'supportedLDAPVersion' DESC 'Standard LDAP attribute type' SYNTAX } +
+			%{1.3.6.1.4.1.1466.115.121.1.27 USAGE dsaOperation X-ORIGIN 'RFC 2252' )}
+
+		before( :each ) do
+			@attrtype = described_class.parse( @schema, SUPPORTED_LDAP_VERSION_ATTRIBUTETYPE )
+		end
+
+		it "knows what OID corresponds to the type" do
+			@attrtype.oid.should == '1.3.6.1.4.1.1466.101.120.15'
+		end
+
+		it "knows what its NAME attribute is" do
+			@attrtype.name.should == :supportedLDAPVersion
+		end
+
+		it "knows what its DESC attribute is" do
+			@attrtype.desc.should == 'Standard LDAP attribute type'
+		end
+
+		it "knows it doesn't have a superior type" do
+			@attrtype.sup.should be_nil()
+		end
+
+		it "knows what the name of its equality matching rule is" do
+			@attrtype.eqmatch_oid.should be_nil()
+		end
+
+	end
+
+	describe "compatibility with malformed declarations: " do
+
+		LDAP_CHANGELOG_ATTRIBUTETYPE = %{
+			(   2.16.840.1.113730.3.1.35
+				NAME 'changelog'
+				DESC 'the distinguished name of the entry which contains
+				      the set of entries comprising this server's changelog'
+				EQUALITY distinguishedNameMatch
+				SYNTAX 'DN'
+			)
+		}
+
+		it "parses the 'changelog' attribute type from draft-good-ldap-changelog" do
+			attrtype = described_class.parse( @schema, LDAP_CHANGELOG_ATTRIBUTETYPE )
+
+			attrtype.should be_a( described_class )
+			attrtype.name.should == :changelog
+			attrtype.oid.should == '2.16.840.1.113730.3.1.35'
+			attrtype.desc.should == %{the distinguished name of the entry which contains } +
+				%{the set of entries comprising this server's changelog}
+		end
+
+		LDAP_CHANGELOG_CHANGENUMBER_ATTRIBUTETYPE = %{
+			( 2.16.840.1.113730.3.1.5
+				NAME 'changeNumber'
+				DESC 'a number which uniquely identifies a change made to a
+				      directory entry'
+				SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+				EQUALITY integerMatch
+				ORDERING integerOrderingMatch
+				SINGLE-VALUE
+			)
+		}
+
+		it "parses the 'changeNumber' attribute from draft-good-ldap-changelog" do
+			attrtype = described_class.parse( @schema, LDAP_CHANGELOG_CHANGENUMBER_ATTRIBUTETYPE )
+
+			attrtype.should be_a( described_class )
+			attrtype.name.should == :changeNumber
+			attrtype.oid.should == '2.16.840.1.113730.3.1.5'
+			attrtype.syntax_oid.should == '1.3.6.1.4.1.1466.115.121.1.27'
+			attrtype.desc.should == %{a number which uniquely identifies a change made to a } +
+			      %{directory entry}
 		end
 
 	end

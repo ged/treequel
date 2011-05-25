@@ -37,6 +37,24 @@ class Treequel::Schema
 	###	C L A S S   M E T H O D S
 	#################################################################
 
+	@strict_parse_mode = false
+
+	### Set the strict-parsing +flag+. Setting this to a +true+ value causes schema-parsing
+	### errors to be propagated to the caller instead of handled by the constructor, which is
+	### the default behavior.
+	### @param [boolean] flag  the new flag value
+	def self::strict_parse_mode=( newval )
+		@strict_parse_mode = newval ? true : false
+	end
+
+
+	### Test whether or not strict-parsing mode is in effect.
+	### @return [boolean]  false if parse errors will be caught
+	def self::strict_parse_mode?
+		return @strict_parse_mode ? true : false
+	end
+
+
 	### Parse the given +oidstring+ into an Array of OIDs, with Strings for numeric OIDs and
 	### Symbols for aliases.
 	def self::parse_oids( oidstring )
@@ -162,11 +180,11 @@ class Treequel::Schema
 	### keys "objectClasses", "ldapSyntaxes", "matchingRuleUse", "attributeTypes", and 
 	### "matchingRules".
 	def initialize( hash )
-		@object_classes     = self.parse_objectclasses( hash['objectClasses'] )
-		@attribute_types    = self.parse_attribute_types( hash['attributeTypes'] )
-		@ldap_syntaxes      = self.parse_ldap_syntaxes( hash['ldapSyntaxes'] )
-		@matching_rules     = self.parse_matching_rules( hash['matchingRules'] )
-		@matching_rule_uses = self.parse_matching_rule_uses( hash['matchingRuleUse'] )
+		@object_classes     = self.parse_objectclasses( hash['objectClasses'] || [] )
+		@attribute_types    = self.parse_attribute_types( hash['attributeTypes'] || [] )
+		@ldap_syntaxes      = self.parse_ldap_syntaxes( hash['ldapSyntaxes'] || [] )
+		@matching_rules     = self.parse_matching_rules( hash['matchingRules'] || [] )
+		@matching_rule_uses = self.parse_matching_rule_uses( hash['matchingRuleUse'] || [] )
 	end
 
 
@@ -237,11 +255,17 @@ class Treequel::Schema
 	### has any).
 	def parse_objectclasses( descriptions )
 		return descriptions.inject( Treequel::Schema::Table.new ) do |table, desc|
-			oc = Treequel::Schema::ObjectClass.parse( self, desc ) or
-				raise Treequel::Error, "couldn't create an objectClass from %p" % [ desc ]
-
-			table[ oc.oid ] = oc
-			oc.names.inject( table ) {|h, name| h[name] = oc; h }
+			begin
+				oc = Treequel::Schema::ObjectClass.parse( self, desc )
+				table[ oc.oid ] = oc
+				oc.names.inject( table ) {|h, name| h[name] = oc; h }
+			rescue Treequel::ParseError => err
+				if self.class.strict_parse_mode?
+					raise
+				else
+					self.log.warn( err.message )
+				end
+			end
 
 			table
 		end
@@ -253,11 +277,17 @@ class Treequel::Schema
 	### (if it has any).
 	def parse_attribute_types( descriptions )
 		return descriptions.inject( Treequel::Schema::Table.new ) do |table, desc|
-			attrtype = Treequel::Schema::AttributeType.parse( self, desc ) or
-				raise Treequel::Error, "couldn't create an attributeType from %p" % [ desc ]
-
-			table[ attrtype.oid ] = attrtype
-			attrtype.names.inject( table ) {|h, name| h[name] = attrtype; h }
+			begin
+				attrtype = Treequel::Schema::AttributeType.parse( self, desc )
+				table[ attrtype.oid ] = attrtype
+				attrtype.names.inject( table ) {|h, name| h[name] = attrtype; h }
+			rescue Treequel::ParseError => err
+				if self.class.strict_parse_mode?
+					raise
+				else
+					self.log.warn( err.message )
+				end
+			end
 
 			table
 		end
@@ -269,10 +299,17 @@ class Treequel::Schema
 	def parse_ldap_syntaxes( descriptions )
 		descriptions ||= []
 		return descriptions.inject( Treequel::Schema::Table.new ) do |table, desc|
-			syntax = Treequel::Schema::LDAPSyntax.parse( self, desc ) or
-				raise Treequel::Error, "couldn't create an LDAPSyntax from %p" % [ desc ]
+			begin
+				syntax = Treequel::Schema::LDAPSyntax.parse( self, desc )
+				table[ syntax.oid ] = syntax
+			rescue Treequel::ParseError => err
+				if self.class.strict_parse_mode?
+					raise
+				else
+					self.log.warn( err.message )
+				end
+			end
 
-			table[ syntax.oid ] = syntax
 			table
 		end
 	end
@@ -284,11 +321,17 @@ class Treequel::Schema
 	def parse_matching_rules( descriptions )
 		descriptions ||= []
 		return descriptions.inject( Treequel::Schema::Table.new ) do |table, desc|
-			rule = Treequel::Schema::MatchingRule.parse( self, desc ) or
-				raise Treequel::Error, "couldn't create an matchingRule from %p" % [ desc ]
-
-			table[ rule.oid ] = rule
-			rule.names.inject( table ) {|h, name| h[name] = rule; h }
+			begin
+				rule = Treequel::Schema::MatchingRule.parse( self, desc )
+				table[ rule.oid ] = rule
+				rule.names.inject( table ) {|h, name| h[name] = rule; h }
+			rescue Treequel::ParseError => err
+				if self.class.strict_parse_mode?
+					raise
+				else
+					self.log.warn( err.message )
+				end
+			end
 
 			table
 		end
@@ -301,11 +344,17 @@ class Treequel::Schema
 	def parse_matching_rule_uses( descriptions )
 		descriptions ||= []
 		return descriptions.inject( Treequel::Schema::Table.new ) do |table, desc|
-			ruleuse = Treequel::Schema::MatchingRuleUse.parse( self, desc ) or
-				raise Treequel::Error, "couldn't create an matchingRuleUse from %p" % [ desc ]
-
-			table[ ruleuse.oid ] = ruleuse
-			ruleuse.names.inject( table ) {|h, name| h[name] = ruleuse; h }
+			begin
+				ruleuse = Treequel::Schema::MatchingRuleUse.parse( self, desc )
+				table[ ruleuse.oid ] = ruleuse
+				ruleuse.names.inject( table ) {|h, name| h[name] = ruleuse; h }
+			rescue Treequel::ParseError => err
+				if self.class.strict_parse_mode?
+					raise
+				else
+					self.log.warn( err.message )
+				end
+			end
 
 			table
 		end

@@ -59,12 +59,24 @@ class Treequel::Schema::AttributeType
 
 	### Parse an AttributeType entry from a attributeType description from a schema.
 	def self::parse( schema, description )
-		unless match = ( LDAP_ATTRIBUTE_TYPE_DESCRIPTION.match(description) )
+		oid, names, desc, obsolete, sup_oid, eqmatch_oid, ordmatch_oid, submatch_oid, syntax_oid,
+			single, collective, nousermod, usagetype, extensions = nil
+
+		case description.gsub( /[\n\t]+/, ' ' ).squeeze( ' ' )
+		when LDAP_ATTRIBUTE_TYPE_DESCRIPTION
+			oid, names, desc, obsolete, sup_oid, eqmatch_oid, ordmatch_oid, submatch_oid, syntax_oid,
+				single, collective, nousermod, usagetype, extensions = $~.captures
+		when LDAP_UNESCAPE_SQUOTE_ATTRIBUTE_TYPE_DESCRIPTION
+			oid, names, desc, obsolete, sup_oid, eqmatch_oid, ordmatch_oid, submatch_oid, syntax_oid,
+				single, collective, nousermod, usagetype, extensions = $~.captures
+			self.handle_malformed_parse( "unescaped single quote in DESC #{desc}", description )
+		when LDAP_MISORDERED_SYNTAX_ATTRIBUTE_TYPE_DESCRIPTION
+			oid, names, desc, obsolete, sup_oid, syntax_oid, eqmatch_oid, ordmatch_oid, submatch_oid,
+				single, collective, nousermod, usagetype, extensions = $~.captures
+			self.handle_malformed_parse( "misordered SYNTAX #{syntax_oid}", description )
+		else
 			raise Treequel::ParseError, "failed to parse attributeType from %p" % [ description ]
 		end
-
-		oid, names, desc, obsolete, sup_oid, eqmatch_oid, ordmatch_oid, submatch_oid, syntax_oid,
-			single, collective, nousermod, usagetype, extensions = match.captures
 
 		# Normalize the attributes
 		names = Treequel::Schema.parse_names( names )
@@ -92,6 +104,18 @@ class Treequel::Schema::AttributeType
 			:extensions      => extensions
 		  )
 	end
+
+
+	### Handle the parse of an attributeType that matches one of the non-standard attributeType
+	### definitions found in several RFCs. If Treequel::Schema.strict_parse_mode? is +true+,
+	### this method will raise an exception.
+	def self::handle_malformed_parse( message, attr_desc )
+		raise Treequel::ParseError, "Malformed attributeType: %s: %p" % [ message, attr_desc ] if
+			Treequel::Schema.strict_parse_mode?
+		Treequel.log.info "Working around malformed attributeType: %s: %p" % [ message, attr_desc ]
+	end
+
+
 
 
 	#############################################################

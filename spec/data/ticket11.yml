@@ -1,0 +1,17 @@
+---
+attributeTypes: 
+- ( 1.3.6.1.4.1.1466.101.120.15 NAME 'supportedLDAPVersion' DESC 'Standard LDAP attribute type' SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 USAGE dsaOperation X-ORIGIN 'RFC 2252' )
+- ( 1.3.6.1.4.1.1466.101.120.6 NAME 'altServer' DESC 'Standard LDAP attribute type' SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 USAGE dsaOperation X-ORIGIN 'RFC 2252' )
+- ( 1.3.6.1.1.4 NAME 'vendorName'  EQUALITY 1.3.6.1.4.1.1466.109.114.1 SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE NO-USER-MODIFICATION USAGE dsaOperation X-ORIGIN 'RFC 3045' )
+- ( 1.3.6.1.4.1.42.2.27.9.1.800 NAME 'supportedSSLCiphers' DESC 'List of ciphers supported by SSL lib' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 USAGE dsaOperation X-ORIGIN 'Sun Directory Server' )
+- ( 1.3.6.1.1.5 NAME 'vendorVersion'  EQUALITY 1.3.6.1.4.1.1466.109.114.1 SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE NO-USER-MODIFICATION USAGE dsaOperation X-ORIGIN 'RFC 3045' )
+- ( 1.3.6.1.4.1.1466.101.120.14 NAME 'supportedSASLMechanisms' DESC 'Standard LDAP attribute type' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 USAGE dsaOperation X-ORIGIN 'RFC 2252' )
+- ( 1.3.6.1.4.1.1466.101.120.7 NAME 'supportedExtension' DESC 'Standard LDAP attribute type' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 USAGE dsaOperation X-ORIGIN 'RFC 2252' )
+- ( 1.3.6.1.4.1.1466.101.120.13 NAME 'supportedControl' DESC 'Standard LDAP attribute type' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 USAGE dsaOperation X-ORIGIN 'RFC 2252' )
+- ( 1.3.6.1.4.1.1466.101.120.5 NAME 'namingContexts' DESC 'Standard LDAP attribute type' SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 USAGE dsaOperation X-ORIGIN 'RFC 2252' )
+
+matchingRules:
+- ( 1.3.6.1.4.1.42.2.27.9.4.0.3 NAME 'caseExactOrderingMatch-2.16.840.1.113730.3.3.2.0.3' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+- ( 1.3.6.1.4.1.42.2.27.9.4.0.3.6 NAME 'caseExactSubstringMatch-2.16.840.1.113730.3.3.2.0.3' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+- ( 1.3.6.1.4.1.42.2.27.9.4.34.3 NAME 'caseExactOrderingMatch-2.16.840.1.113730.3.3.2.11.3' DESC 'en' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+- ( 1.3.6.1.4.1.42.2.27.9.4.34.3.6 NAME 'caseExactSubstringMatch-2.16.840.1.113730.3.3.2.11.3' DESC 'en' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
