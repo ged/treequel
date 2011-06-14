@@ -395,8 +395,10 @@ class Treequel::Model < Treequel::Branch
 			raise Treequel::BeforeHookFailed, :save
 
 		if self.exists?
+			self.log.debug "  already exists, so updating."
 			self.update( mods )
 		else
+			self.log.debug "  doesn't exist, so creating."
 			self.create( mods )
 		end
 
