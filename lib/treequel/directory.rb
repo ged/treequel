@@ -147,6 +147,18 @@ class Treequel::Directory
 	end
 
 
+	### Copy constructor -- the duplicate should have a distinct connection, bound user, 
+	### and should have a distinct copy of the +original+'s registered controls.
+	def initialize_copy( original )
+		@conn       = nil
+		@bound_user = nil
+
+		@object_conversions    = @object_conversions.dup
+		@attribute_conversions = @attribute_conversions.dup
+		@registered_controls   = @registered_controls.dup
+	end
+
+
 	######
 	public
 	######
