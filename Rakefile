@@ -21,18 +21,18 @@ hoespec = Hoe.spec 'treequel' do
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
 
-	self.extra_deps.push *{
-		'ruby-ldap' => '~> 0.9',
-		'diff-lcs'  => '~> 1.1',
-	}
-	self.extra_dev_deps.push *{
-		'rspec'         => '~> 2.4',
-		'ruby-termios'  => '~> 0.9',
-		'ruby-terminfo' => '~> 0.1',
-		'columnize'     => '~> 0.3',
-		'sysexits'      => '~> 1.0',
-		'sequel'        => '~> 3.20',
-	}
+	if RUBY_PLATFORM == 'java'
+		self.dependency 'jruby-ldap', '~> 0.0.1'
+	else
+		self.dependency 'ruby-ldap', '~> 0.9'
+	end
+	self.dependency 'diff-lcs', '~> 1.1'
+	self.dependency 'rspec', '~> 2.4', :developer
+	self.dependency 'ruby-termios', '~> 0.9', :developer
+	self.dependency 'ruby-terminfo', '~> 0.1', :developer
+	self.dependency 'columnize', '~> 0.3', :developer
+	self.dependency 'sysexits', '~> 1.0', :developer
+	self.dependency 'sequel', '~> 3.20', :developer
 
 	self.spec_extras[:licenses] = ["BSD"]
 	self.spec_extras[:post_install_message] = [

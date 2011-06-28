@@ -75,7 +75,7 @@ describe Treequel::TimeExtensions do
 	before( :all ) do
 		# Make the local timezone PDT so offsets show up correctly
 		@real_tz = ENV['TZ']
-		ENV['TZ'] = ':PST8PDT'
+		ENV['TZ'] = 'US/Pacific'
 	end
 
 	before( :each ) do
