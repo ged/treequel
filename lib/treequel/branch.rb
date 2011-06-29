@@ -266,7 +266,34 @@ class Treequel::Branch
 	### Return the entry's DN as an RFC1781-style UFN (User-Friendly Name).
 	### @return [String]
 	def to_ufn
-		return LDAP.dn2ufn( self.dn )
+		if LDAP.respond_to?( :dn2ufn )
+			return LDAP.dn2ufn( self.dn )
+
+		# An implementation for LDAP libraries with no
+		# dn2ufn
+		else
+			ufn = ''
+			tuples = self.split_dn
+
+			# Separate the trailing domainComponents
+			dcs = []
+			dcs << tuples.pop while tuples.last =~ /^dc\s*=/i
+
+			# Append the non-dc tuples with their attributes stripped first
+			ufn << tuples.collect do |rdn|
+				rdn.
+					gsub(/\b#{ATTRIBUTE_TYPE}\s*=/, '').
+					gsub(/\s*\+\s*/, ' + ')
+			end.join( ', ' )
+
+			# Now append the DCs joined with dots
+			unless dcs.empty?
+				ufn << ', '
+				ufn << dcs.reverse.map {|rdn| rdn.sub(/dc\s*=\s*/i, '') }.join( '.' )
+			end
+
+			return ufn
+		end
 	end
 
 

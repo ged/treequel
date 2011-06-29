@@ -636,7 +636,14 @@ describe Treequel::Branch do
 		end
 
 
-		it "knows how to represent its DN as an RFC1781-style UFN" do
+		it "knows how to represent its DN as an RFC1781-style UFN", :if => LDAP.respond_to?(:dn2ufn) do
+			@branch.to_ufn.should =~ /Hosts, acme\.com/i
+		end
+
+
+		it "knows how to represent its DN as a UFN even if the LDAP library doesn't " +
+		   "define #dn2ufn" do
+		   	LDAP.stub( :respond_to? ).with( :dn2ufn ).and_return( false )
 			@branch.to_ufn.should =~ /Hosts, acme\.com/i
 		end
 
