@@ -161,8 +161,10 @@ module Treequel::SpecHelpers
 end
 
 
-### Mock with Rspec
-Rspec.configure do |c|
+abort "You need a version of RSpec >= 2.6.0" unless defined?( RSpec )
+
+### Mock with RSpec
+RSpec.configure do |c|
 	include Treequel::TestConstants
 
 	c.mock_with :rspec
@@ -175,6 +177,8 @@ Rspec.configure do |c|
 
 	c.filter_run_excluding( :ruby_1_8_only => true ) if
 		Treequel::SpecHelpers.vvec( RUBY_VERSION ) >= Treequel::SpecHelpers.vvec('1.9.1')
+	c.filter_run_excluding( :mri_only => true ) if
+		defined?( RUBY_ENGINE ) && RUBY_ENGINE != 'ruby'
 end
 
 # vim: set nosta noet ts=4 sw=4:

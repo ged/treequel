@@ -150,7 +150,8 @@ describe Treequel::Schema do
 		end
 
 
-		it "can parse the schema structure returned from LDAP::Conn#schema even under $SAFE >= 1" do
+		it "can parse the schema structure returned from LDAP::Conn#schema even under $SAFE >= 1",
+			:mri_only => true do
 			schema = nil
 			Thread.new do
 				Thread.current.abort_on_exception = true
