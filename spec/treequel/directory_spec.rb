@@ -191,7 +191,6 @@ describe Treequel::Directory do
 			@dir.should be_bound()
 		end
 
-
 		it "can be unbound, which replaces the bound connection with a duplicate that is unbound" do
 			dupconn = mock( "duplicate connection" )
 			@conn.should_receive( :bound? ).and_return( true )
@@ -202,7 +201,6 @@ describe Treequel::Directory do
 
 			@dir.conn.should == dupconn
 		end
-
 
 		it "doesn't do anything if told to unbind but the current connection is not bound" do
 			@conn.should_receive( :bound? ).and_return( false )
@@ -384,6 +382,10 @@ describe Treequel::Directory do
 			}.to raise_exception( RuntimeError, /couldn't reconnect/i )
 		end
 
+
+		it "doesn't retain its connection when duplicated" do
+			@dir.dup.conn.should_not equal( @dir.conn )
+		end
 
 		describe "and a custom search results class" do
 
