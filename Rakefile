@@ -8,7 +8,6 @@ end
 
 Hoe.plugin :mercurial
 Hoe.plugin :signing
-Hoe.plugin :yard
 Hoe.plugin :manualgen
 
 Hoe.plugins.delete :rubyforge
