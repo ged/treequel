@@ -366,6 +366,15 @@ class Treequel::Branchset
 	end
 
 
+	### Return a clone of the receiving Branchset that will fetch any operational attributes
+	### in addition to its own. This is exactly equivalent to:
+	###
+	###    branchset.select( :+ ).
+	def with_operational_attributes
+		return self.select( :+ )
+	end
+
+
 	### If called with a +new_limit+, returns a clone of the receiving Branchset that will
 	### fetch (at most) +new_limit+ Branches. If no +new_limit+ argument is specified,
 	### returns the Branchset's current limit. A limit of '0' means that all Branches

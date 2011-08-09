@@ -418,6 +418,15 @@ describe Treequel::Branchset do
 			newset.base_dn.should == TEST_SUBHOSTS_DN
 		end
 
+
+		#
+		# with_operational_attributes
+		#
+		it "can create a new branchset cloned from itself with operational attributes selected" do
+			newset = @branchset.with_operational_attributes
+			newset.options[:select].should include( :+ )
+		end
+
 	end
 
 
