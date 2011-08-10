@@ -370,6 +370,9 @@ class Treequel::Model < Treequel::Branch
 		self.errors.add( :objectClass, 'must have at least one' ) if self.object_classes.empty?
 
 		super( options )
+		self.log.debug "Validations failed:\s  %s" % [ self.errors.full_messages.join("\n  ") ] if
+			self.errors.count.nonzero?
+
 		self.after_validation
 	end
 
