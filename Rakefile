@@ -26,7 +26,7 @@ hoespec = Hoe.spec 'treequel' do
 		self.dependency 'ruby-ldap', '~> 0.9'
 	end
 	self.dependency 'diff-lcs', '~> 1.1'
-	self.dependency 'rspec', ['>= 2.6.0', '< 3.0.0'], :developer
+	self.dependency 'rspec', '~> 2.6.0', :developer
 	self.dependency 'ruby-termios', '~> 0.9', :developer
 	self.dependency 'ruby-terminfo', '~> 0.1', :developer
 	self.dependency 'columnize', '~> 0.3', :developer
