@@ -5,6 +5,10 @@ require 'abbrev'
 require 'trollop'
 require 'highline'
 require 'shellwords'
+
+# Work around MacOS X's vendored 'sysexits' that does the same thing,
+# but with a different API
+gem 'sysexits'
 require 'sysexits'
 
 require 'treequel'
