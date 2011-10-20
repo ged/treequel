@@ -14,8 +14,9 @@ Hoe.plugins.delete :rubyforge
 
 hoespec = Hoe.spec 'treequel' do
 	self.name = 'treequel'
-	self.readme_file = 'README.md'
-	self.history_file = 'History.md'
+	self.readme_file = 'README.rdoc'
+	self.history_file = 'History.rdoc'
+	self.extra_rdoc_files = Rake::FileList[ '*.rdoc' ]
 
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
@@ -46,12 +47,12 @@ hoespec = Hoe.spec 'treequel' do
 		"You can install them automatically if you use the --development flag when",
 		"installing Treequel."
 	  ].join( "\n" )
-	self.spec_extras[:signing_key] = '/Volumes/Keys/ged-private_gem_key.pem'
 
 	self.require_ruby_version( '>=1.8.7' )
 
 	self.rspec_options += ['-cfd'] if self.respond_to?( :rspec_options= )
 	self.hg_sign_tags = true if self.respond_to?( :hg_sign_tags= )
+	self.check_history_on_release = true if self.respond_to?( :check_history_on_release= )
 	self.manual_source_dir = 'src' if self.respond_to?( :manual_source_dir= )
 
 	self.rdoc_locations << "deveiate:/usr/local/www/public/code/#{remote_rdoc_dir}"
@@ -59,6 +60,12 @@ end
 
 ENV['VERSION'] ||= hoespec.spec.version.to_s
 
-# Tests use RSpec
-task :test => :spec
+# Ensure the specs pass before checking in
+task 'hg:precheckin' => [:check_history, :spec]
+
+desc "Build a coverage report"
+task :coverage do
+	ENV["COVERAGE"] = 'yes'
+	Rake::Task[:spec].invoke
+end
 

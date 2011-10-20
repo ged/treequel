@@ -1,4 +1,28 @@
-## 1.5.3 [2011-04-07] Michael Granger <ged@FaerieMUD.org>
+== v1.6.0 [2011-10-06] Michael Granger <ged@FaerieMUD.org>
+
+- Adding workaround for vendored "sysexits" library under MacOX X 10.7
+- Add a log message to Treequel::Model#validate if some validations
+  fail.
+- Added convenience mutator to Treequel::Branchset for selecting
+  operational attributes.
+- De-Yard the API docs
+- Some fixes for JRuby + jruby-ldap
+- Use a modern timezone for the Time tests
+- Add a copy constructor to Treequel::Directory to avoid two directory
+  objects sharing the same connection
+- Adding support for Sun OpenDS schema artifacts (fixes #11)
+  * various workarounds for malformed objectClass and attributeType
+    declarations
+  * Regex encoding fixes for 1.9.2
+  * Treequel::Schema.strict_parse_mode flag for enabling the old
+    (strict) parsing behavior.
+
+
+== v1.5.3 [2011-04-07] Michael Granger <ged@FaerieMUD.org>
+
+- Added signature for changeset 1f396aca7d8b
+
+== v1.5.3 [2011-04-07] Michael Granger <ged@FaerieMUD.org>
 
 * Don't pollute the gemspec with Yard-only options
 * Adding a --no-tls flag to the treequel shell
@@ -8,7 +32,7 @@
 * Include regular attributes (in addition to operational ones) in the
   root_dse, as AD stores everything in regular attributes.
 
-## 1.5.2 [2011-03-17] Michael Granger <ged@FaerieMUD.org>
+== v1.5.2 [2011-03-17] Michael Granger <ged@FaerieMUD.org>
 
 * Manual updates
 * Fixing bad time tests uncovered by the DST switch
@@ -16,13 +40,13 @@
 * Fix for Github issue [ged/treequel GH-1] (closes #7)
 
 
-## 1.5.1 [2011-02-25] Michael Granger <ged@FaerieMUD.org>
+== v1.5.1 [2011-02-25] Michael Granger <ged@FaerieMUD.org>
 
 * Adding handling of operational attributes to Treequel::Model schema
   validations, updated the subschema test data to a recent OpenLDAP.
 
 
-## 1.5.0 [2011-02-24] Michael Granger <ged@FaerieMUD.org>
+== v1.5.0 [2011-02-24] Michael Granger <ged@FaerieMUD.org>
 
 * Make Treequel::Model::ObjectClass Enumerable
 * Add a default directory to Treequel::Model for creating and
@@ -36,26 +60,26 @@
 * Make dependencies not so pessimistic.
 
 
-## 1.4.4 [2011-02-10] Michael Granger <ged@FaerieMUD.org>
+== v1.4.4 [2011-02-10] Michael Granger <ged@FaerieMUD.org>
 
 * Add the .gemtest and Manifest to the manifest, bump patch version.
 * Make Treequel testable via Gem Testers
 * Hack to work around the pointer-mismanagement of LDAP::Mod
 
 
-## 1.4.3 [2011-02-10] Michael Granger <ged@FaerieMUD.org>
+== v1.4.3 [2011-02-10] Michael Granger <ged@FaerieMUD.org>
 
 * Added gem-testers support
 * Added a monkeypatch to work around a memory-corruption issue in 
   ruby-ldap.
 
 
-## 1.4.2 [2011-02-07] Michael Granger <ged@FaerieMUD.org>
+== v1.4.2 [2011-02-07] Michael Granger <ged@FaerieMUD.org>
 
 Fixed missing DEFAULT_EDITOR constant.
 
 
-## 1.4.1 [2011-02-02] Michael Granger <ged@FaerieMUD.org>
+== v1.4.1 [2011-02-02] Michael Granger <ged@FaerieMUD.org>
 
 More Treequel shell cleanup based on feedback from Michael Hix.
 
@@ -63,13 +87,13 @@ More Treequel shell cleanup based on feedback from Michael Hix.
 * Consistently verify RDN arguments where they're used.
 
 
-## 1.4.1 [2011-02-02] Michael Granger <ged@FaerieMUD.org>
+== v1.4.1 [2011-02-02] Michael Granger <ged@FaerieMUD.org>
 
 Bugfix:
 
 * Fixed result error as fatal exception in Treequel shell
 
-## 1.4.0 [2011-01-31] Michael Granger <ged@FaerieMUD.org>
+== v1.4.0 [2011-01-31] Michael Granger <ged@FaerieMUD.org>
 
 Enhancements:
 
@@ -82,19 +106,19 @@ Bugfixes:
 * Escape filter metacharacters in simple filter components
 
 
-## 1.3.2
+== v1.3.2
 
 Bugfix:
 
 * Ensure the entry hash that's passed to Treequel::Model#apply_applicable_mixins isn't modified; fixes a bug when modifying a new unsaved Model object.
 
 
-## 1.3.1 [2011-01-17] Michael Granger <ged@FaerieMUD.org>
+== v1.3.1 [2011-01-17] Michael Granger <ged@FaerieMUD.org>
 
 Fixed a bug that caused DN attributes in objects created via Treequel::Model.new_from_entry to be doubled.
 
 
-## 1.3.0 [2011-01-13] Michael Granger <ged@FaerieMUD.org>
+== v1.3.0 [2011-01-13] Michael Granger <ged@FaerieMUD.org>
 
 Enhancements:
 
@@ -137,8 +161,8 @@ Bugfixes:
 * Simplified and removed duplication from the logging code
 * Fixed a bug in the proxy method for single-letter attribute names.
 * Monkeypatched Date for LDAP time type conversions
-* Change the return values of unset attributes to distinguish between SINGLE and non-SINGLE 
-  attributes
+* Change the return values of unset attributes to distinguish between 
+  SINGLE and non-SINGLE attributes
 * Treequel::Branch
   - Check for explicit nil DN in .new
   - Check for nil parent_dn in #parent
@@ -146,14 +170,24 @@ Bugfixes:
   - Don't cache attempts to fetch invalid attributes
 
 
-## 1.2.2 [2010-12-14] Michael Granger <ged@FaerieMUD.org>
+== v1.2.2 [2010-12-14] Michael Granger <ged@FaerieMUD.org>
 
 Bugfixes for Treequel::Branch, Treequel::Model.
 
 
-## 1.2.1 [2010-12-13] Michael Granger <ged@FaerieMUD.org>
+== v1.2.1 [2010-12-13] Michael Granger <ged@FaerieMUD.org>
 
-Converted to Hoe.
+- Converted to Hoe.
 
-Bugfix: objectClasses listed in Treequel::Model::ObjectClass.model_objectclasses can be Strings, too.
+Bugfix:
 
+- objectClasses listed in Treequel::Model::ObjectClass.model_objectclasses
+  can be Strings, too.
+
+== v1.2.0 [2010-11-30] Michael Granger <ged@FaerieMUD.org>
+
+- Added hash-key conversion so Branches can be constructed with
+  Symbol-key hashargs.
+- Adding 'Treequel::Branchset#from' mutator for changing the base DN.
+- Fixed treequel shell's cp to support relative and absolute DNs
+- Converted to RSpec 2.0
