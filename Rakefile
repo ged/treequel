@@ -61,7 +61,7 @@ end
 ENV['VERSION'] ||= hoespec.spec.version.to_s
 
 # Ensure the specs pass before checking in
-task 'hg:precheckin' => [:check_history, :spec]
+task 'hg:precheckin' => [:check_history, :check_manifest, :spec]
 
 desc "Build a coverage report"
 task :coverage do
