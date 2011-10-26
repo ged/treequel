@@ -39,8 +39,11 @@ lib/treequel/schema/objectclass.rb
 lib/treequel/schema/table.rb
 lib/treequel/sequel_integration.rb
 lib/treequel/utils.rb
+spec/data/ad_schema.yml
 spec/data/objectClasses.yml
+spec/data/opends.yml
 spec/data/schema.yml
+spec/data/ticket11.yml
 spec/lib/constants.rb
 spec/lib/helpers.rb
 spec/lib/matchers.rb

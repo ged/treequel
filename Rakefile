@@ -13,7 +13,6 @@ Hoe.plugin :manualgen
 Hoe.plugins.delete :rubyforge
 
 hoespec = Hoe.spec 'treequel' do
-	self.name = 'treequel'
 	self.readme_file = 'README.rdoc'
 	self.history_file = 'History.rdoc'
 	self.extra_rdoc_files = Rake::FileList[ '*.rdoc' ]
@@ -50,7 +49,6 @@ hoespec = Hoe.spec 'treequel' do
 
 	self.require_ruby_version( '>=1.8.7' )
 
-	self.rspec_options += ['-cfd'] if self.respond_to?( :rspec_options= )
 	self.hg_sign_tags = true if self.respond_to?( :hg_sign_tags= )
 	self.check_history_on_release = true if self.respond_to?( :check_history_on_release= )
 	self.manual_source_dir = 'src' if self.respond_to?( :manual_source_dir= )
@@ -61,11 +59,37 @@ end
 ENV['VERSION'] ||= hoespec.spec.version.to_s
 
 # Ensure the specs pass before checking in
-task 'hg:precheckin' => [:check_history, :check_manifest, :spec]
+task 'hg:precheckin' => [ :check_history, :check_manifest, :spec ]
+
+### Make the ChangeLog update if the repo has changed since it was last built
+file '.hg/branch'
+file 'ChangeLog' => '.hg/branch' do |task|
+	$stderr.puts "Updating the changelog..."
+	content = make_changelog()
+	File.open( task.name, 'w', 0644 ) do |fh|
+		fh.print( content )
+	end
+end
+
+# Rebuild the ChangeLog immediately before release
+task :prerelease => 'ChangeLog'
+
 
 desc "Build a coverage report"
 task :coverage do
 	ENV["COVERAGE"] = 'yes'
 	Rake::Task[:spec].invoke
 end
+
+if Rake::Task.task_defined?( '.gemtest' )
+	Rake::Task['.gemtest'].clear
+	task '.gemtest' do
+		$stderr.puts "Not including a .gemtest until I'm confident the test suite is idempotent."
+	end
+end
+
+
+# Add admin app testing directories to the clobber list
+CLOBBER.include( 'ChangeLog' )
+
 
