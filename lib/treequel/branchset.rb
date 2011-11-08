@@ -224,17 +224,24 @@ class Treequel::Branchset
 	end
 
 
-	### Fetch the first entry which matches the current criteria and return it as an instance of
-	### the object that is set as the +branch+ (e.g., Treequel::Branch).
-	def first
-		self.branch.search( self.scope, self.filter,
+	### Fetch the first +n+ entries which matches the current criteria and return them as 
+	### instances of the object that is set as the +branch+ (e.g., Treequel::Branch). If +n+ is
+	### +nil+, returns just the first object in the Array.
+	def first( n=nil )
+		results = self.branch.search( self.scope, self.filter,
 			:selectattrs => self.select,
 			:timeout => self.timeout,
 			# :sortby => self.order,
 			:client_controls => self.get_client_controls,
 			:server_controls => self.get_server_controls,
-			:limit => 1
-		  ).first
+			:limit => n || 1
+		  )
+
+		if n
+			return results.first( n )
+		else
+			return results.first
+		end
 	end
 
 
@@ -321,6 +328,14 @@ class Treequel::Branchset
 
 		self.log.debug "cloning %p with alternative filterspec: %p" % [ self, filterspec ]
 		return self.clone( :filter => (self.filter | newfilter) )
+	end
+
+
+	### Add a clause made from a negated +filterspec+ to an existing filter.
+	def not( *filterspec )
+		self.log.debug "cloning %p with negated filterspec: %p" % [ self, filterspec ]
+		notfilter = Treequel::Filter.new( :not, filterspec )
+		return self.clone( :filter => self.filter + notfilter )
 	end
 
 

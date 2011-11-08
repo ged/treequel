@@ -213,6 +213,16 @@ describe Treequel::Branchset do
 			@branchset.first.should == :first_matching_branch
 		end
 
+		it "performs a search using the default filter, scope, and a limit of 5 when the first " +
+		   "five records are requested" do
+			params = @params.merge( :limit => 5 )
+			@branch.should_receive( :search ).
+				with( Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter, params ).
+				and_return( [:branch1, :branch2, :branch3, :branch4, :branch5] )
+
+			@branchset.first( 5 ).should == [:branch1, :branch2, :branch3, :branch4, :branch5]
+		end
+
 		it "creates a new branchset cloned from itself with the specified filter" do
 			newset = @branchset.filter( :clothing, 'pants' )
 			newset.filter_string.should == '(clothing=pants)'
@@ -235,6 +245,19 @@ describe Treequel::Branchset do
 				@branchset.or( :clothing => 'shirt' )
 			}.to raise_exception( Treequel::ExpressionError, /no existing filter/i )
 		end
+
+
+		#
+		# not
+		#
+		it "can create a new branchset cloned from itself with a NOT clause added to an " +
+		   "existing filter" do
+			pantset = @branchset.filter( :clothing => 'pants' )
+			notsmallset = pantset.not( :size => 'small' )
+
+			notsmallset.filter_string.should == '(&(clothing=pants)(!(size=small)))'
+		end
+
 
 		# 
 		# #scope
@@ -426,6 +449,7 @@ describe Treequel::Branchset do
 			newset = @branchset.with_operational_attributes
 			newset.options[:select].should include( :+ )
 		end
+
 
 	end
 
