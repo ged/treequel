@@ -17,6 +17,9 @@ hoespec = Hoe.spec 'treequel' do
 	self.history_file = 'History.rdoc'
 	self.extra_rdoc_files = Rake::FileList[ '*.rdoc' ]
 
+	self.need_tar = true
+	self.need_zip = true
+
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
 
