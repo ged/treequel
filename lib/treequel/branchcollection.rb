@@ -44,7 +44,6 @@ class Treequel::BranchCollection
 	### Create a delegator that will return an instance of the receiver
 	### created with the results of iterating over the branchsets and calling
 	### the delegated method.
-	### @param [Array<Symbol>] symbols  The methods to define
 	def self::def_cloning_delegators( *symbols )
 		symbols.each do |methname|
 			# Create the method body
@@ -72,9 +71,8 @@ class Treequel::BranchCollection
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new Treequel::BranchCollection that will operate on the given +branchsets+.
-	### @param [Array<Treequel::Branchset, #each>] branchsets  the objects that will be
-	###       combined in the BranchCollection.
+	### Create a new Treequel::BranchCollection that will operate on the given +branchsets+, which
+	### can be either Treequel::Branchset or Treequel::Branch objects.
 	def initialize( *branchsets )
 		@branchsets = branchsets.flatten.collect do |obj|
 			if obj.respond_to?( :each )
@@ -86,12 +84,16 @@ class Treequel::BranchCollection
 	end
 
 
-	### Declare some delegator methods that clone the receiver with the results of mapping
-	### the branchsets with the delegated method.
+	##
+	# Delegator methods that clone the receiver with the results of mapping
+	# the branchsets with the delegated method.
+
 	def_cloning_delegators :filter, :scope, :select, :select_all, :select_more, :timeout,
 		:without_timeout
 
-	### Delegate some methods through the collection directly
+	##
+	# Delegators that some methods through the collection directly
+
 	def_method_delegators :branchsets, :include?
 
 
@@ -107,7 +109,6 @@ class Treequel::BranchCollection
 
 
 	### Return a human-readable string representation of the object suitable for debugging.
-	### @return [String]
 	def inspect
 		"#<%s:0x%0x %d branchsets: %p>" % [
 			self.class.name,
@@ -120,7 +121,6 @@ class Treequel::BranchCollection
 
 	### Iterate over the Treequel::Branches found by each member branchset, yielding each 
 	### one in turn.
-	### @yield [Treequel::Branch]
 	def each( &block )
 		raise LocalJumpError, "no block given" unless block
 		self.branchsets.each do |bs|
@@ -130,7 +130,6 @@ class Treequel::BranchCollection
 
 
 	### Return the first Treequel::Branch that is returned from the collection's branchsets.
-	### @return [Treequel::Branch]
 	def first
 		branch = nil
 
@@ -143,14 +142,12 @@ class Treequel::BranchCollection
 
 
 	### Return +true+ if none of the collection's branches match any entries.
-	### @return [Boolean]
 	def empty?
 		return self.branchsets.all? {|bs| bs.empty? } ? true : false
 	end
 
 
 	### Overridden to support Branchset#map
-	### @param (see Treequel::Branchset#map)
 	def map( attribute=nil, &block )
 		if attribute
 			if block
@@ -181,7 +178,6 @@ class Treequel::BranchCollection
 	### Return either a new Treequel::BranchCollection that includes both the receiver's 
 	### Branchsets and those in +other_object+ (if it responds_to #branchsets), or the results
 	### from executing the BranchCollection's search with +other_object+ appended if it doesn't.
-	### @param [Object] other_object
 	def +( other_object )
 		if other_object.respond_to?( :branchsets )
 			return self.class.new( self.branchsets + other_object.branchsets )
@@ -193,9 +189,8 @@ class Treequel::BranchCollection
 	end
 
 
-	### Return the results from each of the receiver's Branchsets without the +other_object+.
-	### @param [#dn]  other_object  the object to omit from the results. Must respond_to #dn.
-	### @return [Array<Treequel::Branch>]
+	### Return the results from each of the receiver's Branchsets without the +other_object+, 
+	### which must respond to #dn.
 	def -( other_object )
 		other_dn = other_object.dn
 		return self.reject {|branch| branch.dn == other_dn }

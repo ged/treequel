@@ -64,8 +64,6 @@ class Treequel::Filter
 
 
 		### Append operator: add the +other+ filter to the list.
-		### @param [Treequel::Filter] other  the new filter to add
-		### @return [Treequel::Filter::FilterList]  self (for chaining)
 		def <<( other )
 			@filters << other
 			return self
@@ -75,7 +73,7 @@ class Treequel::Filter
 
 
 	### An abstract class for filter components.
-	### @abstract Subclass and override {#to_s} to implement a custom Component class.
+	### Subclass and override #to_s to implement a custom Component class.
 	class Component
 		include Treequel::Loggable
 
@@ -150,7 +148,6 @@ class Treequel::Filter
 		end
 
 		### Add an additional filter to the list of requirements
-		### @param [Treequel::Filter] filter  the new requirement
 		def add_requirement( filter )
 			@filterlist << filter
 		end
@@ -176,7 +173,6 @@ class Treequel::Filter
 		end
 
 		### Add an additional filter to the list of alternatives
-		### @param [Treequel::Filter] filter  the new alternative
 		def add_alternation( filter )
 			@filterlist << filter
 		end
@@ -712,7 +708,7 @@ class Treequel::Filter
 	end
 
 
-	### AND two filters together
+	### Return a new Filter that is the AND filter of the receiver with +other_filter+.
 	def &( other_filter )
 		return other_filter if self.promiscuous?
 		return self.dup if other_filter.promiscuous?
@@ -721,8 +717,7 @@ class Treequel::Filter
 	alias_method :+, :&
 
 
-	### OR two filters together
-	### @param [Treequel::Filter] other_filter
+	### Return a new Filter that is the OR filter of the receiver with +other_filter+.
 	def |( other_filter )
 		return other_filter if self.promiscuous?
 		return self.dup if other_filter.promiscuous?

@@ -52,7 +52,7 @@ class LDAP::Mod
 
 	### Override the initializer to keep the +attribute+ around while the object
 	### is alive to prevent the underlying C String pointer from going away.
-	### @see line 151 of mod.c.
+	### See line 151 of mod.c.
 	def initialize( op, attribute, vals )
 		@attribute = attribute
 		_initialize_ext( op, attribute, vals )

@@ -109,11 +109,6 @@ class Treequel::Model < Treequel::Branch
 
 	### Create a new Treequel::Model object from the given +entry+ hash from the 
 	### specified +directory+.
-	### 
-	### @param [LDAP::Entry] entry  The raw entry object the Branch is wrapping.
-	### @param [Treequel::Directory] directory  The directory object the Branch is from.
-	### 
-	### @return [Treequel::Model]  The new model object.
 	def self::new_from_entry( entry, directory )
 		obj = self.new( directory, entry['dn'].first, entry )
 		self.mixins_for_objectclasses( *obj[:objectClass] ).each do |mixin|

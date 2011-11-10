@@ -52,10 +52,8 @@ class Treequel::Schema
 		end
 
 
-		### Parse an ObjectClass entry from a objectClass +description+ from a +schema+.
-		### @param [String] description       the RFC4512-format objectClass description
-		### @param [Treequel::Schema] schema  the schema object the objectClass belongs to
-		### @return [Treequel::Schema::ObjectClass]  the resulting objectclass
+		### Parse an ObjectClass entry from a RFC4512-format objectClass +description+ from a 
+		### +schema+.
 		def self::parse( schema, description )
 			oid, names, desc, obsolete, sup, kind, must, may, extensions = nil
 
@@ -166,10 +164,8 @@ class Treequel::Schema
 
 
 		### Return the objectClass's MUST OIDs as Symbols (for symbolic OIDs) or Strings (for
-		### dotted-numeric OIDs).
-		### @param [Boolean] include_sup  (true) include MUST OIDs inherited from the 
-		###                               objectClass's SUP, if it has one.
-		### @return [Array<Symbol,String>] the objectClass's MUST OIDs
+		### dotted-numeric OIDs). If include_sup is true, include MUST OIDs inherited from the 
+		### objectClass's SUP, if it has one.
 		def must_oids( include_sup=true )
 			oids = @must_oids.dup
 
@@ -193,10 +189,8 @@ class Treequel::Schema
 
 
 		### Return the objectClass's MAY OIDs as Symbols (for symbolic OIDs) or Strings (for
-		### dotted-numeric OIDs).
-		### @param [Boolean] include_sup  (true) include MAY OIDs inherited from the 
-		###                               objectClass's SUP, if it has one.
-		### @return [Array<Symbol,String>] the objectClass's MAY OIDs
+		### dotted-numeric OIDs). If include_sup is true, include MAY OIDs inherited from the 
+		### objectClass's SUP, if it has one.
 		def may_oids( include_sup=true )
 			oids = @may_oids.dup
 
@@ -258,15 +252,6 @@ class Treequel::Schema
 			return "( %s )" % [ parts.join(' ') ]
 		end
 
-		# @oid        = oid
-		# @names      = names
-		# @desc       = desc
-		# @obsolete   = obsolete ? true : false
-		# @sup_oid   = sup
-		# @must_oids  = must_oids
-		# @may_oids   = may_oids
-		# @extensions = extensions
-
 
 		### Return a human-readable representation of the object suitable for debugging
 		def inspect
@@ -295,9 +280,7 @@ class Treequel::Schema
 
 
 		### Return the SUP chain for the receiver up to 'top', including the receiver
-		### itself.
-		### @return [Array<Treequel::Schema::ObjectClass>]  the array of ObjectClass objects
-		###                                                 the receiver inherits from.
+		### itself, as an Array of Treequel::Schema::ObjectClass objects.
 		def ancestors
 			rval = [ self ]
 
@@ -309,9 +292,8 @@ class Treequel::Schema
 		end
 
 
-		### Return the string that represents the kind of objectClass
-		### the receiver represents.
-		### @return [String] one of: 'ABSTRACT', 'STRUCTURAL', 'AUXILIARY'
+		### Return the string that represents the kind of objectClass the receiver represents.
+		### It will be one of: 'ABSTRACT', 'STRUCTURAL', 'AUXILIARY'
 		def kind
 			return Treequel::Schema::OBJECTCLASS_TYPES.invert[ self.class ]
 		end

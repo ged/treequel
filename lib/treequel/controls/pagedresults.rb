@@ -63,10 +63,7 @@ module Treequel::PagedResultsControl
 	attr_accessor :paged_results_cookie
 
 
-	### Clone the Branchset with a paged results control.
-	### @param [Fixnum] setsize  The size of each result set. If this is nil or 0, removes 
-	###                          paging from the Branchset.
-	### @return [Treequel::Branchset]  a clone of the receiver with paging set to +setsize+
+	### Clone the Branchset with a paged results control with paging set to +setsize+.
 	def with_paged_results( setsize=DEFAULT_PAGE_SIZE )
 		self.log.warn "This control will likely not work in ruby-ldap versions " +
 			" <= 0.9.9. See http://code.google.com/p/ruby-activeldap/issues/" +
@@ -87,7 +84,6 @@ module Treequel::PagedResultsControl
 
 
 	### Clone the Branchset without paging and return it.
-	### @return [Treequel::Branchset]  a clone of the receiver, stripped of its paging
 	def without_paging
 		copy = self.clone
 		copy.without_paging!
@@ -96,7 +92,6 @@ module Treequel::PagedResultsControl
 
 
 	### Remove any paging control associated with the receiving Branchset.
-	### @return [void]
 	def without_paging!
 		self.paged_results_cookie = nil
 		self.paged_results_setsize = nil
@@ -105,7 +100,6 @@ module Treequel::PagedResultsControl
 
 	### Returns +true+ if the first page of results has been fetched and there are
 	### more pages remaining.
-	### @return [Boolean]
 	def has_more_results?
 		return true unless self.done_paging?
 	end
@@ -113,7 +107,6 @@ module Treequel::PagedResultsControl
 
 	### Returns +true+ if results have yet to be fetched, or if they have all been 
 	### fetched.
-	### @return [Boolean]
 	def done_paging?
 		return self.paged_results_cookie == ''
 	end
@@ -121,7 +114,6 @@ module Treequel::PagedResultsControl
 
 	### Override the Enumerable method to update the cookie value each time a page 
 	### is fetched.
-	### @yieldparam [Treequel::Branch] branch  the branch that's a result of the search.
 	def each( &block )
 		super do |branch|
 			if paged_control = branch.controls.find {|control| control.oid == OID }
@@ -145,7 +137,6 @@ module Treequel::PagedResultsControl
 
 	### Treequel::Control API -- Get the set of server controls currently configured for 
 	### the receiver.
-	### @return [Array<LDAP::Control>]  the configured controls
 	def get_server_controls
 		controls = super
 		if pagesize = self.paged_results_setsize && self.paged_results_setsize.nonzero?

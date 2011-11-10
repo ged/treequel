@@ -185,10 +185,8 @@ class Treequel::Branchset
 
 
 	### If given another Branchset or a BranchCollection, return a BranchCollection that includes
-	### them both. If given anything else, execute the search and return 
-	### @param [Treequel::Branchset, Treequel::Branch] other  the branchset or branch to combine 
-	###                                                       with
-	### @return [Treequel::BranchCollection, Array<Treequel::Branch>]
+	### them both. If given anything else, execute the search and return the results plus
+	### +other+ in an Array.
 	def +( other )
 		if other.is_a?( Treequel::BranchCollection ) || other.is_a?( Treequel::Branchset )
 			return Treequel::BranchCollection.new( self, other )
@@ -199,8 +197,6 @@ class Treequel::Branchset
 
 
 	### Return the results of executing the search without the +other_object+.
-	### @param [#dn] other_object  the object to omit from the results; must respond_to #dn.
-	### @return [Array<Treequel::Branch>]
 	def -( other_object )
 		other_dn = other_object.dn
 		return self.reject {|branch| branch.dn.downcase == other_dn.downcase }
@@ -314,10 +310,7 @@ class Treequel::Branchset
 	end
 
 
-	### Add an alternate filter to an existing filter by ORing them.
-	### @param filterspec  the filter spec to OR with the existing filter
-	### @raises [Treequel::InvalidOperation]  if there is no existing filter
-	### @see Treequel::Filter.new  for specifics on what +filterspec+ can be
+	### Add an alternate filter to an existing filter by ORing it with +filterspec+.
 	def or( *filterspec )
 		opts = self.options
 		existing_filter = self.filter
@@ -442,7 +435,6 @@ class Treequel::Branchset
 
 	### Return a clone of the receiving Branchset that will perform its search from
 	### +other_dn+ instead of its own.
-	### @param [String, #dn]  other_dn  the new base DN of the search
 	def from( other_dn )
 		newset = self.clone
 		other_dn = other_dn.dn if other_dn.respond_to?( :dn )

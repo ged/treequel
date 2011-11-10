@@ -42,14 +42,12 @@ class Treequel::Schema
 	### Set the strict-parsing +flag+. Setting this to a +true+ value causes schema-parsing
 	### errors to be propagated to the caller instead of handled by the constructor, which is
 	### the default behavior.
-	### @param [boolean] flag  the new flag value
 	def self::strict_parse_mode=( newval )
 		@strict_parse_mode = newval ? true : false
 	end
 
 
 	### Test whether or not strict-parsing mode is in effect.
-	### @return [boolean]  false if parse errors will be caught
 	def self::strict_parse_mode?
 		return @strict_parse_mode ? true : false
 	end
@@ -125,8 +123,6 @@ class Treequel::Schema
 
 	### Return a description of the given +descriptors+ suitable for inclusion in 
 	### an RFC4512-style schema description entry.
-	### @param [Array<String>] descriptors  an Array of descriptors
-	### @return [String] the 'qdescrs' text
 	def self::qdescrs( *descriptors )
 		descriptors.flatten!
 		if descriptors.length > 1
@@ -149,8 +145,6 @@ class Treequel::Schema
 
 	### Escape and quote the specified +string+ according to the rules in 
 	### RFC4512/2252.
-	### @param [String] string  the unescaped UTF8 string
-	### @return [String] the string after quoting and escaping
 	def self::qdstring( string )
 		return "'%s'" % [ string.to_s.gsub(/\\/, '\\\\5c').gsub(/'/, '\\\\27') ]
 	end
@@ -158,8 +152,6 @@ class Treequel::Schema
 
 	### Return a description of the given +oids+ suitable for inclusion in 
 	### an RFC4512-style schema description entry.
-	### @param [Array<String>] oids  an Array of numeric or symbolic OIDs
-	### @return [String] the oid list text
 	def self::oids( *oids )
 		oids.flatten!
 		if oids.length > 1
@@ -194,34 +186,28 @@ class Treequel::Schema
 
 	# The table of Treequel::Schema::ObjectClass objects, keyed by OID and any associated NAME 
 	# attributes (as Symbols), that describes the objectClasses in the directory's schema.
-	# @return [Treequel::Schema::Table]
 	attr_reader :object_classes
 
 	# The hash of Treequel::Schema::AttributeType objects, keyed by OID and any associated NAME
 	# attributes (as Symbols), that describe the attributeTypes in the directory's schema.
-	# @return [Treequel::Schema::Table]
 	attr_reader :attribute_types
 
 	# The hash of Treequel::Schema::LDAPSyntax objects, keyed by OID, that describe the 
 	# syntaxes in the directory's schema.
-	# @return [Treequel::Schema::Table]
 	attr_reader :ldap_syntaxes
 
 	# The hash of Treequel::Schema::MatchingRule objects, keyed by OID and any associated NAME
 	# attributes (as Symbols), that describe the matchingRules int he directory's schema.
-	# @return [Treequel::Schema::Table]
 	attr_reader :matching_rules
 
 	# The hash of Treequel::Schema::MatchingRuleUse objects, keyed by OID and any associated NAME
 	# attributes (as Symbols), that describe the attributes to which a matchingRule can be applied.
-	# @return [Treequel::Schema::Table]
 	attr_reader :matching_rule_uses
 	alias_method :matching_rule_use, :matching_rule_uses
 
 
 	### Return the Treequel::Schema::AttributeType objects that correspond to the
 	### operational attributes that are supported by the directory.
-	### @return [Array<Treequel::Schema::AttributeType>]  the operational attributes
 	def operational_attribute_types
 		return self.attribute_types.values.find_all {|attrtype| attrtype.operational? }.uniq
 	end
@@ -236,7 +222,6 @@ class Treequel::Schema
 
 
 	### Return a human-readable representation of the object suitable for debugging.
-	### @return [String]
 	def inspect
 		return %{#<%s:0x%0x %s>} % [
 			self.class.name,
@@ -361,9 +346,7 @@ class Treequel::Schema
 	end
 
 
-	### Return descriptions of the schema's artifacts.
-	### @return [Array<String>]  the descriptions of the schema's artifacts, and how many of each 
-	###     it has.
+	### Return descriptions of the schema's artifacts, and how many of each it has.
 	def ivar_descriptions
 		self.instance_variables.sort.collect do |ivar|
 			len = self.instance_variable_get( ivar ).length

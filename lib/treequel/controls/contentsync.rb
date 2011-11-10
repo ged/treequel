@@ -34,8 +34,8 @@ require 'treequel/constants'
 #       # 
 #   end
 # 
-# @see http://deveiate.org/projects/Treequel/ticket/6  Ticket: Add support for 
-#      the RFC4533 Content Sync operation
+# See http://deveiate.org/projects/Treequel/ticket/6  Ticket: Add support for 
+# the RFC4533 Content Sync operation.
 # 
 module Treequel::ContentSyncControl
 	include Treequel::Control,

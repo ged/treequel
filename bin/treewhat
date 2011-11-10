@@ -58,8 +58,7 @@ class Treequel::What
 	end
 
 
-	### Create and configure a command-line option parser for the command.
-	### @return [Trollop::Parser] the option parser
+	### Create and configure a command-line option parser (a Trollop::Parser) for the command.
 	def self::make_option_parser
 		progname = File.basename( $0 )
 		default_directory = Treequel.directory_from_config
@@ -343,8 +342,7 @@ class Treequel::What
 	end
 
 
-	### Display additional details for the specified +attrtype+.
-	### @param [Treequel::Schema::AttributeType] attrtype  the attribute type object to display
+	### Display additional details for the specified +attrtype+ (a Treequel::Schema::AttributeType).
 	def display_attrtype_details( attrtype )
 		ocs = self.directory.schema.object_classes.values.find_all do |oc|
 			( oc.must_oids | oc.may_oids ).include?( attrtype.name.to_sym )

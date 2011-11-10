@@ -12,7 +12,6 @@ require 'treequel/mixins'
 module Treequel
 
 	# A alternate formatter for Logger instances.
-	# @private
 	class LogFormatter < Logger::Formatter
 
 		# The format to output unless debugging is turned on
@@ -68,7 +67,6 @@ module Treequel
 
 
 	# A ANSI-colorized formatter for Logger instances.
-	# @private
 	class ColorLogFormatter < Logger::Formatter
 		extend Treequel::ANSIColorUtilities
 
@@ -122,7 +120,6 @@ module Treequel
 
 	# An alternate formatter for Logger instances that outputs +div+ HTML
 	# fragments.
-	# @private
 	class HtmlLogFormatter < Logger::Formatter
 		include ERB::Util  # for html_escape()
 

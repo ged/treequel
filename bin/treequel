@@ -194,8 +194,7 @@ class Treequel::Shell
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new shell for the specified +directory+.
-	### @param [Treequel::Directory] directory  the LDAP directory to navigate
+	### Create a new shell for the specified +directory+ (a Treequel::Directory).
 	def initialize( directory )
 		@dir        = directory
 		@uri        = directory.uri
@@ -224,9 +223,8 @@ class Treequel::Shell
 	attr_accessor :quit
 
 
-	### The command loop: run the shell until the user wants to quit
-	### @param [String]              bind_as    The DN of the user to bind as. If none is
-	###                                         specified, the shell will bind anonymously.
+	### The command loop: run the shell until the user wants to quit, binding as +bind_as+ if
+	### given.
 	def run( bind_as=nil )
 		@original_tty_settings = IO.read( '|-' ) or exec 'stty', '-g'
 		message "Connected to %s" % [ @uri ]
@@ -911,11 +909,7 @@ class Treequel::Shell
 
 
 	### Return the description of the specified +branch+ suitable for displaying in
-	### the directory listing.
-	### @param [Treequel::Branch] branch  the branch to be described
-	### @param [Fixnum] oclen             the length of the largest objectclass that 
-	###                                   will be displayed; used to calculate the 
-	###                                   width of the objectclass column.
+	### the directory listing. The +oclen+ is the width of the objectclass column.
 	def format_description( branch, oclen=40 )
 		rdn = format_rdn( branch.rdn )
 		metadatalen = oclen + 16 + 6 # oc + timestamp + whitespace

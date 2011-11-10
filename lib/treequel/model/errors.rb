@@ -48,22 +48,19 @@ class Treequel::Model::Errors < ::Hash
 
 
 	### Adds an error for the given +subject+.
-	### @param [Symbol, #to_sym] subject    the subject of the error
-	### @param [String] message             the description of the error condition
 	def add( subject, message )
 		self[ subject ] << message
 	end
 
 
 	### Get the number of errors that have been registered.
-	### @Return [Fixnum]  the number of errors
 	def count
 		return self.values.inject( 0 ) {|num, val| num + val.length }
 	end
 
 
     ### Get an Array of messages describing errors which have occurred.
-    ### @example
+    ### 
     ###   errors.full_messages
     ###   # => ['cn is not valid',
     ###   #     'uid is not at least 2 letters']

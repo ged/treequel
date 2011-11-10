@@ -330,7 +330,6 @@ class Treequel::Schema::AttributeType
 	# attributes.
 
 	### Test whether or not the attrinbute is a user applications attribute.
-	### @return [Boolean]  true if the attribute's USAGE is 'userApplications' (or nil)
 	def is_user?
 		return !self.is_operational?
 	end
@@ -338,7 +337,6 @@ class Treequel::Schema::AttributeType
 
 
 	### Test whether or not the attribute is an operational attribute.
-	### @return [Boolean]  true if the attribute's usage is one of the OPERATIONAL_ATTRIBUTE_USAGES
 	def is_operational?
 		usage_type = self.usage || DEFAULT_USAGE_TYPE
 		return OPERATIONAL_ATTRIBUTE_USAGES.map( &:downcase ).include?( usage_type.downcase )
@@ -347,7 +345,6 @@ class Treequel::Schema::AttributeType
 
 
 	### Test whether or not the attribute is a directory operational attribute.
-	### @return [Boolean]  true if the attribute's usage is 'directoryOperation'
 	def is_directory_operational?
 		usage_type = self.usage || DEFAULT_USAGE_TYPE
 		return usage_type == 'directoryOperation'
@@ -356,7 +353,6 @@ class Treequel::Schema::AttributeType
 
 
 	### Test whether or not the attribute is a distributed operational attribute.
-	### @return [Boolean]  true if the attribute's usage is 'distributedOperation'
 	def is_distributed_operational?
 		usage_type = self.usage || DEFAULT_USAGE_TYPE
 		return usage_type == 'distributedOperation'
@@ -365,7 +361,6 @@ class Treequel::Schema::AttributeType
 
 
 	### Test whether or not the attribute is a DSA-specific operational attribute.
-	### @return [Boolean]  true if the attribute's usage is 'dSAOperation'
 	def is_dsa_operational?
 		usage_type = self.usage || DEFAULT_USAGE_TYPE
 		return usage_type == 'dSAOperation'

@@ -81,7 +81,6 @@ class Treequel::Model < Treequel::Branch
 	### Return the Treequel::Directory the Model will use for searches, creating it if it 
 	### hasn't been created already. The default Directory will be created by calling
 	### Treequel.directory_from_config.
-	### @return [Treequel::Directory]  the default directory
 	def self::directory
 		self.directory = Treequel.directory_from_config unless @directory
 		return @directory
@@ -90,7 +89,6 @@ class Treequel::Model < Treequel::Branch
 
 	### Set the Treequel::Directory that should be used for searches. The receiving class will also
 	### be set as the #results_class of the +newdirectory+.
-	### @param [Treequel::Directory] newdirectory
 	def self::directory=( newdirectory )
 		@directory = newdirectory
 		@directory.results_class = self if @directory
@@ -98,7 +96,6 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Inheritance callback -- add a class-specific objectclass registry to inheriting classes.
-	### @param [Class] subclass  the inheriting class
 	def self::inherited( subclass )
 		super
 		subclass.instance_variable_set( :@objectclass_registry, SET_HASH.dup )
@@ -107,10 +104,8 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Register the given +mixin+ for the specified +objectclasses+. Instances that 
-	### have all the specified +objectclasses+ will be extended with the +mixin+.
-	###
-	### @param [Module] mixin                 the mixin to be applied; it should be extended with 
-	###                                       Treequel::Model::ObjectClass.
+	### have all the specified +objectclasses+ will be extended with the +mixin+, which should be
+	### a Module extended with Treequel::Model::ObjectClass.
 	def self::register_mixin( mixin )
 		objectclasses = mixin.model_objectclasses
 		bases = mixin.model_bases
@@ -132,7 +127,6 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Unregister the given +mixin+ for the specified +objectclasses+.
-	### @param [Module] mixin  the mixin that should no longer be applied
 	def self::unregister_mixin( mixin )
 		objectclasses = mixin.model_objectclasses
 		bases = mixin.model_bases
@@ -154,8 +148,6 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Return the mixins that should be applied to an entry with the given +objectclasses+.
-	### @param [Array<Symbol>] objectclasses  the objectclasses from the entry
-	### @return [Set<Module>] the Set of mixin modules which apply
 	def self::mixins_for_objectclasses( *objectclasses )
 		return self.objectclass_registry[:top] if objectclasses.empty?
 		ocsymbols = objectclasses.flatten.collect {|oc| oc.untaint.to_sym }
@@ -174,8 +166,6 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Return the mixins that should be applied to an entry with the given +dn+.
-	### @param [String] dn  the DN of the entry
-	### @return [Set<Module>] the Set of mixin modules which apply
 	def self::mixins_for_dn( dn )
 		dn_tuples = dn.downcase.split( /\s*,\s*/ )
 		dn_keys = dn_tuples.reverse.inject(['']) do |keys, dnpair|
@@ -199,8 +189,6 @@ class Treequel::Model < Treequel::Branch
 	### Create a new Treequel::Model object with the given +entry+ hash from the 
 	### specified +directory+. Overrides Treequel::Branch.new_from_entry to pass the
 	### +from_directory+ flag to mark it as unmodified.
-	### 
-	### @see Treequel::Branch.new_from_entry
 	def self::new_from_entry( entry, directory )
 		entry = Treequel::HashUtilities.stringify_keys( entry )
 		dnvals = entry.delete( 'dn' ) or
@@ -269,10 +257,7 @@ class Treequel::Model < Treequel::Branch
 
 	### Index set operator -- set attribute +attrname+ to a new +value+.
 	### Overridden to make Model objects defer writing changes until 
-	### {Treequel::Model#save} is called.
-	### 
-	### @param [Symbol, String] attrname  attribute name
-	### @param [Object] value  the attribute value
+	### Treequel::Model#save is called.
 	def []=( attrname, value )
 		attrtype = self.find_attribute_type( attrname.to_sym ) or
 			raise ArgumentError, "unknown attribute %p" % [ attrname ]
@@ -299,10 +284,7 @@ class Treequel::Model < Treequel::Branch
 
 	### Make the changes to the object specified by the given +attributes+.
 	### Overridden to make Model objects defer writing changes until 
-	### {Treequel::Model#save} is called.
-	### 
-	### @param attributes (see Treequel::Directory#modify)
-	### @return [TrueClass] if the merge succeeded
+	### Treequel::Model#save is called.
 	def merge( attributes )
 		attributes.each do |attrname, value|
 			self[ attrname ] = value
@@ -312,9 +294,7 @@ class Treequel::Model < Treequel::Branch
 
 	### Delete the specified attributes.
 	### Overridden to make Model objects defer writing changes until 
-	### {Treequel::Model#save} is called.
-	### 
-	### @see Treequel::Branch#delete
+	### Treequel::Model#save is called.
 	def delete( *attributes )
 		return super if attributes.empty?
 
@@ -348,7 +328,6 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Returns the validation errors associated with this object.
-	### @see Treequel::Model::Errors.
 	def errors
 		return @errors ||= Treequel::Model::Errors.new
 	end
@@ -364,8 +343,6 @@ class Treequel::Model < Treequel::Branch
 
 	### Validate the object with the specified +options+. Appending validation errors onto
 	### the #errors object.
-	### @param [Hash] options  options for validation.
-	### @option options [Boolean] :with_schema  whether or not to run the schema validations
 	def validate( options={} )
 		options = DEFAULT_VALIDATION_OPTIONS.merge( options )
 
@@ -381,10 +358,11 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
-	### Write any pending changes in the model object to the directory.
-	### @param [Hash] opts  save options
-	### @option opts [Boolean] :raise_on_failure  (true) raise a Treequel::ValidationFailed or
-	###      Treequel::BeforeHookFailed if either the validations or before_{save,create}
+	### Write any pending changes in the model object to the directory. The valid +opts+ are:
+	### 
+	### [+:raise_on_failure+]
+	###     raise a Treequel::ValidationFailed or Treequel::BeforeHookFailed if either the
+	###     validations or before_{save,create}.
 	def save( opts={} )
 		opts = DEFAULT_SAVE_OPTIONS.merge( opts )
 
@@ -422,8 +400,7 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
-	### Return any pending changes in the model object.
-	### @return [Array<LDAP::Mod>]  the changes as LDAP modifications
+	### Return any pending changes in the model object as an Array of LDAP::Mod objects.
 	def modifications
 		return unless self.modified?
 		self.log.debug "Gathering modifications..."
@@ -512,8 +489,6 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Returns +true+ if the receiver responds to the given method.
-	### @param [Symbol,String] sym  the name of the method to test for
-	### @return [Boolean]
 	def respond_to?( sym, include_priv=false )
 		return super if caller(1).first =~ %r{/r?spec/} &&
 			caller(1).first !~ /respond_to/ # RSpec workaround
@@ -524,7 +499,6 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Return the Treequel::Model::ObjectClass mixins that have been applied to the receiver.
-	### @return [Array<Module>]
 	def extensions
 		eigenclass = ( class << self; self; end )
 		return eigenclass.included_modules.find_all do |mod|
@@ -558,7 +532,6 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Update the object's entry with the specified +mods+.
-	### @param [Array<LDAP::Mod>] mods  the modifications to make
 	def update( mods )
 		self.log.debug "    entry already exists: updating..."
 		self.before_update( mods ) or
@@ -569,7 +542,6 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Create the entry for the object, using the specified +mods+ to set the attributes.
-	### @param [Array<LDAP::Mod>] mods  the modifications to set attributes
 	def create( mods )
 		self.log.debug "    entry doesn't exist: creating..."
 		self.before_create( mods ) or
@@ -580,7 +552,6 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Delete specific key/value +pairs+ from the entry.
-	### @param [Hash] pairs  key/value pairs to delete from the entry.
 	def delete_specific_values( pairs )
 		self.log.debug "  hash-delete..."
 
@@ -596,10 +567,6 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Search for the Treequel::Schema::AttributeType associated with +sym+.
-	### 
-	### @param [Symbol,String] name  the name of the attribute to find
-	### @return [Treequel::Schema::AttributeType,nil]  the associated attributeType, or nil
-	###                                                if there isn't one
 	def find_attribute_type( name )
 		attrtype = nil
 
@@ -657,10 +624,6 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Make a reader method body for the given +attrtype+.
-	###
-	### @param [Treequel::Mode::AttributeType] attrtype  the attributeType to create the reader
-	###                                                  for.
-	### @return [Proc]  the body of the reader method.
 	def make_reader( attrtype )
 		self.log.debug "Generating an attribute reader for %p" % [ attrtype ]
 		attrname = attrtype.name
@@ -675,10 +638,6 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Make a writer method body for the given +attrtype+.
-	###
-	### @param [Treequel::Mode::AttributeType] attrtype  the attributeType to create the accessor
-	###                                                  for.
-	### @return [Proc]  the body of the writer method.
 	def make_writer( attrtype )
 		self.log.debug "Generating an attribute writer for %p" % [ attrtype ]
 		attrname = attrtype.name
@@ -693,10 +652,6 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Make a predicate method body for the given +attrtype+.
-	###
-	### @param [Treequel::Mode::AttributeType] attrtype  the attributeType to create the method
-	###                                                  for.
-	### @return [Proc]  the body of the predicate method.
 	def make_predicate( attrtype )
 		self.log.debug "Generating an attribute predicate for %p" % [ attrtype ]
 		attrname = attrtype.name
@@ -712,7 +667,6 @@ class Treequel::Model < Treequel::Branch
 
 	### Overridden to apply applicable mixins to lazily-loaded objects once their entry 
 	### has been looked up.
-	### @return [LDAP::Entry]  the fetched entry object
 	def lookup_entry
 		if entryhash = super
 			self.apply_applicable_mixins( self.dn, entryhash )
@@ -756,8 +710,6 @@ class Treequel::Model < Treequel::Branch
 
 	### Given the symbol from an attribute accessor or predicate, return the
 	### name of the corresponding LDAP attribute/
-	### @param [Symbol] methodname  the method being called
-	### @return [Symbol] the attribute name that corresponds to the method
 	def attribute_from_method( methodname )
 
 		case methodname.to_s

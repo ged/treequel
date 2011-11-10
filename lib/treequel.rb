@@ -13,8 +13,7 @@ require 'uri/ldap'
 
 ### Add an LDAPS URI type if none exists (ruby pre 1.8.7)
 unless URI.const_defined?( :LDAPS )
-	# @private
-	module URI
+	module URI # :nodoc:
 		class LDAPS < LDAP
 			DEFAULT_PORT = 636
 		end
@@ -23,33 +22,7 @@ unless URI.const_defined?( :LDAPS )
 end
 
 
-# A library for interacting with LDAP modelled after Sequel.
-#
-# @version 1.5.3
-# 
-# @example
-#   # Connect to the directory at the specified URL
-#   dir = Treequel.directory( 'ldap://ldap.company.com/dc=company,dc=com' )
-#   
-#   # Get a list of email addresses of every person in the directory (as
-#   # long as people are under ou=people)
-#   dir.ou( :people ).filter( :mail ).map( :mail ).flatten
-#   
-#   # Get a list of all IP addresses for all hosts in any ou=hosts group
-#   # in the whole directory:
-#   dir.filter( :ou => :hosts ).collection.filter( :ipHostNumber ).
-#     map( :ipHostNumber ).flatten
-#   
-#   # Get all people in the directory in the form of a hash of names 
-#   # keyed by email addresses
-#   dir.ou( :people ).filter( :mail ).to_hash( :mail, :cn )
-#   
-# @author Michael Granger <ged@FaerieMUD.org>
-# @author Mahlon E. Smith <mahlon@martini.nu>
-#
-# @see LICENSE Please see the LICENSE file in the base directory for licensing 
-#      details.
-# 
+# A library for interacting with LDAP modelled after Sequel[http://sequel.rubyforge.org/].
 module Treequel
 
 	# Library version
@@ -79,7 +52,18 @@ module Treequel
 	include Treequel::Constants
 
 
-	### Logging
+	### Get the Treequel version.
+	def self::version_string( include_buildnum=false )
+		vstring = "%s %s" % [ self.name, VERSION ]
+		vstring << " (build %s)" % [ REVISION[/: ([[:xdigit:]]+)/, 1] || '0' ] if include_buildnum
+		return vstring
+	end
+
+
+	#
+	# :section: Logging
+	#
+
 	# Log levels
 	LOG_LEVELS = {
 		'debug' => Logger::DEBUG,
@@ -100,14 +84,13 @@ module Treequel
 
 
 	class << self
-		# @return [Logger::Formatter] the log formatter that will be used when the logging 
-		#    subsystem is reset
+		# The log formatter that will be used when the logging subsystem is reset
 		attr_accessor :default_log_formatter
 
-		# @return [Logger] the logger that will be used when the logging subsystem is reset
+		# The logger that will be used when the logging subsystem is reset
 		attr_accessor :default_logger
 
-		# @return [Logger] the logger that's currently in effect
+		# The logger that's currently in effect
 		attr_accessor :logger
 		alias_method :log, :logger
 		alias_method :log=, :logger=
@@ -115,7 +98,6 @@ module Treequel
 
 
 	### Reset the global logger object to the default
-	### @return [void]
 	def self::reset_logger
 		self.logger = self.default_logger
 		self.logger.level = Logger::WARN
@@ -130,30 +112,30 @@ module Treequel
 	end
 
 
-	### Get the Treequel version.
-	### @return [String] the library's version
-	def self::version_string( include_buildnum=false )
-		vstring = "%s %s" % [ self.name, VERSION ]
-		vstring << " (build %s)" % [ REVISION[/: ([[:xdigit:]]+)/, 1] || '0' ] if include_buildnum
-		return vstring
-	end
+	#
+	# :section:
+	#
 
-
-	### Create a Treequel::Directory object, either from a Hash of options or an LDAP URL.
-	### @overload directory( uri )
-	###   Create a Treequel::Directory object from an LDAP URI.
-	###   @param [URI, String] uri The URI of the directory to connect to, its base, the bind DN,
-	###                            etc.
-	### @overload directory( options )
-	###   @param [Hash] options the connection options
-	###   @option options [String] :host ('localhost')  The LDAP host to connect to
-	###   @option options [Fixnum] :port (LDAP::LDAP_PORT)  The port number to connect to
-	###   @option options [Symbol] :connect_type (:tls)  The type of connection to establish; :tls, 
-	###                                                  :ssl, or :plain.
-	###   @option options [String] :base_dn  The base DN of the directory.
-	###   @option options [String] :bind_dn  The DN of the user to bind as.
-	###   @option options [String] :pass     The password to use when binding.
-	### @return [Treequel::Directory] the configured Directory object
+	### :call-seq:
+	###    Treequel.directory( uri )
+	###    Treequel.directory( options )
+	###
+	### Create a Treequel::Directory object, either from an LDAP URL or a Hash of connection 
+	### options. The valid options are:
+	###
+	### [:host]
+	###   The LDAP host to connect to; default is 'localhost'.
+	### [:port]
+	###   The port number to connect to; defaults to LDAP::LDAP_PORT.
+	### [:connect_type]
+	###   The type of connection to establish; :tls, :ssl, or :plain. Defaults to :tls.
+	### [:base_dn]
+	###   The base DN of the directory.
+	### [:bind_dn]
+	###   The DN of the user to bind as.
+	### [:pass]
+	###   The password to use when binding.
+	###
 	def self::directory( *args )
 		options = {}
 
@@ -173,11 +155,9 @@ module Treequel
 
 
 	### Read the configuration from the specified +configfile+ and/or values in ENV and return 
-	### a {Treequel::Directory} for the resulting configuration. Supports OpenLDAP and nss-style 
+	### a Treequel::Directory for the resulting configuration. Supports OpenLDAP and nss-style 
 	### configuration-file directives, and honors the various OpenLDAP environment variables; 
 	### see ldap.conf(5) for details.
-	### @param [String] configfile  the path to the configuration file to use
-	### @return [Treequel::Directory]  the configured Directory object
 	def self::directory_from_config( configfile=nil )
 		configfile ||= self.find_configfile or
 			raise ArgumentError, "No configfile specified, and no defaults present."
@@ -195,8 +175,6 @@ module Treequel
 
 	### Make an options hash suitable for passing to Treequel::Directory.new from the
 	### given +uri+.
-	### @param [URI, String] uri  the URI to parse for options
-	### @return [Hash] the parsed options
 	def self::make_options_from_uri( uri )
 		uri = URI( uri ) unless uri.is_a?( URI )
 		raise ArgumentError, "not an LDAP URL: %p" % [ uri ] unless
@@ -224,8 +202,6 @@ module Treequel
 
 	### Find a valid ldap.conf config file by first looking in the LDAPCONF and LDAPRC environment 
 	### variables, then searching the list of default paths in Treequel::COMMON_LDAP_CONF_PATHS.
-	### @return [String] the first valid path, or nil if no valid configfile could be found
-	### @raise [RuntimeError] if LDAPCONF or LDAPRC contains an invalid or unreadable path
 	def self::find_configfile
 		# LDAPCONF may be set to the path of a configuration file. This path can
 		# be absolute or relative to the current working directory.
@@ -255,10 +231,8 @@ module Treequel
 	end
 
 
-	### Read the ldap.conf-style configuration from +configfile+ and return it as a Hash.
-	### @param [String] configfile The path to the config file to read.
-	### @return [Hash] The hash of configuration values read from the file, in a form suitable for
-	###   passing to {Treequel::Directory#initialize}.
+	### Read the ldap.conf-style configuration from +configfile+ and return it as a Hash suitable
+	### for passing to Treequel::Directory.new.
 	def self::read_opts_from_config( configfile )
 		Treequel.log.info "Reading config options from %s..." % [ configfile ]
 		opts = {}
@@ -329,9 +303,8 @@ module Treequel
 	end
 
 
-	### Read OpenLDAP-style connection options from ENV and return them as a Hash.
-	### @return [Hash] The hash of configuration values read from the environment, in a form 
-	###   suitable for passing to {Treequel::Directory#initialize}.
+	### Read OpenLDAP-style connection options from ENV and return them as a Hash suitable for
+	### passing to Treequel::Directory.new.
 	def self::read_opts_from_environment
 		opts = {}
 

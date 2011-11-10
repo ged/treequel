@@ -30,7 +30,6 @@ module Treequel
 	class ValidationFailed < Treequel::ModelError
 
 		### Create a new Treequel::ValidationFailed exception with the given +errors+.
-		### @param [Treequel::Model::Errors, String] errors  the validaton errors
 		def initialize( errors )
 			if errors.respond_to?( :full_messages )
 				@errors = errors
@@ -44,7 +43,7 @@ module Treequel
 		public
 		######
 
-		# @return [Treequel::Model::Errors] the validation errors
+		# the validation errors
 		attr_reader :errors
 
 	end # class ValidationFailed

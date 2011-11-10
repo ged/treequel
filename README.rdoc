@@ -1,8 +1,8 @@
-# Treequel - an honest LDAP library
+= Treequel - an honest LDAP library
 
 * http://deveiate.org/projects/Treequel
 
-## Description
+== Description
 
 Treequel is an LDAP toolkit for Ruby. It is intended to allow quick, easy
 access to LDAP directories in a manner consistent with LDAP's hierarchical,
@@ -12,7 +12,7 @@ It's inspired by and modeled after [Sequel](http://sequel.rubyforge.org/), a
 kick-ass database library.
 
 
-## Examples
+== Examples
 
 Here are a few short examples to whet your appetite:
 
@@ -33,19 +33,22 @@ Here are a few short examples to whet your appetite:
     dir.ou( :people ).filter( :mail ).to_hash( :mail, :cn )
 
 More elaborate examples of real-world usage can be found 
-[in the examples/ directory][examples] in the distribution.
+{in the examples/ directory}[http://deveiate.org/projects/Treequel/browser/examples] 
+in the distribution.
 
 
-## Contributing
+== Contributing
 
-You can check out the current development source [with Mercurial][hgrepo], or
-if you prefer Git, via the project's [Github mirror][gitmirror].
+You can check out the current development source
+{with Mercurial}[http://repo.deveiate.org/Treequel], or
+if you prefer Git, via the project's
+{Github mirror}[https://github.com/ged/treequel].
 
 You can submit bug reports, suggestions, and read more about future plans at
-[the project page][projectpage].
+{the project page}[http://deveiate.org/projects/Treequel].
 
 
-## License
+== License
 
 Copyright (c) 2008-2011, Michael Granger and Mahlon E. Smith
 All rights reserved.
@@ -99,13 +102,13 @@ the following license terms:
   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   
 
-## Authors
+== Authors
 
 * Michael Granger <ged@FaerieMUD.org>
 * Mahlon E. Smith <mahlon@martini.nu>
 
 
-## Contributors
+== Contributors
 
 A special thanks to Ben Bleything, who was part of the initial brainstorm that
 led to the creation of this library.
@@ -114,9 +117,4 @@ Thanks also to Ben Cooksley of the KDE project, who has been full of great
 ideas for the Model side of Treequel; it's vastly better for his
 suggestions.
 
-
-[examples]:http://deveiate.org/projects/Treequel/browser/examples
-[hgrepo]:http://repo.deveiate.org/Treequel
-[gitmirror]:https://github.com/ged/treequel
-[projectpage]:http://deveiate.org/projects/Treequel
 

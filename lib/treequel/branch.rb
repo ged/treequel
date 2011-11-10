@@ -53,11 +53,6 @@ class Treequel::Branch
 
 
 	### Create a new Treequel::Branch from the given +entry+ hash from the specified +directory+.
-	### 
-	### @param [LDAP::Entry] entry  The raw entry object the Branch is wrapping.
-	### @param [Treequel::Directory] directory  The directory object the Branch is from.
-	### 
-	### @return [Treequel::Branch]  The new branch object.
 	def self::new_from_entry( entry, directory )
 		entry = Treequel::HashUtilities.stringify_keys( entry )
 		dnvals = entry.delete( 'dn' ) or
@@ -77,10 +72,6 @@ class Treequel::Branch
 	### If the optional +entry+ object is given, it will be used to fetch values from the 
 	### directory; if it isn't provided, it will be fetched from the +directory+ the first
 	### time it is needed.
-	### 
-	### @param [Treequel::Directory] directory  The directory the Branch belongs to.
-	### @param [String] dn  The DN of the entry the Branch is wrapping.
-	### @param [LDAP::Entry, Hash] entry  The entry object if it's already been fetched.
 	def initialize( directory, dn, entry=nil )
 		raise ArgumentError, "nil DN" unless dn
 		raise ArgumentError, "invalid DN" unless
@@ -111,11 +102,9 @@ class Treequel::Branch
 
 
 	# The directory the branch's entry lives in
-	# @return [Treequel::Directory]
 	attr_reader :directory
 
 	# The DN of the branch.
-	# @return [String]
 	attr_reader :dn
 	alias_method :to_s, :dn
 
@@ -124,20 +113,15 @@ class Treequel::Branch
 	alias_method :include_operational_attributes?, :include_operational_attrs?
 
 
-	### Change the DN the Branch uses to look up its entry.
-	### 
-	### @param [String] newdn  The new DN.
-	### @return [void]
+	### Change the DN the Branch uses to look up its entry to +newdn+.
 	def dn=( newdn )
 		self.clear_caches
 		@dn = newdn
 	end
 
 
-	### Enable or disable fetching of operational attributes (RC4512, section 3.4).
-	### 
-	### @param [Boolean] new_setting
-	### @return [void]
+	### Enable (if +new_setting+ is true) or disable fetching of operational attributes (RC4512, 
+	### section 3.4).
 	def include_operational_attrs=( new_setting )
 		self.clear_caches
 		@include_operational_attrs = new_setting ? true : false
@@ -145,8 +129,7 @@ class Treequel::Branch
 	alias_method :include_operational_attributes=, :include_operational_attrs=
 
 
-	### Return the attribute/s which make up this Branch's RDN.
-	### @return [Hash<Symbol => String>] The Branch's RDN attributes as a Hash.
+	### Return the attribute/s which make up this Branch's RDN as a Hash.
 	def rdn_attributes
 		return make_rdn_hash( self.rdn )
 	end
@@ -155,8 +138,6 @@ class Treequel::Branch
 	### Return the LDAP::Entry associated with the receiver, fetching it from the
 	### directory if necessary. Returns +nil+ if the entry doesn't exist in the
 	### directory.
-	### 
-	### @return [LDAP::Entry]  The entry wrapped by the Branch.
 	def entry
 		@entry ||= self.lookup_entry
 	end
@@ -164,38 +145,32 @@ class Treequel::Branch
 
 	### Returns <tt>true</tt> if there is an entry currently in the directory with the
 	### branch's DN.
-	### @return [Boolean]
 	def exists?
 		return self.entry ? true : false
 	end
 
 
 	### Returns +true+ if the Branch's entry has been fetched from the directory.
-	### @return [Boolean]
 	def loaded?
 		return @entry ? true : false
 	end
 
 
 	### Return the RDN of the branch.
-	### @return [String]
 	def rdn
 		return self.split_dn( 2 ).first
 	end
 
 
-	### Return the receiver's DN as an Array of attribute=value pairs. 
-	### 
-	### @param [Fixnum] limit  If non-zero, only the <code>limit-1</code> first pairs 
-	###     are split from the DN, and the remainder will be returned as the last 
-	###     element.
+	### Return the receiver's DN as an Array of attribute=value pairs. If the optional +limit+ is
+	### non-zero, only the <code>limit-1</code> first pairs are split from the DN, and the 
+	### remainder will be returned as the last element.
 	def split_dn( limit=0 )
 		return self.dn.split( /\s*,\s*/, limit )
 	end
 
 
 	### Return the LDAP URI for this branch
-	### @return [URI]
 	def uri
 		uri = self.directory.uri
 		uri.dn = self.dn
@@ -204,7 +179,6 @@ class Treequel::Branch
 
 
 	### Return the DN of this entry's parent, or nil if it doesn't have one.
-	### @return [String]
 	def parent_dn
 		return nil if self.dn == self.directory.base_dn
 		return '' if self.dn.index( ',' ).nil?
@@ -213,36 +187,27 @@ class Treequel::Branch
 
 
 	### Return the Branch's immediate parent node.
-	### @return [Treequel::Branch]
 	def parent
 		pardn = self.parent_dn or return nil
 		return self.class.new( self.directory, pardn )
 	end
 
 
-	### Perform a search with the specified +scope+, +filter+, and +parameters+ 
-	### using the receiver as the base.
-	### 
-	### @param scope      (see Trequel::Directory#search)
-	### @param filter     (see Trequel::Directory#search)
-	### @param parameters (see Trequel::Directory#search)
-	### @param block      (see Trequel::Directory#search)
-	### 
-	### @return [Array<Treequel::Branch>] the search results
+	### Perform a search with the specified +scope+, +filter+, and +parameters+ using the 
+	### receiver as the base. See Trequel::Directory#search for details. Returns an Array of
+	### Treequel::Branch objects.
 	def search( scope=:subtree, filter='(objectClass=*)', parameters={}, &block )
 		return self.directory.search( self, scope, filter, parameters, &block )
 	end
 
 
 	### Return the Branch's immediate children as Treeque::Branch objects.
-	### @return [Array<Treequel::Branch>]
 	def children
 		return self.search( :one, '(objectClass=*)' )
 	end
 
 
 	### Return a Treequel::Branchset that will use the receiver as its base.
-	### @return [Treequel::Branchset]
 	def branchset
 		return Treequel::Branchset.new( self )
 	end
@@ -250,8 +215,6 @@ class Treequel::Branch
 
 	### Returns a human-readable representation of the object suitable for
 	### debugging.
-	### 
-	### @return [String]
 	def inspect
 		return "#<%s:0x%0x %s @ %s entry=%p>" % [
 			self.class.name,
@@ -264,7 +227,6 @@ class Treequel::Branch
 
 
 	### Return the entry's DN as an RFC1781-style UFN (User-Friendly Name).
-	### @return [String]
 	def to_ufn
 		if LDAP.respond_to?( :dn2ufn )
 			return LDAP.dn2ufn( self.dn )
@@ -298,7 +260,6 @@ class Treequel::Branch
 
 
 	### Return the Branch as an LDAP::LDIF::Entry.
-	### @return [String]
 	def to_ldif( width=DEFAULT_LDIF_WIDTH )
 		ldif = "dn: %s\n" % [ self.dn ]
 
@@ -316,8 +277,6 @@ class Treequel::Branch
 
 
 	### Return the Branch as a Hash.
-	### @see Treequel::Branch#[]
-	### @return [Hash]  the entry as a Hash with converted values
 	def to_hash
 		entry = self.entry || self.valid_attributes_hash
 		self.log.debug "  making a Hash from an entry: %p" % [ entry ]
@@ -334,7 +293,6 @@ class Treequel::Branch
 
 
 	### Fetch the value/s associated with the given +attrname+ from the underlying entry.
-	### @return [Array, String]
 	def []( attrname )
 		attrsym = attrname.to_sym
 
@@ -354,10 +312,10 @@ class Treequel::Branch
 	end
 
 
-	### Fetch one or more values from the entry.
-	### 
-	### @param [Array<Symbol, String>] attributes  The attributes to fetch values for.
-	### @return [Array<String>]  The values which correspond to +attributes+.
+	### Fetch one or more values for the specified +attributes+ from the entry.
+	###
+	###    branch.values_at( :cn, :objectClass )
+	###    => [["sysadmin"], ["top", "posixGroup", "apple-group"]]
 	def values_at( *attributes )
 		return attributes.collect do |attribute|
 			self[ attribute ]
@@ -366,9 +324,6 @@ class Treequel::Branch
 
 
 	### Set attribute +attrname+ to a new +value+.
-	### 
-	### @param [Symbol, String] attrname  attribute name
-	### @param [Object] value  the attribute value
 	def []=( attrname, value )
 		value = [ value ] unless value.is_a?( Array )
 		value.collect! {|val| self.get_converted_attribute(attrname, val) }
@@ -380,9 +335,8 @@ class Treequel::Branch
 
 
 	### Make the changes to the entry specified by the given +attributes+.
-	### 
-	### @param attributes (see Treequel::Directory#modify)
-	### @return [TrueClass] if the merge succeeded
+	###
+	###   branch.merge( :description => ['The syadmin group'], :cn => ['sysadmin'] )
 	def merge( attributes )
 		self.directory.modify( self, attributes )
 		self.clear_caches
@@ -392,20 +346,19 @@ class Treequel::Branch
 	alias_method :modify, :merge
 
 
-	### Delete the specified attributes.
+	### Delete the specified +attributes+, which are the attributes to delete either as
+	### attribute names (in which case all values of the attribute are deleted), or
+	### Hashes of attributes and the Array of value/s which should be deleted.
 	### 
-	### @param [Array<Hash, #to_s>] attributes  The attributes to delete, either as
-	###     attribute names (in which case all values of the attribute are deleted) or
-	###     Hashes of attributes and the Array of value/s which should be deleted.
-	### 
-	### @example Delete all 'description' attributes
+	###     # Delete all 'description' attributes
 	###     branch.delete( :description )
-	### @example Delete the 'inetOrgPerson' and 'posixAccount' objectClasses from the entry
+	###
+	###     # Delete the 'inetOrgPerson' and 'posixAccount' objectClasses from the entry
 	###     branch.delete( :objectClass => [:inetOrgPerson, :posixAccount] )
-	### @example Delete any blank 'description' or 'cn' attributes:
+	###
+	###     # Delete any blank 'description' or 'cn' attributes:
 	###     branch.delete( :description => '', :cn => '' )
 	### 
-	### @return [TrueClass] if the delete succeeded
 	def delete( *attributes )
 
 		# If no attributes are given, delete the whole entry
@@ -443,9 +396,12 @@ class Treequel::Branch
 
 
 	### Create the entry for this Branch with the specified +attributes+. The +attributes+ should,
-	### at a minimum, contain the pair `:objectClass => :someStructuralObjectClass`.
-	### 
-	### @see Treequel::Directory#create
+	### at a minimum, contain the pair `:objectClass => [:someStructuralObjectClass]`.
+	###
+	###     groups = dir.ou( :groups )
+	###     newgroup = groups.cn( :staff )
+	###     newgroup.create( :objectClass => ['posixGroup'], :gidNumber => 2100 )
+	###     # => #<Treequel::Branch:0x1086a0ac8 cn=staff,ou=groups,dc=example,dc=com>
 	def create( attributes={} )
 		self.directory.create( self, attributes )
 		self.clear_caches
@@ -455,10 +411,6 @@ class Treequel::Branch
 
 	### Copy the entry for this Branch to a new entry with the given +newdn+ and merge in the
 	### specified +attributes+.
-	### 
-	### @param [String] newdn  the dn of the new entry
-	### @param [Hash<String, Symbol => Object>] attributes  merge attributes
-	### @return [Treequel::Branch] a Branch for the new entry
 	def copy( newdn, attributes={} )
 
 		# Fully-qualify RDNs
@@ -479,9 +431,6 @@ class Treequel::Branch
 	### Move the entry associated with this branch to a new entry indicated by +rdn+. If 
 	### any +attributes+ are given, also replace the corresponding attributes on the new
 	### entry with them.
-	### 
-	### @param [String] rdn  
-	### @param [Hash<String, Symbol => Object>] attributes 
 	def move( rdn )
 		self.log.debug "Asking the directory to move me to an entry called %p" % [ rdn ]
 		self.directory.move( self, rdn )
@@ -491,11 +440,8 @@ class Treequel::Branch
 	end
 
 
-	### Comparable interface: Returns -1 if other_branch is less than, 0 if other_branch is 
-	### equal to, and +1 if other_branch is greater than the receiving Branch.
-	### 
-	### @param [Treequel::Branch] other_branch
-	### @return [Fixnum]
+	### Comparable interface: Returns -1 if other_branch is less than, 0 if +other_branch+ is 
+	### equal to, and +1 if +other_branch+ is greater than the receiving Branch.
 	def <=>( other_branch )
 		# Try the easy cases first
 		return nil unless other_branch.respond_to?( :dn ) &&
@@ -517,9 +463,6 @@ class Treequel::Branch
 
 	### Fetch a new Treequel::Branch object for the child of the receiver with the specified
 	### +rdn+.
-	### 
-	### @param [String] rdn  The RDN of the child to fetch.
-	### @return [Treequel::Branch]
 	def get_child( rdn )
 		self.log.debug "Getting child %p from base = %p" % [ rdn, self.dn ]
 		newdn = [ rdn, self.dn ].reject {|part| part.empty? }.join( ',' )
@@ -529,9 +472,6 @@ class Treequel::Branch
 
 	### Addition operator: return a Treequel::BranchCollection that contains both the receiver
 	### and +other_branch+.
-	### 
-	### @param [Treequel::Branch] other_branch  
-	### @return [Treequel::BranchCollection]
 	def +( other_branch )
 		return Treequel::BranchCollection.new( self.branchset, other_branch.branchset )
 	end
@@ -540,9 +480,6 @@ class Treequel::Branch
 	### Return Treequel::Schema::ObjectClass instances for each of the receiver's
 	### objectClass attributes. If any +additional_classes+ are given, 
 	### merge them with the current list of the current objectClasses for the lookup.
-	### 
-	### @param [Array<String, Symbol>] additional_classes 
-	### @return [Array<Treequel::Schema::ObjectClass>]
 	def object_classes( *additional_classes )
 		# self.log.debug "Fetching object classes for %s" % [ self.dn ]
 		schema = self.directory.schema
@@ -564,8 +501,6 @@ class Treequel::Branch
 
 
 	### Return the receiver's operational attributes as attributeType schema objects.
-	###
-	### @return [Array<Treequel::Schema::AttributeType>]  the operational attributes
 	def operational_attribute_types
 		return self.directory.schema.operational_attribute_types
 	end
@@ -586,9 +521,6 @@ class Treequel::Branch
 	### include the MUST attributeTypes for them as well. This can be used to predict what
 	### attributes would need to be present for the entry to be saved if it added the
 	### +additional_object_classes+ to its own.
-	### 
-	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Array<Treequel::Schema::AttributeType>]
 	def must_attribute_types( *additional_object_classes )
 		oclasses = self.object_classes( *additional_object_classes )
 		types = oclasses.map( &:must ).flatten.uniq
@@ -602,9 +534,6 @@ class Treequel::Branch
 	### include the OIDs of the MUST attributes for them as well. This can be used to predict 
 	### what attributes would need to be present for the entry to be saved if it added the
 	### +additional_object_classes+ to its own.
-	### 
-	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Array<String, Symbol>] oid strings and symbols
 	def must_oids( *additional_object_classes )
 		return self.object_classes( *additional_object_classes ).
 			collect {|oc| oc.must_oids }.flatten.uniq.reject {|val| val == '' }
@@ -614,9 +543,6 @@ class Treequel::Branch
 	### Return a Hash of the attributes required by the Branch's objectClasses. If 
 	### any +additional_object_classes+ are given, include the attributes that would be
 	### necessary for the entry to be saved with them.
-	### 
-	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Hash<String => String>]
 	def must_attributes_hash( *additional_object_classes )
 		attrhash = {}
 
@@ -641,9 +567,6 @@ class Treequel::Branch
 	### include the MAY attributeTypes for them as well. This can be used to predict what
 	### optional attributes could be added to the entry if the +additional_object_classes+ 
 	### were added to it.
-	### 
-	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Array<Treequel::Schema::AttributeType>]
 	def may_attribute_types( *additional_object_classes )
 		return self.object_classes( *additional_object_classes ).
 			collect {|oc| oc.may }.flatten.uniq
@@ -655,9 +578,6 @@ class Treequel::Branch
 	### include the OIDs of the MAY attributes for them as well. This can be used to predict 
 	### what optional attributes could be added to the entry if the +additional_object_classes+ 
 	### were added to it.
-	### 
-	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Array<String, Symbol>]  oid strings and symbols
 	def may_oids( *additional_object_classes )
 		return self.object_classes( *additional_object_classes ).
 			collect {|oc| oc.may_oids }.flatten.uniq
@@ -667,9 +587,6 @@ class Treequel::Branch
 	### Return a Hash of the optional attributes allowed by the Branch's objectClasses. If 
 	### any +additional_object_classes+ are given, include the attributes that would be
 	### available for the entry if it had them.
-	### 
-	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Hash<String => String>]
 	def may_attributes_hash( *additional_object_classes )
 		entry = self.entry
 		attrhash = {}
@@ -695,8 +612,6 @@ class Treequel::Branch
 
 	### Return Treequel::Schema::AttributeType instances for the set of all of the receiver's
 	### MUST and MAY attributeTypes plus the operational attributes.
-	### 
-	### @return [Array<Treequel::Schema::AttributeType>]
 	def valid_attribute_types
 		return self.must_attribute_types |
 		       self.may_attribute_types  |
@@ -707,8 +622,6 @@ class Treequel::Branch
 	### Return a uniqified Array of OIDs (numeric OIDs as Strings, named OIDs as Symbols) for
 	### the set of all of the receiver's MUST and MAY attributeTypes plus the operational
 	### attributes.
-	### 
-	### @return [Array<String, Symbol>]
 	def valid_attribute_oids
 		return self.must_oids | self.may_oids
 	end
@@ -718,9 +631,6 @@ class Treequel::Branch
 	### attributeTypes for the receiver given its objectClasses, return the 
 	### AttributeType object that corresponds with it. If it isn't valid, return nil.
 	### Includes operational attributes.
-	###
-	### @param [String,Symbol] attroid  a numeric OID (as a String) or a named OID (as a Symbol)
-	### @return [Treequel::Schema::AttributeType] the validated attributeType
 	def valid_attribute_type( attroid )
 		return self.valid_attribute_types.find {|attr_type| attr_type.valid_name?(attroid) }
 	end
@@ -728,9 +638,6 @@ class Treequel::Branch
 
 	### Return +true+ if the specified +attrname+ is a valid attributeType given the
 	### receiver's current objectClasses. Does not include operational attributes.
-	### 
-	### @param [String, Symbol] the OID (numeric or name) of the attribute in question
-	### @return [Boolean]
 	def valid_attribute?( attroid )
 		return !self.valid_attribute_type( attroid ).nil?
 	end
@@ -739,9 +646,6 @@ class Treequel::Branch
 	### Return a Hash of all the attributes allowed by the Branch's objectClasses. If
 	### any +additional_object_classes+ are given, include the attributes that would be
 	### available for the entry if it had them.
-	### 
-	### @param [Array<String, Symbol>] additional_object_classes 
-	### @return [Hash<String => String>]
 	def valid_attributes_hash( *additional_object_classes )
 		self.log.debug "Gathering a hash of all valid attributes:"
 		must = self.must_attributes_hash( *additional_object_classes )
@@ -759,7 +663,6 @@ class Treequel::Branch
 
 	### Proxy method: call #traverse_branch if +attribute+ is a valid attribute
 	### and +value+ isn't +nil+.
-	### @see Treequel::Branch#traverse_branch
 	def method_missing( attribute, value=nil, additional_attributes={} )
 		return super( attribute ) if value.nil?
 		return self.traverse_branch( attribute, value, additional_attributes )
@@ -767,23 +670,18 @@ class Treequel::Branch
 
 
 	### If +attribute+ matches a valid attribute type in the directory's
-	### schema, return a new Branch for the RDN of +attribute+ and +value+, and 
-	### +additional_attributes+ if it's a multi-value RDN.
+	### schema, return a new Branch for the RDN of +attribute+ and +value+ and 
+	### +additional_attributes+ (if it's a multi-value RDN).
 	###
-	### @param [Symbol] attribute            the RDN attribute of the child
-	### @param [String] value                the RDN valye of the child
-	### @param [Hash] additional_attributes  any additional RDN attributes
+	###     # (Called via #method_missing)
+	###     branch = Treequel::Branch.new( directory, 'ou=people,dc=acme,dc=com' )
+	###     branch.uid( :chester ).dn
+	###     # => 'uid=chester,ou=people,dc=acme,dc=com'
+	###     branch.uid( :chester, :employeeType => 'admin' ).dn
+	###     # => 'uid=chester+employeeType=admin,ou=people,dc=acme,dc=com'
 	### 
-	### @example
-	###   branch = Treequel::Branch.new( directory, 'ou=people,dc=acme,dc=com' )
-	###   branch.uid( :chester ).dn
-	###   # => 'uid=chester,ou=people,dc=acme,dc=com'
-	###   branch.uid( :chester, :employeeType => 'admin' ).dn
-	###   # => 'uid=chester+employeeType=admin,ou=people,dc=acme,dc=com'
-	### 
-	### @return [Treequel::Branch]  the Branch for the specified child
-	### @raise [NoMethodError] if the +attribute+ or any +additional_attributes+ are
-	###                        not valid attributeTypes.
+	### Raises a NoMethodError if the +attribute+ or any +additional_attributes+ are
+	### not valid attributeTypes.
 	def traverse_branch( attribute, value, additional_attributes={} )
 		valid_types = self.directory.schema.attribute_types
 
@@ -858,7 +756,6 @@ class Treequel::Branch
 
 
 	### Clear any cached values when the structural state of the object changes.
-	### @return [void]
 	def clear_caches
         self.log.debug "Clearing entry and values caches."
 		@entry = nil
@@ -907,10 +804,6 @@ class Treequel::Branch
 
 	### Make LDIF for the given +attribute+ and its +values+, wrapping at the given
 	### +width+.
-	### 
-	### @param [String] attribute  the attribute
-	### @param [Array<String>] values  the values for the given +attribute+
-	### @param [Fixnum] width  the maximum width of the lines to return
 	def ldif_for_attr( attribute, value, width )
 		unsplit_line = "#{attribute}:"
 

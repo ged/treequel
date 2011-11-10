@@ -22,7 +22,6 @@ module Treequel
 		### Define the given +delegated_methods+ as delegators to the like-named method
 		### of the return value of the +delegate_method+.
 		### 
-		### @example
 		###    class MyClass
 		###      extend Treequel::Delegation
 		###      
@@ -122,10 +121,8 @@ module Treequel
 		module_function
 		###############
 
-		### Normalize the given key
-		### @param [String] key  the key to normalize
-		### @return a downcased Symbol stripped of any invalid characters, and 
-		###         with '-' characters converted to '_'.
+		### Normalize the given key, returning a downcased Symbol stripped of any invalid 
+		### characters, and with '-' characters converted to '_'.
 		def normalize_key( key )
 			return key if key.to_s =~ Treequel::Constants::Patterns::NUMERICOID
 			return key.to_s.downcase.
@@ -135,7 +132,6 @@ module Treequel
 		end
 
 		### Return a copy of +hash+ with all of its keys normalized by #normalize_key.
-		### @param [Hash] hash  the Hash to normalize
 		def normalize_hash( hash )
 			hash = hash.dup
 			hash.keys.each do |key|
@@ -155,7 +151,6 @@ module Treequel
 
 		### A logging proxy class that wraps calls to the logger into calls that include
 		### the name of the calling class.
-		### @private
 		class ClassNameProxy
 
 			### Create a new proxy for the given +klass+.

@@ -8,13 +8,15 @@ require 'treequel'
 
 # Virtual interface methods for Control modules.
 #
-# @abstract To make a concrete derivative, include this module in a module that
-#   implements either {#get_client_controls} or {#get_server_controls} and #each. 
-#   Your implementation of #each should +super+ with a block that does the 
-#   necessary extraction of the result controls and yields back to the original
-#   block.
+# == Subclassing
+# To make a concrete derivative, include this module in a module that
+# implements either #get_client_controls or #get_server_controls and #each. 
+# Your implementation of #each should +super+ with a block that does the 
+# necessary extraction of the result controls and yields back to the original
+# block.
 # 
-# @example
+# == Examples
+#
 #   module Treequel::MyControl
 #       include Treequel::Control
 #   
