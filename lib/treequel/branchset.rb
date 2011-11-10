@@ -334,7 +334,7 @@ class Treequel::Branchset
 	### Add a clause made from a negated +filterspec+ to an existing filter.
 	def not( *filterspec )
 		self.log.debug "cloning %p with negated filterspec: %p" % [ self, filterspec ]
-		notfilter = Treequel::Filter.new( :not, filterspec )
+		notfilter = Treequel::Filter.new( :not, *filterspec )
 		return self.clone( :filter => self.filter + notfilter )
 	end
 
