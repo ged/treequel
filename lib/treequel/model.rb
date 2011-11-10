@@ -627,17 +627,15 @@ class Treequel::Model < Treequel::Branch
 			return meth.call( *args ) if meth
 		end
 
-		self.log.debug "  checking to see if it's a traversal call"
+		# self.log.debug "  checking to see if it's a traversal call"
+
 		# Next, super to rdn-traversal if it looks like a reader but has arguments
 		plainsym, methodtype = attribute_from_method( sym )
-		self.log.debug "    method looks like a %p" % [ methodtype ]
 		return super if methodtype == :reader && !args.empty?
-		self.log.debug "  ...but it doesn't have any arguments. Finding attr type."
 
 		# Now make a method body for a new method based on what attributeType it is if 
 		# it's a valid attribute
 		attrtype = self.find_attribute_type( plainsym ) or return super
-		self.log.debug "  attrtype is: %p" % [ attrtype ]
 		methodbody = case methodtype
 			when :writer
 				self.make_writer( attrtype )

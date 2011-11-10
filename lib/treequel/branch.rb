@@ -339,7 +339,7 @@ class Treequel::Branch
 		attrsym = attrname.to_sym
 
 		if @values.key?( attrsym )
-			self.log.debug "  value for %p is cached (%p)." % [ attrname, @values[attrsym] ]
+			# self.log.debug "  value for %p is cached (%p)." % [ attrname, @values[attrsym] ]
 		else
 			self.log.debug "  value for %p is NOT cached." % [ attrsym ]
 			value = self.get_converted_object( attrsym )
@@ -544,7 +544,7 @@ class Treequel::Branch
 	### @param [Array<String, Symbol>] additional_classes 
 	### @return [Array<Treequel::Schema::ObjectClass>]
 	def object_classes( *additional_classes )
-		self.log.debug "Fetching object classes for %s" % [ self.dn ]
+		# self.log.debug "Fetching object classes for %s" % [ self.dn ]
 		schema = self.directory.schema
 
 		oc_oids = self[:objectClass] || []
@@ -558,7 +558,7 @@ class Treequel::Branch
 			oclasses << oc
 		end
 
-		self.log.debug "  found %d objectClasses: %p" % [  oclasses.length, oclasses.map(&:name) ]
+		# self.log.debug "  found %d objectClasses: %p" % [  oclasses.length, oclasses.map(&:name) ]
 		return oclasses.uniq
 	end
 
@@ -854,8 +854,8 @@ class Treequel::Branch
 	### and return it.
 	def get_converted_attribute( attrsym, object )
 		if attribute = self.directory.schema.attribute_types[ attrsym ]
-			self.log.debug "converting %p object (a %p) to a %p attribute" %
-				[ attrsym, object.class, attribute.syntax_oid ]
+			self.log.debug "converting %p object (a %p) to a %s attribute" %
+				[ attrsym, object.class, attribute.syntax.desc ]
 			return self.directory.convert_to_attribute( attribute.syntax_oid, object )
 		else
 			self.log.info "no attributeType for %p" % [ attrsym ]
