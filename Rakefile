@@ -6,6 +6,8 @@ rescue LoadError
 	abort "This Rakefile requires hoe (gem install hoe)"
 end
 
+require 'rake/clean'
+
 Hoe.plugin :mercurial
 Hoe.plugin :signing
 Hoe.plugin :manualgen
