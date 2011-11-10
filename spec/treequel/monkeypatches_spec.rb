@@ -75,11 +75,11 @@ describe Treequel::TimeExtensions do
 	before( :all ) do
 		# Make the local timezone PDT so offsets show up correctly
 		@real_tz = ENV['TZ']
-		ENV['TZ'] = 'US/Pacific'
+		ENV['TZ'] = ':GMT'
 	end
 
 	before( :each ) do
-		@time = Time.parse( "Fri Aug 20 08:21:35.1876455 -0700 2010" )
+		@time = Time.parse( "Fri Aug 20 08:21:35.1876455 -0000 2010" )
 	end
 
 	after( :all ) do
@@ -89,23 +89,23 @@ describe Treequel::TimeExtensions do
 	describe "RFC4517 LDAP Generalized Time method" do
 
 		it "returns the time in 'Generalized Time' format" do
-			@time.ldap_generalized.should == "20100820082135-0700"
+			@time.ldap_generalized.should == "20100820082135Z"
 		end
 
 		it "can include fractional seconds if the optional fractional digits argument is given" do
-			@time.ldap_generalized( 3 ).should == "20100820082135.187-0700"
+			@time.ldap_generalized( 3 ).should == "20100820082135.187Z"
 		end
 
 		it "doesn't include the decimal if fractional digits is specified but zero" do
-			@time.ldap_generalized( 0 ).should == "20100820082135-0700"
+			@time.ldap_generalized( 0 ).should == "20100820082135Z"
 		end
 
 		it "zero-fills any digits after six in the fractional digits" do
-			@time.ldap_generalized( 11 ).should == "20100820082135.18764500000-0700"
+			@time.ldap_generalized( 11 ).should == "20100820082135.18764500000Z"
 		end
 
 		it "uses 'Z' for the timezone of times in UTC" do
-			@time.utc.ldap_generalized.should == "20100820152135Z"
+			@time.utc.ldap_generalized.should == "20100820082135Z"
 		end
 
 	end
@@ -113,11 +113,11 @@ describe Treequel::TimeExtensions do
 	describe "RFC4517 UTC Time method" do
 
 		it "returns the time in 'UTC Time' format" do
-			@time.ldap_utc.should == "100820082135-0700"
+			@time.ldap_utc.should == "100820082135Z"
 		end
 
 		it "uses 'Z' for the timezone of times in UTC" do
-			@time.utc.ldap_utc.should == "100820152135Z"
+			@time.utc.ldap_utc.should == "100820082135Z"
 		end
 
 	end
