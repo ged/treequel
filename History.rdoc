@@ -1,3 +1,14 @@
+== v1.7.0 [2011-11-09] Michael Granger <ged@FaerieMUD.org>
+
+- Treat Treequel::Model#[]= with a nil value on a SINGLE-VALUE
+  attribute as a delete.
+- Splat the filterspec used in Branchset#not to avoid unnecessary
+  filter clauses.
+- Efficiency fix for Treequel::Branch#must_attribute_types
+- Removed some of the more-redundant/verbose debugging.
+- Added Branchset#first with an argument, and a #not mutator.
+
+
 == v1.6.0 [2011-10-06] Michael Granger <ged@FaerieMUD.org>
 
 - Adding workaround for vendored "sysexits" library under MacOX X 10.7
