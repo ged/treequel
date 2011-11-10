@@ -590,15 +590,8 @@ class Treequel::Branch
 	### @param [Array<String, Symbol>] additional_object_classes 
 	### @return [Array<Treequel::Schema::AttributeType>]
 	def must_attribute_types( *additional_object_classes )
-		types = []
 		oclasses = self.object_classes( *additional_object_classes )
-		self.log.debug "Gathering MUST attribute types for objectClasses: %p" %
-		 	[ oclasses.map(&:name) ]
-
-		oclasses.each do |oc|
-			self.log.debug "  adding %p from %p" % [ oc.must.map(&:name), oc.name ]
-			types |= oc.must
-		end
+		types = oclasses.map( &:must ).flatten.uniq
 
 		return types
 	end
