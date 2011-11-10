@@ -279,7 +279,11 @@ class Treequel::Model < Treequel::Branch
 		value = Array( value ) unless attrtype.single?
 
 		self.mark_dirty
-		@values[ attrtype.name.to_sym ] = value
+		if value
+			@values[ attrtype.name.to_sym ] = value
+		else
+			@values.delete( attrtype.name.to_sym )
+		end
 
 		# If the objectClasses change, we (may) need to re-apply mixins
 		if attrname.to_s.downcase == 'objectclass'
