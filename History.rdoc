@@ -1,3 +1,12 @@
+== v1.7.1 [2011-11-28] Michael Granger <ged@FaerieMUD.org>
+
+- Modified filter expressions to eliminate unnecessary ORing
+- Efficiency fixes for Treequel::Model#modifications (delete/add -> replace)
+- Fixing missing DN attribute/s on Treequel::Model objects created via
+  attribute traversal methods.
+- Log errors added during validation at ERROR level
+
+
 == v1.7.0 [2011-11-09] Michael Granger <ged@FaerieMUD.org>
 
 - Treat Treequel::Model#[]= with a nil value on a SINGLE-VALUE
