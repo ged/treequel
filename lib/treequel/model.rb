@@ -235,6 +235,10 @@ class Treequel::Model < Treequel::Branch
 
 	attr_reader :values
 
+	# Unsaved attribute values hash
+	attr_reader :values
+
+
 	### Set up the empty hook methods
 	HOOKS.each do |hook|
 		define_method( hook ) do |*args|
@@ -408,42 +412,46 @@ class Treequel::Model < Treequel::Branch
 		self.log.debug "Gathering modifications..."
 
 		mods = []
-		entry = self.entry || {}
-		self.log.debug "  directory entry is: %p" % [ entry ]
-
 		@values.sort_by {|k, _| k.to_s }.each do |attribute, vals|
-			vals = [ vals ] unless vals.is_a?( Array )
-			vals = vals.compact
-			vals.collect! {|val| self.get_converted_attribute(attribute, val) }
-			self.log.debug "  comparing %s values to entry: %p vs. %p" %
-				[ attribute, vals, entry[attribute.to_s] ]
-
-			entryvals = (entry[attribute.to_s] || [])
-			attrmods = { :add => [], :delete => [] }
-
-			Diff::LCS.sdiff( entryvals.sort, vals.sort ) do |change|
-				self.log.debug "    found a change: %p" % [ change ]
-				if change.adding?
-					attrmods[:add] << change.new_element
-				elsif change.changed?
-					attrmods[:add] << change.new_element
-					attrmods[:delete] << change.old_element
-				elsif change.deleting?
-					attrmods[:delete] << change.old_element
-				# else
-				# 	self.log.debug "      no mod necessary for %p" % [ change.action ]
-				end
-			end
-
-			self.log.debug "  attribute %p has %d adds and %d deletes" %
-				[ attribute, attrmods[:add].length, attrmods[:delete].length ]
-			mods << LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute.to_s, attrmods[:delete] ) unless
-				attrmods[:delete].empty?
-			mods << LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute.to_s, attrmods[:add] ) unless
-				attrmods[:add].empty?
+			self.log.debug "  finding mods for %s" % [ attribute ]
+			mods += self.diff_with_entry( attribute, vals )
 		end
 
-		self.log.debug "  mods are: %p" % [ mods ]
+		return mods
+	end
+
+
+	### Diff the specified +values+ for the given +attribute+ against those in the directory
+	### entry and return LDAP::Mod objects for any differences.
+	def diff_with_entry( attribute, values )
+		mods         = []
+		attribute    = attribute.to_s
+		entry        = self.entry || {}
+		entry_values = entry.key?( attribute ) ? entry[attribute] : []
+
+		values = Array( values ).compact.
+			collect {|val| self.get_converted_attribute(attribute, val) }
+		self.log.debug "  comparing %s values to entry: %p vs. %p" %
+			[ attribute, values, entry_values ]
+
+		Diff::LCS.sdiff( entry_values.sort, values.sort ) do |change|
+			if change.adding?
+				self.log.debug "    found an addition: %p" % [ change ]
+				mods << LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute, [change.new_element] )
+
+			elsif change.changed?
+				self.log.debug "    found a modification: %p" % [ change ]
+				mods << LDAP::Mod.new( LDAP::LDAP_MOD_REPLACE, attribute, 
+				                       [change.old_element, change.new_element] )
+
+			elsif change.deleting?
+				self.log.debug "    found a deletion: %p" % [ change ]
+				mods << LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute, [change.old_element] )
+			end
+		end
+
+		self.log.debug "  attribute %p has modifications: %p" %
+			[ attribute, mods ] unless mods.empty?
 
 		return mods
 	end
