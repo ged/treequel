@@ -12,29 +12,6 @@ It's inspired by and modeled after [Sequel](http://sequel.rubyforge.org/), a
 kick-ass database library.
 
 
-== Examples
-
-Here are a few short examples to whet your appetite:
-
-    # Connect to the directory at the specified URL
-    dir = Treequel.directory( 'ldap://ldap.company.com/dc=company,dc=com' )
-    
-    # Get a list of email addresses of every person in the directory (as
-    # long as people are under ou=people)
-    dir.ou( :people ).filter( :mail ).map( :mail ).flatten
-    
-    # Get a list of all IP addresses for all hosts in any ou=hosts group
-    # in the whole directory:
-    dir.filter( :ou => :hosts ).collection.filter( :ipHostNumber ).
-      map( :ipHostNumber ).flatten
-    
-    # Get all people in the directory in the form of a hash of names 
-    # keyed by email addresses
-    dir.ou( :people ).filter( :mail ).to_hash( :mail, :cn )
-
-More elaborate examples of real-world usage can be found 
-{in the examples/ directory}[http://deveiate.org/projects/Treequel/browser/examples] 
-in the distribution.
 
 
 == Contributing
