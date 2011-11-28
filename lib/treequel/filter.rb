@@ -499,13 +499,18 @@ class Treequel::Filter
 		filterlist = expression.collect do |key, expr|
 			Treequel.logger.debug "  adding %p => %p to the filter list" % [ key, expr ]
 			if expr.respond_to?( :fetch )
-				Treequel.logger.debug "    ORing together %d subfilters since %p has indices" %
-					[ expr.length, expr ]
-				subfilters = expr.collect {|val| Treequel::Filter.new(key, val) }
-				Treequel::Filter.new( :or, subfilters )
+				if expr.respond_to?( :length ) && expr.length > 1
+					Treequel.logger.debug "    ORing together %d subfilters since %p has indices" %
+						[ expr.length, expr ]
+					subfilters = expr.collect {|val| Treequel::Filter.new(key, val) }
+					Treequel::Filter.new( :or, subfilters )
+				else
+					Treequel.logger.debug "    unwrapping singular subfilter"
+					Treequel::Filter.new([ key.to_sym, expr.first ])
+				end
 			else
 				Treequel.logger.debug "    value is a scalar; creating a single filter"
-				Treequel::Filter.new([ key.to_sym, expr ])
+				Treequel::Filter.new( key.to_sym, expr )
 			end
 		end
 
@@ -655,8 +660,9 @@ class Treequel::Filter
 
 	### Create a new Treequel::Branchset::Filter with the specified +expression+.
 	def initialize( *expression_parts )
+		self.log.debug "New filter for expression: %p" % [ expression_parts ]
 		@component = self.class.parse_expression( expression_parts )
-		self.log.debug "created a filter with component: %p" % [ @component ]
+		self.log.debug "  expression parsed into component: %p" % [ @component ]
 
 		super()
 	end

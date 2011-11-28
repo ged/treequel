@@ -123,6 +123,10 @@ describe Treequel::Filter do
 			should == '(|(uid=lar)(uid=bin)(uid=fon)(uid=guh))'
 	end
 
+	it "doesn't make an OR-hash if the expression is singular" do
+		Treequel::Filter.new( :uid => ['lar'] ).to_s.should == '(uid=lar)'
+	end
+
 	it "correctly includes OR subfilters in a Hash if the value is an Array" do
 		fstr = Treequel::Filter.new( :objectClass => 'inetOrgPerson', :uid => %w[lar bin fon guh] ).to_s
 
