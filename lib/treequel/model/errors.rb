@@ -49,6 +49,7 @@ class Treequel::Model::Errors < ::Hash
 
 	### Adds an error for the given +subject+.
 	def add( subject, message )
+		self.log.error "%s: %s" % [ subject, message ]
 		self[ subject ] << message
 	end
 
