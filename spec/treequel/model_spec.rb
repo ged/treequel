@@ -308,6 +308,37 @@ describe Treequel::Model do
 	end
 
 
+	describe "created via attribute transition from their parent" do
+
+		before( :each ) do
+			@entry = TEST_HOSTS_ENTRY.dup
+			@parent = Treequel::Model.new_from_entry( @entry, @directory )
+		end
+
+
+		it "has its RDN attributes set when it's a simple RDN" do
+			@conn.stub( :search_ext2 ).
+				with( "cn=wafflebreaker,#{TEST_HOSTS_DN}", LDAP::LDAP_SCOPE_BASE, "(objectClass=*)").
+				and_return( [] )
+
+			host = @parent.cn( :wafflebreaker )
+			host.object_class = :ipHost
+			host.cn.should == ['wafflebreaker']
+		end
+
+		it "has its RDN attributes set when it's a multi-value RDN" do
+			@conn.stub( :search_ext2 ).
+				with( "cn=wiffle+l=downtown,#{TEST_HOSTS_DN}", LDAP::LDAP_SCOPE_BASE, "(objectClass=*)").
+				and_return( [] )
+
+			host = @parent.cn( :wiffle, :l => 'downtown' )
+			host.object_class = :ipHost
+
+			host.cn.should == ['wiffle']
+			host.l.should == ['downtown']
+		end
+	end
+
 	describe "objects loaded from entries" do
 
 		before( :each ) do

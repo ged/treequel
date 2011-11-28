@@ -47,9 +47,11 @@ describe Treequel::Model::SchemaValidations do
 
 	it "adds an error if the object doesn't have at least one structural objectClass" do
 		@conn.stub( :search_ext2 ).and_return( [] )
-		@modelobj.object_class = ['ipHost', 'ieee802device']
-		@modelobj.cn = 'testhost'
-		@modelobj.ip_host_number = '127.0.0.1'
+		@modelobj.object_class = :posixAccount
+		@modelobj.cn = 'jrandom'
+		@modelobj.uid_number = 2881
+		@modelobj.gid_number = 761
+		@modelobj.home_directory = '/home/jrandom'
 
 		@modelobj.should_not be_valid()
 		@modelobj.errors.should have( 1 ).member
@@ -59,7 +61,7 @@ describe Treequel::Model::SchemaValidations do
 
 	it "adds an error if the object doesn't have at least one value for all of its MUST attributes" do
 		@conn.stub( :search_ext2 ).and_return( [] )
-		@modelobj.object_class = 'person'
+		@modelobj.object_class = [:person, :uidObject]
 
 		@modelobj.should_not be_valid()
 		@modelobj.errors.should have( 2 ).members

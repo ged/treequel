@@ -212,7 +212,7 @@ class Treequel::Model < Treequel::Branch
 			@dirty = false
 		else
 			super( directory, dn )
-			@values = entry ? symbolify_keys( entry ) : {}
+			@values = symbolify_keys( entry ? entry : self.rdn_attributes )
 			@dirty  = true
 		end
 
@@ -232,6 +232,8 @@ class Treequel::Model < Treequel::Branch
 	######
 	public
 	######
+
+	attr_reader :values
 
 	### Set up the empty hook methods
 	HOOKS.each do |hook|
