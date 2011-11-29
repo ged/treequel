@@ -865,6 +865,22 @@ describe Treequel::Branch do
 				branch[ :ipServicePort ].should be_a( Fixnum )
 			end
 
+			it "respects syntax inherited from supertype in object conversion" do
+				test_dn = "cn=authorized_users,#{TEST_HOSTS_DN}"
+				entry = {
+					'cn' => ['authorized_users'],
+					'member' => [TEST_PERSON_DN]
+				}
+				@conn.should_receive( :search_ext2 ).
+					with( test_dn, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+					and_return([ entry ])
+
+				branch = Treequel::Branch.new( @directory, test_dn )
+
+				branch[ :member ].first.should be_a( Treequel::Branch )
+				branch[ :member ].first.dn.should == TEST_PERSON_DN
+			end
+
 		end
 
 		### Attribute writer
