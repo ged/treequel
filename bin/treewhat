@@ -239,7 +239,7 @@ class Treequel::What
 
 		pr.say( "\n" )
 		pr.say( pr.color(subheading, :subheader) )
-		pr.say( pr.list(items.sort_by(&:downcase), :columns_across) )
+		pr.say( pr.list(items.sort_by(&:downcase), :columns_down) )
 	end
 
 
