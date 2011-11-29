@@ -662,6 +662,20 @@ describe Treequel::Model do
 
 		end
 
+		it "avoids Arrayifying Time objects when converting them to generalized time strings" do
+			entry = {
+				'dn' => ["cn=something,#{TEST_BASE_DN}"],
+				'objectClass' => ['dhcpLeases'],
+				'cn' => ['something'],
+				'dhcpAddressState' => ['ACTIVE'],
+			}
+			obj = Treequel::Model.new_from_entry( entry, @directory )
+
+			obj.dhcp_start_time_of_state = Time.utc( 1322607981 )
+
+			obj.modifications.should include( ldap_mod_add :dhcpStartTimeOfState, '13226079810101000000Z' )
+		end
+
 	end
 
 	describe "objects created in memory" do

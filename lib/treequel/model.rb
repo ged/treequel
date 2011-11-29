@@ -429,6 +429,10 @@ class Treequel::Model < Treequel::Branch
 		entry        = self.entry || {}
 		entry_values = entry.key?( attribute ) ? entry[attribute] : []
 
+		# Workaround for the fact that Time has a #to_ary, causing it to become an
+		# Array of integers when cast via Array().
+		values = [ values ] if values.is_a?( Time )
+
 		values = Array( values ).compact.
 			collect {|val| self.get_converted_attribute(attribute, val) }
 		self.log.debug "  comparing %s values to entry: %p vs. %p" %
