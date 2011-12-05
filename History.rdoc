@@ -1,3 +1,13 @@
+== v1.8.0 [2011-12-05] Michael Granger <ged@FaerieMUD.org>
+
+- Implemented #eql? for Treequel::Branch for correct behavior in
+  Array#-, Hash#[], etc.
+
+
+== v1.7.2 [2011-11-30] Michael Granger <ged@FaerieMUD.org>
+
+- Added signature for changeset a8a3bca987c3
+
 == v1.7.2 [2011-11-29] Michael Granger <ged@FaerieMUD.org>
 
 - Add a workaround for Time objects used in generalizedTime fields,
