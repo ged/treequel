@@ -1,3 +1,13 @@
+== v1.8.1 [2011-12-05] Michael Granger <ged@FaerieMUD.org>
+
+- Fixed #eql? implementation by using the hash-value instead of just
+  comparing DNs.
+
+
+== v1.8.0 [2011-12-05] Michael Granger <ged@FaerieMUD.org>
+
+- Added signature for changeset fa0d500e2dee
+
 == v1.8.0 [2011-12-05] Michael Granger <ged@FaerieMUD.org>
 
 - Implemented #eql? for Treequel::Branch for correct behavior in
