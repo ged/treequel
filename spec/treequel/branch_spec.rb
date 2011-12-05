@@ -174,6 +174,20 @@ describe Treequel::Branch do
 			other.should_not be_eql( @branch )
 		end
 
+		it "hash-compares as equal with another instances with the same DN" do
+			clone = Treequel::Branch.new( @directory, TEST_HOSTS_DN )
+			@branch.hash.should == clone.hash
+		end
+
+		it "has a hash value different than its DN string" do
+			@branch.hash.should_not == @branch.dn.hash
+		end
+
+		it "compares as not equal-by-value with another instance with a different DN" do
+			other = Treequel::Branch.new( @directory, TEST_HOST_DN )
+			@branch.hash.should_not == other.hash
+		end
+
 		it "knows that it hasn't loaded its entry yet if it's nil" do
 			@branch.loaded?.should be_false()
 		end

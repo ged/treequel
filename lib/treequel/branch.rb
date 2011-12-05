@@ -444,7 +444,13 @@ class Treequel::Branch
 	### +other+.
 	def eql?( other )
 		return false unless other.class.eql?( self.class )
-		return self.dn == other.dn
+		return self.hash == other.hash
+	end
+
+
+	### Generates a Fixnum hash for the receiver. 
+	def hash
+		return [ self.class, self.dn ].hash
 	end
 
 
