@@ -160,6 +160,19 @@ describe Treequel::Branch do
 			( child <=> @branch ).should == -1
 		end
 
+		it "compares as equal-by-value with another instance with the same DN" do
+			clone = Treequel::Branch.new( @directory, TEST_HOSTS_DN )
+
+			@branch.should be_eql( clone )
+			clone.should be_eql( @branch )
+		end
+
+		it "compares as not equal-by-value with another instance with a different DN" do
+			other = Treequel::Branch.new( @directory, TEST_HOST_DN )
+
+			@branch.should_not be_eql( other )
+			other.should_not be_eql( @branch )
+		end
 
 		it "knows that it hasn't loaded its entry yet if it's nil" do
 			@branch.loaded?.should be_false()

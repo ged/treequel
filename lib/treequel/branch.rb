@@ -440,6 +440,14 @@ class Treequel::Branch
 	end
 
 
+	### Comparison-by-value method -- returns +true+ if the receiver has the same DN as
+	### +other+.
+	def eql?( other )
+		return false unless other.class.eql?( self.class )
+		return self.dn == other.dn
+	end
+
+
 	### Comparable interface: Returns -1 if other_branch is less than, 0 if +other_branch+ is 
 	### equal to, and +1 if +other_branch+ is greater than the receiving Branch.
 	def <=>( other_branch )
