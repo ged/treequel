@@ -8,6 +8,7 @@
 
 - Added signature for changeset fa0d500e2dee
 
+
 == v1.8.0 [2011-12-05] Michael Granger <ged@FaerieMUD.org>
 
 - Implemented #eql? for Treequel::Branch for correct behavior in
