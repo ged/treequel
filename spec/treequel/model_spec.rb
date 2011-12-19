@@ -715,9 +715,7 @@ describe Treequel::Model do
 					ldap_mod_add("gidNumber", "200"),
 					ldap_mod_add("homeDirectory", "/u/j/jrandom"),
 					ldap_mod_add("l", "a forest in England"),
-					ldap_mod_add("objectClass", "inetOrgPerson"),
-					ldap_mod_add("objectClass", "person"),
-					ldap_mod_add("objectClass", "posixAccount"),
+					ldap_mod_add("objectClass", "inetOrgPerson", "person", "posixAccount"),
 					ldap_mod_add("sn", "Hacker"),
 					ldap_mod_add("uid", "jrandom"),
 					ldap_mod_add("uidNumber", "1121")

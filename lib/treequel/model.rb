@@ -438,26 +438,37 @@ class Treequel::Model < Treequel::Branch
 		self.log.debug "  comparing %s values to entry: %p vs. %p" %
 			[ attribute, values, entry_values ]
 
+		mods = Hash.new {|h,k| h[k] = [] }
 		Diff::LCS.sdiff( entry_values.sort, values.sort ) do |change|
 			if change.adding?
 				self.log.debug "    found an addition: %p" % [ change ]
-				mods << LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute, [change.new_element] )
+				mods[:add] << change.new_element
 
 			elsif change.changed?
 				self.log.debug "    found a modification: %p" % [ change ]
-				mods << LDAP::Mod.new( LDAP::LDAP_MOD_REPLACE, attribute, 
-				                       [change.old_element, change.new_element] )
+				mods[:replace] << [ change.old_element, change.new_element ]
 
 			elsif change.deleting?
 				self.log.debug "    found a deletion: %p" % [ change ]
-				mods << LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute, [change.old_element] )
+				mods[:del] << change.old_element
 			end
 		end
 
 		self.log.debug "  attribute %p has modifications: %p" %
 			[ attribute, mods ] unless mods.empty?
 
-		return mods
+		# Now turn all of the modifications into LDAP::Mod objects, one per modified
+		# attribute
+		return mods.collect do |kind, values|
+			case kind
+			when :add
+				LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute, values )
+			when :replace
+				values.collect {|pair| LDAP::Mod.new(LDAP::LDAP_MOD_REPLACE, attribute, pair) }
+			when :del
+				LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute, values )
+			end
+		end.flatten.compact
 	end
 
 
