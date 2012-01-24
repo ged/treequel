@@ -30,7 +30,6 @@ hoespec = Hoe.spec 'treequel' do
 	else
 		self.dependency 'ruby-ldap', '~> 0.9'
 	end
-	self.dependency 'diff-lcs', '~> 1.1'
 	self.dependency 'rspec', '~> 2.7', :developer
 	self.dependency 'ruby-termios', '~> 0.9', :developer
 	self.dependency 'ruby-terminfo', '~> 0.1', :developer
@@ -64,7 +63,7 @@ end
 ENV['VERSION'] ||= hoespec.spec.version.to_s
 
 # Ensure the specs pass before checking in
-task 'hg:precheckin' => [ :check_history, :check_manifest, :spec ]
+task 'hg:precheckin' => [ 'ChangeLog', :check_history, :check_manifest, :spec ]
 
 ### Make the ChangeLog update if the repo has changed since it was last built
 file '.hg/branch'

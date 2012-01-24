@@ -533,7 +533,7 @@ describe Treequel::Model do
 
 				result.should be_an( Array )
 				result.should have( 1 ).members
-				result.should include( ldap_mod_replace 'uid', 'slappy', 'slippy' )
+				result.should include( ldap_mod_replace 'uid', 'slippy' )
 			end
 
 			it "reverts the attribute if its #revert method is called" do
@@ -549,7 +549,7 @@ describe Treequel::Model do
 
 			it "updates the modified attribute when saved" do
 				@conn.should_receive( :modify ).
-					with( TEST_PERSON_DN, [ldap_mod_replace(:uid, 'slappy', 'slippy')] )
+					with( TEST_PERSON_DN, [ldap_mod_replace(:uid, 'slippy')] )
 				@obj.save
 			end
 
@@ -635,15 +635,12 @@ describe Treequel::Model do
 				result = @obj.modifications
 
 				result.should be_an( Array )
-				result.should have( 6 ).members
-				result.should include( ldap_mod_replace :uid, 'slappy', 'fappy' )
-				result.should include( ldap_mod_replace :givenName, 'Slappy', 'Fappy' )
-				result.should include( ldap_mod_replace :displayName, 'Slappy the Frog',
-				                       'Fappy the Bear' )
-				result.should include( ldap_mod_delete :description, 'Alright.' )
-				result.should include( ldap_mod_add :description, 'The new mascot.' )
-				result.should include( ldap_mod_delete :l, 'a forest in England' )
-
+				result.should include( ldap_mod_replace :uid, 'fappy' )
+				result.should include( ldap_mod_replace :givenName, 'Fappy' )
+				result.should include( ldap_mod_replace :displayName, 'Fappy the Bear' )
+				result.should include( ldap_mod_replace :description,
+					'Smokey the Bear is much more intense in person.', 'The new mascot.' )
+				result.should include( ldap_mod_delete :l )
 			end
 
 			it "reverts all of the attributes if its #revert method is called" do
@@ -710,15 +707,15 @@ describe Treequel::Model do
 
 			@conn.should_receive( :add ).
 				with( @obj.dn, [
-					ldap_mod_add("cn", "James"),
-					ldap_mod_add("displayName", "J. Random Hacker"),
-					ldap_mod_add("gidNumber", "200"),
-					ldap_mod_add("homeDirectory", "/u/j/jrandom"),
-					ldap_mod_add("l", "a forest in England"),
-					ldap_mod_add("objectClass", "inetOrgPerson", "person", "posixAccount"),
-					ldap_mod_add("sn", "Hacker"),
-					ldap_mod_add("uid", "jrandom"),
-					ldap_mod_add("uidNumber", "1121")
+					ldap_mod_add( :cn, "James" ),
+					ldap_mod_add( :displayName, "J. Random Hacker" ),
+					ldap_mod_add( :gidNumber, "200" ),
+					ldap_mod_add( :homeDirectory, "/u/j/jrandom" ),
+					ldap_mod_add( :l, "a forest in England" ),
+					ldap_mod_add( :objectClass, "person", "inetOrgPerson", "posixAccount" ),
+					ldap_mod_add( :sn, "Hacker" ),
+					ldap_mod_add( :uid, "jrandom" ),
+					ldap_mod_add( :uidNumber, "1121" ),
 				] )
 
 			@obj.save

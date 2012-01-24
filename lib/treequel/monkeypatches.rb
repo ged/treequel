@@ -71,7 +71,7 @@ class LDAP::Mod
 	### is alive to prevent the underlying C String pointer from going away.
 	###
 	### See line 151 of mod.c.
-	def initialize( op, attribute, vals )
+	def initialize( op, attribute, vals=[] )
 		@attribute = attribute
 		_initialize_ext( op, attribute, vals )
 	end
@@ -197,28 +197,5 @@ end # module Treequel::TimeExtensions
 
 class Date
 	include Treequel::DateExtensions
-end
-
-
-### These three predicates use the wrong instance variable in the library.
-### :TODO: Submit a patch!
-module Treequel::DiffLCSChangeTypeTestFixes
-
-	def changed?
-		@action == '!'
-	end
-
-	def finished_a?
-		@action == '>'
-	end
-
-	def finished_b?
-		@action == '<'
-	end
-
-end
-
-class Diff::LCS::ContextChange
-	include Treequel::DiffLCSChangeTypeTestFixes
 end
 

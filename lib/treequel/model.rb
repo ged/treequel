@@ -414,7 +414,8 @@ class Treequel::Model < Treequel::Branch
 		mods = []
 		@values.sort_by {|k, _| k.to_s }.each do |attribute, vals|
 			self.log.debug "  finding mods for %s" % [ attribute ]
-			mods += self.diff_with_entry( attribute, vals )
+			mod = self.diff_with_entry( attribute, vals ) or next
+			mods << mod
 		end
 
 		return mods
@@ -438,37 +439,34 @@ class Treequel::Model < Treequel::Branch
 		self.log.debug "  comparing %s values to entry: %p vs. %p" %
 			[ attribute, values, entry_values ]
 
-		mods = Hash.new {|h,k| h[k] = [] }
-		Diff::LCS.sdiff( entry_values.sort, values.sort ) do |change|
-			if change.adding?
-				self.log.debug "    found an addition: %p" % [ change ]
-				mods[:add] << change.new_element
+		# Calculate differences between the values in the directory and the
+		# values in the model object
+		new_values = values - entry_values
+		old_values = entry_values - values
 
-			elsif change.changed?
-				self.log.debug "    found a modification: %p" % [ change ]
-				mods[:replace] << [ change.old_element, change.new_element ]
+		# If it's not a delete (no values in the mode), but there were values
+		# removed, it's a REPLACE
+		if !values.empty? && !old_values.empty?
+			self.log.debug "    REPLACE %s: %p with %p" %
+				[ attribute, entry_values, values ]
+			return LDAP::Mod.new( LDAP::LDAP_MOD_REPLACE, attribute, values )
 
-			elsif change.deleting?
-				self.log.debug "    found a deletion: %p" % [ change ]
-				mods[:del] << change.old_element
-			end
+		# ...if there were values added to the model, it's an ADD
+		elsif !new_values.empty?
+			self.log.debug "    ADD %s: %p" % [ attribute, values ]
+			return LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute, new_values )
+
+		# ...or if all the values in the model were removed, it's a DELETE
+		elsif values.empty?
+			self.log.debug "    DELETE %s" % [ attribute ]
+			return LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute )
+
+		# otherwise, it's unchanged.
+		else
+			self.log.debug "    no change."
+			return nil
 		end
 
-		self.log.debug "  attribute %p has modifications: %p" %
-			[ attribute, mods ] unless mods.empty?
-
-		# Now turn all of the modifications into LDAP::Mod objects, one per modified
-		# attribute
-		return mods.collect do |kind, values|
-			case kind
-			when :add
-				LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute, values )
-			when :replace
-				values.collect {|pair| LDAP::Mod.new(LDAP::LDAP_MOD_REPLACE, attribute, pair) }
-			when :del
-				LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute, values )
-			end
-		end.flatten.compact
 	end
 
 
