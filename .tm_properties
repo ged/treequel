@@ -3,17 +3,8 @@ projectDirectory     = "$CWD"
 windowTitle          = "${CWD/^.*\///} — «$TM_DISPLAYNAME»"
 excludeInFileChooser = "{$exclude,.hg}"
 
-# Variables
-TM_ORGANIZATION_NAME = "The FaerieMUD Consortium"
-TM_HG                = "/usr/local/bin/hg"
-TM_GIT               = "/usr/bin/git"
-TM_PROJECT_DIRECTORY = "$CWD"
-
 [ source.ruby ]
 softTabs         = false
 tabSize          = 4
-
-[ "**/*_spec.rb" ]
-fileType = 'text.ruby.rspec'
 
 
