@@ -425,6 +425,8 @@ class Treequel::Model < Treequel::Branch
 	### entry and return LDAP::Mod objects for any differences.
 	def diff_with_entry( attribute, values )
 		mods         = []
+		# We need the attribute as an object to see if its single?
+		attribute_obj = self.find_attribute_type(attribute)
 		attribute    = attribute.to_s
 		entry        = self.entry || {}
 		entry_values = entry.key?( attribute ) ? entry[attribute] : []
@@ -464,7 +466,11 @@ class Treequel::Model < Treequel::Branch
 			when :add
 				LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute, values )
 			when :replace
-				values.collect {|pair| LDAP::Mod.new(LDAP::LDAP_MOD_REPLACE, attribute, pair) }
+				# If the attribute is single we only need an array with the last value added
+				values.collect do |pair|
+					pair = [pair.last] if attribute_obj.single?
+					LDAP::Mod.new(LDAP::LDAP_MOD_REPLACE, attribute, pair)
+				end
 			when :del
 				LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute, values )
 			end
