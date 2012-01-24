@@ -1,3 +1,9 @@
+== v1.8.3 [2012-01-24] Michael Granger <ged@FaerieMUD.org>
+
+- A fix for Treequel::Model#save LDIF. Thanks to Patricio Bruna <pbruna@it-linux.cl> for
+  pointing out the problem.
+
+
 == v1.8.2 [2011-12-19] Michael Granger <ged@FaerieMUD.org>
 
 - Fixing Treequel::Model#create by merging ADD and DELETE mods
