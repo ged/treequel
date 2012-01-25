@@ -2,9 +2,6 @@
 
 require 'date'
 
-require 'diff/lcs'
-require 'diff/lcs/change'
-
 require 'ldap'
 require 'ldap/control'
 
