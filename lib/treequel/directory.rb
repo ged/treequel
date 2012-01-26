@@ -52,7 +52,7 @@ class Treequel::Directory
 		OIDS::BIT_STRING_SYNTAX         => lambda {|bs, _| bs.to_i.to_s(2) },
 		# This is the obj returned by Model#[]=
 		# IS BOOLEAN, so if the user does not specified FALSE, we make it true
-		OIDS::BOOLEAN_SYNTAX            => lambda {|obj, _| obj == "FALSE" ? "FALSE" : "TRUE" }
+		OIDS::BOOLEAN_SYNTAX            => lambda {|obj, _| obj == "FALSE" ? "FALSE" : "TRUE" },
 		OIDS::GENERALIZED_TIME_SYNTAX   => lambda {|time, _| time.ldap_generalized },
 		OIDS::UTC_TIME_SYNTAX           => lambda {|time, _| time.ldap_utc },
 		OIDS::INTEGER_SYNTAX            => lambda {|obj, _| Integer(obj).to_s },
