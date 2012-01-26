@@ -41,7 +41,12 @@ module Treequel::Model::SchemaValidations
 		self.must_attribute_types.each do |attrtype|
 			oid = attrtype.name
 			if attrtype.single?
-				self.errors.add( oid, "MUST have a value" ) unless self[ oid ]
+				# We do not add an error if the attribute is a Boolean and the value is FALSE 
+				if attrtype.syntax_oid == Treequel::OIDS::BOOLEAN_SYNTAX
+					self.errors.add( oid, "MUST have a value" ) unless self[ oid ] || self[ oid ].class == FalseClass
+				else
+					self.errors.add( oid, "MUST have a value" ) unless self[ oid ]
+				end
 			else
 				self.errors.add( oid, "MUST have at least one value" ) if self[ oid ].empty?
 			end
