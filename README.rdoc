@@ -8,7 +8,7 @@ Treequel is an LDAP toolkit for Ruby. It is intended to allow quick, easy
 access to LDAP directories in a manner consistent with LDAP's hierarchical,
 free-form nature. 
 
-It's inspired by and modeled after [Sequel](http://sequel.rubyforge.org/), a
+It's inspired by and modeled after {Sequel}[http://sequel.rubyforge.org/], a
 kick-ass database library.
 
 
