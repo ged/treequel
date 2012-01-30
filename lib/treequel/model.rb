@@ -270,7 +270,13 @@ class Treequel::Model < Treequel::Branch
 		value = Array( value ) unless attrtype.single?
 
 		self.mark_dirty
+		# This was skipped every time the attribute was BOOLEAN and
+		# the value was false
 		if value
+			@values[ attrtype.name.to_sym ] = value
+		# We chech if the user is passing false, because is 
+		# setting a BOOLEAN attribute
+		elsif value.class == FalseClass
 			@values[ attrtype.name.to_sym ] = value
 		else
 			@values.delete( attrtype.name.to_sym )

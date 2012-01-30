@@ -50,7 +50,9 @@ class Treequel::Directory
 	# See #add_object_conversion for more information on what a valid conversion is.
 	DEFAULT_OBJECT_CONVERSIONS = {
 		OIDS::BIT_STRING_SYNTAX         => lambda {|bs, _| bs.to_i.to_s(2) },
-		OIDS::BOOLEAN_SYNTAX            => lambda {|obj, _| obj ? 'TRUE' : 'FALSE' },
+		# This is the obj returned by Model#[]=
+		# IS BOOLEAN, so if the user does not specified FALSE, we make it true
+		OIDS::BOOLEAN_SYNTAX            => lambda {|obj, _| obj == "FALSE" ? "FALSE" : "TRUE" },
 		OIDS::GENERALIZED_TIME_SYNTAX   => lambda {|time, _| time.ldap_generalized },
 		OIDS::UTC_TIME_SYNTAX           => lambda {|time, _| time.ldap_utc },
 		OIDS::INTEGER_SYNTAX            => lambda {|obj, _| Integer(obj).to_s },
