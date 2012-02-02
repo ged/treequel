@@ -78,7 +78,7 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
-	### Return the Treequel::Directory the Model will use for searches, creating it if it 
+	### Return the Treequel::Directory the Model will use for searches, creating it if it
 	### hasn't been created already. The default Directory will be created by calling
 	### Treequel.directory_from_config.
 	def self::directory
@@ -103,7 +103,7 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
-	### Register the given +mixin+ for the specified +objectclasses+. Instances that 
+	### Register the given +mixin+ for the specified +objectclasses+. Instances that
 	### have all the specified +objectclasses+ will be extended with the +mixin+, which should be
 	### a Module extended with Treequel::Model::ObjectClass.
 	def self::register_mixin( mixin )
@@ -157,7 +157,7 @@ class Treequel::Model < Treequel::Branch
 			values_at( *ocsymbols ).
 			inject {|set1,set2| set1 | set2 }
 
-		# Return the mixins whose objectClass requirements are met by the 
+		# Return the mixins whose objectClass requirements are met by the
 		# specified objectclasses
 		return mixins.delete_if do |mixin|
 			!mixin.model_objectclasses.all? {|oc| ocsymbols.include?(oc) }
@@ -186,7 +186,7 @@ class Treequel::Model < Treequel::Branch
 	def self::freeze_converted_values?; false; end
 
 
-	### Create a new Treequel::Model object with the given +entry+ hash from the 
+	### Create a new Treequel::Model object with the given +entry+ hash from the
 	### specified +directory+. Overrides Treequel::Branch.new_from_entry to pass the
 	### +from_directory+ flag to mark it as unmodified.
 	def self::new_from_entry( entry, directory )
@@ -262,7 +262,7 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Index set operator -- set attribute +attrname+ to a new +value+.
-	### Overridden to make Model objects defer writing changes until 
+	### Overridden to make Model objects defer writing changes until
 	### Treequel::Model#save is called.
 	def []=( attrname, value )
 		attrtype = self.find_attribute_type( attrname.to_sym ) or
@@ -289,7 +289,7 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Make the changes to the object specified by the given +attributes+.
-	### Overridden to make Model objects defer writing changes until 
+	### Overridden to make Model objects defer writing changes until
 	### Treequel::Model#save is called.
 	def merge( attributes )
 		attributes.each do |attrname, value|
@@ -299,7 +299,7 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Delete the specified attributes.
-	### Overridden to make Model objects defer writing changes until 
+	### Overridden to make Model objects defer writing changes until
 	### Treequel::Model#save is called.
 	def delete( *attributes )
 		return super if attributes.empty?
@@ -313,8 +313,8 @@ class Treequel::Model < Treequel::Branch
 			if attribute.is_a?( Hash )
 				self.delete_specific_values( attribute )
 
-			# With an array of attributes to delete, replace 
-			# MULTIPLE attribute types with an empty array, and SINGLE 
+			# With an array of attributes to delete, replace
+			# MULTIPLE attribute types with an empty array, and SINGLE
 			# attribute types with nil
 			elsif attribute.respond_to?( :to_sym )
 				attrtype = self.find_attribute_type( attribute.to_sym )
@@ -365,7 +365,7 @@ class Treequel::Model < Treequel::Branch
 
 
 	### Write any pending changes in the model object to the directory. The valid +opts+ are:
-	### 
+	###
 	### [+:raise_on_failure+]
 	###     raise a Treequel::ValidationFailed or Treequel::BeforeHookFailed if either the
 	###     validations or before_{save,create}.
@@ -606,7 +606,7 @@ class Treequel::Model < Treequel::Branch
 	def method_missing( sym, *args )
 		self.log.debug "Dynamic dispatch to %p with args: %p" % [ sym, args ]
 
-		# First, if the entry hasn't yet been loaded, try loading it to make sure the 
+		# First, if the entry hasn't yet been loaded, try loading it to make sure the
 		# object is already extended with any applicable objectClass mixins. If that ends
 		# up defining the method in question, call it.
 		if !@entry && self.entry
@@ -627,7 +627,7 @@ class Treequel::Model < Treequel::Branch
 		plainsym, methodtype = attribute_from_method( sym )
 		return super if methodtype == :reader && !args.empty?
 
-		# Now make a method body for a new method based on what attributeType it is if 
+		# Now make a method body for a new method based on what attributeType it is if
 		# it's a valid attribute
 		attrtype = self.find_attribute_type( plainsym ) or return super
 		methodbody = case methodtype
@@ -688,7 +688,7 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
-	### Overridden to apply applicable mixins to lazily-loaded objects once their entry 
+	### Overridden to apply applicable mixins to lazily-loaded objects once their entry
 	### has been looked up.
 	def lookup_entry
 		if entryhash = super
@@ -699,7 +699,7 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
-	### Apply mixins that are applicable considering the receiver's DN and the 
+	### Apply mixins that are applicable considering the receiver's DN and the
 	### objectClasses from the given +entryhash+ merged with any unsaved values.
 	def apply_applicable_mixins( dn, entryhash=nil )
 		objectclasses = @values[:objectClass] ||

@@ -413,7 +413,7 @@ describe Treequel::Model do
 		it "adds the objectClass attribute to the attribute list when executing a search that " +
 		   "contains a select" do
 			@conn.should_receive( :search_ext2 ).
-			 	with( @entry['dn'].first, LDAP::LDAP_SCOPE_ONELEVEL, "(cn=magnelion)",
+				with( @entry['dn'].first, LDAP::LDAP_SCOPE_ONELEVEL, "(cn=magnelion)",
 			          ["cn", "objectClass"], false, nil, nil, 0, 0, 0, "", nil ).
 				and_return( [] )
 			@obj.search( :one, '(cn=magnelion)', :selectattrs => ['cn'] )
@@ -422,7 +422,7 @@ describe Treequel::Model do
 		it "doesn't add the objectClass attribute to the attribute list when the search " +
 		   "doesn't contain a select" do
 			@conn.should_receive( :search_ext2 ).
-			 	with( @entry['dn'].first, LDAP::LDAP_SCOPE_ONELEVEL, "(cn=ephelion)",
+				with( @entry['dn'].first, LDAP::LDAP_SCOPE_ONELEVEL, "(cn=ephelion)",
 			          ['*'], false, nil, nil, 0, 0, 0, "", nil ).
 				and_return( [] )
 			@obj.search( :one, '(cn=ephelion)' )
