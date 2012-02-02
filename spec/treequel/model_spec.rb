@@ -379,6 +379,22 @@ describe Treequel::Model do
 			@obj.uid.should == ['stampley']
 		end
 
+		it "treats setting an attribute to nil as a delete" do
+			@obj.display_name = 'J. P. Havershaven'
+			@obj.values.should include( :displayName )
+			@obj.display_name = nil
+			@obj.values.should_not include( :displayName )
+		end
+
+		it "allows a BOOLEAN attribute to be set to false" do
+			@obj.object_class += ['sambaAccount']
+			@obj.rid = 1181
+			@obj.pwd_must_change = false
+			@obj.values.should include( :pwdMustChange => false )
+			@obj.pwd_must_change = nil
+			@obj.values.should_not include( :pwdMustChange )
+		end
+
 		it "provides a predicate that tests true for valid singular attributes that are set" do
 			@obj.display_name?.should be_true()
 		end
