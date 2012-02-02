@@ -1,3 +1,9 @@
+== v1.8.4 [2012-02-02] Michael Granger <ged@FaerieMUD.org>
+
+- Fixed a bug with handling of BOOLEAN values in Treequel::Model. Thanks to
+  Patricio Bruna <pbruna@it-linux.cl> for the bug report.
+
+
 == v1.8.3 [2012-01-24] Michael Granger <ged@FaerieMUD.org>
 
 - A fix for Treequel::Model#save LDIF. Thanks to Patricio Bruna <pbruna@it-linux.cl> for
