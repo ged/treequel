@@ -21,20 +21,20 @@ module Treequel
 
 		### Define the given +delegated_methods+ as delegators to the like-named method
 		### of the return value of the +delegate_method+.
-		### 
+		###
 		###    class MyClass
 		###      extend Treequel::Delegation
-		###      
+		###
 		###      # Delegate the #bound?, #err, and #result2error methods to the connection
 		###      # object returned by the #connection method. This allows the connection
 		###      # to still be loaded on demand/overridden/etc.
 		###      def_method_delegators :connection, :bound?, :err, :result2error
-		###      
+		###
 		###      def connection
 		###        @connection ||= self.connect
 		###      end
 		###    end
-		### 
+		###
 		def def_method_delegators( delegate_method, *delegated_methods )
 			delegated_methods.each do |name|
 				body = make_method_delegator( delegate_method, name )
@@ -46,15 +46,15 @@ module Treequel
 		### Define the given +delegated_methods+ as delegators to the like-named method
 		### of the specified +ivar+. This is pretty much identical with how 'Forwardable'
 		### from the stdlib does delegation, but it's reimplemented here for consistency.
-		### 
+		###
 		###    class MyClass
 		###      extend Treequel::Delegation
-		###      
+		###
 		###      # Delegate the #each method to the @collection ivar
 		###      def_ivar_delegators :@collection, :each
-		###      
+		###
 		###    end
-		### 
+		###
 		def def_ivar_delegators( ivar, *delegated_methods )
 			delegated_methods.each do |name|
 				body = make_ivar_delegator( ivar, name )

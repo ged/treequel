@@ -347,7 +347,7 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
-	### Validate the object with the specified +options+. Appending validation errors onto
+	### Validate the object with the specified +options+, appending validation errors onto
 	### the #errors object.
 	def validate( options={} )
 		options = DEFAULT_VALIDATION_OPTIONS.merge( options )
