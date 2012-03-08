@@ -1,3 +1,9 @@
+== v1.8.5 [2012-03-07] Michael Granger <ged@FaerieMUD.org>
+
+- Fix an edge-case bug in LDIF-generation logic. Thanks to Mahlon E. Smith
+  for the report and the pair to fix it.
+
+
 == v1.8.4 [2012-02-02] Michael Granger <ged@FaerieMUD.org>
 
 - Fixed a bug with handling of BOOLEAN values in Treequel::Model. Thanks to
