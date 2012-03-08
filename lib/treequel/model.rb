@@ -439,32 +439,29 @@ class Treequel::Model < Treequel::Branch
 		self.log.debug "  comparing %s values to entry: %p vs. %p" %
 			[ attribute, values, entry_values ]
 
-		# Calculate differences between the values in the directory and the
-		# values in the model object
-		new_values = values - entry_values
-		old_values = entry_values - values
+		# If the attributes on the server are the same as the local ones,
+		# it's a NOOP.
+		if values.sort == entry_values.sort
+			self.log.debug "    no change."
+			return nil
 
-		# If it's not a delete (no values in the mode), but there were values
-		# removed, it's a REPLACE
-		if !values.empty? && !old_values.empty?
-			self.log.debug "    REPLACE %s: %p with %p" %
-				[ attribute, entry_values, values ]
-			return LDAP::Mod.new( LDAP::LDAP_MOD_REPLACE, attribute, values )
-
-		# ...if there were values added to the model, it's an ADD
-		elsif !new_values.empty?
+		# If the directory doesn't have this attribute, but the local
+		# object does, it's an ADD
+		elsif entry_values.empty?
 			self.log.debug "    ADD %s: %p" % [ attribute, values ]
-			return LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute, new_values )
+			return LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute, values )
 
-		# ...or if all the values in the model were removed, it's a DELETE
+		# ...or if the local value doesn't have anything for this attribute
+		# but the directory does, it's a DEL
 		elsif values.empty?
 			self.log.debug "    DELETE %s" % [ attribute ]
 			return LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute )
 
-		# otherwise, it's unchanged.
+		# ...otherwise it's a REPLACE
 		else
-			self.log.debug "    no change."
-			return nil
+			self.log.debug "    REPLACE %s: %p with %p" %
+				[ attribute, entry_values, values ]
+			return LDAP::Mod.new( LDAP::LDAP_MOD_REPLACE, attribute, values )
 		end
 
 	end

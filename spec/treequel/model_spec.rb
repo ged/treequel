@@ -673,6 +673,13 @@ describe Treequel::Model do
 				@obj.should_not be_modified()
 			end
 
+			it "doesn't try to mistakenly delete an attribute that's assigned an empty array " +
+			"and isn't set in the directory" do
+				@obj.secretary = []
+				result = @obj.modifications
+				result.should_not include( ldap_mod_delete :secretary )
+			end
+
 		end
 
 		it "avoids Arrayifying Time objects when converting them to generalized time strings" do
