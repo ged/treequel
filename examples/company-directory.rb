@@ -7,16 +7,16 @@ require 'pathname'
 
 # A barebones web-based company directory
 
-LDAP_URL = "ldap://ldap.yourcompany.com/dc=yourcompany,dc=com"
-
 configure do
-	# Borrow the CSS and images from the 'ldap-monitor' example
-	set :root, Pathname( __FILE__ ).dirname + 'ldap-monitor'
+	# Load CSS and stuff from the webroot/ directory
+	set :public_folder, Pathname( __FILE__ ).dirname + 'webroot'
+
+	enable :logging, :dump_errors
 end
 
 before do
-	$stderr.puts "Connecting to #{LDAP_URL}"
-	@ldap ||= Treequel.directory( LDAP_URL )
+	@ldap ||= Treequel.directory_from_config
+	$stderr.puts "Using directory: %p" % [ @ldap ]
 end
 
 
@@ -93,8 +93,8 @@ __END__
 <% people.each_with_index do |person, i| %>
 <% rowclass = i.divmod(2).last.zero? ? "even" : "odd" %>
 	<tr class="<%= rowclass %>">
-		<td class="odd"><a href="/<%= person[:uid] %>"><%= person[:cn] %></p></td>
-		<td class="even"><a href="/<%= person[:uid] %>"><%= person[:mail] %></a></td>
+		<td class="odd"><a href="/<%= person[:uid].first %>"><%= person[:cn].first %></p></td>
+		<td class="even"><a href="/<%= person[:uid].first %>"><%= person[:mail].first %></a></td>
 		<td class="odd"><%= person[:employeeNumber] %></td>
 	</tr>
 <% end %>
@@ -103,8 +103,7 @@ __END__
 
 @@details
 
-<h2>Details for <%= person[:cn] %> <%= person[:sn] %> 
-	&lt;<%= person[:mail] %>&gt;</h2>
+<h2>Details for <%= person[:cn].first %> &lt;<%= person[:mail].first %>&gt;</h2>
 
 <pre>
 <%= person.to_ldif %>
