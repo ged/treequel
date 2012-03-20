@@ -1,3 +1,10 @@
+== v1.8.6 [2012-03-20] Michael Granger <ged@FaerieMUD.org>
+
+- Fix encoding of directory strings under Ruby 1.9 and newer versions
+  of Ruby-LDAP.
+- Update the examples.
+
+
 == v1.8.5 [2012-03-07] Michael Granger <ged@FaerieMUD.org>
 
 - Fix an edge-case bug in LDIF-generation logic. Thanks to Mahlon E. Smith
