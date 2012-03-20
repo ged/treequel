@@ -306,7 +306,7 @@ describe Treequel::Directory do
 				and_return( true )
 			branch.should_receive( :respond_to? ).with( :dn ).
 				and_return( true )
-		   	branch.stub( :include_operational_attrs? ).and_return( true )
+			branch.stub( :include_operational_attrs? ).and_return( true )
 
 			found_branch1 = stub( "entry1 branch" )
 			found_branch2 = stub( "entry2 branch" )
@@ -602,6 +602,11 @@ describe Treequel::Directory do
 			@dir.convert_to_attribute( OIDS::BOOLEAN_SYNTAX, true ).should == 'true'
 		end
 
+		it "forces the encoding of DirectoryString attributes to UTF-8", :ruby_19 do
+			directory_value = 'a value'.force_encoding( Encoding::ASCII_8BIT )
+			rval = @dir.convert_to_object( OIDS::STRING_SYNTAX, directory_value )
+			rval.encoding.should == Encoding::UTF_8
+		end
 
 		### Controls support
 		describe "to a server that supports controls introspection" do

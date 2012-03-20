@@ -13,3 +13,6 @@ coverage\\.info
 docs/.*\.dump$
 ^release\.notes$
 \.rbx/
+^run1\.dot$
+^run1\.prof$
+^run1\.prof\.symbols$

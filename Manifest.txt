@@ -11,6 +11,7 @@ bin/treewhat
 examples/company-directory.rb
 examples/ldap-rack-auth.rb
 examples/ldap_state.rb
+examples/webroot/css/master.css
 lib/treequel.rb
 lib/treequel/behavior/control.rb
 lib/treequel/branch.rb
