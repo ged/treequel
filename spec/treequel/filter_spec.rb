@@ -414,31 +414,27 @@ describe Treequel::Filter do
 		end
 	end
 
-	describe "support for Sequel expressions", :sequel_integration => true do
+	describe "support for Sequel expressions", :sequel do
 
-		before( :each ) do
-			pending "requires the 'sequel' library" unless Sequel.const_defined?( :Model )
-		end
-
-		it "supports the boolean expression syntax", :ruby_1_8_only => true do
+		it "supports the boolean expression syntax", :ruby_18 do
 			filter = Treequel::Filter.new( :uid >= 2000 )
 			filter.should be_a( Treequel::Filter )
 			filter.to_s.should == '(uid>=2000)'
 		end
 
-		it "supports Sequel expressions in ANDed subexpressions", :ruby_1_8_only => true do
+		it "supports Sequel expressions in ANDed subexpressions", :ruby_18 do
 			filter = Treequel::Filter.new( :and, [:uid >= 1024], [:uid <= 65535] )
 			filter.should be_a( Treequel::Filter )
 			filter.to_s.should == '(&(uid>=1024)(uid<=65535))'
 		end
 
-		it "advises user to use '>=' instead of '>' in expressions", :ruby_1_8_only => true do
+		it "advises user to use '>=' instead of '>' in expressions", :ruby_18 do
 			expect {
 				Treequel::Filter.new( :uid > 1024 )
 			}.to raise_error( Treequel::ExpressionError, /greater-than-or-equal/i )
 		end
 
-		it "advises user to use '<=' instead of '<' in expressions", :ruby_1_8_only => true do
+		it "advises user to use '<=' instead of '<' in expressions", :ruby_18 do
 			expect {
 				Treequel::Filter.new( :activated < Time.now )
 			}.to raise_error( Treequel::ExpressionError, /less-than-or-equal/i )

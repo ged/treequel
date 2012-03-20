@@ -558,13 +558,20 @@ class Treequel::Directory
 	### Map the specified LDAP +attribute+ to its Ruby datatype if one is registered for the given 
 	### syntax +oid+. If there is no conversion registered, just return the +value+ as-is.
 	def convert_to_object( oid, attribute )
-		return attribute unless conversion = @attribute_conversions[ oid ]
-
-		if conversion.respond_to?( :call )
-			return conversion.call( attribute, self )
-		else
-			return conversion[ attribute ]
+		if conversion = @attribute_conversions[ oid ]
+			if conversion.respond_to?( :call )
+				attribute = conversion.call( attribute, self )
+			else
+				attribute = conversion[ attribute ]
+			end
 		end
+
+		# Force the encoding to UTF8, as that's what the directory should be returning.
+		# Ruby-LDAP returns values as ASCII-8BIT.
+		attribute = attribute.dup.force_encoding( Encoding::UTF_8 ) if
+			attribute.respond_to?( :force_encoding )
+
+		return attribute
 	end
 
 

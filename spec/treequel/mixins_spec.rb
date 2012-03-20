@@ -253,7 +253,7 @@ describe Treequel, "mixin" do
 				blockarg.should == :the_block_argument
 			end
 
-			it "reports errors from its caller's perspective", :ruby_1_8_only => true do
+			it "reports errors from its caller's perspective", :ruby_18 do
 				begin
 					@obj.erroring_delegated_method
 				rescue NoMethodError => err
@@ -307,7 +307,7 @@ describe Treequel, "mixin" do
 				blockarg.should == :the_block_argument
 			end
 
-			it "reports errors from its caller's perspective", :ruby_1_8_only => true do
+			it "reports errors from its caller's perspective", :ruby_18 do
 				begin
 					@obj.erroring_delegated_method
 				rescue NoMethodError => err

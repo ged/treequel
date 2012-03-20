@@ -186,10 +186,19 @@ RSpec.configure do |c|
 	c.include( Treequel::SpecHelpers )
 	c.include( Treequel::Matchers )
 
-	c.filter_run_excluding( :ruby_1_8_only => true ) if
-		Treequel::SpecHelpers.vvec( RUBY_VERSION ) >= Treequel::SpecHelpers.vvec('1.9.1')
-	c.filter_run_excluding( :mri_only => true ) if
+	c.treat_symbols_as_metadata_keys_with_true_values = true
+
+	if RUBY_VERSION >= '1.9.0'
+		c.filter_run_excluding( :ruby_18 )
+	else
+		c.filter_run_excluding( :ruby_19 )
+	end
+
+	c.filter_run_excluding( :mri_only ) if
 		defined?( RUBY_ENGINE ) && RUBY_ENGINE != 'ruby'
+	c.filter_run_excluding( :sequel ) unless
+		Sequel.const_defined?( :Model )
+
 end
 
 # vim: set nosta noet ts=4 sw=4:

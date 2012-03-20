@@ -35,8 +35,8 @@ module Treequel::Constants
 		:matchedvals           => '1.2.826.0.1.3344810.2.2',
 		:matchedvalues         => '1.2.826.0.1.3344810.2.3',
 
-		# MS Active Directory controls, from various MSDN references, most 
-		# notably: 
+		# MS Active Directory controls, from various MSDN references, most
+		# notably:
 		# http://msdn.microsoft.com/en-us/library/cc223320%28PROT.10%29.aspx
 		:paged                 => '1.2.840.113556.1.4.319',
 		:server_show_deleted   => '1.2.840.113556.1.4.417',
