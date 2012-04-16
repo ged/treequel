@@ -19,6 +19,7 @@ hoespec = Hoe.spec 'treequel' do
 	self.readme_file = 'README.rdoc'
 	self.history_file = 'History.rdoc'
 	self.extra_rdoc_files = Rake::FileList[ '*.rdoc' ]
+	self.spec_extras[:rdoc_options] = ['-f', 'fivefish', '-t', 'Treequel']
 
 	self.need_tar = true
 	self.need_zip = true
