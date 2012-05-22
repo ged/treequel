@@ -43,10 +43,13 @@ require 'treequel/control'
 # Branchsets are Enumerable objects, so they can be manipulated using any of the 
 # Enumerable methods, such as map, inject, etc.
 class Treequel::Branchset
+	extend Loggability
 	include Enumerable,
-	        Treequel::Loggable,
 	        Treequel::Constants,
 	        Treequel::Control
+
+	# Loggability API -- Log to the Treequel module's logger
+	log_to :treequel
 
 	# The default scope to use when searching if none is specified
 	DEFAULT_SCOPE = :subtree

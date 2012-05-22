@@ -37,12 +37,20 @@ require 'treequel/sequel_integration'
 #   value      = AttributeValue from Section 4.1.6 of [1]
 # 
 class Treequel::Filter
-	include Treequel::Loggable,
-	        Treequel::Constants::Patterns
+	extend Loggability
+	include Treequel::Constants::Patterns
+
+
+	# Loggability API -- Log to the Treequel module's logger
+	log_to :treequel
+
 
 	### Filter list component of a Treequel::Filter.
 	class FilterList
-		include Treequel::Loggable
+		extend Loggability
+
+		# Loggability API -- Log to the Treequel module's logger
+		log_to :treequel
 
 		### Create a new filter list with the given +filters+ in it.
 		def initialize( *filters )
@@ -75,10 +83,14 @@ class Treequel::Filter
 	### An abstract class for filter components.
 	### Subclass and override #to_s to implement a custom Component class.
 	class Component
-		include Treequel::Loggable
+		extend Loggability
+
+		# Loggability API -- Log to the Treequel module's logger
+		log_to :treequel
 
 		# Hide this class's new method
 		private_class_method :new
+
 
 		### Inherited hook: re-expose inheriting class's .new method
 		def self::inherited( klass )
@@ -323,7 +335,7 @@ class Treequel::Filter
 				raise Treequel::ExpressionError,
 					"unable to parse %p as a substring literal" % [ literal ]
 
-			Treequel.logger.debug "  parsed substring literal as: %p" % [ match.captures ]
+			self.log.debug "  parsed substring literal as: %p" % [ match.captures ]
 			return self.new( *(match.captures.values_at(1,3,2)) )
 		end
 
@@ -408,7 +420,7 @@ class Treequel::Filter
 	### Turn the specified filter +expression+ into a Treequel::Filter::Component
 	### object and return it.
 	def self::parse_expression( expression )
-		Treequel.logger.debug "Parsing expression %p" % [ expression ]
+		self.log.debug "Parsing expression %p" % [ expression ]
 		expression = expression[0] if expression.is_a?( Array ) && expression.length == 1
 
 		case expression
@@ -447,19 +459,19 @@ class Treequel::Filter
 	### Turn the specified expression Array into a Treequel::Filter::Component object
 	### and return it.
 	def self::parse_array_expression( expression )
-		Treequel.logger.debug "Parsing Array expression %p" % [ expression ]
+		self.log.debug "Parsing Array expression %p" % [ expression ]
 
 		case
 
 		# [ ] := '(objectClass=*)'
 		when expression.empty?
-			Treequel.logger.debug "  empty expression -> objectClass presence item component"
+			self.log.debug "  empty expression -> objectClass presence item component"
 			return Treequel::Filter::PresentItemComponent.new
 
 		# Collection of subfilters
 		# [ [:uid, 'mahlon'], [:employeeNumber, 20202] ]
 		when expression.all? {|elem| elem.is_a?(Array) }
-			Treequel.logger.debug "  parsing array of subfilters"
+			self.log.debug "  parsing array of subfilters"
 			filters = expression.collect {|exp| Treequel::Filter.new(exp) }
 			if filters.length > 1
 				return Treequel::Filter::AndComponent.new( filters )
@@ -494,22 +506,22 @@ class Treequel::Filter
 	### Parse one or more tuples contained in a Hash into an ANDed set of 
 	### Treequel::Filter::Components and return it.
 	def self::parse_hash_expression( expression )
-		Treequel.logger.debug "Parsing Hash expression %p" % [ expression ]
+		self.log.debug "Parsing Hash expression %p" % [ expression ]
 
 		filterlist = expression.collect do |key, expr|
-			Treequel.logger.debug "  adding %p => %p to the filter list" % [ key, expr ]
+			self.log.debug "  adding %p => %p to the filter list" % [ key, expr ]
 			if expr.respond_to?( :fetch )
 				if expr.respond_to?( :length ) && expr.length > 1
-					Treequel.logger.debug "    ORing together %d subfilters since %p has indices" %
+					self.log.debug "    ORing together %d subfilters since %p has indices" %
 						[ expr.length, expr ]
 					subfilters = expr.collect {|val| Treequel::Filter.new(key, val) }
 					Treequel::Filter.new( :or, subfilters )
 				else
-					Treequel.logger.debug "    unwrapping singular subfilter"
+					self.log.debug "    unwrapping singular subfilter"
 					Treequel::Filter.new([ key.to_sym, expr.first ])
 				end
 			else
-				Treequel.logger.debug "    value is a scalar; creating a single filter"
+				self.log.debug "    value is a scalar; creating a single filter"
 				Treequel::Filter.new( key.to_sym, expr )
 			end
 		end
@@ -525,7 +537,7 @@ class Treequel::Filter
 	### Parse a tuple of the form: [ Symbol, Object ] into a Treequel::Filter::Component
 	### and return it.
 	def self::parse_tuple_array_expression( expression )
-		Treequel.logger.debug "Parsing tuple Array expression %p" % [ expression ]
+		self.log.debug "Parsing tuple Array expression %p" % [ expression ]
 
 		case expression[1]
 
@@ -535,7 +547,7 @@ class Treequel::Filter
 			return self.parse_logical_array_expression( *expression )
 
 		when Range
-			Treequel.logger.debug "  two ANDed item expressions from a Range"
+			self.log.debug "  two ANDed item expressions from a Range"
 			attribute = expression[0]
 			range = expression[1]
 			left = "#{attribute}>=#{range.begin}"
@@ -545,7 +557,7 @@ class Treequel::Filter
 		# [ :attribute, 'value' ]  := '(attribute=value)'
 		# when String, Symbol, Numeric, Time
 		else
-			Treequel.logger.debug "  item expression from a %p" % [ expression[1].class ]
+			self.log.debug "  item expression from a %p" % [ expression[1].class ]
 			return self.parse_item_component( *expression )
 		end
 	end
@@ -554,7 +566,7 @@ class Treequel::Filter
 	### Break down the given +expression+ as a logical (AND, OR, or NOT)
 	### filter component and return it.
 	def self::parse_logical_array_expression( op, *components )
-		Treequel.logger.debug "Parsing logical %p expression with components: %p" %
+		self.log.debug "Parsing logical %p expression with components: %p" %
 			[ op, components ]
 
 		compclass = LOGICAL_COMPONENTS[ op ] or
@@ -562,7 +574,7 @@ class Treequel::Filter
 			 	[ op, LOGICAL_COMPONENTS.keys ]
 
 		filterlist = components.collect do |filterexp|
-			Treequel.logger.debug "  making %p into a component" % [ filterexp ]
+			self.log.debug "  making %p into a component" % [ filterexp ]
 			Treequel::Filter.new( filterexp )
 		end.flatten
 
@@ -572,7 +584,7 @@ class Treequel::Filter
 
 	### Parse an item component from the specified +attribute+ and +value+
 	def self::parse_item_component( attribute, value )
-		Treequel.logger.debug "  tuple expression (%p=%p)-> item component" %
+		self.log.debug "  tuple expression (%p=%p)-> item component" %
 			[ attribute, value ]
 
 		case
@@ -590,7 +602,7 @@ class Treequel::Filter
 
 	### Parse a Sequel::SQL::Expression as a Treequel::Filter::Component and return it.
 	def self::parse_sequel_expression( expression )
-		Treequel.logger.debug "  parsing Sequel expression: %p" % [ expression ]
+		self.log.debug "  parsing Sequel expression: %p" % [ expression ]
 
 		if expression.respond_to?( :op )
 			op = expression.op.to_s.downcase.to_sym
@@ -601,11 +613,11 @@ class Treequel::Filter
 				# Turn :sn.like( 'bob' ) into (cn~=bob) 'cause it has no asterisks
 				if op == :like 
 					if value.index( '*' )
-						Treequel.logger.debug \
+						self.log.debug \
 							"    turning a LIKE expression with an asterisk into a substring filter"
 						return Treequel::Filter::SubstringItemComponent.new( attribute, value )
 					else
-						Treequel.logger.debug \
+						self.log.debug \
 							"    turning a LIKE expression with no wildcards into an 'approx' filter"
 						equivalent = :approx
 					end
@@ -618,7 +630,7 @@ class Treequel::Filter
 				return Treequel::Filter::NotComponent.new( contents )
 
 			elsif op == :'not like'
-				Treequel.logger.debug "  making a NOT LIKE expression out of: %p" % [ expression ]
+				self.log.debug "  making a NOT LIKE expression out of: %p" % [ expression ]
 				attribute, value = *expression.args
 				component = nil
 

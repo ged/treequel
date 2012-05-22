@@ -150,15 +150,8 @@ describe Treequel::Directory do
 	describe "instances with a connection" do
 
 		before( :each ) do
-			@conn = mock( "ldap connection", :bound? => false )
-
-			@dir = Treequel::Directory.new( @options )
+			@dir = Treequel.directory( TEST_LDAPURI )
 			@dir.instance_variable_set( :@conn, @conn )
-
-			@schema = mock( "Directory schema" )
-			@conn.stub( :schema ).and_return( :the_schema )
-			Treequel::Schema.stub( :new ).with( :the_schema ).and_return( @schema )
-			@schema.stub( :attribute_types ).and_return({ :cn => :a_value, :ou => :a_value })
 		end
 
 		it "can bind with the given user DN and password" do
@@ -359,7 +352,7 @@ describe Treequel::Directory do
 			@conn.stub( :search_ext2 ).and_raise( LDAP::ResultError.new("Can't contact LDAP server") )
 
 			second_conn = mock( "LDAP connection", :set_option => true, :bound? => false )
-			LDAP::Conn.should_receive( :new ).and_return( second_conn )
+			LDAP::SSLConn.should_receive( :new ).and_return( second_conn )
 			second_conn.should_receive( :search_ext2 ).and_return([])
 
 			already_tried_reconnect = false
@@ -374,7 +367,7 @@ describe Treequel::Directory do
 		end
 
 		it "re-raises an exception rescued during a reconnect as a RuntimeError" do
-			LDAP::Conn.should_receive( :new ).
+			LDAP::SSLConn.should_receive( :new ).
 				and_raise( LDAP::ResultError.new("Can't contact LDAP server") )
 
 			expect {
@@ -384,6 +377,10 @@ describe Treequel::Directory do
 
 
 		it "doesn't retain its connection when duplicated" do
+			LDAP::SSLConn.stub( :new ).and_return do
+				mock( "LDAP connection", :set_option => true, :bound? => false )
+			end
+
 			@dir.dup.conn.should_not equal( @dir.conn )
 		end
 
@@ -469,25 +466,15 @@ describe Treequel::Directory do
 		end
 
 		it "can fetch the server's schema" do
-			@conn.should_receive( :schema ).and_return( :the_schema )
-			Treequel::Schema.should_receive( :new ).with( :the_schema ).
-				and_return( :the_parsed_schema )
-			@dir.schema.should == :the_parsed_schema
+			@dir.schema.should be_a( Treequel::Schema )
 		end
 
 		it "creates branches for messages that match valid attributeType OIDs" do
-			@schema.should_receive( :attribute_types ).
-				and_return({ :cn => :a_value, :ou => :a_value })
-
-			@dir.stub( :bound? ).and_return( false )
 			rval = @dir.ou( :people )
 			rval.dn.downcase.should == TEST_PEOPLE_DN.downcase
 		end
 
 		it "doesn't create branches for messages that don't match valid attributeType OIDs" do
-			@schema.should_receive( :attribute_types ).
-				and_return({ :cn => :a_value, :ou => :a_value })
-
 			expect { @dir.void('sbc') }.to raise_error( NoMethodError )
 		end
 

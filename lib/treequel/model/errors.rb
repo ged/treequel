@@ -33,8 +33,12 @@ require 'treequel/constants'
 #     CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # 
 class Treequel::Model::Errors < ::Hash
-	include Treequel::HashUtilities,
-	        Treequel::Loggable
+	extend Loggability
+	include Treequel::HashUtilities
+
+	# Loggability API -- Log to the Treequel module's logger
+	log_to :treequel
+
 
 	# The word to use between attributes in error messages
 	ATTRIBUTE_CONJUNCTION = ' and '

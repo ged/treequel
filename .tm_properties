@@ -1,7 +1,7 @@
 # Settings
 projectDirectory     = "$CWD"
 windowTitle          = "${CWD/^.*\///} — «$TM_DISPLAYNAME»"
-excludeInFileChooser = "{$exclude,.hg}"
+excludeInFileChooser = "{$exclude,.hg,pkg}"
 
 [ source.ruby ]
 softTabs         = false
