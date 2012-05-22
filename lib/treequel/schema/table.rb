@@ -12,11 +12,15 @@ require 'treequel/mixins'
 # This is an object that is used to store LDAP schema information in a 
 # case-insensitive table.
 class Treequel::Schema::Table
-	extend Forwardable
+	extend Forwardable,
+	       Loggability
 	include Enumerable,
-	        Treequel::Loggable,
 	        Treequel::Normalization,
 	        Treequel::Constants::Patterns
+
+	# Loggability API -- Log to the Treequel module's logger
+	log_to :treequel
+
 
 	# The list of methods that should be delegated through the key-normalization
 	# method.

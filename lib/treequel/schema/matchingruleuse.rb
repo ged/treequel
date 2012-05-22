@@ -10,10 +10,14 @@ require 'treequel/exceptions'
 
 # This is a class for representing matchingRuleUse declarations in a Treequel::Schema.
 class Treequel::Schema::MatchingRuleUse
-	include Treequel::Loggable,
-	        Treequel::Constants::Patterns
+	include Treequel::Constants::Patterns
 
-	extend Treequel::AttributeDeclarations
+	extend Loggability,
+	       Treequel::AttributeDeclarations
+
+
+	# Loggability API -- Log to the Treequel module's logger
+	log_to :treequel
 
 
 	#############################################################

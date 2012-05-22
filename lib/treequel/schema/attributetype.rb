@@ -22,11 +22,15 @@ require 'treequel/exceptions'
 # Please see the file LICENSE in the base directory for licensing details.
 #
 class Treequel::Schema::AttributeType
-	include Treequel::Loggable,
-	        Treequel::Normalization,
+	include Treequel::Normalization,
 	        Treequel::Constants::Patterns
 
-	extend Treequel::AttributeDeclarations
+	extend Loggability,
+	       Treequel::AttributeDeclarations
+
+	# Loggability API -- Log to the Treequel module's logger
+	log_to :treequel
+
 
 	# Regex for splitting a syntax OID from its length specifier
 	OID_SPLIT_PATTERN = /

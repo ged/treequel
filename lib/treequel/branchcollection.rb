@@ -12,29 +12,33 @@ require 'treequel/branch'
 # A Treequel::BranchCollection is a union of Treequel::Branchset
 # objects, suitable for performing operations on multiple branches
 # of the directory at once.
-# 
+#
 # For example, if you have hosts under ou=Hosts in two different
 # subdomains (e.g., acme.com, seattle.acme.com, and newyork.acme.com),
 # and you want to search for a host by its CN, you could do so like
 # this:
-# 
+#
 #   # Top-level hosts, and those in the 'seattle' subdomain, but not
 #   # those in the 'newyork' subdomain:
 #   west_coast_hosts = dir.ou( :hosts ) + dir.dc( :seattle ).ou( :hosts )
 #   west_coast_www_hosts = west_coast_hosts.filter( :cn => 'www' )
-#   
+#
 #   # And one that includes hosts in all three DCs:
 #   all_hosts = west_coast_hosts + dir.dc( :newyork ).ou( :hosts )
 #   all_ns_hosts = all_hosts.filter( :cn => 'ns*' )
-# 
+#
 # Note that you could accomplish most of what BranchCollection does
 # using filters, but some people might find this a bit more readable.
 class Treequel::BranchCollection
 	include Enumerable,
-	        Treequel::Loggable,
 	        Treequel::Constants
 
-	extend Treequel::Delegation
+	extend Loggability,
+	       Treequel::Delegation
+
+
+	# Loggability API -- Log to the Treequel module's logger
+	log_to :treequel
 
 
 	#################################################################

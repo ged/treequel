@@ -4,7 +4,7 @@ require 'ldap'
 require 'ldap/schema'
 require 'ldap/control'
 
-require 'logger'
+require 'loggability'
 require 'pathname'
 
 require 'uri'
@@ -24,6 +24,12 @@ end
 
 # A library for interacting with LDAP modelled after Sequel[http://sequel.rubyforge.org/].
 module Treequel
+	extend Loggability
+
+
+	# Loggability API -- set up a Logger for all Treequel-related logging
+	log_as :treequel
+
 
 	# Library version
 	VERSION = '1.8.6'
@@ -57,58 +63,6 @@ module Treequel
 		vstring = "%s %s" % [ self.name, VERSION ]
 		vstring << " (build %s)" % [ REVISION[/: ([[:xdigit:]]+)/, 1] || '0' ] if include_buildnum
 		return vstring
-	end
-
-
-	#
-	# :section: Logging
-	#
-
-	# Log levels
-	LOG_LEVELS = {
-		'debug' => Logger::DEBUG,
-		'info'  => Logger::INFO,
-		'warn'  => Logger::WARN,
-		'error' => Logger::ERROR,
-		'fatal' => Logger::FATAL,
-	}.freeze
-	LOG_LEVEL_NAMES = LOG_LEVELS.invert.freeze
-
-	@default_logger = Logger.new( $stderr )
-	@default_logger.level = $DEBUG ? Logger::DEBUG : Logger::WARN
-
-	@default_log_formatter = Treequel::LogFormatter.new( @default_logger )
-	@default_logger.formatter = @default_log_formatter
-
-	@logger = @default_logger
-
-
-	class << self
-		# The log formatter that will be used when the logging subsystem is reset
-		attr_accessor :default_log_formatter
-
-		# The logger that will be used when the logging subsystem is reset
-		attr_accessor :default_logger
-
-		# The logger that's currently in effect
-		attr_accessor :logger
-		alias_method :log, :logger
-		alias_method :log=, :logger=
-	end
-
-
-	### Reset the global logger object to the default
-	def self::reset_logger
-		self.logger = self.default_logger
-		self.logger.level = Logger::WARN
-		self.logger.formatter = self.default_log_formatter
-	end
-
-
-	### Returns +true+ if the global logger has not been set to something other than
-	### the default one.
-	def self::using_default_logger?
-		return self.logger == self.default_logger
 	end
 
 
@@ -315,6 +269,22 @@ module Treequel
 		opts[:base_dn] = ENV['LDAPBASE']      if ENV['LDAPBASE']
 
 		return opts
+	end
+
+
+	### Reset the logger associated with Treequel. Backward-compatibility method.
+	def self::reset_logger
+		Treequel.logger = Treequel.default_logger
+		Treequel.logger.formatter = nil
+		Treequel.logger.output_to( $stderr )
+		Treequel.logger.level = :fatal
+	end
+
+
+	### Returns +true+ if the current logger for Treequel is the default one.
+	### Backward-compatibility method.
+	def self::using_default_logger?
+		return Loggability[ Treequel ] == Treequel.default_logger
 	end
 
 

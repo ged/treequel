@@ -22,8 +22,11 @@ require 'treequel/mixins'
 # Please see the file LICENSE in the base directory for licensing details.
 #
 class Treequel::Schema
-	include Treequel::Loggable,
-	        Treequel::Constants::Patterns
+	extend Loggability
+	include Treequel::Constants::Patterns
+
+	# Loggability API -- Log to the Treequel module's logger
+	log_to :treequel
 
 	require 'treequel/schema/table'
 	require 'treequel/schema/objectclass'

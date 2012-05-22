@@ -29,12 +29,17 @@ class Treequel::Schema
 
 	### objectClass entries in a Treequel::Schema.
 	class ObjectClass
-		include Treequel::Loggable,
-		        Treequel::Constants::Patterns
+		include Treequel::Constants::Patterns
 
-		extend Treequel::AttributeDeclarations
+		extend Loggability,
+		       Treequel::AttributeDeclarations
 
 
+		# Loggability API -- Log to the Treequel module's logger
+		log_to :treequel
+
+
+		# Hide the constructor
 		private_class_method :new
 
 		# The 'kind' of objectClasses which don't specify a 'kind' explicitly

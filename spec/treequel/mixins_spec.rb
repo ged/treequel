@@ -32,18 +32,15 @@ describe Treequel, "mixin" do
 
 	describe Treequel::Loggable, "mixed into a class" do
 		before(:each) do
-			@logfile = StringIO.new('')
-			Treequel.logger = Logger.new( @logfile )
+			@log_output = []
+			Treequel.logger.output_to( @log_output )
+			Treequel.logger.level = :debug
 
 			@test_class = Class.new do
 				include Treequel::Loggable
 
 				def log_test_message( level, msg )
 					self.log.send( level, msg )
-				end
-
-				def logdebug_test_message( msg )
-					self.log_debug.debug( msg )
 				end
 			end
 			@obj = @test_class.new
@@ -52,14 +49,7 @@ describe Treequel, "mixin" do
 
 		it "is able to output to the log via its #log method" do
 			@obj.log_test_message( :debug, "debugging message" )
-			@logfile.rewind
-			@logfile.read.should =~ /debugging message/
-		end
-
-		it "is able to output to the log via its #log_debug method" do
-			@obj.logdebug_test_message( "sexydrownwatch" )
-			@logfile.rewind
-			@logfile.read.should =~ /sexydrownwatch/
+			@log_output.last.should =~ /debugging message/i
 		end
 	end
 

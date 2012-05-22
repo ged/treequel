@@ -10,10 +10,13 @@ require 'treequel/exceptions'
 
 # This is a class for representing ldapSyntax declarations in a Treequel::Schema.
 class Treequel::Schema::LDAPSyntax
-	include Treequel::Loggable,
-	        Treequel::Constants::Patterns
+	include Treequel::Constants::Patterns
+	extend Loggability,
+	       Treequel::AttributeDeclarations
 
-	extend Treequel::AttributeDeclarations
+
+	# Loggability API -- Log to the Treequel module's logger
+	log_to :treequel
 
 
 	#############################################################

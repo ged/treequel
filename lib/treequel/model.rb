@@ -10,15 +10,20 @@ require 'treequel/branchset'
 
 # An object interface to LDAP entries.
 class Treequel::Model < Treequel::Branch
+	extend Loggability
+
 	require 'treequel/model/objectclass'
 	require 'treequel/model/errors'
 	require 'treequel/model/schemavalidations'
 
-	include Treequel::Loggable,
-	        Treequel::Constants,
+	include Treequel::Constants,
 	        Treequel::Normalization,
 	        Treequel::Constants::Patterns,
 	        Treequel::Model::SchemaValidations
+
+
+	# Loggability API -- Log to the Treequel module's logger
+	log_to :treequel
 
 
 	# A prototype Hash that autovivifies its members as Sets, for use in

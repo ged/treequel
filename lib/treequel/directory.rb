@@ -15,11 +15,15 @@ require 'treequel/branch'
 # The object in Treequel that represents a connection to a directory, the
 # binding to that directory, and the base from which all DNs start.
 class Treequel::Directory
-	include Treequel::Loggable,
-	        Treequel::Constants,
+	include Treequel::Constants,
 	        Treequel::HashUtilities
 
-	extend Treequel::Delegation
+	extend Loggability,
+	       Treequel::Delegation
+
+	# Loggability API -- Log to the Treequel module's logger
+	log_to :treequel
+
 
 	# The default directory options
 	DEFAULT_OPTIONS = {
@@ -146,7 +150,7 @@ class Treequel::Directory
 	end
 
 
-	### Copy constructor -- the duplicate should have a distinct connection, bound user, 
+	### Copy constructor -- the duplicate should have a distinct connection, bound user,
 	### and should have a distinct copy of the +original+'s registered controls.
 	def initialize_copy( original )
 		@conn       = nil

@@ -15,13 +15,17 @@ require 'treequel/branchcollection'
 # for the entries below itself, and how to search for those entries.
 class Treequel::Branch
 	include Comparable,
-	        Treequel::Loggable,
 	        Treequel::Constants,
 	        Treequel::Constants::Patterns,
 	        Treequel::HashUtilities
 
-	extend Treequel::Delegation,
+	extend Loggability,
+	       Treequel::Delegation,
 	       Treequel::AttributeDeclarations
+
+
+	# Loggability API -- Log to the Treequel module's logger
+	log_to :treequel
 
 
 	# The default width of LDIF output

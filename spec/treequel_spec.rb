@@ -37,10 +37,14 @@ describe Treequel do
 	end
 
 	it "should know if its default logger is replaced" do
-		Treequel.reset_logger
-		Treequel.should be_using_default_logger
-		Treequel.logger = Logger.new( $stderr )
-		Treequel.should_not be_using_default_logger
+		begin
+			Treequel.reset_logger
+			Treequel.should be_using_default_logger
+			Treequel.logger = Logger.new( $stderr )
+			Treequel.should_not be_using_default_logger
+		ensure
+			Treequel.reset_logger
+		end
 	end
 
 
@@ -417,54 +421,6 @@ describe Treequel do
 		end
 	end
 
-
-	describe " logging subsystem" do
-		before(:each) do
-			Treequel.reset_logger
-		end
-
-		after(:each) do
-			Treequel.reset_logger
-		end
-
-
-		it "has the default logger instance after being reset" do
-			Treequel.logger.should equal( Treequel.default_logger )
-		end
-
-		it "has the default log formatter instance after being reset" do
-			Treequel.logger.formatter.should equal( Treequel.default_log_formatter )
-		end
-
-	end
-
-
-	describe " logging subsystem with new defaults" do
-		before( :all ) do
-			@original_logger = Treequel.default_logger
-			@original_log_formatter = Treequel.default_log_formatter
-		end
-
-		after( :all ) do
-			Treequel.default_logger = @original_logger
-			Treequel.default_log_formatter = @original_log_formatter
-		end
-
-
-		it "uses the new defaults when the logging subsystem is reset" do
-			logger = double( "dummy logger" ).as_null_object
-			formatter = mock( "dummy logger" )
-
-			Treequel.default_logger = logger
-			Treequel.default_log_formatter = formatter
-
-			logger.should_receive( :formatter= ).with( formatter )
-
-			Treequel.reset_logger
-			Treequel.logger.should equal( logger )
-		end
-
-	end
 
 end
 
