@@ -16,7 +16,6 @@ require 'rspec'
 require 'spec/lib/helpers'
 
 require 'treequel'
-require 'treequel/utils'
 
 
 include Treequel::TestConstants
