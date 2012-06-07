@@ -32,6 +32,8 @@ hoespec = Hoe.spec 'treequel' do
 	else
 		self.dependency 'ruby-ldap', '~> 0.9'
 	end
+	self.dependency 'loggability', '~> 0.3'
+
 	self.dependency 'rspec', '~> 2.8', :developer
 	self.dependency 'ruby-termios', '~> 0.9', :developer
 	self.dependency 'ruby-terminfo', '~> 0.1', :developer
