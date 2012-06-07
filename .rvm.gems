@@ -1,5 +1,5 @@
 hoe-deveiate -v0.1.1
 ruby-ldap -v0.9.12
 sequel -v3.31.0
-loggability -v0.2.3
+loggability -v0.3.0
 

@@ -39,7 +39,6 @@ lib/treequel/schema/matchingruleuse.rb
 lib/treequel/schema/objectclass.rb
 lib/treequel/schema/table.rb
 lib/treequel/sequel_integration.rb
-lib/treequel/utils.rb
 spec/data/ad_schema.yml
 spec/data/objectClasses.yml
 spec/data/opends.yml
