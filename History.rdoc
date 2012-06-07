@@ -1,3 +1,8 @@
+== v1.9.1 [2012-06-07] Michael Granger <ged@FaerieMUD.org>
+
+- Fix dependency on eliminated file.
+
+
 == v1.9.0 [2012-06-06] Michael Granger <ged@FaerieMUD.org>
 
 - Convert to Loggability for logging
