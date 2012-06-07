@@ -53,8 +53,6 @@ module Treequel
 
 	# Load the logformatters and some other stuff first
 	require 'treequel/constants'
-	require 'treequel/utils'
-
 	include Treequel::Constants
 
 
