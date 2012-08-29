@@ -16,6 +16,16 @@ It's inspired by and modeled after {Sequel}[http://sequel.rubyforge.org/], a
 kick-ass database library.
 
 
+== Command-Line Tools
+
+There are several command-line tools that are built on top of Treequel in
+the 'treequel-shell' gem. They include:
+
+treequel :: an LDAP shell/editor; treat your LDAP directory like a filesystem!
+treewhat :: an LDAP schema explorer. Dump objectClasses and attribute type info
+            in several convenient formats.
+
+
 == Contributing
 
 You can check out the current development source

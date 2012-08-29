@@ -35,24 +35,15 @@ hoespec = Hoe.spec 'treequel' do
 	self.dependency 'loggability', '~> 0.4'
 
 	self.dependency 'rspec', '~> 2.8', :developer
-	self.dependency 'ruby-termios', '~> 0.9', :developer
-	self.dependency 'ruby-terminfo', '~> 0.1', :developer
-	self.dependency 'columnize', '~> 0.3', :developer
-	self.dependency 'sysexits', '~> 1.0', :developer
-	self.dependency 'sequel', '~> 3.20', :developer
+	self.dependency 'sequel', '~> 3.38', :developer
 
 	self.spec_extras[:licenses] = ["BSD"]
 	self.spec_extras[:post_install_message] = [
-		"If you want to use the included 'treequel' LDAP shell, you'll need to install",
-		"the following libraries as well:",
-		'',
-		"    - ruby-termios",
-		"    - ruby-terminfo",
-		"    - columnize",
-		"    - sysexits",
-		'',
-		"You can install them automatically if you use the --development flag when",
-		"installing Treequel."
+		'-' * 72,
+		"NOTE: The Treequel command-line tools are no longer distributed ",
+		"with the Treequel gem; to get the tools, install the 'treequel-shell' ",
+		"gem. Thanks!",
+		'-' * 72
 	  ].join( "\n" )
 
 	self.require_ruby_version( '>=1.8.7' )
@@ -68,16 +59,6 @@ ENV['VERSION'] ||= hoespec.spec.version.to_s
 
 # Ensure the specs pass before checking in
 task 'hg:precheckin' => [ 'ChangeLog', :check_history, :check_manifest, :spec ]
-
-### Make the ChangeLog update if the repo has changed since it was last built
-file '.hg/branch'
-file 'ChangeLog' => '.hg/branch' do |task|
-	$stderr.puts "Updating the changelog..."
-	content = make_changelog()
-	File.open( task.name, 'w', 0644 ) do |fh|
-		fh.print( content )
-	end
-end
 
 # Rebuild the ChangeLog immediately before release
 task :prerelease => 'ChangeLog'
