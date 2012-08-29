@@ -1,3 +1,8 @@
+== v1.10.0 [2012-08-29] Michael Granger <ged@FaerieMUD.org>
+
+- Split out the shell tools into their own gem
+
+
 == v1.9.1 [2012-06-07] Michael Granger <ged@FaerieMUD.org>
 
 - Fix dependency on eliminated file.
