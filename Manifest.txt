@@ -5,9 +5,6 @@ LICENSE
 Manifest.txt
 README.rdoc
 Rakefile
-bin/treeirb
-bin/treequel
-bin/treewhat
 examples/company-directory.rb
 examples/ldap-rack-auth.rb
 examples/ldap_state.rb

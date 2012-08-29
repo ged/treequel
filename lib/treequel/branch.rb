@@ -72,8 +72,8 @@ class Treequel::Branch
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new Treequel::Branch with the given +directory+, +dn+, and an optional +entry+. 
-	### If the optional +entry+ object is given, it will be used to fetch values from the 
+	### Create a new Treequel::Branch with the given +directory+, +dn+, and an optional +entry+.
+	### If the optional +entry+ object is given, it will be used to fetch values from the
 	### directory; if it isn't provided, it will be fetched from the +directory+ the first
 	### time it is needed.
 	def initialize( directory, dn, entry=nil )
