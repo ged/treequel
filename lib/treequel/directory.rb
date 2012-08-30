@@ -383,12 +383,9 @@ class Treequel::Directory
 	### [+:client_controls+]
 	###    Any client controls that should be applied to the search as an Array of LDAP::Control
 	###    objects.
-	### [+:timeout_s+]
-	###    The number of seconds (in addition to :timeout_us) after which the search request should 
+	### [+:timeout+]
+	###    The number of (possibly floating-point) seconds after which the search request should
 	###    be aborted.
-	### [+:timeout_us+]
-	###    The number of microseconds (in addition to :timeout_s) after which the search request 
-	###    should be aborted.
 	### [+:limit+]
 	###    The maximum number of results to return from the server.
 	### [+:sort_attribute+]
