@@ -5,6 +5,8 @@ require 'treequel/filter'
 
 begin
 	require 'sequel'
+	Sequel.extension( :core_extensions )
+
 rescue LoadError => err
 	Treequel.logger.info "Sequel library didn't load: %s: %s" % [ err.class.name, err.message ]
 	Treequel.logger.debug "  " + err.backtrace.join( "\n  " )

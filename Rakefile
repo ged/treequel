@@ -35,7 +35,7 @@ hoespec = Hoe.spec 'treequel' do
 	self.dependency 'loggability', '~> 0.4'
 
 	self.dependency 'rspec', '~> 2.8', :developer
-	self.dependency 'sequel', '~> 3.38', :developer
+	self.dependency 'sequel', '>= 3.38', :developer
 
 	self.spec_extras[:licenses] = ["BSD"]
 	self.spec_extras[:post_install_message] = [
