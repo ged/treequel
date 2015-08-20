@@ -617,6 +617,17 @@ describe Treequel::Model do
 
 				result.should be_false()
 			end
+
+			it "doesn't validate the model if saved with :validate set to false" do
+				@conn.stub( :search_ext2 ).with( @obj.dn, LDAP::LDAP_SCOPE_BASE, "(objectClass=*)" ).
+					and_return( [] )
+				@conn.should_receive( :modify )
+				@obj.should_not_receive( :valid? )
+
+				expect {
+					result = @obj.save( :validate => false )
+				}.to_not raise_error()
+			end
 		end
 
 
