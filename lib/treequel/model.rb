@@ -55,12 +55,13 @@ class Treequel::Model < Treequel::Branch
 
 	# Defaults for #validate options
 	DEFAULT_VALIDATION_OPTIONS = {
-		:with_schema => true,
+		:with_schema => true
 	}
 
 	# Defaults for #save options
 	DEFAULT_SAVE_OPTIONS = {
 		:raise_on_failure => true,
+		:validate         => true
 	}
 
 	# Defaults for #destroy options
@@ -378,8 +379,10 @@ class Treequel::Model < Treequel::Branch
 		opts = DEFAULT_SAVE_OPTIONS.merge( opts )
 
 		self.log.debug "Saving %s..." % [ self.dn ]
-		raise Treequel::ValidationFailed, self.errors unless self.valid?( opts )
-		self.log.debug "  validation succeeded."
+		if opts[ :validate ]
+			raise Treequel::ValidationFailed, self.errors unless self.valid?( opts )
+			self.log.debug "  validation succeeded."
+		end
 
 		unless mods = self.modifications
 			self.log.debug "  no modifications... no save necessary."
