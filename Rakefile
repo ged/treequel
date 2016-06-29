@@ -20,6 +20,7 @@ hoespec = Hoe.spec 'treequel' do
 	self.history_file = 'History.rdoc'
 	self.extra_rdoc_files = Rake::FileList[ '*.rdoc' ]
 	self.spec_extras[:rdoc_options] = ['-f', 'fivefish', '-t', 'Treequel']
+	self.license 'BSD-3-Clause'
 
 	self.need_tar = true
 	self.need_zip = true
@@ -30,14 +31,13 @@ hoespec = Hoe.spec 'treequel' do
 	if RUBY_PLATFORM == 'java'
 		self.dependency 'jruby-ldap', '~> 0.0.1'
 	else
-		self.dependency 'ruby-ldap', '~> 0.9'
+		self.dependency 'ruby-ldap', '~> 0.9', '>= 0.9.19'
 	end
 	self.dependency 'loggability', '~> 0.4'
 
-	self.dependency 'rspec', '~> 2.8', :developer
-	self.dependency 'sequel', '>= 3.38', :developer
+	self.dependency 'rspec', '~> 2.8', :developer   # FIXME needs updates
+	self.dependency 'sequel', '>= 3.38', :developer # FIXME test with v4
 
-	self.spec_extras[:licenses] = ["BSD"]
 	self.spec_extras[:post_install_message] = [
 		'-' * 72,
 		"NOTE: The Treequel command-line tools are no longer distributed ",
@@ -46,7 +46,7 @@ hoespec = Hoe.spec 'treequel' do
 		'-' * 72
 	  ].join( "\n" )
 
-	self.require_ruby_version( '>=1.8.7' )
+	self.require_ruby_version( '>=2.2' )
 
 	self.hg_sign_tags = true if self.respond_to?( :hg_sign_tags= )
 	self.check_history_on_release = true if self.respond_to?( :check_history_on_release= )

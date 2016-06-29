@@ -409,7 +409,7 @@ describe Treequel::Filter do
 			it "can't be created with multiple filters" do
 				expect {
 					Treequel::Filter::NotComponent.new( @filter1, @filter2 )
-				}.to raise_error( ArgumentError, /2 for 1/i )
+				}.to raise_error( ArgumentError, /given 2, expected 1/i )
 			end
 		end
 	end
