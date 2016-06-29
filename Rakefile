@@ -31,7 +31,7 @@ hoespec = Hoe.spec 'treequel' do
 	if RUBY_PLATFORM == 'java'
 		self.dependency 'jruby-ldap', '~> 0.0.1'
 	else
-		self.dependency 'ruby-ldap', '~> 0.9', '>= 0.9.19'
+		self.dependency 'ruby-ldap', '~> 0.9'
 	end
 	self.dependency 'loggability', '~> 0.4'
 
