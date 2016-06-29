@@ -1,3 +1,9 @@
+== v1.11.0 [2016-06-29] Mahlon E. Smith <mahlon@martini.nu>
+
+ - Documentation fixes
+ - Implicitly require sequel core behaviors
+ - Bump minimum versions for ruby and ruby-ldap
+
 == v1.10.0 [2012-08-29] Michael Granger <ged@FaerieMUD.org>
 
 - Split out the shell tools into their own gem
