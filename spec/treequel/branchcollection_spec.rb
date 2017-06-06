@@ -1,16 +1,10 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+#encoding: utf-8
 
 require_relative '../spec_helpers'
 
-
 require 'treequel/branchcollection'
 
-
-include Treequel::SpecConstants
-
-#####################################################################
-###	C O N T E X T S
-#####################################################################
 
 describe Treequel::BranchCollection do
 	include Treequel::SpecHelpers

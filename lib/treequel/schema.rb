@@ -1,4 +1,5 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+#encoding: utf-8
 
 require 'ldap'
 require 'ldap/schema'

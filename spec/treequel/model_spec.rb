@@ -1,12 +1,8 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+#encoding: utf-8
 
 require_relative '../spec_helpers'
 require 'treequel/model'
-
-
-#####################################################################
-###	C O N T E X T S
-#####################################################################
 
 describe Treequel::Model do
 

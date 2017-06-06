@@ -1,26 +1,11 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+#encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-
-	libdir = basedir + "lib"
-	extdir = basedir + "ext"
-
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
-	$LOAD_PATH.unshift( extdir ) unless $LOAD_PATH.include?( extdir )
-}
-
-
+require_relative '../spec_helpers'
 
 require 'treequel'
 require 'treequel/mixins'
 
-
-#####################################################################
-###	C O N T E X T S
-#####################################################################
 
 describe Treequel, "mixin" do
 

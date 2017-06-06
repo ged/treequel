@@ -1,4 +1,5 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+#encoding: utf-8
 
 require_relative '../spec_helpers'
 
@@ -6,12 +7,7 @@ require_relative '../spec_helpers'
 require 'treequel'
 require 'treequel/control'
 
-include Treequel::SpecConstants
-include Treequel::Constants
 
-#####################################################################
-###	C O N T E X T S
-#####################################################################
 module TestControl
 	OID = 'an OID'
 	include Treequel::Control

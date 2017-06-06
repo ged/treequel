@@ -13,19 +13,21 @@ GEMSPEC = 'treequel.gemspec'
 
 Hoe.plugin :mercurial
 Hoe.plugin :signing
-Hoe.plugin :manualgen
 Hoe.plugin :deveiate
 
 Hoe.plugins.delete :rubyforge
 
 hoespec = Hoe.spec 'treequel' do
-	self.readme_file = 'README.rdoc'
-	self.history_file = 'History.rdoc'
-	self.extra_rdoc_files = Rake::FileList[ '*.rdoc' ]
+	self.readme_file = 'README.md'
+	self.history_file = 'History.md'
+	self.extra_rdoc_files = FileList[ '*.rdoc', '*.md' ]
 	self.license 'BSD-3-Clause'
-
-	self.need_tar = true
-	self.need_zip = true
+	self.urls = {
+		home:   'http://deveiate.org/projects/configurability',
+		code:   'http://bitbucket.org/ged/configurability',
+		docs:   'http://deveiate.org/code/configurability',
+		github: 'http://github.com/ged/configurability',
+	}
 
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
@@ -33,7 +35,7 @@ hoespec = Hoe.spec 'treequel' do
 	if RUBY_PLATFORM == 'java'
 		self.dependency 'jruby-ldap', '~> 0.0.1'
 	else
-		self.dependency 'ruby-ldap', '~> 0.9', '>= 0.9.19'
+		self.dependency 'ruby-ldap', ['~> 0.9', '>= 0.9.19']
 	end
 	self.dependency 'loggability', '~> 0.4'
 
@@ -52,7 +54,6 @@ hoespec = Hoe.spec 'treequel' do
 
 	self.hg_sign_tags = true if self.respond_to?( :hg_sign_tags= )
 	self.check_history_on_release = true if self.respond_to?( :check_history_on_release= )
-	self.manual_source_dir = 'src' if self.respond_to?( :manual_source_dir= )
 
 	self.rdoc_locations << "deveiate:/usr/local/www/public/code/#{remote_rdoc_dir}"
 end
@@ -60,7 +61,7 @@ end
 ENV['VERSION'] ||= hoespec.spec.version.to_s
 
 # Ensure the specs pass before checking in
-task 'hg:precheckin' => [ 'ChangeLog', :check_history, :check_manifest, :spec ]
+task 'hg:precheckin' => [ 'ChangeLog', :gemspec, :check_history, :check_manifest, :spec ]
 
 # Rebuild the ChangeLog immediately before release
 task :prerelease => 'ChangeLog'
@@ -78,9 +79,9 @@ if File.directory?( '.hg' )
 
 	Rake::Task[ 'docs' ].clear
 	RDoc::Task.new( 'docs' ) do |rdoc|
-	    rdoc.main = "README.rdoc"
+	    rdoc.main = "README.md"
 		rdoc.markup = 'markdown'
-	    rdoc.rdoc_files.include( "*.rdoc", "ChangeLog", "lib/**/*.rb" )
+	    rdoc.rdoc_files.include( "*.md", "ChangeLog", "lib/**/*.rb" )
 	    rdoc.generator = :fivefish
 		rdoc.title = 'Treequel'
 	    rdoc.rdoc_dir = 'doc'
@@ -89,11 +90,13 @@ end
 
 
 task :gemspec => GEMSPEC
-file GEMSPEC => __FILE__ do |task|
-	spec = $hoespec.spec
+file GEMSPEC => [ __FILE__, 'Manifest.txt' ] do |task|
+	spec = hoespec.spec
 	spec.files.delete( '.gemtest' )
+	spec.files.delete( 'LICENSE' )
 	spec.signing_key = nil
-	spec.version = "#{spec.version}.pre#{Time.now.strftime("%Y%m%d%H%M%S")}"
+	spec.version = "#{spec.version.bump}.0.pre#{Time.now.strftime("%Y%m%d%H%M%S")}"
+	spec.cert_chain = [ 'certs/ged.pem' ]
 	File.open( task.name, 'w' ) do |fh|
 		fh.write( spec.to_ruby )
 	end

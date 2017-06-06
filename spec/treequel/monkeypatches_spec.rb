@@ -1,11 +1,8 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+#encoding: utf-8
 
 require_relative '../spec_helpers'
 
-
-#####################################################################
-###	C O N T E X T S
-#####################################################################
 
 describe Treequel::LDAPControlExtensions do
 	describe "equality operator method" do

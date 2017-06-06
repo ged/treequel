@@ -1,4 +1,5 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+#encoding: utf-8
 # coding: utf-8
 
 require 'pathname'
@@ -13,6 +14,7 @@ require_relative 'spec_constants'
 
 ### RSpec helper functions.
 module Treequel::SpecHelpers
+
 	include Treequel::SpecConstants
 
 	###############
@@ -43,19 +45,19 @@ module Treequel::SpecHelpers
 	end
 
 
-	### Shorthand method for creating LDAP::Mod DELETE objects 
+	### Shorthand method for creating LDAP::Mod DELETE objects
 	def ldap_mod_delete( attribute, *values )
 		return LDAP::Mod.new( LDAP::LDAP_MOD_DELETE, attribute.to_s, values.flatten )
 	end
 
 
-	### Shorthand method for creating LDAP::Mod REPLACE objects 
+	### Shorthand method for creating LDAP::Mod REPLACE objects
 	def ldap_mod_replace( attribute, *values )
 		return LDAP::Mod.new( LDAP::LDAP_MOD_REPLACE, attribute.to_s, values.flatten )
 	end
 
 
-	### Shorthand method for creating LDAP::Mod ADD objects 
+	### Shorthand method for creating LDAP::Mod ADD objects
 	def ldap_mod_add( attribute, *values )
 		return LDAP::Mod.new( LDAP::LDAP_MOD_ADD, attribute.to_s, values.flatten )
 	end

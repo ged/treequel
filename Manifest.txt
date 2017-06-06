@@ -1,9 +1,9 @@
 .gemtest
 ChangeLog
-History.rdoc
+History.md
 LICENSE
 Manifest.txt
-README.rdoc
+README.md
 Rakefile
 examples/company-directory.rb
 examples/ldap-rack-auth.rb

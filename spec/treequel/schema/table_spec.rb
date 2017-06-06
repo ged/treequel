@@ -1,4 +1,5 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+#encoding: utf-8
 
 require_relative '../../spec_helpers'
 
@@ -8,13 +9,6 @@ require 'ldap'
 require 'ldap/schema'
 require 'treequel/schema'
 
-
-include Treequel::SpecConstants
-include Treequel::Constants
-
-#####################################################################
-###	C O N T E X T S
-#####################################################################
 
 describe Treequel::Schema::Table do
 	include Treequel::SpecHelpers

@@ -1,4 +1,5 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+#encoding: utf-8
 
 require_relative '../../spec_helpers'
 
@@ -8,9 +9,6 @@ require 'treequel/behavior/control'
 require 'treequel/controls/sortedresults'
 
 
-#####################################################################
-###	C O N T E X T S
-#####################################################################
 describe Treequel::SortedResultsControl do
 
 	before( :each ) do

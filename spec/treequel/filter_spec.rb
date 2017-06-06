@@ -1,21 +1,12 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+#encoding: utf-8
 
 require_relative '../spec_helpers'
-
 
 require 'treequel/filter'
 
 
-include Treequel::SpecConstants
-include Treequel::Constants
-
-#####################################################################
-###	C O N T E X T S
-#####################################################################
-
 describe Treequel::Filter do
-	include Treequel::SpecHelpers
-
 
 	it "knows that it is promiscuous (will match any entry) if its component is promiscuous" do
 		expect( Treequel::Filter.new ).to be_promiscuous()

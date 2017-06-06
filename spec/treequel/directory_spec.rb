@@ -1,17 +1,12 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+#encoding: utf-8
 
 require_relative '../spec_helpers'
-
 
 require 'treequel/directory'
 require 'treequel/branch'
 require 'treequel/control'
 
-
-
-#####################################################################
-###	C O N T E X T S
-#####################################################################
 
 describe Treequel::Directory do
 	include Treequel::SpecHelpers
