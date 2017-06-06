@@ -1,4 +1,4 @@
-#!/usr/bin/ruby -w
+#!/usr/bin/env ruby -w
 #
 # Program to demonstrate the use of the LDAPv3 PagedResults control. This
 # control is interesting, because it requires the passing of controls in

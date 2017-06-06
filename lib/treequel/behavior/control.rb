@@ -18,7 +18,7 @@ require 'treequel/control'
 #
 #    end
 
-shared_examples_for "A Treequel::Control" do
+RSpec.shared_examples_for "A Treequel::Control" do
 
 	let( :control ) do
 		described_class
@@ -27,12 +27,10 @@ shared_examples_for "A Treequel::Control" do
 
 	it "implements one of either #get_client_controls or #get_server_controls" do
 		methods = [
-			'get_client_controls',		# 1.8.x
-			'get_server_controls',
-			:get_client_controls,		# 1.9.x
+			:get_client_controls,
 			:get_server_controls
 		]
-		(control.instance_methods( false ) | methods).should_not be_empty()
+		expect( control.instance_methods(false) | methods ).to_not be_empty()
 	end
 
 end

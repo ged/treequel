@@ -1,18 +1,7 @@
 #!/usr/bin/env ruby
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+require_relative '../spec_helpers'
 
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
-}
-
-require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'yaml'
 require 'ldap'
@@ -24,7 +13,6 @@ describe Treequel::Schema do
 	include Treequel::SpecHelpers
 
 	before( :all ) do
-		setup_logging( :warn )
 		@datadir = Pathname( __FILE__ ).dirname.parent + 'data'
 	end
 
@@ -34,10 +22,6 @@ describe Treequel::Schema do
 
 	after( :each ) do
 		Treequel::Schema.strict_parse_mode = @strict_flag
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 	### Constants
@@ -67,12 +51,12 @@ describe Treequel::Schema do
 	### Examples
 
 	it "defaults to lenient schema-parsing" do
-		Treequel::Schema.should be_lenient()
+		expect( Treequel::Schema ).to be_lenient()
 	end
 
 	it "can be told to propagate schema-parsing failures for easier problem-detection" do
 		Treequel::Schema.strict_parse_mode = true
-		Treequel::Schema.should_not be_lenient()
+		expect( Treequel::Schema ).to_not be_lenient()
 	end
 
 
@@ -82,8 +66,8 @@ describe Treequel::Schema do
 		                               'ldapSyntaxes'    => [], 
 		                               'matchingRules'   => [], 
 		                               'matchingRuleUse' => [] )
-		schema.should be_a( Treequel::Schema )
-		schema.object_classes.keys.should_not include( 'slpService' )
+		expect( schema ).to be_a( Treequel::Schema )
+		expect( schema.object_classes.keys ).to_not include( 'slpService' )
 	end
 
 	it "propagates parse errors while in strict schema-parsing mode" do
@@ -95,12 +79,12 @@ describe Treequel::Schema do
 
 	it "can parse a valid oidlist" do
 		oids = Treequel::Schema.parse_oids( TEST_OIDLIST )
-		oids.should have(3).members
-		oids.should == [ :objectClass, :objectCaste, TEST_NUMERICOID ]
+		expect( oids.length ).to eq( 3 )
+		expect( oids ).to eq( [ :objectClass, :objectCaste, TEST_NUMERICOID ] )
 	end
 
 	it "returns an empty Array if oidlist it's asked to parse is nil" do
-		Treequel::Schema.parse_oids( nil ).should == []
+		expect( Treequel::Schema.parse_oids( nil ) ).to eq( [] )
 	end
 
 	it "raises an exception if it's asked to parse an invalid oidlist" do
@@ -111,13 +95,13 @@ describe Treequel::Schema do
 
 
 	it "keeps a numeric OID as a String when parsing it" do
-		Treequel::Schema.parse_oid( TEST_NUMERICOID ).should be_a( String )
-		Treequel::Schema.parse_oid( TEST_NUMERICOID ).should == TEST_NUMERICOID
+		expect( Treequel::Schema.parse_oid( TEST_NUMERICOID ) ).to be_a( String )
+		expect( Treequel::Schema.parse_oid( TEST_NUMERICOID ) ).to eq( TEST_NUMERICOID )
 	end
 
 	it "transforms a named OID as a Symbol when parsing it" do
-		Treequel::Schema.parse_oid( TEST_DESCR ).should be_a( Symbol )
-		Treequel::Schema.parse_oid( TEST_DESCR ).should == TEST_DESCR.to_sym
+		expect( Treequel::Schema.parse_oid( TEST_DESCR ) ).to be_a( Symbol )
+		expect( Treequel::Schema.parse_oid( TEST_DESCR ) ).to eq( TEST_DESCR.to_sym )
 	end
 
 
@@ -132,11 +116,11 @@ describe Treequel::Schema do
 		end
 
 		it "can parse the schema structure returned from LDAP::Conn#schema" do
-			@schema.object_classes.values.uniq.should have( @hash['objectClasses'].length ).members
-			@schema.attribute_types.values.uniq.should have( @hash['attributeTypes'].length ).members
-			@schema.matching_rules.values.uniq.should have( @hash['matchingRules'].length ).members
-			@schema.matching_rule_uses.values.uniq.should have( @hash['matchingRuleUse'].length ).members
-			@schema.ldap_syntaxes.values.uniq.should have( @hash['ldapSyntaxes'].length ).members
+			expect( @schema.object_classes.values.uniq.length ).to eq( @hash['objectClasses'].length )
+			expect( @schema.attribute_types.values.uniq.length ).to eq( @hash['attributeTypes'].length )
+			expect( @schema.matching_rules.values.uniq.length ).to eq( @hash['matchingRules'].length )
+			expect( @schema.matching_rule_uses.values.uniq.length ).to eq( @hash['matchingRuleUse'].length )
+			expect( @schema.ldap_syntaxes.values.uniq.length ).to eq( @hash['ldapSyntaxes'].length )
 
 			dirop_count = @hash['attributeTypes'].
 				count {|type| type.index('USAGE directoryOperation') }
@@ -146,7 +130,7 @@ describe Treequel::Schema do
 				count {|type| type.index('USAGE distributedOperation') }
 			op_attrcount = dirop_count + dsaop_count + distop_count
 
-			@schema.operational_attribute_types.should have( op_attrcount ).members
+			expect( @schema.operational_attribute_types.length ).to eq( op_attrcount )
 		end
 
 
@@ -160,7 +144,7 @@ describe Treequel::Schema do
 				schema = Treequel::Schema.new( schemahash )
 			end.join
 
-			schema.should be_an_instance_of( Treequel::Schema )
+			expect( schema ).to be_an_instance_of( Treequel::Schema )
 		end
 	end
 
@@ -174,14 +158,14 @@ describe Treequel::Schema do
 		end
 
 		it "can parse an ActiveDirectory schema structure, too" do
-			@schema.object_classes.values.uniq.should have( @hash['objectClasses'].length ).members
-			@schema.attribute_types.values.uniq.should have( @hash['attributeTypes'].length ).members
+			expect( @schema.object_classes.values.uniq.length ).to eq( @hash['objectClasses'].length )
+			expect( @schema.attribute_types.values.uniq.length ).to eq( @hash['attributeTypes'].length )
 
 			# AD doesn't have these in its subSchema
-			@schema.matching_rules.should be_empty()
-			@schema.matching_rule_uses.should be_empty()
-			@schema.ldap_syntaxes.should be_empty()
-			@schema.operational_attribute_types.should be_empty()
+			expect( @schema.matching_rules ).to be_empty()
+			expect( @schema.matching_rule_uses ).to be_empty()
+			expect( @schema.ldap_syntaxes ).to be_empty()
+			expect( @schema.operational_attribute_types ).to be_empty()
 		end
 
 	end
@@ -202,17 +186,20 @@ describe Treequel::Schema do
 		it "can parse an OpenDS schema structure, too" do
 			@schema = Treequel::Schema.new( @schemahash )
 
-			@schema.object_classes.values.uniq.should have( @hash['objectClasses'].length ).members
-			@schema.attribute_types.values.uniq.should have( @hash['attributeTypes'].length ).members
-			@schema.matching_rules.values.uniq.should have( @hash['matchingRules'].length ).members
-			@schema.ldap_syntaxes.values.uniq.should have( @hash['ldapSyntaxes'].length ).members
+			expect( @schema.object_classes.values.uniq.length ).to eq( @hash['objectClasses'].length )
+			expect( @schema.attribute_types.values.uniq.length ).to eq( @hash['attributeTypes'].length )
+			expect( @schema.matching_rules.values.uniq.length ).to eq( @hash['matchingRules'].length )
+			expect( @schema.ldap_syntaxes.values.uniq.length ).to eq( @hash['ldapSyntaxes'].length )
 
-			@schema.matching_rule_uses.should be_empty()
+			expect( @schema.matching_rule_uses ).to be_empty()
 
 			# Not yet supported			
-			# @schema.dit_structure_rules.values.uniq.should have( @hash['dITStructureRules'].length ).members
-			# @schema.dit_content_rules.values.uniq.should have( @hash['dITContentRules'].length ).members
-			# @schema.name_forms.values.uniq.should have( @hash['nameForms'].length ).members
+			# expect( @schema.dit_structure_rules.values.uniq.length ).
+			# 	to eq( @hash['dITStructureRules'].length )
+			# expect( @schema.dit_content_rules.values.uniq.length ).
+			# 	to eq( @hash['dITContentRules'].length )
+			# expect( @schema.name_forms.values.uniq.length ).
+			# 	to eq( @hash['nameForms'].length )
 
 			dirop_count = @hash['attributeTypes'].
 				count {|type| type.index('USAGE directoryOperation') }
@@ -222,7 +209,7 @@ describe Treequel::Schema do
 				count {|type| type.index('USAGE distributedOperation') }
 			op_attrcount = dirop_count + dsaop_count + distop_count
 
-			@schema.operational_attribute_types.should have( op_attrcount ).members
+			expect( @schema.operational_attribute_types.length ).to eq( op_attrcount )
 		end
 
 	end
@@ -239,13 +226,13 @@ describe Treequel::Schema do
 		end
 
 		it "can parse schema artifacts from ticket 11" do
-			@schema.attribute_types.values.uniq.should have( @hash['attributeTypes'].length ).members
-			@schema.matching_rules.values.uniq.should have( @hash['matchingRules'].length ).members
+			expect( @schema.attribute_types.values.uniq.length ).to eq( @hash['attributeTypes'].length )
+			expect( @schema.matching_rules.values.uniq.length ).to eq( @hash['matchingRules'].length )
 
 			dsaop_count = @hash['attributeTypes'].
 				count {|type| type.index('USAGE dsaOperation') }
 
-			@schema.operational_attribute_types.should have( dsaop_count ).members
+			expect( @schema.operational_attribute_types.length ).to eq( dsaop_count )
 		end
 
 	end

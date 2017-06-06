@@ -1,5 +1,4 @@
-#!/usr/bin/ruby
-
+#!/usr/bin/env ruby
 require 'rbconfig'
 require 'erb'
 require 'etc'

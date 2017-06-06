@@ -1,0 +1,1213 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+
+require 'abbrev'
+require 'columnize'
+require 'diff/lcs'
+require 'digest/sha1'
+require 'irb'
+require 'logger'
+require 'open3'
+require 'optparse'
+require 'ostruct'
+require 'pathname'
+require 'readline'
+require 'shellwords'
+require 'tempfile'
+require 'terminfo'
+require 'termios'
+require 'uri'
+require 'yaml'
+
+require 'treequel'
+require 'treequel/mixins'
+require 'treequel/constants'
+
+
+### Monkeypatch for resetting an OpenStruct's state.
+class OpenStruct
+
+	### Clear all defined fields and values.
+	def clear
+		@table.clear
+	end
+
+end
+
+
+### IRb.start_session, courtesy of Joel VanderWerf in [ruby-talk:42437].
+require 'irb'
+require 'irb/completion'
+
+module IRB # :nodoc:
+	def self.start_session( obj )
+		unless @__initialized
+			args = ARGV
+			ARGV.replace(ARGV.dup)
+			IRB.setup(nil)
+			ARGV.replace(args)
+			@__initialized = true
+		end
+
+		workspace = WorkSpace.new( obj )
+		irb = Irb.new( workspace )
+
+		@CONF[:IRB_RC].call( irb.context ) if @CONF[:IRB_RC]
+		@CONF[:MAIN_CONTEXT] = irb.context
+
+		begin
+			prevhandler = Signal.trap( 'INT' ) do
+				irb.signal_handle
+			end
+
+			catch( :IRB_EXIT ) do
+				irb.eval_input
+			end
+		ensure
+			Signal.trap( 'INT', prevhandler )
+		end
+
+	end
+end
+
+# The Treequel shell.
+class Treequel::Shell
+	include Readline,
+	        Treequel::Loggable,
+	        Treequel::ANSIColorUtilities,
+	        Treequel::Constants::Patterns,
+	        Treequel::HashUtilities
+
+	extend Treequel::ANSIColorUtilities
+
+	# Prompt text for #prompt_for_multiple_values
+	MULTILINE_PROMPT = <<-'EOF'
+	Enter one or more values for '%s'.
+	A blank line finishes input.
+	EOF
+
+	# Some ANSI codes for fancier stuff
+	CLEAR_TO_EOL       = "\e[K"
+	CLEAR_CURRENT_LINE = "\e[2K"
+
+	# Log levels
+	LOG_LEVELS = {
+		'debug' => Logger::DEBUG,
+		'info'  => Logger::INFO,
+		'warn'  => Logger::WARN,
+		'error' => Logger::ERROR,
+		'fatal' => Logger::FATAL,
+	}.freeze
+	LOG_LEVEL_NAMES = LOG_LEVELS.invert.freeze
+
+	# Valid connect-type arguments
+	VALID_CONNECT_TYPES = %w[tls ssl plain]
+
+	# Command option parsers
+	@@option_parsers = {}
+
+	# Path to the default history file
+	HISTORY_FILE = Pathname( "~/.treequel.history" )
+
+	# Number of items to store in history by default
+	DEFAULT_HISTORY_SIZE = 100
+
+
+	#################################################################
+	###	C L A S S   M E T H O D S
+	#################################################################
+
+	### Run the shell.
+	def self::run( args )
+		Treequel.logger.formatter = Treequel::ColorLogFormatter.new( Treequel.logger )
+		bind_as, uri = self.parse_options( args )
+
+		directory = if uri
+			Treequel.directory( uri )
+		else
+			Treequel.directory_from_config
+		end
+
+		Treequel::Shell.new( directory ).run( bind_as )
+	end
+
+
+	### Parse command-line options for shell startup and return an options struct and
+	### the LDAP URI.
+	def self::parse_options( argv )
+		progname = File.basename( $0 )
+		bind_as = nil
+
+		oparser = OptionParser.new( "Usage: #{progname} [OPTIONS] [LDAPURL]" ) do |oparser|
+			oparser.separator ' '
+
+			oparser.on( '--binddn=DN', '-b DN', String, "Bind as DN" ) do |dn|
+				bind_as = dn
+			end
+
+			oparser.on( '--loglevel=LEVEL', '-l LEVEL', Treequel::Loggable::LEVEL.keys, 
+				"Set the logging level. Should be one of:",
+				Treequel::Loggable::LEVEL.keys.collect {|lvl| lvl.to_s } ) do |lvl|
+				Treequel.logger.level = Treequel::Loggable::LEVEL[ lvl.to_sym ] or
+					raise "Invalid logging level %p" % [ lvl ]
+			end
+
+			oparser.on( '--debug', '-d', FalseClass, "Turn debugging on" ) do
+				$DEBUG = true
+				$trace = true
+				Treequel.logger.level = Logger::DEBUG
+			end
+
+			oparser.on("-h", "--help", "Show this help message.") do
+				$stderr.puts( oparser )
+				exit!
+			end
+		end
+
+		remaining_args = oparser.parse( argv )
+
+		return bind_as, *remaining_args
+	end
+
+
+	### Create an option parser from the specified +block+ for the given +command+ and register
+	### it. Many thanks to apeiros and dominikh on #Ruby-Pro for the ideas behind this.
+	def self::set_options( command, &block )
+	    options = OpenStruct.new
+		oparser = OptionParser.new( "Help for #{command}" ) do |o|
+			yield( o, options )
+		end
+		oparser.default_argv = []
+
+		@@option_parsers[command.to_sym] = [oparser, options]
+	end
+
+
+	#################################################################
+	###	I N S T A N C E   M E T H O D S
+	#################################################################
+
+	### Create a new shell for the specified +directory+.
+	### @param [Treequel::Directory] directory  the LDAP directory to navigate
+	def initialize( directory )
+		@dir        = directory
+		@uri        = directory.uri
+		@quit       = false
+		@currbranch = @dir
+		@columns    = TermInfo.screen_width
+		@rows       = TermInfo.screen_height
+
+		@commands = self.find_commands
+		@completions = @commands.abbrev
+		@command_table = make_command_table( @commands )
+	end
+
+
+	######
+	public
+	######
+
+	# The number of columns in the current terminal
+	attr_reader :columns
+
+	# The number of rows in the current terminal
+	attr_reader :rows
+
+	# The flag which causes the shell to exit after the current loop
+	attr_accessor :quit
+
+
+	### The command loop: run the shell until the user wants to quit
+	### @param [String]              bind_as    The DN of the user to bind as. If none is
+	###                                         specified, the shell will bind anonymously.
+	def run( bind_as=nil )
+		@original_tty_settings = IO.read( '|-' ) or exec 'stty', '-g'
+		message "Connected to %s" % [ @uri ]
+
+		# Set up the completion callback
+		self.setup_completion
+
+		# Load saved command-line history
+		self.read_history
+
+		# If the user said to bind as someone on the command line, invoke a
+		# 'bind' command before dropping into the command line
+		if bind_as
+			options = OpenStruct.new
+			self.bind_command( options, bind_as )
+		end
+
+		# Run until something sets the quit flag
+		until @quit
+			$stderr.puts
+			prompt = make_prompt_string( @currbranch.dn + '> ' )
+			input = Readline.readline( prompt, true )
+			self.log.debug "Input is: %p" % [ input ]
+
+			# EOL makes the shell quit
+			if input.nil?
+				self.log.debug "EOL: setting quit flag"
+				@quit = true
+
+			# Blank input -- just reprompt
+			elsif input == ''
+				self.log.debug "No command. Re-displaying the prompt."
+
+			# Parse everything else into command + args
+			else
+				self.log.debug "Dispatching input: %p" % [ input ]
+				self.dispatch_cmd( input )
+			end
+		end
+
+		message "\nSaving history...\n"
+		self.save_history
+
+		message "done."
+	ensure
+		system( 'stty', @original_tty_settings.chomp )
+	end
+
+
+	### Parse the specified +input+ into a command, options, and arguments and dispatch them
+	### to the appropriate command method.
+	def dispatch_cmd( input )
+		command, *args = Shellwords.shellwords( input )
+
+		# If it's a valid command, run it
+		if meth = @command_table[ command ]
+			full_command = @completions[ command ].to_sym
+
+			# If there's a registered optionparser for the command, use it to 
+			# split out options and arguments, then pass those to the command.
+			if @@option_parsers.key?( full_command )
+				oparser, options = @@option_parsers[ full_command ]
+				self.log.debug "Got an option-parser for #{full_command}."
+
+				cmdargs = oparser.parse( args )
+				self.log.debug "  options=%p, args=%p" % [ options, cmdargs ]
+				meth.call( options, *cmdargs )
+
+				options.clear
+
+			# ...otherwise just call it with all the args.
+			else
+				self.log.warn "  no options defined for '%s' command" % [ command ]
+				meth.call( *args )
+			end
+
+		# ...otherwise call the fallback handler
+		else
+			self.handle_missing_cmd( command )
+		end
+
+	rescue => err
+		error_message( err.class.name, err.message )
+		err.backtrace.each do |frame|
+			self.log.debug "  " + frame
+		end
+	end
+
+
+	#########
+	protected
+	#########
+
+	### Fetch a Treequel::Directory object for the directory at the given +uri+, or
+	### quit with an error if unable to do so.
+	def get_ldap_directory( uri, options )
+		if uri.port == LDAP::LDAP_PORT
+			if options.try_tls
+				return Treequel.directory( uri, :connect_type => :tls )
+			else
+				return Treequel.directory( uri, :connect_type => :plain )
+			end
+		else
+			return Treequel.directory( uri, :connect_type => :ssl )
+		end
+	end
+
+
+	### Set up Readline completion
+	def setup_completion
+		Readline.completion_proc = self.method( :completion_callback ).to_proc
+		Readline.completer_word_break_characters = ''
+		Readline.basic_word_break_characters = ''
+	end
+
+
+	### Read command line history from HISTORY_FILE
+	def read_history
+		histfile = HISTORY_FILE.expand_path
+
+		if histfile.exist?
+			lines = histfile.readlines.collect {|line| line.chomp }
+			self.log.debug "Read %d saved history commands from %s." % [ lines.length, histfile ]
+			Readline::HISTORY.push( *lines )
+		else
+			self.log.debug "History file '%s' was empty or non-existant." % [ histfile ]
+		end
+	end
+
+
+	### Save command line history to HISTORY_FILE
+	def save_history
+		histfile = HISTORY_FILE.expand_path
+
+		lines = Readline::HISTORY.to_a.reverse.uniq.reverse
+		lines = lines[ -DEFAULT_HISTORY_SIZE, DEFAULT_HISTORY_SIZE ] if
+			lines.length > DEFAULT_HISTORY_SIZE
+
+		self.log.debug "Saving %d history lines to %s." % [ lines.length, histfile ]
+
+		histfile.open( File::WRONLY|File::CREAT|File::TRUNC ) do |ofh|
+			ofh.puts( *lines )
+		end
+	end
+
+
+	### Handle completion requests from Readline.
+	def completion_callback( input )
+		self.log.debug "Input completion: %p" % [ input ]
+		parts = Shellwords.shellwords( input )
+
+		# If there aren't any arguments, it's command completion
+		if parts.empty?
+			possible_completions = @commands.sort
+			self.log.debug "  possible completions: %p" % [ possible_completions ]
+			return possible_completions
+		elsif parts.length == 1
+			# One completion means it's an unambiguous match, so just complete it.
+			possible_completions = @commands.grep( /^#{Regexp.quote(input)}/ ).sort
+			self.log.debug "  possible completions: %p" % [ possible_completions ]
+			return possible_completions
+		else
+			incomplete = parts.pop
+			self.log.debug "  the incomplete bit is: %p" % [ incomplete ]
+			possible_completions = @currbranch.children.
+				collect {|br| br.rdn }.grep( /^#{Regexp.quote(incomplete)}/i ).sort
+
+			possible_completions.map! do |lastpart|
+				parts.join( ' ' ) + ' ' + lastpart
+			end
+
+			self.log.debug "  possible (argument) completions: %p" % [ possible_completions ]
+			return possible_completions
+		end
+	end
+
+
+	#################################################################
+	###	C O M M A N D S
+	#################################################################
+
+	### Show the completions hash
+	def show_completions_command
+		message "Completions:", @completions.inspect
+	end
+
+
+	### Show help text for the specified command, or a list of all available commands 
+	### if none is specified.
+	def help_command( options, *args )
+		if args.empty?
+			$stderr.puts
+			message colorize( "Available commands", :bold, :white ),
+				*columnize(@commands)
+		else
+			cmd = args.shift.to_sym
+			if @@option_parsers.key?( cmd )
+				oparser, _ = @@option_parsers[ cmd ]
+				self.log.debug "Setting summary width to: %p" % [ @columns ]
+				oparser.summary_width = @columns
+				output = oparser.to_s.sub( /^(.*?)\n/ ) do |match|
+					colorize( :bold, :white ) { match }
+				end
+
+				$stderr.puts
+				message( output )
+			else
+				error_message( "No help for '#{cmd.inspect}'" )
+			end
+		end
+	end
+	set_options :help do |oparser, options|
+		oparser.banner = "help [COMMAND]"
+		oparser.separator 'Display general help, or help for a specific COMMAND.'
+	end
+
+
+	### Quit the shell.
+	def quit_command( options, *args )
+		message "Okay, exiting."
+		self.quit = true
+	end
+	set_options :help do |oparser, options|
+		oparser.banner = "quit"
+		oparser.separator 'Exit the shell.'
+	end
+
+
+	### Set the logging level (if invoked with an argument) or display the current
+	### level (with no argument).
+	def log_command( options, *args )
+		newlevel = args.shift
+		if newlevel
+			if LOG_LEVELS.key?( newlevel )
+				Treequel.logger.level = LOG_LEVELS[ newlevel ]
+				message "Set log level to: %s" % [ newlevel ]
+			else
+				levelnames = LOG_LEVEL_NAMES.keys.sort.join(', ')
+				raise "Invalid log level %p: valid values are:\n   %s" % [ newlevel, levelnames ]
+			end
+		else
+			message "Log level is currently: %s" %
+				[ LOG_LEVEL_NAMES[Treequel.logger.level] ]
+		end
+	end
+	set_options :log do |oparser, options|
+		oparser.banner = "log [LEVEL]"
+		oparser.separator 'Set the logging level, or display the current level if no level ' +
+		                  "is given. Valid log levels are: %s" %
+		                  LOG_LEVEL_NAMES.keys.sort.join(', ')
+	end
+
+
+	### Display LDIF for the specified RDNs.
+	def cat_command( options, *args )
+		args.each do |rdn|
+			extended = rdn.chomp!( '+' )
+
+			branch = @currbranch.get_child( rdn )
+			branch.include_operational_attrs = true if extended
+
+			if branch.exists?
+				ldifstring = branch.to_ldif( self.columns - 2 )
+				self.log.debug "LDIF: #{ldifstring.dump}"
+
+				message( format_ldif(ldifstring) )
+			else
+				error_message( "No such entry %s" % [branch.dn] )
+			end
+		end
+	end
+	set_options :cat do |oparser, options|
+		oparser.banner = "cat [RDN]+"
+		oparser.separator 'Display the entries specified by RDN as LDIF.'
+	end
+
+
+	### Display YAML for the specified RDNs.
+	def yaml_command( options, *args )
+		args.each do |rdn|
+			branch = @currbranch.get_child( rdn )
+			message( branch_as_yaml(branch) )
+		end
+	end
+	set_options :yaml do |oparser, options|
+		oparser.banner = "yaml [RDN]+"
+		oparser.separator 'Display the entries specified by RDN as YAML.'
+	end
+
+
+	### List the children of the branch specified by the given +rdn+, or the current branch if none
+	### are specified.
+	def ls_command( options, *args )
+		targets = []
+
+		# No argument, just use the current branch
+		if args.empty?
+			targets << @currbranch
+
+		# Otherwise, list each one specified
+		else
+			args.each do |rdn|
+				if branch = @currbranch.get_child( rdn )
+					targets << branch
+				else
+					error_message( "cannot access #{rdn}: no such entry" )
+				end
+			end
+		end
+
+		# Fetch each branch's children, sort them, format them in columns, and highlight them
+		targets.each do |branch|
+			if options.longform
+				message self.make_longform_ls_output( branch, options )
+			else
+				message self.make_shortform_ls_output( branch, options )
+			end
+		end
+	end
+	set_options :ls do |oparser, options|
+		oparser.banner = "ls [OPTIONS] [DN]+"
+		oparser.separator 'List the entries specified, or the current entry if none are specified.'
+		oparser.separator ''
+
+		oparser.on( "-l", "--long", FalseClass, "List in long format." ) do 
+			options.longform = true
+		end
+		oparser.on( "-t", "--timesort", FalseClass,
+		            "Sort by time modified (most recently modified first)." ) do 
+			options.timesort = true
+		end
+		oparser.on( "-d", "--dirsort", FalseClass,
+		            "Sort entries with subordinate entries before those without." ) do 
+			options.dirsort = true
+		end
+		oparser.on( "-r", "--reverse", FalseClass, "Reverse the entry sort functions." ) do 
+			options.reversesort = true
+		end
+
+	end
+
+
+	### Generate long-form output lines for the 'ls' command for the given +branch+.
+	def make_longform_ls_output( branch, options )
+		children = branch.children
+		header = colorize( :underscore, :cyan ) { "total %d" % [children.length] }
+
+		# Calcuate column widths
+		oclen = children.map do |subbranch|
+			subbranch.include_operational_attrs = true
+			subbranch[:structuralObjectClass].length
+		end.max
+
+		# Set up sorting by collecting all the requested sort criteria as Proc objects which
+		# will be applied
+		sortfuncs = []
+		sortfuncs << lambda {|subbranch| subbranch[:hasSubordinates] ? 0 : 1 } if options.dirsort
+		sortfuncs << lambda {|subbranch| subbranch[:modifyTimestamp] } if options.timesort
+ 		sortfuncs << lambda {|subbranch| subbranch.rdn.downcase }
+
+		rows = children.
+			sort_by {|subbranch| sortfuncs.collect {|func| func.call(subbranch) } }.
+			collect {|subbranch| self.format_description(subbranch, oclen) }
+
+		return [ header ] + (options.reversesort ? rows.reverse : rows)
+	end
+
+
+	### Generate short-form 'ls' output for the given +branch+ and return it.
+	def make_shortform_ls_output( branch, options )
+		branch.include_operational_attrs = true
+		entries = branch.children.
+			collect {|b| b.rdn + (b[:hasSubordinates] ? '/' : '') }.
+			sort_by {|rdn| rdn.downcase }
+		self.log.debug "Displaying %d entries in short form." % [ entries.length ]
+
+		return columnize( entries ).gsub( /#{ATTRIBUTE_TYPE}=\s*\S+/ ) do |rdn|
+			format_rdn( rdn )
+		end
+	end
+
+
+	### Change the current working DN to +rdn+.
+	def cdn_command( options, rdn=nil, *args )
+		if rdn.nil?
+			@currbranch = @dir.base
+			return
+		end
+
+		return self.parent_command if rdn == '..'
+
+		raise "invalid RDN %p" % [ rdn ] unless RELATIVE_DISTINGUISHED_NAME.match( rdn )
+
+		pairs = rdn.split( /\s*,\s*/ )
+		pairs.each do |dnpair|
+			self.log.debug "  cd to %p" % [ dnpair ]
+			attribute, value = dnpair.split( /=/, 2 )
+			self.log.debug "  changing to %s( %p )" % [ attribute.downcase, value ]
+			@currbranch = @currbranch.send( attribute.downcase, value )
+		end
+	end
+	set_options :cdn do |oparser, options|
+		oparser.banner = "cdn <RDN>"
+		oparser.separator 'Change the current entry to <RDN>.'
+	end
+
+
+	### Change the current working DN to the current entry's parent.
+	def parent_command( options, *args )
+		parent = @currbranch.parent or raise "%s is the root DN" % [ @currbranch.dn ]
+
+		self.log.debug "  changing to %s" % [ parent.dn ]
+		@currbranch = parent
+	end
+	set_options :parent do |oparser, options|
+		oparser.banner = "parent"
+		oparser.separator "Change to the current entry's parent."
+	end
+
+
+	# ### Create the entry specified by +rdn+.
+	def create_command( options, rdn )
+		branch = @currbranch.get_child( rdn )
+
+		raise "#{branch.dn}: already exists." if branch.exists?
+		create_new_entry( branch )
+	end
+	set_options :create do |oparser, options|
+		oparser.banner = "create <RDN>"
+		oparser.separator "Create a new entry at <RDN>."
+	end
+
+
+	### Edit the entry specified by +rdn+.
+	def edit_command( options, rdn )
+		branch = @currbranch.get_child( rdn )
+
+		raise "#{branch.dn}: no such entry. Did you mean to 'create' it instead? " unless
+		 	branch.exists?
+
+		if entryhash = edit_in_yaml( branch )
+			branch.merge( entryhash )
+		end
+
+		message "Saved #{rdn}."
+	end
+	set_options :edit do |oparser, options|
+		oparser.banner = "edit <RDN>"
+		oparser.separator "Edit the entry at RDN as YAML."
+	end
+
+
+	### Change the DN of an entry
+	def mv_command( options, rdn, newdn )
+		branch = @currbranch.get_child( rdn )
+
+		raise "#{branch.dn}: no such entry" unless branch.exists?
+		olddn = branch.dn
+		branch.move( newdn )
+		message "  %s -> %s: success" % [ olddn, branch.dn ]
+	end
+	set_options :mv do |oparser, options|
+		oparser.banner = "mv <RDN> <NEWRDN>"
+		oparser.separator "Move the entry at RDN to NEWRDN"
+	end
+
+
+	### Copy an entry
+	def cp_command( options, rdn, newrdn )
+		branch = @currbranch.get_child( rdn )
+		newbranch = @currbranch.get_child( newrdn )
+
+		raise "#{branch.dn}: already exists" if newbranch.exists?
+
+		attributes = branch.entry.merge( :dn => newbranch.dn )
+		newbranch.create( attributes )
+
+		message "  %s -> %s: success" % [ rdn, branch.dn ]
+	end
+	set_options :cp do |oparser, options|
+		oparser.banner = "cp <RDN> <NEWRDN>"
+		oparser.separator "Copy the entry at RDN to a new entry at NEWRDN"
+	end
+
+
+	### Remove the entry specified by +rdn+.
+	def rm_command( options, *rdns )
+		branchsets = self.convert_to_branchsets( *rdns )
+		coll = Treequel::BranchCollection.new( *branchsets )
+
+		branches = coll.all
+
+		msg = "About to delete the following entries:\n" +
+			columnize( branches.collect {|br| br.dn } )
+
+		if options.force
+			branches.each do |br|
+				br.directory.delete( br )
+				message "  delete %s: success" % [ br.dn ]
+			end
+		else
+			ask_for_confirmation( msg ) do
+				branches.each do |br|
+					br.directory.delete( br )
+					message "  delete %s: success" % [ br.dn ]
+				end
+			end
+		end
+	end
+	set_options :rm do |oparser, options|
+		oparser.banner = "rm <RDN>+"
+		oparser.separator 'Remove the entries at the given RDNs.'
+
+		oparser.on( '-f', '--force', TrueClass, "Force -- remove without confirmation." ) do
+			options.force = true
+		end
+	end
+
+
+	### Find entries that match the given filter_clauses.
+	def grep_command( options, *filter_clauses )
+		branchset = filter_clauses.inject( @currbranch ) do |branch, clause|
+			branch.filter( clause )
+		end
+
+		message "Searching for entries that match '#{branchset.to_s}'"
+
+		entries = branchset.all
+		output = columnize( entries ).gsub( /#{ATTRIBUTE_TYPE}=\s*\S+/ ) do |rdn|
+			format_rdn( rdn )
+		end
+		message( output )
+	end
+	set_options :grep do |oparser, options|
+		oparser.banner = "grep [OPTIONS] <FILTER>"
+		oparser.separator 'Search for children of the current entry that match the given FILTER'
+
+		oparser.on( '-r', '--recursive', TrueClass, "Search recursively." ) do
+			options.force = true
+		end
+	end
+
+
+	### Show who the shell is currently bound as.
+	def whoami_command( options, *args )
+		if user = @dir.bound_user
+			message "Bound as #{user}"
+		else
+			message "Bound anonymously"
+		end
+	end
+	set_options :whoami do |oparser, options|
+		oparser.banner = "whoami"
+		oparser.separator 'Display the DN of the user the shell is bound as.'
+	end
+
+
+	### Bind as a user.
+	def bind_command( options, *args )
+		binddn = (args.first || prompt( "Bind DN/UID" )) or
+			raise "Cancelled."
+		password = prompt_for_password()
+
+		# Try to turn a non-DN into a DN
+		user = nil
+		if binddn.index( '=' )
+			user = Treequel::Branch.new( @dir, binddn )
+		else
+			user = @dir.filter( :uid => binddn ).first
+		end
+
+		@dir.bind( user, password )
+		message "Bound as #{user}"
+	end
+	set_options :bind do |oparser, options|
+		oparser.banner = "bind [BIND_DN or UID]"
+		oparser.separator "Bind as BIND_DN or UID"
+		oparser.separator "If you don't specify a BIND_DN, you will be prompted for it."
+	end
+
+
+	### Start an IRB session on either the current branchset, if invoked with no arguments, or
+	### on a branchset for the specified +rdn+ if one is given.
+	def irb_command( options, *args )
+		branch = nil
+		if args.empty?
+			branch = @currbranch
+		else
+			branch = @currbranch.get_child( args.first )
+		end
+
+		self.log.debug "Setting up IRb shell"
+		IRB.start_session( branch )
+	end
+	set_options :irb do |oparser, options|
+		oparser.banner = "irb [RDN]"
+		oparser.separator "Start an IRb shell with either the current branch (if none is " +
+		 	"specified) or a branch for the entry specified by the given RDN."
+	end
+
+
+	### Handle a command from the user that doesn't exist.
+	def handle_missing_cmd( *args )
+		command = args.shift || '(testing?)'
+		message "Unknown command %p" % [ command ]
+		message "Known commands: ", '  ' + @commands.join(', ')
+	end
+
+
+	### Find methods that implement commands and return them in a sorted Array.
+	def find_commands
+		return self.methods.
+			collect {|mname| mname.to_s }.
+			grep( /^(\w+)_command$/ ).
+			collect {|mname| mname[/^(\w+)_command$/, 1] }.
+			sort
+	end
+
+
+	### Convert the given +patterns+ to branchsets relative to the current branch and return
+	### them. This is used to map shell arguments like 'cn=*', 'Hosts', 'cn=dav*' into
+	### branchsets that will find matching entries.
+	def convert_to_branchsets( *patterns )
+		self.log.debug "Turning %d patterns into branchsets." % [ patterns.length ]
+		return patterns.collect do |pat|
+			key, val = pat.split( /\s*=\s*/, 2 )
+			self.log.debug "  making a filter out of %p => %p" % [ key, val ]
+			@currbranch.filter( key => val )
+		end
+	end
+
+
+	#################################################################
+	###	U T I L I T Y   M E T H O D S
+	#################################################################
+
+	### Return the description of the specified +branch+ suitable for displaying in
+	### the directory listing.
+	### @param [Treequel::Branch] branch  the branch to be described
+	### @param [Fixnum] oclen             the length of the largest objectclass that 
+	###                                   will be displayed; used to calculate the 
+	###                                   width of the objectclass column.
+	def format_description( branch, oclen=40 )
+		rdn = format_rdn( branch.rdn )
+		metadatalen = oclen + 16 + 6 # oc + timestamp + whitespace
+		maxdesclen = self.columns - metadatalen - rdn.length - 5
+
+		return "%#{oclen}s  %s  %s%s %s" % [
+			branch[:structuralObjectClass],
+			branch[:modifyTimestamp].strftime('%Y-%m-%d %H:%M'),
+			rdn,
+			branch[:hasSubordinates] ? '/' : '',
+			single_line_description( branch, maxdesclen )
+		]
+	end
+
+
+	### Generate a single-line description from the specified +branch+
+	def single_line_description( branch, maxlen=80 )
+		return '' unless branch[:description] && branch[:description].first
+		desc = branch[:description].join('; ').gsub( /\n+/, '' )
+		desc[ maxlen..desc.length ] = '...' if desc.length > maxlen
+		return '(' + desc + ')'
+	end
+
+
+	### Create a new entry in the directory for the specified +branch+.
+	def create_new_entry( branch )
+		raise "#{branch.dn} already exists." if branch.exists?
+
+		# Prompt for the list of included objectClasses and build the appropriate
+		# blank entry with them in mind.
+		completions = branch.directory.schema.object_classes.keys.collect {|oid| oid.to_s }
+		self.log.debug "Prompting for new entry object classes with %d completions." %
+			[ completions.length ]
+		object_classes = prompt_for_multiple_values( "Entry objectClasses:", nil, completions ).
+			collect {|arg| arg.strip }.compact
+		self.log.debug "  user wants %d objectclasses: %p" % [ object_classes.length, object_classes ]
+
+		# Edit the entry
+		if newhash = edit_in_yaml( branch, object_classes )
+			branch.create( newhash )
+			message "Saved #{branch.dn}."
+		else
+			error_message "#{branch.dn} not saved."
+		end
+	end
+
+
+	### Dump the specified +object+ to a file as YAML, invoke an editor on it, then undump the 
+	### result. If the file has changed, return the updated object, else returns +nil+.
+	def edit_in_yaml( object, object_classes=[] )
+		yaml = branch_as_yaml( object, false, object_classes )
+		filename = Digest::SHA1.hexdigest( yaml )
+		tempfile = Tempfile.new( filename )
+
+		self.log.debug "Object as YAML is: %p" % [ yaml ]
+		tempfile.print( yaml )
+		tempfile.close
+
+		new_yaml = edit( tempfile.path )
+
+		if new_yaml == yaml
+			message "Unchanged."
+			return nil
+		else
+			return YAML.load( new_yaml )
+		end
+	end
+
+
+	### Return the specified Treequel::Branch object as YAML. If +include_operational+ is true,
+	### include the entry's operational attributes. If +extra_objectclasses+ contains
+	### one or more objectClass OIDs, include their MUST and MAY attributes when building the 
+	### YAML representation of the branch.
+	def branch_as_yaml( object, include_operational=false, extra_objectclasses=[] )
+		object.include_operational_attrs = include_operational
+
+		# Make sure the displayed entry has the MUST attributes
+		entryhash = stringify_keys( object.must_attributes_hash(*extra_objectclasses) )
+		entryhash.merge!( object.entry || {} )
+		entryhash.merge!( object.rdn_attributes )
+		entryhash['objectClass'] ||= []
+		entryhash['objectClass'] |= extra_objectclasses
+
+		entryhash.delete( 'dn' ) # Special attribute, can't be edited
+
+		yaml = entryhash.to_yaml
+		yaml[ 5, 0 ] = "# #{object.dn}\n"
+
+		# Make comments out of MAY attributes that are unset
+		mayhash = stringify_keys( object.may_attributes_hash(*extra_objectclasses) )
+		self.log.debug "MAY hash is: %p" % [ mayhash ]
+		mayhash.delete_if {|attrname,val| entryhash.key?(attrname) }
+		yaml << mayhash.to_yaml[5..-1].gsub( /\n\n/, "\n" ).gsub( /^/, '# ' )
+
+		return yaml
+	end
+
+
+	### Create a command table that maps command abbreviations to the Method object that
+	### implements it.
+	def make_command_table( commands )
+		table = commands.abbrev
+		table.keys.each do |abbrev|
+			mname = table.delete( abbrev )
+			table[ abbrev ] = self.method( mname + '_command' )
+		end
+
+		return table
+	end
+
+
+	### Output the specified message +parts+.
+	def message( *parts )
+		$stderr.puts( *parts )
+	end
+
+
+	### Output the specified <tt>msg</tt> as an ANSI-colored error message
+	### (white on red).
+	def error_message( msg, details='' )
+		$stderr.puts colorize( 'bold', 'white', 'on_red' ) { msg } + ' ' + details
+	end
+	alias :error :error_message
+
+
+	### Highlight and embed a prompt control character in the given +string+ and return it.
+	def make_prompt_string( string )
+		return CLEAR_CURRENT_LINE + colorize( 'bold', 'yellow' ) { string + ' ' }
+	end
+
+
+	### Output the specified <tt>prompt_string</tt> as a prompt (in green) and
+	### return the user's input with leading and trailing spaces removed.  If a
+	### test is provided, the prompt will repeat until the test returns true.
+	### An optional failure message can also be passed in.
+	def prompt( prompt_string, failure_msg="Try again." ) # :yields: response
+		prompt_string.chomp!
+		prompt_string << ":" unless /\W$/.match( prompt_string )
+		response = nil
+
+		begin
+			prompt = make_prompt_string( prompt_string )
+			response = readline( prompt ) || ''
+			response.strip!
+			if block_given? && ! yield( response ) 
+				error_message( failure_msg + "\n\n" )
+				response = nil
+			end
+		end while response.nil?
+
+		return response
+	end
+
+
+	### Prompt the user with the given <tt>prompt_string</tt> via #prompt,
+	### substituting the given <tt>default</tt> if the user doesn't input
+	### anything.  If a test is provided, the prompt will repeat until the test
+	### returns true.  An optional failure message can also be passed in.
+	def prompt_with_default( prompt_string, default, failure_msg="Try again." )
+		response = nil
+
+		begin
+			default ||= '~'
+			response = prompt( "%s [%s]" % [ prompt_string, default ] )
+			response = default.to_s if !response.nil? && response.empty? 
+
+			self.log.debug "Validating response %p" % [ response ]
+
+			# the block is a validator.  We need to make sure that the user didn't
+			# enter '~', because if they did, it's nil and we should move on.  If
+			# they didn't, then call the block.
+			if block_given? && response != '~' && ! yield( response )
+				error_message( failure_msg + "\n\n" )
+				response = nil
+			end
+		end while response.nil?
+
+		return nil if response == '~'
+		return response
+	end
+
+
+	### Prompt for an array of values
+	def prompt_for_multiple_values( label, default=nil, completions=[] )
+		old_completion_proc = nil
+
+		message( MULTILINE_PROMPT % [label] )
+		if default
+			message "Enter a single blank line to keep the default:\n  %p" % [ default ]
+		end
+
+		results = []
+		result = nil
+
+		if !completions.empty?
+			self.log.debug "Prompting with %d completions." % [ completions.length ]
+			old_completion_proc = Readline.completion_proc
+			Readline.completion_proc = Proc.new do |input|
+				completions.flatten.grep( /^#{Regexp.quote(input)}/i ).sort
+			end
+		end
+
+		begin
+			result = readline( make_prompt_string("> ") )
+			if result.nil? || result.empty?
+				results << default if default && results.empty?
+			else
+				results << result 
+			end
+		end until result.nil? || result.empty?
+
+		return results.flatten
+	ensure
+		Readline.completion_proc = old_completion_proc if old_completion_proc
+	end
+
+
+	### Turn echo and masking of input on/off. 
+	def noecho( masked=false )
+		rval = nil
+		term = Termios.getattr( $stdin )
+
+		begin
+			newt = term.dup
+			newt.c_lflag &= ~Termios::ECHO
+			newt.c_lflag &= ~Termios::ICANON if masked
+
+			Termios.tcsetattr( $stdin, Termios::TCSANOW, newt )
+
+			rval = yield
+		ensure
+			Termios.tcsetattr( $stdin, Termios::TCSANOW, term )
+		end
+
+		return rval
+	end
+
+
+	### Prompt the user for her password, turning off echo if the 'termios' module is
+	### available.
+	def prompt_for_password( prompt="Password: " )
+		rval = nil
+		noecho( true ) do
+			$stderr.print( prompt )
+			rval = ($stdin.gets || '').chomp
+		end
+		$stderr.puts
+		return rval
+	end
+
+
+	### Display a description of a potentially-dangerous task, and prompt
+	### for confirmation. If the user answers with anything that begins
+	### with 'y', yield to the block. If +abort_on_decline+ is +true+,
+	### any non-'y' answer will fail with an error message.
+	def ask_for_confirmation( description, abort_on_decline=true )
+		puts description
+
+		answer = prompt_with_default( "Continue?", 'n' ) do |input|
+			input =~ /^[yn]/i
+		end
+
+		if answer =~ /^y/i
+			return yield
+		elsif abort_on_decline
+			error "Aborted."
+			fail
+		end
+
+		return false
+	end
+	alias :prompt_for_confirmation :ask_for_confirmation
+
+
+	### Invoke the user's editor on the given +filename+ and return the exit code
+	### from doing so.
+	def edit( filename )
+		editor = ENV['EDITOR'] || ENV['VISUAL'] || DEFAULT_EDITOR
+		system editor, filename.to_s
+		unless $?.success? || editor =~ /vim/i
+			raise "Editor exited with an error status (%d)" % [ $?.exitstatus ]
+		end
+		return File.read( filename )
+	end
+
+
+	### Make an easily-comparable version vector out of +ver+ and return it.
+	def vvec( ver )
+		return ver.split('.').collect {|char| char.to_i }.pack('N*')
+	end
+
+
+	### Return an ANSI-colored version of the given +rdn+ string.
+	def format_rdn( rdn )
+		rdn.split( /,/ ).collect do |rdn_part|
+			key, val = rdn_part.split( /\s*=\s*/, 2 )
+			colorize( :white ) { key } +
+				colorize( :bold, :black ) { '=' } +
+				colorize( :bold, :white ) { val }
+		end.join( colorize(',', :green) )
+	end
+
+
+	### Highlight LDIF and return it.
+	def format_ldif( ldif )
+		self.log.debug "Formatting LDIF: %p" % [ ldif ]
+		return ldif.gsub( LDIF_ATTRVAL_SPEC ) do
+			key, val = $1, $2.strip
+			self.log.debug "  formatting attribute: [ %p, %p ], remainder: %p" %
+				[ key, val, $POSTMATCH ]
+
+			case val
+
+			# Base64-encoded value
+			when /^:/
+				val = val[1..-1].strip
+				key +
+					colorize( :dark, :green ) { ':: ' } +
+					colorize( :green ) { val } + "\n"
+
+			# URL
+			when /^</
+				val = val[1..-1].strip
+				key +
+					colorize( :dark, :yellow ) { ':< ' } +
+					colorize( :yellow ) { val } + "\n"
+
+			# Regular attribute
+			else
+				key +
+					colorize( :dark, :white ) { ': ' } +
+					colorize( :bold, :white ) { val } + "\n"
+			end
+		end
+	end
+
+
+	### Return the specified +entries+ as an Array of span-sorted columns fit to the
+	### current terminal width.
+	def columnize( *entries )
+		return Columnize.columnize( entries.flatten, @columns, '  ' )
+	end
+
+end # class Treequel::Shell
+
+
+Treequel::Shell.run( ARGV.dup )
+

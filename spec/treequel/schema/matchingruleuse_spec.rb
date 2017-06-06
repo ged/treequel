@@ -1,19 +1,6 @@
 #!/usr/bin/env ruby
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
-}
-
-require 'rspec'
-
-require 'spec/lib/constants'
-require 'spec/lib/helpers'
+require_relative '../../spec_helpers'
 
 require 'yaml'
 require 'ldap'
@@ -21,7 +8,7 @@ require 'ldap/schema'
 require 'treequel/schema/matchingruleuse'
 
 
-include Treequel::TestConstants
+include Treequel::SpecConstants
 include Treequel::Constants
 
 #####################################################################
@@ -33,16 +20,11 @@ describe Treequel::Schema::MatchingRuleUse do
 
 
 	before( :all ) do
-		setup_logging( :fatal )
 		@datadir = Pathname( __FILE__ ).dirname.parent.parent + 'data'
 	end
 
 	before( :each ) do
-		@schema = mock( "treequel schema object" )
-	end
-
-	after( :all ) do
-		reset_logging()
+		@schema = double( "treequel schema object" )
 	end
 
 
@@ -55,29 +37,29 @@ describe Treequel::Schema::MatchingRuleUse do
 		end
 
 		it "knows what its OID is" do
-			@ruleuse.oid.should == '2.5.13.23'
+			expect( @ruleuse.oid ).to eq( '2.5.13.23' )
 		end
 
 		it "knows what its NAME attribute is" do
-			@ruleuse.name.should == :uniqueMemberMatch
+			expect( @ruleuse.name ).to eq( :uniqueMemberMatch )
 		end
 
 		it "knows that it is not obsolete" do
-			@ruleuse.should_not be_obsolete()
+			expect( @ruleuse ).to_not be_obsolete()
 		end
 
 		it "knows what the OIDs of the attribute types it applies to are" do
-			@ruleuse.attr_oids.should == [:uniqueMember]
+			expect( @ruleuse.attr_oids ).to eq( [:uniqueMember] )
 		end
 
 		it "knows what Treequel::Schema::AttributeType objects it applies to are" do
-			@schema.should_receive( :attribute_types ).
+			expect( @schema ).to receive( :attribute_types ).
 				and_return({ :uniqueMember => :a_attrtype_object })
-			@ruleuse.attribute_types.should == [ :a_attrtype_object ]
+			expect( @ruleuse.attribute_types ).to eq( [ :a_attrtype_object ] )
 		end
 
 		it "can remake its own schema description" do
-			@ruleuse.to_s.should == UNIQUE_MEMBER_MATCH_DESC
+			expect( @ruleuse.to_s ).to eq( UNIQUE_MEMBER_MATCH_DESC )
 		end
 	end
 
@@ -90,7 +72,7 @@ describe Treequel::Schema::MatchingRuleUse do
 		end
 
 		it "knows what its description is" do
-			@ruleuse.desc.should == "Woop"
+			expect( @ruleuse.desc ).to eq( "Woop" )
 		end
 
 	end
@@ -105,8 +87,8 @@ describe Treequel::Schema::MatchingRuleUse do
 		end
 
 		it "knows what the OIDs of the attribute types it applies to are" do
-			@ruleuse.attr_oids.should have(4).members
-			@ruleuse.attr_oids.should include( :telephoneNumber, :homePhone, :mobile, :pager )
+			expect( @ruleuse.attr_oids.length ).to eq( 4 )
+			expect( @ruleuse.attr_oids ).to include( :telephoneNumber, :homePhone, :mobile, :pager )
 		end
 
 		it "knows what Treequel::Schema::AttributeType objects it applies to are" do
@@ -116,10 +98,10 @@ describe Treequel::Schema::MatchingRuleUse do
 				:mobile => :mobile_attr,
 				:pager => :pager_attr,
 			}
-			@schema.should_receive( :attribute_types ).at_least( 4 ).times.
+			expect( @schema ).to receive( :attribute_types ).at_least( 4 ).times.
 				and_return( oidmap )
-			@ruleuse.attribute_types.should have(4).members
-			@ruleuse.attribute_types.should include( *oidmap.values )
+			expect( @ruleuse.attribute_types.length ).to eq( 4 )
+			expect( @ruleuse.attribute_types ).to include( *oidmap.values )
 		end
 	end
 
@@ -132,7 +114,7 @@ describe Treequel::Schema::MatchingRuleUse do
 		end
 
 		it "knows that it's obsolete" do
-			@ruleuse.should be_obsolete()
+			expect( @ruleuse ).to be_obsolete()
 		end
 
 	end

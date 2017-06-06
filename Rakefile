@@ -8,6 +8,9 @@ end
 
 require 'rake/clean'
 
+GEMSPEC = 'treequel.gemspec'
+
+
 Hoe.plugin :mercurial
 Hoe.plugin :signing
 Hoe.plugin :manualgen
@@ -19,7 +22,6 @@ hoespec = Hoe.spec 'treequel' do
 	self.readme_file = 'README.rdoc'
 	self.history_file = 'History.rdoc'
 	self.extra_rdoc_files = Rake::FileList[ '*.rdoc' ]
-	self.spec_extras[:rdoc_options] = ['-f', 'fivefish', '-t', 'Treequel']
 	self.license 'BSD-3-Clause'
 
 	self.need_tar = true
@@ -31,7 +33,7 @@ hoespec = Hoe.spec 'treequel' do
 	if RUBY_PLATFORM == 'java'
 		self.dependency 'jruby-ldap', '~> 0.0.1'
 	else
-		self.dependency 'ruby-ldap', '~> 0.9'
+		self.dependency 'ruby-ldap', '~> 0.9', '>= 0.9.19'
 	end
 	self.dependency 'loggability', '~> 0.4'
 
@@ -62,7 +64,7 @@ task 'hg:precheckin' => [ 'ChangeLog', :check_history, :check_manifest, :spec ]
 
 # Rebuild the ChangeLog immediately before release
 task :prerelease => 'ChangeLog'
-
+CLOBBER.include( 'ChangeLog' )
 
 desc "Build a coverage report"
 task :coverage do
@@ -70,15 +72,32 @@ task :coverage do
 	Rake::Task[:spec].invoke
 end
 
-if Rake::Task.task_defined?( '.gemtest' )
-	Rake::Task['.gemtest'].clear
-	task '.gemtest' do
-		$stderr.puts "Not including a .gemtest until I'm confident the test suite is idempotent."
+# Use the fivefish formatter for docs generated from development checkout
+if File.directory?( '.hg' )
+	require 'rdoc/task'
+
+	Rake::Task[ 'docs' ].clear
+	RDoc::Task.new( 'docs' ) do |rdoc|
+	    rdoc.main = "README.rdoc"
+		rdoc.markup = 'markdown'
+	    rdoc.rdoc_files.include( "*.rdoc", "ChangeLog", "lib/**/*.rb" )
+	    rdoc.generator = :fivefish
+		rdoc.title = 'Treequel'
+	    rdoc.rdoc_dir = 'doc'
 	end
 end
 
 
-# Add admin app testing directories to the clobber list
-CLOBBER.include( 'ChangeLog' )
+task :gemspec => GEMSPEC
+file GEMSPEC => __FILE__ do |task|
+	spec = $hoespec.spec
+	spec.files.delete( '.gemtest' )
+	spec.signing_key = nil
+	spec.version = "#{spec.version}.pre#{Time.now.strftime("%Y%m%d%H%M%S")}"
+	File.open( task.name, 'w' ) do |fh|
+		fh.write( spec.to_ruby )
+	end
+end
 
+task :default => :gemspec
 

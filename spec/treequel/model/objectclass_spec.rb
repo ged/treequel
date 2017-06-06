@@ -1,18 +1,6 @@
 #!/usr/bin/env ruby
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
-}
-
-require 'rspec'
-
-require 'spec/lib/helpers'
+require_relative '../../spec_helpers'
 
 require 'treequel/model'
 require 'treequel/model/objectclass'
@@ -26,12 +14,8 @@ require 'treequel/branchset'
 
 describe Treequel::Model::ObjectClass do
 
-	before( :all ) do
-		setup_logging( :fatal )
-	end
-
 	before( :each ) do
-		@conn = mock( "ldap connection object" )
+		@conn = double( "ldap connection object" )
 		@directory = get_fixtured_directory( @conn )
 		Treequel::Model.directory = @directory
 	end
@@ -42,13 +26,9 @@ describe Treequel::Model::ObjectClass do
 		Treequel::Model.base_registry.clear
 	end
 
-	after( :all ) do
-		reset_logging()
-	end
-
 
 	it "outputs a warning when it is included instead of used to extend a Module" do
-		Treequel::Model::ObjectClass.should_receive( :warn ).
+		expect( Treequel::Model::ObjectClass ).to receive( :warn ).
 			with( /extending.*rather than appending/i )
 		mixin = Module.new do
 			include Treequel::Model::ObjectClass
@@ -64,7 +44,7 @@ describe Treequel::Model::ObjectClass do
 				model_objectclasses :inetOrgPerson
 			end
 
-			mixin.model_objectclasses.should == [:inetOrgPerson]
+			expect( mixin.model_objectclasses ).to eq( [:inetOrgPerson] )
 		end
 
 		it "can declare a required objectClass as a String" do
@@ -73,7 +53,7 @@ describe Treequel::Model::ObjectClass do
 				model_objectclasses 'apple-computer-list'
 			end
 
-			mixin.model_objectclasses.should == [:'apple-computer-list']
+			expect( mixin.model_objectclasses ).to eq( [:'apple-computer-list'] )
 		end
 
 		it "can declare multiple required objectClasses" do
@@ -82,18 +62,18 @@ describe Treequel::Model::ObjectClass do
 				model_objectclasses :inetOrgPerson, :acmeAccount
 			end
 
-			mixin.model_objectclasses.should == [ :inetOrgPerson, :acmeAccount ]
+			expect( mixin.model_objectclasses ).to eq( [ :inetOrgPerson, :acmeAccount ] )
 		end
 
 		it "can declare a single base" do
 			mixin = Module.new do
 				extend Treequel::Model::ObjectClass,
-				       Treequel::TestConstants
+				       Treequel::SpecConstants
 				model_objectclasses :device
 				model_bases TEST_PHONES_DN
 			end
 
-			mixin.model_bases.should == [TEST_PHONES_DN]
+			expect( mixin.model_bases ).to eq( [TEST_PHONES_DN] )
 		end
 
 		it "can declare a base with spaces" do
@@ -103,19 +83,19 @@ describe Treequel::Model::ObjectClass do
 				model_bases 'ou=phones, dc=acme, dc=com'
 			end
 
-			mixin.model_bases.should == ['ou=phones,dc=acme,dc=com']
+			expect( mixin.model_bases ).to eq( ['ou=phones,dc=acme,dc=com'] )
 		end
 
 		it "can declare multiple bases" do
 			mixin = Module.new do
 				extend Treequel::Model::ObjectClass,
-				       Treequel::TestConstants
+				       Treequel::SpecConstants
 				model_objectclasses :ipHost
 				model_bases TEST_HOSTS_DN,
 				            TEST_SUBHOSTS_DN
 			end
 
-			mixin.model_bases.should include( TEST_HOSTS_DN, TEST_SUBHOSTS_DN )
+			expect( mixin.model_bases ).to include( TEST_HOSTS_DN, TEST_SUBHOSTS_DN )
 		end
 
 		it "raises an exception when creating a search for a mixin that hasn't declared " +
@@ -134,7 +114,7 @@ describe Treequel::Model::ObjectClass do
 				extend Treequel::Model::ObjectClass
 			end
 
-			mixin.model_class.should == Treequel::Model
+			expect( mixin.model_class ).to eq( Treequel::Model )
 		end
 
 		it "can declare a model class other than Treequel::Model" do
@@ -144,7 +124,7 @@ describe Treequel::Model::ObjectClass do
 				model_class MyModel
 			end
 
-			mixin.model_class.should == MyModel
+			expect( mixin.model_class ).to eq( MyModel )
 		end
 
 		it "re-registers objectClasses that have already been declared when declaring a " +
@@ -157,8 +137,8 @@ describe Treequel::Model::ObjectClass do
 				model_class MyModel
 			end
 
-			Treequel::Model.objectclass_registry[:inetOrgPerson].should_not include( mixin )
-			MyModel.objectclass_registry[:inetOrgPerson].should include( mixin )
+			expect( Treequel::Model.objectclass_registry[:inetOrgPerson] ).to_not include( mixin )
+			expect( MyModel.objectclass_registry[:inetOrgPerson] ).to include( mixin )
 		end
 
 		it "re-registers bases that have already been declared when declaring a " +
@@ -171,8 +151,8 @@ describe Treequel::Model::ObjectClass do
 				model_class MyModel
 			end
 
-			Treequel::Model.base_registry['ou=people,dc=acme,dc=com'].should_not include( mixin )
-			MyModel.base_registry['ou=people,dc=acme,dc=com'].should include( mixin )
+			expect( Treequel::Model.base_registry['ou=people,dc=acme,dc=com'] ).to_not include( mixin )
+			expect( MyModel.base_registry['ou=people,dc=acme,dc=com'] ).to include( mixin )
 		end
 
 		it "re-registers bases that have already been declared when declaring a " +
@@ -185,13 +165,13 @@ describe Treequel::Model::ObjectClass do
 				model_class MyModel
 			end
 
-			Treequel::Model.base_registry['ou=people,dc=acme,dc=com'].should_not include( mixin )
-			MyModel.base_registry['ou=people,dc=acme,dc=com'].should include( mixin )
+			expect( Treequel::Model.base_registry['ou=people,dc=acme,dc=com'] ).to_not include( mixin )
+			expect( MyModel.base_registry['ou=people,dc=acme,dc=com'] ).to include( mixin )
 		end
 
 		it "uses the directory associated with its model_class instead of Treequel::Model's if " +
 		   "its model_class is set when creating a search Branchset"  do
-			conn = mock( "ldap connection object" )
+			conn = double( "ldap connection object" )
 			directory = get_fixtured_directory( conn )
 
 			class MyModel < Treequel::Model; end
@@ -205,8 +185,8 @@ describe Treequel::Model::ObjectClass do
 
 			result = mixin.search
 
-			result.should be_a( Treequel::Branchset )
-			result.branch.directory.should == directory
+			expect( result ).to be_a( Treequel::Branchset )
+			expect( result.branch.directory ).to eq( directory )
 		end
 
 		it "delegates Branchset methods through the Branchset returned by its #search method" do
@@ -215,13 +195,13 @@ describe Treequel::Model::ObjectClass do
 				model_objectclasses :inetOrgPerson
 			end
 
-			mixin.filter( :mail ).should be_a( Treequel::Branchset )
+			expect( mixin.filter( :mail ) ).to be_a( Treequel::Branchset )
 		end
 
 		it "delegates Branchset Enumerable methods through the Branchset returned by its " +
 		   "#search method" do
-			@conn.stub( :bound? ).and_return( true )
-			@conn.should_receive( :search_ext2 ).
+			expect( @conn ).to receive( :bound? ).and_return( true )
+			expect( @conn ).to receive( :search_ext2 ).
 				with( TEST_BASE_DN, LDAP::LDAP_SCOPE_SUBTREE, "(objectClass=inetOrgPerson)",
 			          [], false, [], [], 0, 0, 1, "", nil ).
 				and_return([ TEST_PERSON_ENTRY ])
@@ -233,9 +213,9 @@ describe Treequel::Model::ObjectClass do
 
 			result = mixin.first
 
-			result.should be_a( Treequel::Model )
-			result.should be_a( mixin )
-			result.dn.should == TEST_PERSON_ENTRY['dn'].first
+			expect( result ).to be_a( Treequel::Model )
+			expect( result ).to be_a( mixin )
+			expect( result.dn ).to eq( TEST_PERSON_ENTRY['dn'].first )
 		end
 
 	end
@@ -249,9 +229,9 @@ describe Treequel::Model::ObjectClass do
 			end
 
 			result = mixin.create( TEST_PERSON_DN )
-			result.should be_a( Treequel::Model )
-			result[:objectClass].should include( 'inetOrgPerson' )
-			result[TEST_PERSON_DN_ATTR].should == [ TEST_PERSON_DN_VALUE ]
+			expect( result ).to be_a( Treequel::Model )
+			expect( result[:objectClass] ).to include( 'inetOrgPerson' )
+			expect( result[TEST_PERSON_DN_ATTR] ).to eq( [ TEST_PERSON_DN_VALUE ] )
 		end
 
 		it "can instantiate a new model object with its declared objectClasses in a directory " +
@@ -262,9 +242,9 @@ describe Treequel::Model::ObjectClass do
 			end
 
 			result = mixin.create( @directory, TEST_PERSON_DN )
-			result.should be_a( Treequel::Model )
-			result[:objectClass].should include( 'inetOrgPerson' )
-			result[TEST_PERSON_DN_ATTR].should == [ TEST_PERSON_DN_VALUE ]
+			expect( result ).to be_a( Treequel::Model )
+			expect( result[:objectClass] ).to include( 'inetOrgPerson' )
+			expect( result[TEST_PERSON_DN_ATTR] ).to eq( [ TEST_PERSON_DN_VALUE ] )
 		end
 
 		it "doesn't add the extracted DN attribute if it's already present in the entry" do
@@ -275,10 +255,10 @@ describe Treequel::Model::ObjectClass do
 
 			result = mixin.create( TEST_PERSON_DN,
 				TEST_PERSON_DN_ATTR => [TEST_PERSON_DN_VALUE] )
-			result.should be_a( Treequel::Model )
-			result[:objectClass].should include( 'inetOrgPerson' )
-			result[TEST_PERSON_DN_ATTR].should have( 1 ).member
-			result[TEST_PERSON_DN_ATTR].should == [ TEST_PERSON_DN_VALUE ]
+			expect( result ).to be_a( Treequel::Model )
+			expect( result[:objectClass] ).to include( 'inetOrgPerson' )
+			expect( result[TEST_PERSON_DN_ATTR].length ).to eq( 1 )
+			expect( result[TEST_PERSON_DN_ATTR] ).to eq( [ TEST_PERSON_DN_VALUE ] )
 		end
 
 		it "merges objectClasses passed to the creation method" do
@@ -289,11 +269,11 @@ describe Treequel::Model::ObjectClass do
 
 			result = mixin.create( TEST_PERSON_DN,
 				:objectClass => [:person, :inetOrgPerson] )
-			result.should be_a( Treequel::Model )
-			result[:objectClass].should have( 2 ).members
-			result[:objectClass].should include( 'inetOrgPerson', 'person' )
-			result[TEST_PERSON_DN_ATTR].should have( 1 ).member
-			result[TEST_PERSON_DN_ATTR].should include( TEST_PERSON_DN_VALUE )
+			expect( result ).to be_a( Treequel::Model )
+			expect( result[:objectClass].length ).to eq( 2 )
+			expect( result[:objectClass] ).to include( 'inetOrgPerson', 'person' )
+			expect( result[TEST_PERSON_DN_ATTR].length ).to eq( 1 )
+			expect( result[TEST_PERSON_DN_ATTR] ).to include( TEST_PERSON_DN_VALUE )
 		end
 
 		it "handles the creation of objects with multi-value DNs" do
@@ -303,11 +283,11 @@ describe Treequel::Model::ObjectClass do
 			end
 
 			result = mixin.create( TEST_HOST_MULTIVALUE_DN )
-			result.should be_a( Treequel::Model )
-			result[:objectClass].should have( 3 ).members
-			result[:objectClass].should include( 'ipHost', 'ieee802Device', 'device' )
-			result[TEST_HOST_MULTIVALUE_DN_ATTR1].should include( TEST_HOST_MULTIVALUE_DN_VALUE1 )
-			result[TEST_HOST_MULTIVALUE_DN_ATTR2].should include( TEST_HOST_MULTIVALUE_DN_VALUE2 )
+			expect( result ).to be_a( Treequel::Model )
+			expect( result[:objectClass].length ).to eq( 3 )
+			expect( result[:objectClass] ).to include( 'ipHost', 'ieee802Device', 'device' )
+			expect( result[TEST_HOST_MULTIVALUE_DN_ATTR1] ).to include( TEST_HOST_MULTIVALUE_DN_VALUE1 )
+			expect( result[TEST_HOST_MULTIVALUE_DN_ATTR2] ).to include( TEST_HOST_MULTIVALUE_DN_VALUE2 )
 		end
 
 	end
@@ -315,7 +295,7 @@ describe Treequel::Model::ObjectClass do
 	context "module that has one required objectClass declared" do
 
 		before( :each ) do
-			@conn = mock( "ldap connection object" )
+			@conn = double( "ldap connection object" )
 			@directory = get_fixtured_directory( @conn )
 			Treequel::Model.directory = @directory
 
@@ -331,35 +311,33 @@ describe Treequel::Model::ObjectClass do
 
 
 		it "is returned as one of the mixins for entries with only that objectClass" do
-			Treequel::Model.mixins_for_objectclasses( :inetOrgPerson ).
-				should include( @mixin )
+			expect( Treequel::Model.mixins_for_objectclasses(:inetOrgPerson) ).to include( @mixin )
 		end
 
 		it "is not returned in the list of mixins to apply to an entry without that objectClass" do
-			Treequel::Model.mixins_for_objectclasses( :device ).
-				should_not include( @mixin )
+			expect( Treequel::Model.mixins_for_objectclasses(:device) ).to_not include( @mixin )
 		end
 
 		it "can create a Branchset that will search for applicable entries"  do
 			result = @mixin.search
 
-			result.should be_a( Treequel::Branchset )
-			result.base_dn.should == TEST_BASE_DN
-			result.filter.to_s.should == '(objectClass=inetOrgPerson)'
-			result.branch.directory.should == @directory
+			expect( result ).to be_a( Treequel::Branchset )
+			expect( result.base_dn ).to eq( TEST_BASE_DN )
+			expect( result.filter.to_s ).to eq( '(objectClass=inetOrgPerson)' )
+			expect( result.branch.directory ).to eq( @directory )
 		end
 
 		it "can create a Branchset that will search for applicable entries in a Directory other " +
 		   "than the one set for Treequel::Model"  do
-			conn = mock( "second ldap connection object" )
+			conn = double( "second ldap connection object" )
 			directory = get_fixtured_directory( conn )
 
 			result = @mixin.search( directory )
 
-			result.should be_a( Treequel::Branchset )
-			result.base_dn.should == TEST_BASE_DN
-			result.filter.to_s.should == '(objectClass=inetOrgPerson)'
-			result.branch.directory.should == directory
+			expect( result ).to be_a( Treequel::Branchset )
+			expect( result.base_dn ).to eq( TEST_BASE_DN )
+			expect( result.filter.to_s ).to eq( '(objectClass=inetOrgPerson)' )
+			expect( result.branch.directory ).to eq( directory )
 		end
 
 	end
@@ -380,36 +358,34 @@ describe Treequel::Model::ObjectClass do
 
 		it "is returned as one of the mixins to apply to entries with all of its required " +
 		     "objectClasses" do
-			Treequel::Model.mixins_for_objectclasses( :device, :ipHost ).
-				should include( @mixin )
+			expect( Treequel::Model.mixins_for_objectclasses(:device, :ipHost) ).to include( @mixin )
 		end
 
 		it "is not returned in the list of mixins to apply to an entry with only one of its " +
 		     "objectClasses" do
-			Treequel::Model.mixins_for_objectclasses( :device ).
-				should_not include( @mixin )
+			expect( Treequel::Model.mixins_for_objectclasses(:device) ).to_not include( @mixin )
 		end
 
 		it "can create a Branchset that will search for applicable entries"  do
 			result = @mixin.search
 
-			result.should be_a( Treequel::Branchset )
-			result.base_dn.should == TEST_BASE_DN
-			result.filter.to_s.should == '(&(objectClass=device)(objectClass=ipHost))'
-			result.branch.directory.should == @directory
+			expect( result ).to be_a( Treequel::Branchset )
+			expect( result.base_dn ).to eq( TEST_BASE_DN )
+			expect( result.filter.to_s ).to eq( '(&(objectClass=device)(objectClass=ipHost))' )
+			expect( result.branch.directory ).to eq( @directory )
 		end
 
 		it "can create a Branchset that will search for applicable entries in a Directory other " +
 		   "than the one set for Treequel::Model"  do
-			conn = mock( "second ldap connection object" )
+			conn = double( "second ldap connection object" )
 			directory = get_fixtured_directory( conn )
 
 			result = @mixin.search( directory )
 
-			result.should be_a( Treequel::Branchset )
-			result.base_dn.should == TEST_BASE_DN
-			result.filter.to_s.should == '(&(objectClass=device)(objectClass=ipHost))'
-			result.branch.directory.should == directory
+			expect( result ).to be_a( Treequel::Branchset )
+			expect( result.base_dn ).to eq( TEST_BASE_DN )
+			expect( result.filter.to_s ).to eq( '(&(objectClass=device)(objectClass=ipHost))' )
+			expect( result.branch.directory ).to eq( directory )
 		end
 
 	end
@@ -418,7 +394,7 @@ describe Treequel::Model::ObjectClass do
 		before( :each ) do
 			@mixin = Module.new do
 				extend Treequel::Model::ObjectClass,
-				       Treequel::TestConstants
+				       Treequel::SpecConstants
 				model_bases TEST_PEOPLE_DN
 			end
 		end
@@ -429,36 +405,34 @@ describe Treequel::Model::ObjectClass do
 
 
 		it "is returned as one of the mixins to apply to an entry that is a child of its base" do
-			Treequel::Model.mixins_for_dn( TEST_PERSON_DN ).
-				should include( @mixin )
+			expect( Treequel::Model.mixins_for_dn(TEST_PERSON_DN) ).to include( @mixin )
 		end
 
 		it "is not returned as one of the mixins to apply to an entry that is not a child of " +
 		   "its base" do
-			Treequel::Model.mixins_for_dn( TEST_ROOM_DN ).
-				should_not include( @mixin )
+			expect( Treequel::Model.mixins_for_dn(TEST_ROOM_DN) ).to_not include( @mixin )
 		end
 
 		it "can create a Branchset that will search for applicable entries"  do
 			result = @mixin.search
 
-			result.should be_a( Treequel::Branchset )
-			result.base_dn.should == TEST_PEOPLE_DN
-			result.filter.to_s.should == '(objectClass=*)'
-			result.branch.directory.should == @directory
+			expect( result ).to be_a( Treequel::Branchset )
+			expect( result.base_dn ).to eq( TEST_PEOPLE_DN )
+			expect( result.filter.to_s ).to eq( '(objectClass=*)' )
+			expect( result.branch.directory ).to eq( @directory )
 		end
 
 		it "can create a Branchset that will search for applicable entries in a Directory other " +
 		   "than the one set for Treequel::Model"  do
-			conn = mock( "second ldap connection object" )
+			conn = double( "second ldap connection object" )
 			directory = get_fixtured_directory( conn )
 
 			result = @mixin.search( directory )
 
-			result.should be_a( Treequel::Branchset )
-			result.base_dn.should == TEST_PEOPLE_DN
-			result.filter.to_s.should == '(objectClass=*)'
-			result.branch.directory.should == directory
+			expect( result ).to be_a( Treequel::Branchset )
+			expect( result.base_dn ).to eq( TEST_PEOPLE_DN )
+			expect( result.filter.to_s ).to eq( '(objectClass=*)' )
+			expect( result.branch.directory ).to eq( directory )
 		end
 
 	end
@@ -467,7 +441,7 @@ describe Treequel::Model::ObjectClass do
 		before( :each ) do
 			@mixin = Module.new do
 				extend Treequel::Model::ObjectClass,
-				       Treequel::TestConstants
+				       Treequel::SpecConstants
 				model_bases TEST_HOSTS_DN,
 				            TEST_SUBHOSTS_DN
 			end
@@ -480,41 +454,39 @@ describe Treequel::Model::ObjectClass do
 
 		it "is returned as one of the mixins to apply to an entry that is a child of one of " +
 		   "its bases" do
-			Treequel::Model.mixins_for_dn( TEST_SUBHOST_DN ).
-				should include( @mixin )
+			expect( Treequel::Model.mixins_for_dn(TEST_SUBHOST_DN) ).to include( @mixin )
 		end
 
 		it "is not returned as one of the mixins to apply to an entry that is not a child of " +
 		   "its base" do
-			Treequel::Model.mixins_for_dn( TEST_PERSON_DN ).
-				should_not include( @mixin )
+			expect( Treequel::Model.mixins_for_dn(TEST_PERSON_DN) ).to_not include( @mixin )
 		end
 
 		it "can create a BranchCollection that will search for applicable entries"  do
 			result = @mixin.search
 
-			result.should be_a( Treequel::BranchCollection )
-			result.base_dns.should have( 2 ).members
-			result.base_dns.should include( TEST_HOSTS_DN, TEST_SUBHOSTS_DN )
+			expect( result ).to be_a( Treequel::BranchCollection )
+			expect( result.base_dns.length ).to eq( 2 )
+			expect( result.base_dns ).to include( TEST_HOSTS_DN, TEST_SUBHOSTS_DN )
 			result.branchsets.each do |brset|
-				brset.filter_string.should == '(objectClass=*)'
-				brset.branch.directory.should == @directory
+				expect( brset.filter_string ).to eq( '(objectClass=*)' )
+				expect( brset.branch.directory ).to eq( @directory )
 			end
 		end
 
 		it "can create a BranchCollection that will search for applicable entries in a Directory " +
 		   " other than the one set for Treequel::Model"  do
-			conn = mock( "second ldap connection object" )
+			conn = double( "second ldap connection object" )
 			directory = get_fixtured_directory( conn )
 
 			result = @mixin.search( directory )
 
-			result.should be_a( Treequel::BranchCollection )
-			result.base_dns.should have( 2 ).members
-			result.base_dns.should include( TEST_HOSTS_DN, TEST_SUBHOSTS_DN )
+			expect( result ).to be_a( Treequel::BranchCollection )
+			expect( result.base_dns.length ).to eq( 2 )
+			expect( result.base_dns ).to include( TEST_HOSTS_DN, TEST_SUBHOSTS_DN )
 			result.branchsets.each do |brset|
-				brset.filter_string.should == '(objectClass=*)'
-				brset.branch.directory.should == directory
+				expect( brset.filter_string ).to eq( '(objectClass=*)' )
+				expect( brset.branch.directory ).to eq( directory )
 			end
 		end
 

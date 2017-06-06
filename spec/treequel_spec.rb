@@ -1,24 +1,11 @@
 #!/usr/bin/env ruby
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
-
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
-}
-
-require 'rspec'
-
-require 'spec/lib/constants'
-require 'spec/lib/helpers'
+require_relative 'spec_helpers'
 
 require 'treequel'
 require 'treequel/directory'
 
-include Treequel::TestConstants
+include Treequel::SpecConstants
 
 
 #####################################################################
@@ -28,20 +15,12 @@ include Treequel::TestConstants
 describe Treequel do
 	include Treequel::SpecHelpers
 
-	before( :all ) do
-		setup_logging( :fatal )
-	end
-
-	after( :all ) do
-		reset_logging()
-	end
-
 	it "should know if its default logger is replaced" do
 		begin
 			Treequel.reset_logger
-			Treequel.should be_using_default_logger
+			expect( Treequel ).to be_using_default_logger
 			Treequel.logger = Logger.new( $stderr )
-			Treequel.should_not be_using_default_logger
+			expect( Treequel ).to_not be_using_default_logger
 		ensure
 			Treequel.reset_logger
 		end
@@ -49,65 +28,70 @@ describe Treequel do
 
 
 	it "returns a version string if asked" do
-		Treequel.version_string.should =~ /\w+ [\d.]+/
+		expect( Treequel.version_string ).to match( /\w+ [\d.]+/ )
 	end
 
 
 	it "returns a version string with a build number if asked" do
-		Treequel.version_string(true).should =~ /\w+ [\d.]+ \(build [[:xdigit:]]+\)/
+		expect( Treequel.version_string(true) ).to match( /\w+ [\d.]+ \(build [[:xdigit:]]+\)/ )
 	end
 
 
 	it "provides a convenience method for creating directory objects" do
-		Treequel::Directory.should_receive( :new ).and_return( :a_directory )
-		Treequel.directory.should == :a_directory
+		expect( Treequel::Directory ).to receive( :new ).and_return( :a_directory )
+		expect( Treequel.directory ).to eq( :a_directory )
 	end
 
 	it "accepts an LDAP url as the argument to the directory convenience method" do
-		Treequel::Directory.should_receive( :new ).
+		expect( Treequel::Directory ).to receive( :new ).
 			with({ :host => 'ldap.example.com', :base_dn => 'dc=example,dc=com', :port => 389 }).
 			and_return( :a_directory )
-		Treequel.directory( 'ldap://ldap.example.com/dc=example,dc=com' ).should == :a_directory
+		expect( Treequel.directory( 'ldap://ldap.example.com/dc=example,dc=com' ) ).to eq( :a_directory )
 	end
 
 	it "raises an exception if #directory is called with a non-ldap URL" do
-		lambda {
+		expect {
 			Treequel.directory( 'http://example.com/' )
-		}.should raise_error( ArgumentError, /ldap url/i )
+		}.to raise_error( ArgumentError, /ldap url/i )
 	end
 
 	it "accepts an options hash as the argument to the directory convenience method" do
 		opts = { :host => 'ldap.example.com', :base_dn => 'dc=example,dc=com' }
-		Treequel::Directory.should_receive( :new ).with( opts ).
+		expect( Treequel::Directory ).to receive( :new ).with( opts ).
 			and_return( :a_directory )
-		Treequel.directory( opts ).should == :a_directory
+		expect( Treequel.directory( opts ) ).to eq( :a_directory )
 	end
 
 	it "can build an options hash from an LDAP URL" do
-		Treequel.make_options_from_uri( 'ldap://ldap.example.com/dc=example,dc=com' ).should ==
-			{ :host => 'ldap.example.com', :base_dn => 'dc=example,dc=com', :port => 389 }
+		expect( Treequel.make_options_from_uri('ldap://ldap.example.com/dc=example,dc=com') ).
+			to include( :host => 'ldap.example.com', :base_dn => 'dc=example,dc=com', :port => 389 )
 	end
 
 	it "can build an options hash from an LDAPS URL" do
-		Treequel.make_options_from_uri( 'ldaps://ldap.example.com/dc=example,dc=com' ).should ==
-			{ :host => 'ldap.example.com', :base_dn => 'dc=example,dc=com', :port => 636, :connect_type => :ssl }
+		expect( Treequel.make_options_from_uri('ldaps://ldap.example.com/dc=example,dc=com') ).
+			to include(
+				 :host => 'ldap.example.com',
+				 :base_dn => 'dc=example,dc=com',
+				 :port => 636,
+				 :connect_type => :ssl
+			)
 	end
 
 	it "can build an options hash from an LDAP URL without a host" do
-		Treequel.make_options_from_uri( 'ldap:///dc=example,dc=com' ).should ==
-			{ :base_dn => 'dc=example,dc=com', :port => 389 }
+		expect( Treequel.make_options_from_uri('ldap:///dc=example,dc=com') ).
+			to include( :base_dn => 'dc=example,dc=com', :port => 389 )
 	end
 
 	it "uses the LDAPS port for ldaps:// URIs" do
-		Treequel.make_options_from_uri( 'ldaps:///dc=example,dc=com' ).should ==
-			{ :base_dn => 'dc=example,dc=com', :connect_type => :ssl, :port => 636 }
+		expect( Treequel.make_options_from_uri('ldaps:///dc=example,dc=com') ).
+			to include( :base_dn => 'dc=example,dc=com', :connect_type => :ssl, :port => 636 )
 	end
 
 	# [?<attrs>[?<scope>[?<filter>[?<extensions>]]]]
 	it "can build an options hash from an LDAP URL with extra stuff" do
 		uri = 'ldap:///dc=example,dc=com?uid=jrandom,ou=People?l?one?!bindname=cn=auth'
-		Treequel.make_options_from_uri( uri ).should ==
-			{ :base_dn => 'dc=example,dc=com', :port => 389 }
+		expect( Treequel.make_options_from_uri( uri ) ).
+			to include( :base_dn => 'dc=example,dc=com', :port => 389 )
 	end
 
 	it "accepts a combination of URL and options hash as the argument to the directory " +
@@ -124,7 +108,7 @@ describe Treequel do
 			:pass         => pass,
 		}
 
-		Treequel::Directory.should_receive( :new ).
+		expect( Treequel::Directory ).to receive( :new ).
 			with( options_hash ).
 			and_return( :a_directory )
 
@@ -139,27 +123,23 @@ describe Treequel do
 	end
 
 	it "provides a convenience method for creating directory objects from the system LDAP config" do
-		Treequel.should_receive( :find_configfile ).and_return( :a_configfile_path )
-		Treequel.should_receive( :read_opts_from_config ).with( :a_configfile_path ).
+		expect( Treequel ).to receive( :find_configfile ).and_return( :a_configfile_path )
+		expect( Treequel ).to receive( :read_opts_from_config ).with( :a_configfile_path ).
 			and_return({ :configfile_opts => 1 })
-		Treequel.should_receive( :read_opts_from_environment ).
+		expect( Treequel ).to receive( :read_opts_from_environment ).
 			and_return({ :environment_opts => 1 })
 
 		merged_config = Treequel::Directory::DEFAULT_OPTIONS.
 			merge({ :configfile_opts => 1, :environment_opts => 1 })
 
-		Treequel::Directory.should_receive( :new ).with( merged_config ).
+		expect( Treequel::Directory ).to receive( :new ).with( merged_config ).
 			and_return( :a_directory )
 
-		Treequel.directory_from_config.should == :a_directory
+		expect( Treequel.directory_from_config ).to eq( :a_directory )
 	end
 
 
 	describe "system LDAP config methods" do
-
-		before( :all ) do
-			setup_logging( :fatal )
-		end
 
 		before( :each ) do
 			ENV['LDAPCONF']   = nil
@@ -176,23 +156,23 @@ describe Treequel do
 		end
 
 		it "uses the LDAPCONF environment variable if it is set" do
-			configpath = mock( "configfile Pathname object" )
+			configpath = double( "configfile Pathname object" )
 			ENV['LDAPCONF'] = 'a_configfile_path'
 
-			Treequel.should_receive( :Pathname ).with( 'a_configfile_path' ).and_return( configpath )
-			configpath.should_receive( :expand_path ).and_return( configpath )
-			configpath.should_receive( :readable? ).and_return( true )
+			expect( Treequel ).to receive( :Pathname ).with( 'a_configfile_path' ).and_return( configpath )
+			expect( configpath ).to receive( :expand_path ).and_return( configpath )
+			expect( configpath ).to receive( :readable? ).and_return( true )
 
-			Treequel.find_configfile.should == configpath
+			expect( Treequel.find_configfile ).to eq( configpath )
 		end
 
 		it "raises an exception if the file specified in LDAPCONF isn't readable" do
-			configpath = mock( "configfile Pathname object" )
+			configpath = double( "configfile Pathname object" )
 			ENV['LDAPCONF'] = 'a_configfile_path'
 
-			Treequel.should_receive( :Pathname ).with( 'a_configfile_path' ).and_return( configpath )
-			configpath.should_receive( :expand_path ).and_return( configpath )
-			configpath.should_receive( :readable? ).and_return( false )
+			expect( Treequel ).to receive( :Pathname ).with( 'a_configfile_path' ).and_return( configpath )
+			expect( configpath ).to receive( :expand_path ).and_return( configpath )
+			expect( configpath ).to receive( :readable? ).and_return( false )
 
 			expect {
 				Treequel.find_configfile
@@ -200,46 +180,46 @@ describe Treequel do
 		end
 
 		it "uses the LDAPRC environment variable if it is set and LDAPCONF isn't" do
-			configpath = mock( "configfile Pathname object" )
+			configpath = double( "configfile Pathname object" )
 			ENV['LDAPRC'] = 'a_configfile_path'
 
-			Treequel.should_receive( :Pathname ).with( 'a_configfile_path' ).and_return( configpath )
-			configpath.should_receive( :expand_path ).and_return( configpath )
-			configpath.should_receive( :readable? ).and_return( true )
+			expect( Treequel ).to receive( :Pathname ).with( 'a_configfile_path' ).and_return( configpath )
+			expect( configpath ).to receive( :expand_path ).and_return( configpath )
+			expect( configpath ).to receive( :readable? ).and_return( true )
 
-			Treequel.find_configfile.should == configpath
+			expect( Treequel.find_configfile ).to eq( configpath )
 		end
 
 		it "looks in the current user's HOME for the LDAPRC file if it isn't in the CWD" do
-			cwd_path = mock( "CWD configfile Pathname object" )
-			homedir_path = mock( "HOME configfile Pathname object" )
+			cwd_path = double( "CWD configfile Pathname object" )
+			homedir_path = double( "HOME configfile Pathname object" )
 			ENV['LDAPRC'] = 'a_configfile_path'
 
-			Treequel.should_receive( :Pathname ).with( 'a_configfile_path' ).and_return( cwd_path )
-			cwd_path.should_receive( :expand_path ).and_return( cwd_path )
-			cwd_path.should_receive( :readable? ).and_return( false )
+			expect( Treequel ).to receive( :Pathname ).with( 'a_configfile_path' ).and_return( cwd_path )
+			expect( cwd_path ).to receive( :expand_path ).and_return( cwd_path )
+			expect( cwd_path ).to receive( :readable? ).and_return( false )
 
-			Treequel.should_receive( :Pathname ).with( '~' ).and_return( homedir_path )
-			homedir_path.should_receive( :expand_path ).and_return( homedir_path )
-			homedir_path.should_receive( :+ ).with( 'a_configfile_path' ).and_return( homedir_path )
-			homedir_path.should_receive( :readable? ).and_return( true )
+			expect( Treequel ).to receive( :Pathname ).with( '~' ).and_return( homedir_path )
+			expect( homedir_path ).to receive( :expand_path ).and_return( homedir_path )
+			expect( homedir_path ).to receive( :+ ).with( 'a_configfile_path' ).and_return( homedir_path )
+			expect( homedir_path ).to receive( :readable? ).and_return( true )
 
-			Treequel.find_configfile.should == homedir_path
+			expect( Treequel.find_configfile ).to eq( homedir_path )
 		end
 
 		it "raises an exception if the file specified in LDAPRC isn't readable" do
-			cwd_path = mock( "CWD configfile Pathname object" )
-			homedir_path = mock( "HOME configfile Pathname object" )
+			cwd_path = double( "CWD configfile Pathname object" )
+			homedir_path = double( "HOME configfile Pathname object" )
 			ENV['LDAPRC'] = 'a_configfile_path'
 
-			Treequel.should_receive( :Pathname ).with( 'a_configfile_path' ).and_return( cwd_path )
-			cwd_path.should_receive( :expand_path ).and_return( cwd_path )
-			cwd_path.should_receive( :readable? ).and_return( false )
+			expect( Treequel ).to receive( :Pathname ).with( 'a_configfile_path' ).and_return( cwd_path )
+			expect( cwd_path ).to receive( :expand_path ).and_return( cwd_path )
+			expect( cwd_path ).to receive( :readable? ).and_return( false )
 
-			Treequel.should_receive( :Pathname ).with( '~' ).and_return( homedir_path )
-			homedir_path.should_receive( :expand_path ).and_return( homedir_path )
-			homedir_path.should_receive( :+ ).with( 'a_configfile_path' ).and_return( homedir_path )
-			homedir_path.should_receive( :readable? ).and_return( false )
+			expect( Treequel ).to receive( :Pathname ).with( '~' ).and_return( homedir_path )
+			expect( homedir_path ).to receive( :expand_path ).and_return( homedir_path )
+			expect( homedir_path ).to receive( :+ ).with( 'a_configfile_path' ).and_return( homedir_path )
+			expect( homedir_path ).to receive( :readable? ).and_return( false )
 
 			expect {
 				Treequel.find_configfile
@@ -250,18 +230,18 @@ describe Treequel do
 			pathmocks = []
 
 			Treequel::COMMON_LDAP_CONF_PATHS.each do |path|
-				pathname = mock( "pathname: #{path}" )
+				pathname = double( "pathname: #{path}" )
 				pathmocks << pathname
 			end
-			Treequel.should_receive( :Pathname ).and_return( *pathmocks )
+			expect( Treequel ).to receive( :Pathname ).and_return( *pathmocks )
 
 			# Index of the entry we're going to pretend exists
 			successful_index = 6
 			0.upto( successful_index ) do |i|
-				pathmocks[i].should_receive( :readable? ).and_return( i == successful_index )
+				expect( pathmocks[i] ).to receive( :readable? ).and_return( i == successful_index )
 			end
 
-			Treequel.find_configfile.should == pathmocks[ successful_index ]
+			expect( Treequel.find_configfile ).to eq( pathmocks[ successful_index ] )
 		end
 
 		# 
@@ -269,38 +249,38 @@ describe Treequel do
 		# 
 
 		it "maps the OpenLDAP URI directive to equivalent options" do
-			IO.should_receive( :foreach ).with( :a_configfile ).
+			expect( IO ).to receive( :foreach ).with( :a_configfile ).
 				and_yield( "URI ldap://ldap.acme.com/dc=acme,dc=com" )
-			Treequel.read_opts_from_config( :a_configfile ).should ==
-				{ :port => 389, :base_dn => "dc=acme,dc=com", :host => "ldap.acme.com" }
+			expect( Treequel.read_opts_from_config(:a_configfile) ).
+				to include( :port => 389, :base_dn => "dc=acme,dc=com", :host => "ldap.acme.com" )
 		end
 
 		it "maps the OpenLDAP BASE directive to the base_dn option" do
-			IO.should_receive( :foreach ).with( :a_configfile ).
+			expect( IO ).to receive( :foreach ).with( :a_configfile ).
 				and_yield( "BASE dc=acme,dc=com" )
-			Treequel.read_opts_from_config( :a_configfile ).should == 
-				{ :base_dn => "dc=acme,dc=com" }
+			expect( Treequel.read_opts_from_config(:a_configfile) ).
+				to include( :base_dn => "dc=acme,dc=com" )
 		end
 
 		it "maps the OpenLDAP BINDDN directive to the bind_dn option" do
-			IO.should_receive( :foreach ).with( :a_configfile ).
+			expect( IO ).to receive( :foreach ).with( :a_configfile ).
 				and_yield( "BINDDN cn=admin,dc=acme,dc=com" )
-			Treequel.read_opts_from_config( :a_configfile ).should ==
-				{ :bind_dn => "cn=admin,dc=acme,dc=com" }
+			expect( Treequel.read_opts_from_config(:a_configfile) ).
+				to include( :bind_dn => "cn=admin,dc=acme,dc=com" )
 		end
 
 		it "maps the OpenLDAP HOST directive to the host option" do
-			IO.should_receive( :foreach ).with( :a_configfile ).
+			expect( IO ).to receive( :foreach ).with( :a_configfile ).
 				and_yield( "# Host file\nHOST ldap.acme.com\n\n" )
-			Treequel.read_opts_from_config( :a_configfile ).should ==
-				{ :host => 'ldap.acme.com' }
+			expect( Treequel.read_opts_from_config(:a_configfile) ).
+				to include( :host => 'ldap.acme.com' )
 		end
 
 		it "maps the OpenLDAP PORT directive to the port option" do
-			IO.should_receive( :foreach ).with( :a_configfile ).
+			expect( IO ).to receive( :foreach ).with( :a_configfile ).
 				and_yield( "PORT 389" )
-			Treequel.read_opts_from_config( :a_configfile ).should ==
-				{ :port => 389 }
+			expect( Treequel.read_opts_from_config(:a_configfile) ).
+				to include( :port => 389 )
 		end
 
 		# 
@@ -308,69 +288,69 @@ describe Treequel do
 		# 
 
 		it "maps the nss-style uri directive to equivalent options" do
-			IO.should_receive( :foreach ).with( :a_configfile ).
+			expect( IO ).to receive( :foreach ).with( :a_configfile ).
 				and_yield( "uri ldap://ldap.acme.com/dc=acme,dc=com" )
-			Treequel.read_opts_from_config( :a_configfile ).should ==
-				{ :port => 389, :base_dn => "dc=acme,dc=com", :host => "ldap.acme.com" }
+			expect( Treequel.read_opts_from_config(:a_configfile) ).
+				to include( :port => 389, :base_dn => "dc=acme,dc=com", :host => "ldap.acme.com" )
 		end
 
 		it "maps the nss-style 'host' option correctly" do
-			IO.should_receive( :foreach ).with( :a_configfile ).
+			expect( IO ).to receive( :foreach ).with( :a_configfile ).
 				and_yield( "host ldap.acme.com\n\n" )
-			Treequel.read_opts_from_config( :a_configfile ).should ==
-				{ :host => 'ldap.acme.com' }
+			expect( Treequel.read_opts_from_config(:a_configfile) ).
+				to include( :host => 'ldap.acme.com' )
 		end
 
 		it "maps the nss-style 'binddn' option correctly" do
-			IO.should_receive( :foreach ).with( :a_configfile ).
+			expect( IO ).to receive( :foreach ).with( :a_configfile ).
 				and_yield( "binddn cn=superuser,dc=acme,dc=com" )
-			Treequel.read_opts_from_config( :a_configfile ).should == 
-				{ :bind_dn => "cn=superuser,dc=acme,dc=com" }
+			expect( Treequel.read_opts_from_config(:a_configfile) ).
+				to eq( :bind_dn => "cn=superuser,dc=acme,dc=com" )
 		end
 
 		it "maps the nss-style 'bindpw' option correctly" do
-			IO.should_receive( :foreach ).with( :a_configfile ).
+			expect( IO ).to receive( :foreach ).with( :a_configfile ).
 				and_yield( "# My totally awesome password" ).
 				and_yield( "bindpw a:password!" )
-			Treequel.read_opts_from_config( :a_configfile ).should == 
-				{ :pass => "a:password!" }
+			expect( Treequel.read_opts_from_config(:a_configfile) ).
+				to eq( :pass => "a:password!" )
 		end
 
 		it "maps the nss-style 'base' option correctly" do
-			IO.should_receive( :foreach ).with( :a_configfile ).
+			expect( IO ).to receive( :foreach ).with( :a_configfile ).
 				and_yield( "base dc=acme,dc=com" )
-			Treequel.read_opts_from_config( :a_configfile ).should == 
-				{ :base_dn => "dc=acme,dc=com" }
+			expect( Treequel.read_opts_from_config(:a_configfile) ).
+				to eq( :base_dn => "dc=acme,dc=com" )
 		end
 
 		it "maps the nss-style 'ssl' option to the correct port and connect_type if it's 'off'" do
-			IO.should_receive( :foreach ).with( :a_configfile ).
+			expect( IO ).to receive( :foreach ).with( :a_configfile ).
 				and_yield( "ssl  off" )
-			Treequel.read_opts_from_config( :a_configfile ).should == 
-				{ :port => 389, :connect_type => :plain }
+			expect( Treequel.read_opts_from_config(:a_configfile) ).
+				to eq( :port => 389, :connect_type => :plain )
 		end
 
 		it "maps the nss-style 'ssl' option to the correct port and connect_type if " +
 		   "it's 'start_tls'" do
-			IO.should_receive( :foreach ).with( :a_configfile ).
+			expect( IO ).to receive( :foreach ).with( :a_configfile ).
 				and_yield( '' ).
 				and_yield( '# Use TLS' ).
 				and_yield( 'ssl start_tls' )
-			Treequel.read_opts_from_config( :a_configfile ).should == 
-				{ :port => 389, :connect_type => :tls }
+			expect( Treequel.read_opts_from_config(:a_configfile) ).
+				to eq( :port => 389, :connect_type => :tls )
 		end
 
 		it "maps the nss-style 'ssl' option to the correct port and connect_type if " +
 		   "it's 'on'" do
-			IO.should_receive( :foreach ).with( :a_configfile ).
+			expect( IO ).to receive( :foreach ).with( :a_configfile ).
 				and_yield( "\n# Use plain SSL\nssl on\n" )
-			Treequel.read_opts_from_config( :a_configfile ).should == 
-				{ :port => 636, :connect_type => :ssl }
+			expect( Treequel.read_opts_from_config(:a_configfile) ).
+				to eq( :port => 636, :connect_type => :ssl )
 		end
 
 		it "ignores nss-style 'ssl' option if it is set to something other than " +
 		   "'on', 'off', or 'start_tls'" do
-			IO.should_receive( :foreach ).with( :a_configfile ).
+			expect( IO ).to receive( :foreach ).with( :a_configfile ).
 				and_yield( "\n# Use alien-invasion protocol\nssl aliens\n" )
 
 			expect {
@@ -384,40 +364,40 @@ describe Treequel do
 
 		it "maps the OpenLDAP LDAPURI environment variable to equivalent options" do
 			ENV['LDAPURI'] = 'ldaps://quomsohutch.linkerlinlinkin.org/o=linkerlickin'
-			Treequel.read_opts_from_environment.should == {
+			expect( Treequel.read_opts_from_environment ).to include(
 				:host         => 'quomsohutch.linkerlinlinkin.org',
 				:connect_type => :ssl,
 				:port         => 636,
 				:base_dn      => 'o=linkerlickin'
-			  }
+			)
 		end
 
 		it "maps the OpenLDAP LDAPBASE environment variable to the base_dn option" do
 			ENV['LDAPBASE'] = 'o=linkerlickin'
-			Treequel.read_opts_from_environment.should == {
+			expect( Treequel.read_opts_from_environment ).to include(
 				:base_dn => 'o=linkerlickin'
-			  }
+			)
 		end
 
 		it "maps the OpenLDAP LDAPBINDDN environment variable to the bind_dn option" do
 			ENV['LDAPBINDDN'] = 'cn=superuser,ou=people,o=linkerlickin'
-			Treequel.read_opts_from_environment.should == {
+			expect( Treequel.read_opts_from_environment ).to include(
 				:bind_dn => 'cn=superuser,ou=people,o=linkerlickin'
-			  }
+			)
 		end
 
 		it "maps the OpenLDAP LDAPHOST environment variable to the host option" do
 			ENV['LDAPHOST'] = 'quomsohutch.linkerlinlinkin.org'
-			Treequel.read_opts_from_environment.should == {
-				:host => 'quomsohutch.linkerlinlinkin.org',
-			  }
+			expect( Treequel.read_opts_from_environment ).to include(
+				:host => 'quomsohutch.linkerlinlinkin.org'
+			)
 		end
 
 		it "maps the OpenLDAP LDAPPORT environment variable to the port option" do
 			ENV['LDAPPORT'] = '636'
-			Treequel.read_opts_from_environment.should == {
-				:port => 636,
-			  }
+			expect( Treequel.read_opts_from_environment ).to include(
+				:port => 636
+			)
 		end
 	end
 

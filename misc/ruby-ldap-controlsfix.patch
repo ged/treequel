@@ -1,0 +1,50 @@
+# HG changeset patch
+# User Michael Granger <ged@FaerieMUD.org>
+# Date 1260547636 28800
+# Node ID 951c96c499cccf60b377f1c19b0f09413a05ea48
+# Parent  0799f243e516c5b889362eb070f3e62d55c3b087
+Adding controls and referral extraction to #search_ext and #search_ext2
+
+diff --git a/conn.c b/conn.c
+--- a/conn.c
++++ b/conn.c
+@@ -1270,6 +1270,7 @@
+   RB_LDAP_DATA *ldapdata;
+   LDAPMessage *cmsg;
+   LDAP *cldap;
++  VALUE rc_ary = Qnil;
+ 
+   rb_ldap_conn_search_ext_i (argc, argv, self, &ldapdata, &cmsg);
+   cldap = ldapdata->ldap;
+@@ -1278,6 +1279,11 @@
+       || ldapdata->err == LDAP_SIZELIMIT_EXCEEDED)
+     {
+       void *pass_data[] = { (void *) cldap, (void *) cmsg };
++
++      rc_ary = rb_ldap_parse_result (cldap, cmsg);
++      rb_iv_set (self, "@referrals", rb_ary_shift (rc_ary));
++      rb_iv_set (self, "@controls", rb_ary_shift (rc_ary));
++
+       rb_ensure (rb_ldap_conn_search_b, (VALUE) pass_data,
+ 		 rb_ldap_msgfree, (VALUE) cmsg);
+     };
+@@ -1327,6 +1333,7 @@
+   LDAPMessage *cmsg;
+   LDAP *cldap;
+   VALUE ary;
++  VALUE rc_ary = Qnil;
+ 
+   rb_ldap_conn_search_ext_i (argc, argv, self, &ldapdata, &cmsg);
+   cldap = ldapdata->ldap;
+@@ -1336,6 +1343,11 @@
+       || ldapdata->err == LDAP_SIZELIMIT_EXCEEDED)
+     {
+       void *pass_data[] = { (void *) cldap, (void *) cmsg, (void *) ary };
++
++      rc_ary = rb_ldap_parse_result (cldap, cmsg);
++      rb_iv_set (self, "@referrals", rb_ary_shift (rc_ary));
++      rb_iv_set (self, "@controls", rb_ary_shift (rc_ary));
++
+       rb_ensure (rb_ldap_conn_search2_b, (VALUE) pass_data,
+ 		 rb_ldap_msgfree, (VALUE) cmsg);
+     }

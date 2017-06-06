@@ -1,19 +1,7 @@
 #!/usr/bin/env ruby
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+require_relative '../../spec_helpers'
 
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
-}
-
-require 'rspec'
-
-require 'spec/lib/constants'
-require 'spec/lib/helpers'
 
 require 'yaml'
 require 'ldap'
@@ -21,7 +9,7 @@ require 'ldap/schema'
 require 'treequel/schema'
 
 
-include Treequel::TestConstants
+include Treequel::SpecConstants
 include Treequel::Constants
 
 #####################################################################
@@ -32,115 +20,105 @@ describe Treequel::Schema::Table do
 	include Treequel::SpecHelpers
 
 
-	before( :all ) do
-		setup_logging( :fatal )
-	end
-
-	before( :each ) do
-		@table = Treequel::Schema::Table.new
-	end
-
-	after( :all ) do
-		reset_logging()
-	end
+	let( :table ) { described_class.new }
 
 
 	it "allows setting/fetching case-insensitively" do
-		@table['organizationalRole'] = :or
-		@table["apple-preset-computer-list"] = :applepreset
-		@table.deltaCRL = :deltacrl
+		table['organizationalRole'] = :or
+		table["apple-preset-computer-list"] = :applepreset
+		table.deltaCRL = :deltacrl
 
-		@table['organizationalrole'].should == :or
-		@table[:organizationalrole].should == :or
-		@table.organizationalRole.should == :or
-		@table.organizationalrole.should == :or
+		expect( table['organizationalrole'] ).to eq( :or )
+		expect( table[:organizationalrole] ).to eq( :or )
+		expect( table.organizationalRole ).to eq( :or )
+		expect( table.organizationalrole ).to eq( :or )
 
-		@table[:"apple-preset-computer-list"].should == :applepreset
-		@table['apple-preset-computer-list'].should == :applepreset
-		@table[:apple_preset_computer_list].should == :applepreset
-		@table.apple_preset_computer_list.should == :applepreset
+		expect( table[:"apple-preset-computer-list"] ).to eq( :applepreset )
+		expect( table['apple-preset-computer-list'] ).to eq( :applepreset )
+		expect( table[:apple_preset_computer_list] ).to eq( :applepreset )
+		expect( table.apple_preset_computer_list ).to eq( :applepreset )
 
-		@table['deltacrl'].should == :deltacrl
-		@table[:deltaCRL].should == :deltacrl
-		@table[:deltacrl].should == :deltacrl
-		@table.deltaCRL.should == :deltacrl
-		@table.deltacrl.should == :deltacrl
+		expect( table['deltacrl'] ).to eq( :deltacrl )
+		expect( table[:deltaCRL] ).to eq( :deltacrl )
+		expect( table[:deltacrl] ).to eq( :deltacrl )
+		expect( table.deltaCRL ).to eq( :deltacrl )
+		expect( table.deltacrl ).to eq( :deltacrl )
 
 	end
 
 
 	it "doesn't try to normalize numeric OIDs" do
-		@table['1.3.6.1.4.1.4203.666.11.1.4.2.1.2'] = :an_oid
-		@table['1.3.6.1.4.1.4203.666.11.1.4.2.1.2'].should == :an_oid
-		@table['13614142036661114212'].should_not == :an_oid
-		@table.keys.should include( '1.3.6.1.4.1.4203.666.11.1.4.2.1.2' )
+		table['1.3.6.1.4.1.4203.666.11.1.4.2.1.2'] = :an_oid
+		expect( table['1.3.6.1.4.1.4203.666.11.1.4.2.1.2'] ).to eq( :an_oid )
+		expect( table['13614142036661114212'] ).to_not eq( :an_oid )
+		expect( table.keys ).to include( '1.3.6.1.4.1.4203.666.11.1.4.2.1.2' )
 	end
 
 
 	it "merges other Tables" do
 		othertable = Treequel::Schema::Table.new
 
-		@table['ou'] = 'thing'
-		@table['cn'] = 'chunker'
+		table['ou'] = 'thing'
+		table['cn'] = 'chunker'
 
 		othertable['cn'] = 'phunker'
 
-		ot = @table.merge( othertable )
-		ot['ou'].should == 'thing'
-		ot['cn'].should == 'phunker'
+		ot = table.merge( othertable )
+		expect( ot['ou'] ).to eq( 'thing' )
+		expect( ot['cn'] ).to eq( 'phunker' )
 	end
 
 
 	it "merges hashes after normalizing keys" do
-		@table['ou'] = 'thing'
-		@table['apple-computer-list'] = 'trishtrash'
+		table['ou'] = 'thing'
+		table['apple-computer-list'] = 'trishtrash'
 
 		hash = { 'apple-computer-list' => 'pinhash' }
 
-		ot = @table.merge( hash )
-		ot['ou'].should == 'thing'
-		ot['apple-computer-list'].should == 'pinhash'
+		ot = table.merge( hash )
+		expect( ot['ou'] ).to eq( 'thing' )
+		expect( ot['apple-computer-list'] ).to eq( 'pinhash' )
 	end
 
 
 	it "dupes its inner hash when duped" do
-		newtable = @table.dup
+		newtable = table.dup
 
 		newtable[:cn] = 'god'
-		@table.should_not include( :cn )
-		@table.should be_empty()
+		expect( table ).to_not include( :cn )
+		expect( table ).to be_empty()
 	end
 
 
 	it "provides a case-insensitive version of #values_at" do
-		@table[:cn]               = 'contra_rules'
-		@table[:d]                = 'ghosty'
-		@table[:porntipsGuzzardo] = 'cha-ching'
+		table[:cn]               = 'contra_rules'
+		table[:d]                = 'ghosty'
+		table[:porntipsGuzzardo] = 'cha-ching'
 
-		results = @table.values_at( :CN, 'PornTipsGuzzARDO' )
-		results.should include( 'contra_rules' )
-		results.should include( 'cha-ching' )
-		results.should_not include( 'ghosty' )
+		results = table.values_at( :CN, 'PornTipsGuzzARDO' )
+		expect( results ).to include( 'contra_rules' )
+		expect( results ).to include( 'cha-ching' )
+		expect( results ).to_not include( 'ghosty' )
 	end
 
 	it "can iterate over its members" do
-		@table[:cn]               = 'contra_rules'
-		@table[:d]                = 'ghosty'
-		@table[:porntipsGuzzardo] = 'cha-ching'
+		table[:cn]               = 'contra_rules'
+		table[:d]                = 'ghosty'
+		table[:porntipsGuzzardo] = 'cha-ching'
 
 		collection = []
-		@table.each {|k,v| collection << [k,v] }
-		collection.transpose[0].should include( :cn, :d, :porntipsguzzardo )
-		collection.transpose[1].should include( 'contra_rules', 'ghosty', 'cha-ching' )
+		table.each {|k,v| collection << [k,v] }
+		expect( collection.transpose[0] ).to include( :cn, :d, :porntipsguzzardo )
+		expect( collection.transpose[1] ).to include( 'contra_rules', 'ghosty', 'cha-ching' )
 	end
 
 	it "is Enumerable" do
-		@table[:cn]               = 'contra_rules'
-		@table[:d]                = 'ghosty'
-		@table[:porntipsGuzzardo] = 'cha-ching'
+		table[:cn]               = 'contra_rules'
+		table[:d]                = 'ghosty'
+		table[:porntipsGuzzardo] = 'cha-ching'
 
 		collection = []
-		@table.any? {|k,v| v.index('o') }.should == true
+		expect( table.any? {|k,v| v.index('o') } ).to eq( true )
 	end
 
 end

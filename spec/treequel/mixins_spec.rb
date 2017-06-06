@@ -12,17 +12,11 @@ BEGIN {
 	$LOAD_PATH.unshift( extdir ) unless $LOAD_PATH.include?( extdir )
 }
 
-require 'rspec'
 
-require 'spec/lib/constants'
-require 'spec/lib/helpers'
 
 require 'treequel'
 require 'treequel/mixins'
 
-
-include Treequel::TestConstants
-include Treequel::Constants
 
 #####################################################################
 ###	C O N T E X T S
@@ -49,7 +43,7 @@ describe Treequel, "mixin" do
 
 		it "is able to output to the log via its #log method" do
 			@obj.log_test_message( :debug, "debugging message" )
-			@log_output.last.should =~ /debugging message/i
+			expect( @log_output.last ).to match( /debugging message/i )
 		end
 	end
 
@@ -65,15 +59,15 @@ describe Treequel, "mixin" do
 
 			result = Treequel::HashUtilities.stringify_keys( testhash )
 
-			result.should be_an_instance_of( Hash )
-			result.should_not be_equal( testhash )
-			result.should == {
+			expect( result ).to be_an_instance_of( Hash )
+			expect( result ).to_not be_equal( testhash )
+			expect( result ).to eq(
 				'foo' => 1,
 				'bar' => {
 					'klang' => 'klong',
 					'barang' => { 'kerklang' => 'dumdumdum' },
 				}
-			}
+			)
 		end
 
 
@@ -88,15 +82,15 @@ describe Treequel, "mixin" do
 
 			result = Treequel::HashUtilities.symbolify_keys( testhash )
 
-			result.should be_an_instance_of( Hash )
-			result.should_not be_equal( testhash )
-			result.should == {
+			expect( result ).to be_an_instance_of( Hash )
+			expect( result ).to_not be_equal( testhash )
+			expect( result ).to eq(
 				:foo => 1,
 				:bar => {
 					:klang => 'klong',
 					:barang => { :kerklang => 'dumdumdum' },
 				}
-			}
+			)
 		end
 
 		it "includes a function that can be used as the key-collision callback for " +
@@ -117,15 +111,15 @@ describe Treequel, "mixin" do
 				}
 			}
 
-			hash1.merge( hash2, &Treequel::HashUtilities.method(:merge_recursively) ).should == {
+			expect( hash1.merge( hash2, &Treequel::HashUtilities.method(:merge_recursively) ) ).to eq(
 				:foo => 1,
 				:bar => [:one, :locke],
 				:baz => {
 					:glom => [:chunker, :plunker],
 					:trim => :liquor,
 				},
-				:klong => 88.8,
-			}
+				:klong => 88.8
+			)
 		end
 
 	end
@@ -137,9 +131,9 @@ describe Treequel, "mixin" do
 
 			result = Treequel::ArrayUtilities.stringify_array( testarray )
 
-			result.should be_an_instance_of( Array )
-			result.should_not be_equal( testarray )
-			result.should == ['a', 'b', 'c', ['d', 'e', ['f', 'g']]]
+			expect( result ).to be_an_instance_of( Array )
+			expect( result ).to_not be_equal( testarray )
+			expect( result ).to eq( ['a', 'b', 'c', ['d', 'e', ['f', 'g']]] )
 		end
 
 
@@ -148,19 +142,13 @@ describe Treequel, "mixin" do
 
 			result = Treequel::ArrayUtilities.symbolify_array( testarray )
 
-			result.should be_an_instance_of( Array )
-			result.should_not be_equal( testarray )
-			result.should == [:a, :b, :c, [:d, :e, [:f, :g]]]
+			expect( result ).to be_an_instance_of( Array )
+			expect( result ).to_not be_equal( testarray )
+			expect( result ).to eq( [:a, :b, :c, [:d, :e, [:f, :g]]] )
 		end
 	end
 
 	describe Treequel::AttributeDeclarations do
-		before( :all ) do
-			setup_logging( :fatal )
-		end
-		after( :all ) do
-			reset_logging()
-		end
 
 		describe "predicate attribute declaration" do
 			before( :all ) do
@@ -176,30 +164,23 @@ describe Treequel, "mixin" do
 			end
 
 			it "creates a plain predicate method" do
-				@testclass.new( true ).should be_testable()
-				@testclass.new( false ).should_not be_testable()
-				@testclass.new( 1 ).should be_testable()
-				@testclass.new( :something_else ).should be_testable()
+				expect( @testclass.new( true ) ).to be_testable()
+				expect( @testclass.new( false ) ).to_not be_testable()
+				expect( @testclass.new( 1 ) ).to be_testable()
+				expect( @testclass.new( :something_else ) ).to be_testable()
 			end
 
 			it "creates a mutator" do
 				obj = @testclass.new( true )
 				obj.testable = false
-				obj.should_not be_testable()
+				expect( obj ).to_not be_testable()
 				obj.testable = true
-				obj.should be_testable()
+				expect( obj ).to be_testable()
 			end
 		end
 	end
 
 	describe Treequel::Delegation do
-
-		before( :all ) do
-			setup_logging( :fatal )
-		end
-		after( :all ) do
-			reset_logging()
-		end
 
 		describe "method delegation" do
 			before( :all ) do
@@ -220,35 +201,35 @@ describe Treequel, "mixin" do
 			end
 
 			before( :each ) do
-				@subobj = mock( "delegate" )
+				@subobj = double( "delegate" )
 				@obj = @testclass.new( @subobj )
 			end
 
 
 			it "can be used to set up delegation through a method" do
-				@subobj.should_receive( :delegated_method )
+				expect( @subobj ).to receive( :delegated_method )
 				@obj.delegated_method
 			end
 
 			it "passes any arguments through to the delegate object's method" do
-				@subobj.should_receive( :delegated_method ).with( :arg1, :arg2 )
+				expect( @subobj ).to receive( :delegated_method ).with( :arg1, :arg2 )
 				@obj.delegated_method( :arg1, :arg2 )
 			end
 
 			it "allows delegation to the delegate object's method with a block" do
-				@subobj.should_receive( :delegated_method ).with( :arg1 ).
+				expect( @subobj ).to receive( :delegated_method ).with( :arg1 ).
 					and_yield( :the_block_argument )
 				blockarg = nil
 				@obj.delegated_method( :arg1 ) {|arg| blockarg = arg }
-				blockarg.should == :the_block_argument
+				expect( blockarg ).to eq( :the_block_argument )
 			end
 
 			it "reports errors from its caller's perspective", :ruby_18 do
 				begin
 					@obj.erroring_delegated_method
 				rescue NoMethodError => err
-					err.message.should =~ /nonexistant_method/
-					err.backtrace.first.should =~ /#{__FILE__}/
+					expect( err.message ).to match( /nonexistant_method/ )
+					expect( err.backtrace.first ).to match( /#{__FILE__}/ )
 				rescue ::Exception => err
 					fail "Expected a NoMethodError, but got a %p (%s)" % [ err.class, err.message ]
 				else
@@ -274,35 +255,35 @@ describe Treequel, "mixin" do
 			end
 
 			before( :each ) do
-				@subobj = mock( "delegate" )
+				@subobj = double( "delegate" )
 				@obj = @testclass.new( @subobj )
 			end
 
 
 			it "can be used to set up delegation through a method" do
-				@subobj.should_receive( :delegated_method )
+				expect( @subobj ).to receive( :delegated_method )
 				@obj.delegated_method
 			end
 
 			it "passes any arguments through to the delegate's method" do
-				@subobj.should_receive( :delegated_method ).with( :arg1, :arg2 )
+				expect( @subobj ).to receive( :delegated_method ).with( :arg1, :arg2 )
 				@obj.delegated_method( :arg1, :arg2 )
 			end
 
 			it "allows delegation to the delegate's method with a block" do
-				@subobj.should_receive( :delegated_method ).with( :arg1 ).
+				expect( @subobj ).to receive( :delegated_method ).with( :arg1 ).
 					and_yield( :the_block_argument )
 				blockarg = nil
 				@obj.delegated_method( :arg1 ) {|arg| blockarg = arg }
-				blockarg.should == :the_block_argument
+				expect( blockarg ).to eq( :the_block_argument )
 			end
 
 			it "reports errors from its caller's perspective", :ruby_18 do
 				begin
 					@obj.erroring_delegated_method
 				rescue NoMethodError => err
-					err.message.should =~ /`erroring_delegated_method' for nil/
-					err.backtrace.first.should =~ /#{__FILE__}/
+					expect( err.message ).to match( /`erroring_delegated_method' for nil/ )
+					expect( err.backtrace.first ).to match( /#{__FILE__}/ )
 				rescue ::Exception => err
 					fail "Expected a NoMethodError, but got a %p (%s)" % [ err.class, err.message ]
 				else
@@ -318,19 +299,19 @@ describe Treequel, "mixin" do
 
 		describe "key normalization" do
 			it "downcases" do
-				Treequel::Normalization.normalize_key( :logonTime ).should == :logontime
+				expect( Treequel::Normalization.normalize_key( :logonTime ) ).to eq( :logontime )
 			end
 
 			it "symbolifies" do
-				Treequel::Normalization.normalize_key( 'cn' ).should == :cn
+				expect( Treequel::Normalization.normalize_key( 'cn' ) ).to eq( :cn )
 			end
 
 			it "strips invalid characters" do
-				Treequel::Normalization.normalize_key( 'given name' ).should == :givenname
+				expect( Treequel::Normalization.normalize_key( 'given name' ) ).to eq( :givenname )
 			end
 
 			it "converts hyphens to underscores" do
-				Treequel::Normalization.normalize_key( 'apple-nickname' ).should == :apple_nickname
+				expect( Treequel::Normalization.normalize_key( 'apple-nickname' ) ).to eq( :apple_nickname )
 			end
 		end
 
@@ -343,12 +324,12 @@ describe Treequel, "mixin" do
 					'apple-nickname' => 'a nickname',
 				}
 
-				Treequel::Normalization.normalize_hash( hash ).should == {
+				expect( Treequel::Normalization.normalize_hash( hash ) ).to eq(
 					:logontime      => 'a logon time',
 					:cn             => 'a common name',
 					:givenname      => 'a given name',
 					:apple_nickname => 'a nickname',
-				}
+				)
 			end
 		end
 	end

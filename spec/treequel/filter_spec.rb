@@ -1,24 +1,12 @@
 #!/usr/bin/env ruby
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+require_relative '../spec_helpers'
 
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
-}
-
-require 'rspec'
-
-require 'spec/lib/constants'
-require 'spec/lib/helpers'
 
 require 'treequel/filter'
 
 
-include Treequel::TestConstants
+include Treequel::SpecConstants
 include Treequel::Constants
 
 #####################################################################
@@ -28,63 +16,55 @@ include Treequel::Constants
 describe Treequel::Filter do
 	include Treequel::SpecHelpers
 
-	before( :all ) do
-		setup_logging( :fatal )
-	end
-
-	after( :all ) do
-		reset_logging()
-	end
-
 
 	it "knows that it is promiscuous (will match any entry) if its component is promiscuous" do
-		Treequel::Filter.new.should be_promiscuous()
+		expect( Treequel::Filter.new ).to be_promiscuous()
 	end
 
 	it "knows that it isn't promiscuous if its component isn't promiscuous" do
-		Treequel::Filter.new( :uid, 'batgirl' ).should_not be_promiscuous()
+		expect( Treequel::Filter.new( :uid, 'batgirl' ) ).to_not be_promiscuous()
 	end
 
 
 	it "defaults to selecting everything" do
-		Treequel::Filter.new.to_s.should == '(objectClass=*)'
+		expect( Treequel::Filter.new.to_s ).to eq( '(objectClass=*)' )
 	end
 
 	it "can be created from a string literal" do
-		Treequel::Filter.new( '(uid=bargrab)' ).to_s.should == '(uid=bargrab)'
+		expect( Treequel::Filter.new( '(uid=bargrab)' ).to_s ).to eq( '(uid=bargrab)' )
 	end
 
 	it "wraps string literal instances in parens if it requires them" do
-		Treequel::Filter.new( 'uid=bargrab' ).to_s.should == '(uid=bargrab)'
+		expect( Treequel::Filter.new( 'uid=bargrab' ).to_s ).to eq( '(uid=bargrab)' )
 	end
 
 	it "parses a single Symbol argument as a presence filter" do
-		Treequel::Filter.new( :uid ).to_s.should == '(uid=*)'
+		expect( Treequel::Filter.new( :uid ).to_s ).to eq( '(uid=*)' )
 	end
 
 	it "parses a single-element Array with a Symbol as a presence filter" do
-		Treequel::Filter.new( [:uid] ).to_s.should == '(uid=*)'
+		expect( Treequel::Filter.new( [:uid] ).to_s ).to eq( '(uid=*)' )
 	end
 
 	it "parses a Symbol+value pair as a simple item equal filter" do
-		Treequel::Filter.new( :uid, 'bigthung' ).to_s.should == '(uid=bigthung)'
+		expect( Treequel::Filter.new( :uid, 'bigthung' ).to_s ).to eq( '(uid=bigthung)' )
 	end
 
 	it "escapes filter metacharacters in simple item equal filters" do
-		Treequel::Filter.new( :nisNetgroupTriple, '(blarney.acme.org,,)' ).to_s.
-			should == '(nisNetgroupTriple=\28blarney.acme.org,,\29)'
+		expect( Treequel::Filter.new( :nisNetgroupTriple, '(blarney.acme.org,,)' ).to_s ).
+			to eq( '(nisNetgroupTriple=\28blarney.acme.org,,\29)' )
 	end
 
 	it "parses a String+value hash as a simple item equal filter" do
-		Treequel::Filter.new( 'uid' => 'bigthung' ).to_s.should == '(uid=bigthung)'
+		expect( Treequel::Filter.new( 'uid' => 'bigthung' ).to_s ).to eq( '(uid=bigthung)' )
 	end
 
 	it "parses a single-item Symbol+value hash as a simple item equal filter" do
-		Treequel::Filter.new({ :uidNumber => 3036 }).to_s.should == '(uidNumber=3036)'
+		expect( Treequel::Filter.new({ :uidNumber => 3036 }).to_s ).to eq( '(uidNumber=3036)' )
 	end
 
 	it "parses a Symbol+value pair in an Array as a simple item equal filter" do
-		Treequel::Filter.new( [:uid, 'bigthung'] ).to_s.should == '(uid=bigthung)'
+		expect( Treequel::Filter.new( [:uid, 'bigthung'] ).to_s ).to eq( '(uid=bigthung)' )
 	end
 
 	it "parses a multi-value Hash as an ANDed collection of simple item equals filters" do
@@ -92,64 +72,64 @@ describe Treequel::Filter do
 		gnpat = Regexp.quote( '(givenName=Michael)' )
 		snpat = Regexp.quote( '(sn=Granger)' )
 
-		expr.to_s.should =~ /\(&(#{gnpat}#{snpat}|#{snpat}#{gnpat})\)/i
+		expect( expr.to_s ).to match( /\(&(#{gnpat}#{snpat}|#{snpat}#{gnpat})\)/i )
 	end
 
 	it "parses an AND expression with only a single clause" do
-		Treequel::Filter.new( [:&, [:uid, 'kunglung']] ).to_s.should == '(&(uid=kunglung))'
+		expect( Treequel::Filter.new( [:&, [:uid, 'kunglung']] ).to_s ).to eq( '(&(uid=kunglung))' )
 	end
 
 	it "parses an AND expression with multiple clauses" do
-		Treequel::Filter.new( [:and, [:uid, 'kunglung'], [:name, 'chunger']] ).to_s.
-			should == '(&(uid=kunglung)(name=chunger))'
+		expect( Treequel::Filter.new( [:and, [:uid, 'kunglung'], [:name, 'chunger']] ).to_s ).
+			to eq( '(&(uid=kunglung)(name=chunger))' )
 	end
 
 	it "parses an OR expression with only a single clause" do
-		Treequel::Filter.new( [:|, [:uid, 'kunglung']] ).to_s.should == '(|(uid=kunglung))'
+		expect( Treequel::Filter.new( [:|, [:uid, 'kunglung']] ).to_s ).to eq( '(|(uid=kunglung))' )
 	end
 
 	it "parses an OR expression with multiple clauses" do
-		Treequel::Filter.new( [:or, [:uid, 'kunglung'], [:name, 'chunger']] ).to_s.
-			should == '(|(uid=kunglung)(name=chunger))'
+		expect( Treequel::Filter.new( [:or, [:uid, 'kunglung'], [:name, 'chunger']] ).to_s ).
+			to eq( '(|(uid=kunglung)(name=chunger))' )
 	end
 
 	it "parses an OR expression with String literal clauses" do
-		Treequel::Filter.new( :or, ['cn~=facet', 'cn=structure', 'cn=envision'] ).to_s.
-			should == '(|(cn~=facet)(cn=structure)(cn=envision))'
+		expect( Treequel::Filter.new( :or, ['cn~=facet', 'cn=structure', 'cn=envision'] ).to_s ).
+			to eq( '(|(cn~=facet)(cn=structure)(cn=envision))' )
 	end
 
 	it "infers the OR-hash form if the expression is Symbol => Array" do
-		Treequel::Filter.new( :uid => %w[lar bin fon guh] ).to_s.
-			should == '(|(uid=lar)(uid=bin)(uid=fon)(uid=guh))'
+		expect( Treequel::Filter.new( :uid => %w[lar bin fon guh] ).to_s ).
+			to eq( '(|(uid=lar)(uid=bin)(uid=fon)(uid=guh))' )
 	end
 
 	it "doesn't make an OR-hash if the expression is singular" do
-		Treequel::Filter.new( :uid => ['lar'] ).to_s.should == '(uid=lar)'
+		expect( Treequel::Filter.new( :uid => ['lar'] ).to_s ).to eq( '(uid=lar)' )
 	end
 
 	it "correctly includes OR subfilters in a Hash if the value is an Array" do
 		fstr = Treequel::Filter.new( :objectClass => 'inetOrgPerson', :uid => %w[lar bin fon guh] ).to_s
 
-		fstr.should include('(|(uid=lar)(uid=bin)(uid=fon)(uid=guh))')
-		fstr.should include('(objectClass=inetOrgPerson)')
-		fstr.should =~ /^\(&/
+		expect( fstr ).to include('(|(uid=lar)(uid=bin)(uid=fon)(uid=guh))')
+		expect( fstr ).to include('(objectClass=inetOrgPerson)')
+		expect( fstr ).to match( /^\(&/ )
 	end
 
 	it "parses a NOT expression with only a single clause" do
-		Treequel::Filter.new( [:'!', [:uid, 'kunglung']] ).to_s.should == '(!(uid=kunglung))'
+		expect( Treequel::Filter.new( [:'!', [:uid, 'kunglung']] ).to_s ).to eq( '(!(uid=kunglung))' )
 	end
 
 	it "parses a Range item as a boolean ANDed expression" do
-		filter = Treequel::Filter.new( :uid, 200..1000 ).to_s.should == '(&(uid>=200)(uid<=1000))'
+		expect( filter = Treequel::Filter.new( :uid, 200..1000 ).to_s ).to eq( '(&(uid>=200)(uid<=1000))' )
 	end
 
 	it "parses a exclusive Range correctly" do
-		filter = Treequel::Filter.new( :uid, 200...1000 ).to_s.should == '(&(uid>=200)(uid<=999))'
+		expect( filter = Treequel::Filter.new( :uid, 200...1000 ).to_s ).to eq( '(&(uid>=200)(uid<=999))' )
 	end
 
 	it "parses a Range item with non-numeric components" do
-		filter = Treequel::Filter.new( :lastName => 'Dale'..'Darby' ).to_s.
-			should == '(&(lastName>=Dale)(lastName<=Darby))'
+		expect( filter = Treequel::Filter.new( :lastName => 'Dale'..'Darby' ).to_s ).
+			to eq( '(&(lastName>=Dale)(lastName<=Darby))' )
 	end
 
 	it "raises an exception with a NOT expression that contains more than one clause" do
@@ -161,12 +141,12 @@ describe Treequel::Filter do
 
 	it "parses a Substring item from a filter that includes an asterisk" do
 		filter = Treequel::Filter.new( :portrait, "\\ff\\d8\\ff\\e0*" )
-		filter.component.class.should == Treequel::Filter::SubstringItemComponent
+		expect( filter.component.class ).to eq( Treequel::Filter::SubstringItemComponent )
 	end
 
 	it "parses a Present item from a filter that is only an asterisk" do
 		filter = Treequel::Filter.new( :disabled, "*" )
-		filter.component.class.should == Treequel::Filter::PresentItemComponent
+		expect( filter.component.class ).to eq( Treequel::Filter::PresentItemComponent )
 	end
 
 	it "raises an error when an extensible item filter is given" do
@@ -177,15 +157,18 @@ describe Treequel::Filter do
 
 
 	it "parses a complex nested expression" do
-		Treequel::Filter.new(
+		result = Treequel::Filter.new(
 			[:and,
 				[:or,
 					[:and, [:chungability,'fantagulous'], [:l, 'the moon']],
 					[:chungability, '*grunt*'],
 					[:hunker]],
 				[:not, [:description, 'mediocre']] ]
-		).to_s.should == '(&(|(&(chungability=fantagulous)(l=the moon))' +
+			)
+		expect( result.to_s ).to eq(
+			'(&(|(&(chungability=fantagulous)(l=the moon))' +
 			'(chungability=*grunt*)(hunker=*))(!(description=mediocre)))'
+		)
 	end
 
 
@@ -198,40 +181,40 @@ describe Treequel::Filter do
 		end
 
 		it "compares as equal with another filter if their components are equal" do
-			otherfilter = mock( "other filter" )
-			otherfilter.should_receive( :component ).and_return( :componentobj )
+			otherfilter = double( "other filter" )
+			expect( otherfilter ).to receive( :component ).and_return( :componentobj )
 			@filter1.component = :componentobj
 
-			@filter1.should == otherfilter
+			expect( @filter1 ).to eq( otherfilter )
 		end
 
 		it "creates a new AND filter out of two filters that are added together" do
 			result = @filter1 + @filter2
-			result.should be_a( Treequel::Filter )
+			expect( result ).to be_a( Treequel::Filter )
 		end
 
 		it "creates a new AND filter out of two filters that are bitwise-ANDed together" do
 			result = @filter1 & @filter2
-			result.should be_a( Treequel::Filter )
+			expect( result ).to be_a( Treequel::Filter )
 		end
 
 		it "doesn't include the left operand in an AND filter if it is promiscuous" do
 			pfilter = Treequel::Filter.new
 			result = pfilter & @filter2
 
-			result.should == @filter2
+			expect( result ).to eq( @filter2 )
 		end
 
 		it "doesn't include the right operand in an AND filter if it is promiscuous" do
 			pfilter = Treequel::Filter.new
 			result = @filter1 & pfilter
 
-			result.should == @filter1
+			expect( result ).to eq( @filter1 )
 		end
 
 		it "creates a new OR filter out of two filters that are bitwise-ORed together" do
 			result = @filter1 | @filter2
-			result.should be_a( Treequel::Filter )
+			expect( result ).to be_a( Treequel::Filter )
 		end
 
 		it "collapses two OR filters into a single OR clause when bitwise-ORed together" do
@@ -239,8 +222,8 @@ describe Treequel::Filter do
 			thirdfilter = Treequel::Filter.new( :l => :saturn )
 			result = ( orfilter | thirdfilter )
 
-			result.should be_a( Treequel::Filter )
-			result.to_s.should == '(|(uid=buckrogers)(l=mars)(l=saturn))'
+			expect( result ).to be_a( Treequel::Filter )
+			expect( result.to_s ).to eq( '(|(uid=buckrogers)(l=mars)(l=saturn))' )
 		end
 
 	end
@@ -255,14 +238,14 @@ describe Treequel::Filter do
 
 		describe Treequel::Filter::FilterList do
 			it "stringifies by joining its stringified members" do
-				Treequel::Filter::FilterList.new( @filter1, @filter2 ).to_s.
-					should == '(filter1)(filter2)'
+				expect( Treequel::Filter::FilterList.new( @filter1, @filter2 ).to_s ).
+					to eq( '(filter1)(filter2)' )
 			end
 
 			it "supports appending via the << operator" do
 				list = Treequel::Filter::FilterList.new( @filter1 )
-				( list << @filter2 ).should == list
-				list.to_s.should == '(filter1)(filter2)'
+				expect( ( list << @filter2 ) ).to eq( list )
+				expect( list.to_s ).to eq( '(filter1)(filter2)' )
 			end
 		end
 
@@ -274,7 +257,7 @@ describe Treequel::Filter do
 			end
 
 			it "is non-promiscuous by default" do
-				Class.new( Treequel::Filter::Component ).new.should_not be_promiscuous()
+				expect( Class.new( Treequel::Filter::Component ).new ).to_not be_promiscuous()
 			end
 
 		end
@@ -287,10 +270,10 @@ describe Treequel::Filter do
 
 			it "can parse a component object from a string literal" do
 				comp = Treequel::Filter::SimpleItemComponent.parse_from_string( 'description=screamer' )
-				comp.filtertype.should    == :equal
-				comp.filtertype_op.should == '='
-				comp.attribute.should     == 'description'
-				comp.value.should         == 'screamer'
+				expect( comp.filtertype ).to eq( :equal )
+				expect( comp.filtertype_op ).to eq( '=' )
+				expect( comp.attribute ).to eq( 'description' )
+				expect( comp.value ).to eq( 'screamer' )
 			end
 
 			it "raises an ExpressionError if it can't parse a string literal" do
@@ -299,39 +282,39 @@ describe Treequel::Filter do
 			end
 
 			it "uses the 'equal' operator if none is specified" do
-				@component.filtertype.should == :equal
+				expect( @component.filtertype ).to eq( :equal )
 			end
 
 			it "knows what the appropriate operator is for its filtertype" do
-				@component.filtertype_op.should == '='
+				expect( @component.filtertype_op ).to eq( '=' )
 			end
 
 			it "knows what the appropriate operator is for its filtertype even if it's set to a string" do
 				@component.filtertype = 'greater'
-				@component.filtertype_op.should == '>='
+				expect( @component.filtertype_op ).to eq( '>=' )
 			end
 
 			it "stringifies as <attribute><operator><value>" do
-				@component.to_s.should == 'uid=schlange'
+				expect( @component.to_s ).to eq( 'uid=schlange' )
 			end
 
 			it "uses the '~=' operator if its filtertype is 'approx'" do
 				@component.filtertype = :approx
-				@component.filtertype_op.should == '~='
+				expect( @component.filtertype_op ).to eq( '~=' )
 			end
 
 			it "uses the '>=' operator if its filtertype is 'greater'" do
 				@component.filtertype = :greater
-				@component.filtertype_op.should == '>='
+				expect( @component.filtertype_op ).to eq( '>=' )
 			end
 
 			it "uses the '<=' operator if its filtertype is 'less'" do
 				@component.filtertype = :less
-				@component.filtertype_op.should == '<='
+				expect( @component.filtertype_op ).to eq( '<=' )
 			end
 
 			it "raises an error if it's created with an unknown filtertype" do
-				expect { 
+				expect {
 					Treequel::Filter::SimpleItemComponent.new( :uid, 'schlange', :fork )
 				}.to raise_error( Treequel::ExpressionError, /invalid/i )
 
@@ -349,17 +332,17 @@ describe Treequel::Filter do
 
 			it "can parse a component object from a string literal" do
 				comp = Treequel::Filter::SubstringItemComponent.parse_from_string( 'description=*basecamp*' )
-				comp.attribute.should == 'description'
-				comp.options.should   == ''
-				comp.pattern.should   == '*basecamp*'
+				expect( comp.attribute ).to eq( 'description' )
+				expect( comp.options ).to eq( '' )
+				expect( comp.pattern ).to eq( '*basecamp*' )
 			end
 
 			it "can parse a component object from a string literal with attribute options" do
 				jpeg_portraits = Treequel::Filter::SubstringItemComponent.
 					parse_from_string( "portrait;binary=\\xff\\xd8\\xff\\xe0*" )
-				jpeg_portraits.attribute.should == 'portrait'
-				jpeg_portraits.options.should   == ';binary'
-				jpeg_portraits.pattern.should   == "\\xff\\xd8\\xff\\xe0*"
+				expect( jpeg_portraits.attribute ).to eq( 'portrait' )
+				expect( jpeg_portraits.options ).to eq( ';binary' )
+				expect( jpeg_portraits.pattern ).to eq( "\\xff\\xd8\\xff\\xe0*" )
 			end
 
 			it "raises an ExpressionError if it can't parse a string literal" do
@@ -372,38 +355,35 @@ describe Treequel::Filter do
 
 		describe Treequel::Filter::AndComponent do
 			it "stringifies as its filters ANDed together" do
-				Treequel::Filter::AndComponent.new( @filter1, @filter2 ).to_s.
-					should == '&(filter1)(filter2)'
+				expect( Treequel::Filter::AndComponent.new( @filter1, @filter2 ).to_s ).
+					to eq( '&(filter1)(filter2)' )
 			end
 
 			it "allows a single filter" do
-				Treequel::Filter::AndComponent.new( @filter1 ).to_s.
-					should == '&(filter1)'
+				expect( Treequel::Filter::AndComponent.new( @filter1 ).to_s ).to eq( '&(filter1)' )
 			end
 		end
 
 		describe Treequel::Filter::OrComponent do
 			it "stringifies as its filters ORed together" do
-				Treequel::Filter::OrComponent.new( @filter1, @filter2 ).to_s.
-					should == '|(filter1)(filter2)'
+				expect( Treequel::Filter::OrComponent.new( @filter1, @filter2 ).to_s ).
+					to eq( '|(filter1)(filter2)' )
 			end
 
 			it "allows a single filter" do
-				Treequel::Filter::OrComponent.new( @filter1 ).to_s.
-					should == '|(filter1)'
+				expect( Treequel::Filter::OrComponent.new( @filter1 ).to_s ).to eq( '|(filter1)' )
 			end
 
 			it "allows futher alternations to be added to it" do
 				filter = Treequel::Filter::OrComponent.new( @filter1 )
 				filter.add_alternation( @filter2 )
-				filter.to_s.should == '|(filter1)(filter2)'
+				expect( filter.to_s ).to eq( '|(filter1)(filter2)' )
 			end
 		end
 
 		describe Treequel::Filter::NotComponent do
 			it "stringifies as the negation of its filter" do
-				Treequel::Filter::NotComponent.new( @filter1 ).to_s.
-					should == '!(filter1)'
+				expect( Treequel::Filter::NotComponent.new( @filter1 ).to_s ).to eq( '!(filter1)' )
 			end
 
 			it "can't be created with multiple filters" do
@@ -417,24 +397,28 @@ describe Treequel::Filter do
 	describe "support for Sequel expressions", :sequel do
 
 		it "supports the boolean expression syntax", :ruby_18 do
+			pending "Figuring out how to handle the old Sequel Symbol-operator syntax"
 			filter = Treequel::Filter.new( :uid >= 2000 )
-			filter.should be_a( Treequel::Filter )
-			filter.to_s.should == '(uid>=2000)'
+			expect( filter ).to be_a( Treequel::Filter )
+			expect( filter.to_s ).to eq( '(uid>=2000)' )
 		end
 
 		it "supports Sequel expressions in ANDed subexpressions", :ruby_18 do
+			pending "Figuring out how to handle the old Sequel Symbol-operator syntax"
 			filter = Treequel::Filter.new( :and, [:uid >= 1024], [:uid <= 65535] )
-			filter.should be_a( Treequel::Filter )
-			filter.to_s.should == '(&(uid>=1024)(uid<=65535))'
+			expect( filter ).to be_a( Treequel::Filter )
+			expect( filter.to_s ).to eq( '(&(uid>=1024)(uid<=65535))' )
 		end
 
 		it "advises user to use '>=' instead of '>' in expressions", :ruby_18 do
+			pending "Figuring out how to handle the old Sequel Symbol-operator syntax"
 			expect {
 				Treequel::Filter.new( :uid > 1024 )
 			}.to raise_error( Treequel::ExpressionError, /greater-than-or-equal/i )
 		end
 
 		it "advises user to use '<=' instead of '<' in expressions", :ruby_18 do
+			pending "Figuring out how to handle the old Sequel Symbol-operator syntax"
 			expect {
 				Treequel::Filter.new( :activated < Time.now )
 			}.to raise_error( Treequel::ExpressionError, /less-than-or-equal/i )
@@ -442,20 +426,20 @@ describe Treequel::Filter do
 
 		it "supports the 'LIKE' expression syntax with a single string argument" do
 			filter = Treequel::Filter.new( :cn.like('mar*n') )
-			filter.should be_a( Treequel::Filter )
-			filter.to_s.should == '(cn=mar*n)'
+			expect( filter ).to be_a( Treequel::Filter )
+			expect( filter.to_s ).to eq( '(cn=mar*n)' )
 		end
 
 		it "treats a LIKE expression with no asterisks as an 'approx' filter" do
 			filter = Treequel::Filter.new( :cn.like('maylin') )
-			filter.should be_a( Treequel::Filter )
-			filter.to_s.should == '(cn~=maylin)'
+			expect( filter ).to be_a( Treequel::Filter )
+			expect( filter.to_s ).to eq( '(cn~=maylin)' )
 		end
 
 		it "supports the 'LIKE' expression syntax with multiple string arguments" do
 			filter = Treequel::Filter.new( :cn.like('may*', 'mah*') )
-			filter.should be_a( Treequel::Filter )
-			filter.to_s.should == '(|(cn=may*)(cn=mah*))'
+			expect( filter ).to be_a( Treequel::Filter )
+			expect( filter.to_s ).to eq( '(|(cn=may*)(cn=mah*))' )
 		end
 
 		it "raises an exception when given a 'LIKE' expression with a regex argument" do
@@ -479,26 +463,26 @@ describe Treequel::Filter do
 
 		it "supports negation of a 'exists' expression via the Sequel ~ syntax" do
 			filter = Treequel::Filter.new( ~:cn )
-			filter.should be_a( Treequel::Filter )
-			filter.to_s.should == '(!(cn=*))'
+			expect( filter ).to be_a( Treequel::Filter )
+			expect( filter.to_s ).to eq( '(!(cn=*))' )
 		end
 
 		it "supports negation of a simple equality expression via the Sequel ~ syntax" do
 			filter = Treequel::Filter.new( ~{ :l => 'anoos' } )
-			filter.should be_a( Treequel::Filter )
-			filter.to_s.should == '(!(l=anoos))'
+			expect( filter ).to be_a( Treequel::Filter )
+			expect( filter.to_s ).to eq( '(!(l=anoos))' )
 		end
 
 		it "supports negation of an approximate-match expression via the Sequel ~ syntax" do
 			filter = Treequel::Filter.new( ~:cn.like('maylin') )
-			filter.should be_a( Treequel::Filter )
-			filter.to_s.should == '(!(cn~=maylin))'
+			expect( filter ).to be_a( Treequel::Filter )
+			expect( filter.to_s ).to eq( '(!(cn~=maylin))' )
 		end
 
 		it "supports negation of a matching expression via the Sequel ~ syntax" do
 			filter = Treequel::Filter.new( ~:cn.like('may*i*') )
-			filter.should be_a( Treequel::Filter )
-			filter.to_s.should == '(!(cn=may*i*))'
+			expect( filter ).to be_a( Treequel::Filter )
+			expect( filter.to_s ).to eq( '(!(cn=may*i*))' )
 		end
 	end
 end

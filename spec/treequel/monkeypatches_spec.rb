@@ -1,25 +1,7 @@
 #!/usr/bin/env ruby
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+require_relative '../spec_helpers'
 
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( basedir.to_s ) unless $LOAD_PATH.include?( basedir.to_s )
-	$LOAD_PATH.unshift( libdir.to_s ) unless $LOAD_PATH.include?( libdir.to_s )
-}
-
-require 'time'
-require 'rspec'
-
-require 'spec/lib/helpers'
-
-require 'treequel'
-
-
-include Treequel::TestConstants
-# include Treequel::Constants
 
 #####################################################################
 ###	C O N T E X T S
@@ -33,7 +15,7 @@ describe Treequel::LDAPControlExtensions do
 			control1 = LDAP::Control.new( CONTROL_OIDS[:sync], "0\003\n\001\003", true )
 			control2 = LDAP::Control.new( CONTROL_OIDS[:sync], "0\003\n\001\003", true )
 
-			control1.should == control2
+			expect( control1 ).to eq( control2 )
 		end
 
 		it "causes LDAP::Controls with different classes to compare as inequal" do
@@ -41,28 +23,28 @@ describe Treequel::LDAPControlExtensions do
 			control1 = control_subclass.new( CONTROL_OIDS[:sync], "0\003\n\001\003", true )
 			control2 = LDAP::Control.new( CONTROL_OIDS[:sync], "0\003\n\001\003", true )
 
-			control1.should_not == control2
+			expect( control1 ).to_not be == control2
 		end
 
 		it "causes LDAP::Controls with different OIDs to compare as inequal" do
 			control1 = LDAP::Control.new( CONTROL_OIDS[:sync], "0\003\n\001\003", true )
 			control2 = LDAP::Control.new( CONTROL_OIDS[:incremental_values], "0\003\n\001\003", true )
 
-			control1.should_not == control2
+			expect( control1 ).to_not be == control2
 		end
 
 		it "causes LDAP::Controls with different values to compare as inequal" do
 			control1 = LDAP::Control.new( CONTROL_OIDS[:sync], "0\003\n\001\003", true )
 			control2 = LDAP::Control.new( CONTROL_OIDS[:sync], "0\003\n\001\001", true )
 
-			control1.should_not == control2
+			expect( control1 ).to_not be == control2
 		end
 
 		it "causes LDAP::Controls with different criticality to compare as inequal" do
 			control1 = LDAP::Control.new( CONTROL_OIDS[:sync], "0\003\n\001\003", true )
 			control2 = LDAP::Control.new( CONTROL_OIDS[:sync], "0\003\n\001\003", false )
 
-			control1.should_not == control2
+			expect( control1 ).to_not be == control2
 		end
 
 	end
@@ -88,23 +70,23 @@ describe Treequel::TimeExtensions do
 	describe "RFC4517 LDAP Generalized Time method" do
 
 		it "returns the time in 'Generalized Time' format" do
-			@time.ldap_generalized.should == "20100820082135Z"
+			expect( @time.ldap_generalized ).to eq( "20100820082135Z" )
 		end
 
 		it "can include fractional seconds if the optional fractional digits argument is given" do
-			@time.ldap_generalized( 3 ).should == "20100820082135.187Z"
+			expect( @time.ldap_generalized(3) ).to eq( "20100820082135.187Z" )
 		end
 
 		it "doesn't include the decimal if fractional digits is specified but zero" do
-			@time.ldap_generalized( 0 ).should == "20100820082135Z"
+			expect( @time.ldap_generalized(0) ).to eq( "20100820082135Z" )
 		end
 
 		it "zero-fills any digits after six in the fractional digits" do
-			@time.ldap_generalized( 11 ).should == "20100820082135.18764500000Z"
+			expect( @time.ldap_generalized(11) ).to eq( "20100820082135.18764500000Z" )
 		end
 
 		it "uses 'Z' for the timezone of times in UTC" do
-			@time.utc.ldap_generalized.should == "20100820082135Z"
+			expect( @time.utc.ldap_generalized ).to eq( "20100820082135Z" )
 		end
 
 	end
@@ -112,11 +94,11 @@ describe Treequel::TimeExtensions do
 	describe "RFC4517 UTC Time method" do
 
 		it "returns the time in 'UTC Time' format" do
-			@time.ldap_utc.should == "100820082135Z"
+			expect( @time.ldap_utc ).to eq( "100820082135Z" )
 		end
 
 		it "uses 'Z' for the timezone of times in UTC" do
-			@time.utc.ldap_utc.should == "100820082135Z"
+			expect( @time.utc.ldap_utc ).to eq( "100820082135Z" )
 		end
 
 	end
@@ -143,19 +125,19 @@ describe Treequel::DateExtensions do
 	describe "RFC4517 LDAP Generalized Time method" do
 
 		it "returns the time in 'Generalized Time' format" do
-			@date.ldap_generalized.should == "20100805000001+0000"
+			expect( @date.ldap_generalized ).to eq( "20100805000001+0000" )
 		end
 
 		it "can include fractional seconds if the optional fractional digits argument is given" do
-			@date.ldap_generalized( 3 ).should == "20100805000001.000+0000"
+			expect( @date.ldap_generalized(3) ).to eq( "20100805000001.000+0000" )
 		end
 
 		it "doesn't include the decimal if fractional digits is specified but zero" do
-			@date.ldap_generalized( 0 ).should == "20100805000001+0000"
+			expect( @date.ldap_generalized(0) ).to eq( "20100805000001+0000" )
 		end
 
 		it "zero-fills any digits after six in the fractional digits" do
-			@date.ldap_generalized( 11 ).should == "20100805000001.00000000000+0000"
+			expect( @date.ldap_generalized(11) ).to eq( "20100805000001.00000000000+0000" )
 		end
 
 	end
@@ -163,7 +145,7 @@ describe Treequel::DateExtensions do
 	describe "RFC4517 UTC Time method" do
 
 		it "returns the time in 'UTC Time' format" do
-			@date.ldap_utc.should == "100805000001+0000"
+			expect( @date.ldap_utc ).to eq( "100805000001+0000" )
 		end
 
 	end

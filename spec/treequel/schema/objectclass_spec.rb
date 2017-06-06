@@ -1,19 +1,6 @@
 #!/usr/bin/env ruby
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
-}
-
-require 'rspec'
-
-require 'spec/lib/constants'
-require 'spec/lib/helpers'
+require_relative '../../spec_helpers'
 
 require 'yaml'
 require 'ldap'
@@ -21,7 +8,7 @@ require 'ldap/schema'
 require 'treequel/schema/objectclass'
 require 'treequel/schema/attributetype'
 
-include Treequel::TestConstants
+include Treequel::SpecConstants
 include Treequel::Constants
 
 #####################################################################
@@ -54,20 +41,15 @@ describe Treequel::Schema::ObjectClass do
 		%{        postalAddress $ physicalDeliveryOfficeName $ ou $ st $ l ) )}
 
 	before( :all ) do
-		setup_logging( :fatal )
 		@datadir = Pathname( __FILE__ ).dirname.parent.parent + 'data'
 	end
 
 	before( :each ) do
 		octable = {}
-		@schema = stub( "Treequel schema", :object_classes => octable )
+		@schema = double( "Treequel schema", :object_classes => octable )
 		octable[:top] = Treequel::Schema::ObjectClass.parse( @schema, TOP_OBJECTCLASS )
 		octable[:person] = Treequel::Schema::ObjectClass.parse( @schema, PERSON_OBJECTCLASS )
 		octable[:orgPerson] = Treequel::Schema::ObjectClass.parse( @schema, ORGPERSON_OBJECTCLASS )
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 
@@ -78,56 +60,56 @@ describe Treequel::Schema::ObjectClass do
 		end
 
 		it "is an AbstractObjectClass because its 'kind' is 'ABSTRACT'" do
-			@oc.should be_an_instance_of( Treequel::Schema::AbstractObjectClass )
+			expect( @oc ).to be_an_instance_of( Treequel::Schema::AbstractObjectClass )
 		end
 
 		it "knows what OID corresponds to the class" do
-			@oc.oid.should == '2.5.6.0'
+			expect( @oc.oid ).to eq( '2.5.6.0' )
 		end
 
 		it "knows what its NAME attribute is" do
-			@oc.name.should == :top
+			expect( @oc.name ).to eq( :top )
 		end
 
 		it "knows what its DESC attribute is" do
-			@oc.desc.should == 'top of the superclass chain'
+			expect( @oc.desc ).to eq( 'top of the superclass chain' )
 		end
 
 		it "knows that it has one MUST attribute" do
-			@oc.must_oids.should have( 1 ).member
-			@oc.must_oids.should == [ :objectClass ]
+			expect( @oc.must_oids.length ).to eq( 1 )
+			expect( @oc.must_oids ).to eq( [ :objectClass ] )
 		end
 
 		it "returns attribute objects for its MUST OIDs" do
-			@schema.should_receive( :attribute_types ).at_least( :once ).
+			expect( @schema ).to receive( :attribute_types ).at_least( :once ).
 				and_return({ :objectClass => :attribute_type })
 
-			@oc.must.should have( 1 ).member
-			@oc.must.should == [ :attribute_type ]
+			expect( @oc.must.length ).to eq( 1 )
+			expect( @oc.must ).to eq( [ :attribute_type ] )
 		end
 
 		it "returns attribute objects for its MAY OIDs" do
-			@schema.should_receive( :attribute_types ).at_least( :once ).
+			expect( @schema ).to receive( :attribute_types ).at_least( :once ).
 				and_return({ :objectClass => :attribute_type })
 
-			@oc.must.should have( 1 ).member
-			@oc.must.should == [ :attribute_type ]
+			expect( @oc.must.length ).to eq( 1 )
+			expect( @oc.must ).to eq( [ :attribute_type ] )
 		end
 
 		it "knows that it doesn't have any MAY attributes" do
-			@oc.may_oids.should be_empty()
+			expect( @oc.may_oids ).to be_empty()
 		end
 
 		it "knows that it is not obsolete" do
-			@oc.should_not be_obsolete()
+			expect( @oc ).to_not be_obsolete()
 		end
 
 		it "knows that it doesn't have a superclass" do
-			@oc.sup.should be_nil()
+			expect( @oc.sup ).to be_nil()
 		end
 
 		it "can remake its own schema description" do
-			@oc.to_s.should == TOP_OBJECTCLASS
+			expect( @oc.to_s ).to eq( TOP_OBJECTCLASS )
 		end
 	end
 
@@ -139,57 +121,59 @@ describe Treequel::Schema::ObjectClass do
 		end
 
 		it "is a StructuralObjectClass because its kind is 'STRUCTURAL'" do
-			@oc.should be_an_instance_of( Treequel::Schema::StructuralObjectClass )
+			expect( @oc ).to be_an_instance_of( Treequel::Schema::StructuralObjectClass )
 		end
 
 		it "knows what OID corresponds to the class" do
-			@oc.oid.should == '2.5.6.7'
+			expect( @oc.oid ).to eq( '2.5.6.7' )
 		end
 
 		it "knows what its NAME attribute is" do
-			@oc.name.should == :organizationalPerson
+			expect( @oc.name ).to eq( :organizationalPerson )
 		end
 
 		it "knows what its DESC attribute is" do
-			@oc.desc.should == 'RFC2256: an organizational person'
+			expect( @oc.desc ).to eq( 'RFC2256: an organizational person' )
 		end
 
 		it "knows what its MUST attributes are" do
-			@oc.must_oids.should have( 3 ).members
-			@oc.must_oids.should include( :sn, :cn, :objectClass )
+			expect( @oc.must_oids.length ).to eq( 3 )
+			expect( @oc.must_oids ).to include( :sn, :cn, :objectClass )
 		end
 
 		it "knows what its unique MUST attributes are" do
-			@oc.must_oids( false ).should be_empty()
+			expect( @oc.must_oids( false ) ).to be_empty()
 		end
 
 		it "knows what its MAY attributes are" do
-			@oc.may_oids.should have( 22 ).members
-        	@oc.may_oids.should include(
+			expect( @oc.may_oids.length ).to eq( 22 )
+			expect( @oc.may_oids ).to include(
 				:userPassword, :telephoneNumber, :seeAlso, :description,
 				:title, :x121Address, :registeredAddress, :destinationIndicator,
 				:preferredDeliveryMethod, :telexNumber, :teletexTerminalIdentifier,
 				:telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber,
 				:street, :postOfficeBox, :postalCode, :postalAddress,
-				:physicalDeliveryOfficeName, :ou, :st, :l )
+				:physicalDeliveryOfficeName, :ou, :st, :l
+			)
 		end
 
 		it "knows what its unique MAY attributes are" do
-			@oc.may_oids( false ).should have( 18 ).members
-        	@oc.may_oids( false ).should include(
+			expect( @oc.may_oids(false).length ).to eq( 18 )
+			expect( @oc.may_oids(false) ).to include(
 				:title, :x121Address, :registeredAddress, :destinationIndicator,
 				:preferredDeliveryMethod, :telexNumber, :teletexTerminalIdentifier,
 				:telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber,
 				:street, :postOfficeBox, :postalCode, :postalAddress,
-				:physicalDeliveryOfficeName, :ou, :st, :l )
+				:physicalDeliveryOfficeName, :ou, :st, :l
+			)
 		end
 
 		it "can remake its own schema description" do
-			@oc.to_s.should == ORGPERSON_OBJECTCLASS.squeeze(' ')
+			expect( @oc.to_s ).to eq( ORGPERSON_OBJECTCLASS.squeeze(' ') )
 		end
 
 		it "can fetch all of its ancestors" do
-			@oc.ancestors.should == @schema.object_classes.values_at( :orgPerson, :person, :top )
+			expect( @oc.ancestors ).to eq( @schema.object_classes.values_at( :orgPerson, :person, :top ) )
 		end
 	end
 
@@ -203,12 +187,12 @@ describe Treequel::Schema::ObjectClass do
 		end
 
 		it "is the default kind (STRUCTURAL)" do
-			@oc.should be_an_instance_of( Treequel::Schema::StructuralObjectClass )
+			expect( @oc ).to be_an_instance_of( Treequel::Schema::StructuralObjectClass )
 		end
 
 		it "can remake its own schema description" do
 			# STRUCTURAL is implied...
-			@oc.to_s.sub( / STRUCTURAL/, '' ).should == KINDLESS_OBJECTCLASS
+			expect( @oc.to_s.sub( / STRUCTURAL/, '' ) ).to eq( KINDLESS_OBJECTCLASS )
 		end
 	end
 
@@ -221,17 +205,17 @@ describe Treequel::Schema::ObjectClass do
 		end
 
 		it "knows what both names are" do
-			@oc.names.should have(2).members
-			@oc.names.should include( :firstname, :secondname )
+			expect( @oc.names.length ).to eq( 2 )
+			expect( @oc.names ).to include( :firstname, :secondname )
 		end
 
 		it "returns the first of its names for the #name method" do
-			@oc.name.should == :firstname
+			expect( @oc.name ).to eq( :firstname )
 		end
 
 		it "can remake its own schema description" do
 			# STRUCTURAL is implied...
-			@oc.to_s.sub( / STRUCTURAL/, '' ).should == MULTINAME_OBJECTCLASS
+			expect( @oc.to_s.sub( / STRUCTURAL/, '' ) ).to eq( MULTINAME_OBJECTCLASS )
 		end
 	end
 
@@ -245,12 +229,12 @@ describe Treequel::Schema::ObjectClass do
 		end
 
 		it "unescapes the escaped characters" do
-			@oc.desc.should == %{This spec's example, which includes a \\ character.}
+			expect( @oc.desc ).to eq( %{This spec's example, which includes a \\ character.} )
 		end
 
 		it "can remake its own schema description" do
 			# STRUCTURAL is implied...
-			@oc.to_s.sub( / STRUCTURAL/, '' ).should == ESCAPED_DESC_OBJECTCLASS
+			expect( @oc.to_s.sub( / STRUCTURAL/, '' ) ).to eq( ESCAPED_DESC_OBJECTCLASS )
 		end
 	end
 
@@ -263,12 +247,12 @@ describe Treequel::Schema::ObjectClass do
 		end
 
 		it "knows that it's obsolete" do
-			@oc.should be_obsolete()
+			expect( @oc ).to be_obsolete()
 		end
 
 		it "can remake its own schema description" do
 			# STRUCTURAL is implied...
-			@oc.to_s.sub( / STRUCTURAL/, '' ).should == OBSOLETE_OBJECTCLASS
+			expect( @oc.to_s.sub( / STRUCTURAL/, '' ) ).to eq( OBSOLETE_OBJECTCLASS )
 		end
 	end
 
@@ -283,14 +267,14 @@ describe Treequel::Schema::ObjectClass do
 		end
 
 		it "returns the corresponding objectClass from its schema" do
-			@schema.should_receive( :object_classes ).
+			expect( @schema ).to receive( :object_classes ).
 				and_return({ :organizationalPerson => :organizationalPerson_objectclass })
-			@oc.sup.should == :organizationalPerson_objectclass
+			expect( @oc.sup ).to eq( :organizationalPerson_objectclass )
 		end
 
 		it "can remake its own schema description" do
 			# STRUCTURAL is implied...
-			@oc.to_s.sub( / STRUCTURAL/, '' ).should == SUB_OBJECTCLASS
+			expect( @oc.to_s.sub( / STRUCTURAL/, '' ) ).to eq( SUB_OBJECTCLASS )
 		end
 
 	end
@@ -304,14 +288,14 @@ describe Treequel::Schema::ObjectClass do
 		end
 
 		it "returns the objectClass for 'top' from its schema" do
-			@schema.should_receive( :object_classes ).
+			expect( @schema ).to receive( :object_classes ).
 				and_return({ :top => :top_objectclass })
-			@oc.sup.should == :top_objectclass
+			expect( @oc.sup ).to eq( :top_objectclass )
 		end
 
 		it "can remake its own schema description" do
 			# STRUCTURAL is implied...
-			@oc.to_s.sub( / STRUCTURAL/, '' ).should == ORPHAN_OBJECTCLASS
+			expect( @oc.to_s.sub( / STRUCTURAL/, '' ) ).to eq( ORPHAN_OBJECTCLASS )
 		end
 	end
 
@@ -330,9 +314,9 @@ describe Treequel::Schema::ObjectClass do
 
 
 		it "sets the oid to the non-numeric OID value" do
-			@oc.oid.should == 'interwovengroup-oid'
-			@oc.name.should == :interwovengroup
-			@oc.extensions.should == %{X-ORIGIN 'user defined'}
+			expect( @oc.oid ).to eq( 'interwovengroup-oid' )
+			expect( @oc.name ).to eq( :interwovengroup )
+			expect( @oc.extensions ).to eq( %{X-ORIGIN 'user defined'} )
 		end
 
 	end
@@ -359,9 +343,9 @@ describe Treequel::Schema::ObjectClass do
 		it "parses the malformed objectClass from RFC 2926" do
 			oc = Treequel::Schema::ObjectClass.parse( @schema, SLP_SERVICE_OBJECTCLASS )
 
-			oc.should be_a( Treequel::Schema::ObjectClass )
-			oc.name.should == :slpService
-			oc.oid.should == '1.3.6.1.4.1.6252.2.27.6.2.1'
+			expect( oc ).to be_a( Treequel::Schema::ObjectClass )
+			expect( oc.name ).to eq( :slpService )
+			expect( oc.oid ).to eq( '1.3.6.1.4.1.6252.2.27.6.2.1' )
 		end
 
 
@@ -375,9 +359,9 @@ describe Treequel::Schema::ObjectClass do
 		it "parses the malformed authPasswordObject objectClass from RFC2696" do
 			oc = Treequel::Schema::ObjectClass.parse( @schema, AUTH_PASSWORD_OBJECT_OBJECTCLASS )
 
-			oc.should be_a( Treequel::Schema::ObjectClass )
-			oc.name.should == :authPasswordObject
-			oc.oid.should == '1.3.6.1.4.1.4203.1.4.7'
+			expect( oc ).to be_a( Treequel::Schema::ObjectClass )
+			expect( oc.name ).to eq( :authPasswordObject )
+			expect( oc.oid ).to eq( '1.3.6.1.4.1.4203.1.4.7' )
 		end
 
 		DRAFT_HOWARD_RFC2307BIS_OBJECTCLASS = %{
@@ -393,9 +377,9 @@ describe Treequel::Schema::ObjectClass do
 		it "parses the malformed objectClasses from draft-howard-rfc2307bis" do
 			oc = Treequel::Schema::ObjectClass.parse( @schema, DRAFT_HOWARD_RFC2307BIS_OBJECTCLASS )
 
-			oc.should be_a( Treequel::Schema::ObjectClass )
-			oc.name.should == :posixAccount
-			oc.oid.should == '1.3.6.1.1.1.2.0'
+			expect( oc ).to be_a( Treequel::Schema::ObjectClass )
+			expect( oc.name ).to eq( :posixAccount )
+			expect( oc.oid ).to eq( '1.3.6.1.1.1.2.0' )
 		end
 
 	end

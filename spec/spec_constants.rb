@@ -6,7 +6,7 @@ require 'treequel'
 
 
 ### A collection of constants used in testing
-module Treequel::TestConstants # :nodoc:all
+module Treequel::SpecConstants # :nodoc:all
 
 	include Treequel::Constants,
 	        Treequel::Constants::OIDS
@@ -52,7 +52,7 @@ module Treequel::TestConstants # :nodoc:all
 		}]
 		TEST_DSE.first.keys.each {|key| TEST_DSE.first[key].freeze }
 
-		SCHEMA_DUMPFILE = Pathname( __FILE__ ).dirname.parent + 'data' + 'schema.yml'
+		SCHEMA_DUMPFILE = Pathname( __FILE__ ).dirname + 'data' + 'schema.yml'
 		SCHEMAHASH      = LDAP::Schema.new( YAML.load_file(SCHEMA_DUMPFILE) )
 		SCHEMA          = Treequel::Schema.new( SCHEMAHASH )
 

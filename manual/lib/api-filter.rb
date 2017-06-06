@@ -1,4 +1,4 @@
-#!/usr/bin/ruby 
+#!/usr/bin/env ruby 
 
 # A filter for generating links from the generated API documentation. This allows you to refer
 # to class documentation by simply referencing a class name.

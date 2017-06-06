@@ -1,19 +1,6 @@
 #!/usr/bin/env ruby
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
-}
-
-require 'rspec'
-
-require 'spec/lib/constants'
-require 'spec/lib/helpers'
+require_relative '../../spec_helpers'
 
 require 'yaml'
 require 'ldap'
@@ -21,7 +8,7 @@ require 'ldap/schema'
 require 'treequel/schema/matchingrule'
 
 
-include Treequel::TestConstants
+include Treequel::SpecConstants
 include Treequel::Constants
 
 #####################################################################
@@ -33,16 +20,11 @@ describe Treequel::Schema::MatchingRule do
 
 
 	before( :all ) do
-		setup_logging( :fatal )
 		@datadir = Pathname( __FILE__ ).dirname.parent.parent + 'data'
 	end
 
 	before( :each ) do
-		@schema = mock( "treequel schema object" )
-	end
-
-	after( :all ) do
-		reset_logging()
+		@schema = double( "treequel schema object" )
 	end
 
 
@@ -56,29 +38,29 @@ describe Treequel::Schema::MatchingRule do
 		end
 
 		it "knows what OID corresponds to the type" do
-			@rule.oid.should == '2.5.13.17'
+			expect( @rule.oid ).to eq( '2.5.13.17' )
 		end
 
 		it "knows what its NAME attribute is" do
-			@rule.name.should == :octetStringMatch
+			expect( @rule.name ).to eq( :octetStringMatch )
 		end
 
 		it "knows what its SYNTAX OID is" do
-			@rule.syntax_oid.should == '1.3.6.1.4.1.1466.115.121.1.40'
+			expect( @rule.syntax_oid ).to eq( '1.3.6.1.4.1.1466.115.121.1.40' )
 		end
 
 		it "knows what its syntax is" do
-			@schema.should_receive( :ldap_syntaxes ).
+			expect( @schema ).to receive( :ldap_syntaxes ).
 				and_return({ '1.3.6.1.4.1.1466.115.121.1.40' => :the_syntax })
-			@rule.syntax.should == :the_syntax
+			expect( @rule.syntax ).to eq( :the_syntax )
 		end
 
 		it "knows that it is not obsolete" do
-			@rule.should_not be_obsolete()
+			expect( @rule ).to_not be_obsolete()
 		end
 
 		it "can remake its own schema description" do
-			@rule.to_s.should == OCTETSTRINGMATCH_RULE
+			expect( @rule.to_s ).to eq( OCTETSTRINGMATCH_RULE )
 		end
 	end
 
@@ -91,7 +73,7 @@ describe Treequel::Schema::MatchingRule do
 		end
 
 		it "knows what its DESC attribute" do
-			@rule.desc.should == 'Hot dog propulsion device'
+			expect( @rule.desc ).to eq( 'Hot dog propulsion device' )
 		end
 
 	end
@@ -105,7 +87,7 @@ describe Treequel::Schema::MatchingRule do
 		end
 
 		it "knows that its NAME is nil" do
-			@rule.name.should be_nil()
+			expect( @rule.name ).to be_nil()
 		end
 
 	end
@@ -119,12 +101,12 @@ describe Treequel::Schema::MatchingRule do
 		end
 
 		it "knows what both names are" do
-			@rule.names.should have(2).members
-			@rule.names.should include( :firstname, :secondname )
+			expect( @rule.names.length ).to eq( 2 )
+			expect( @rule.names ).to include( :firstname, :secondname )
 		end
 
 		it "returns the first of its names for the #name method" do
-			@rule.name.should == :firstname
+			expect( @rule.name ).to eq( :firstname )
 		end
 
 	end
@@ -139,7 +121,7 @@ describe Treequel::Schema::MatchingRule do
 		end
 
 		it "unscapes the escaped characters" do
-			@rule.desc.should == %{This spec's example, which includes a \\ character.}
+			expect( @rule.desc ).to eq( %{This spec's example, which includes a \\ character.} )
 		end
 
 	end
@@ -153,7 +135,7 @@ describe Treequel::Schema::MatchingRule do
 		end
 
 		it "knows that it's obsolete" do
-			@rule.should be_obsolete()
+			expect( @rule ).to be_obsolete()
 		end
 
 	end
@@ -170,9 +152,9 @@ describe Treequel::Schema::MatchingRule do
 		end
 
 		it "knows that it's obsolete" do
-			@rule.name.should == :relativeTimeGTOrderingMatch
-			@rule.names.should include( :relativeTimeGTOrderingMatch, :'relativeTimeOrderingMatch.gt' )
-			@rule.syntax_oid.should == '1.3.6.1.4.1.1466.115.121.1.24'
+			expect( @rule.name ).to eq( :relativeTimeGTOrderingMatch )
+			expect( @rule.names ).to include( :relativeTimeGTOrderingMatch, :'relativeTimeOrderingMatch.gt' )
+			expect( @rule.syntax_oid ).to eq( '1.3.6.1.4.1.1466.115.121.1.24' )
 		end
 
 	end
@@ -189,8 +171,8 @@ describe Treequel::Schema::MatchingRule do
 		end
 
 		it "knows what its rule is" do
-			@rule.name.should == 'caseExactOrderingMatch-2.16.840.1.113730.3.3.2.0.3'.to_sym
-			@rule.syntax_oid.should == '1.3.6.1.4.1.1466.115.121.1.15'
+			expect( @rule.name ).to eq( 'caseExactOrderingMatch-2.16.840.1.113730.3.3.2.0.3'.to_sym )
+			expect( @rule.syntax_oid ).to eq( '1.3.6.1.4.1.1466.115.121.1.15' )
 		end
 
 	end

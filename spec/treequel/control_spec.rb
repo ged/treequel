@@ -1,24 +1,12 @@
 #!/usr/bin/env ruby
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+require_relative '../spec_helpers'
 
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
-}
-
-require 'rspec'
-
-require 'spec/lib/constants'
-require 'spec/lib/helpers'
 
 require 'treequel'
 require 'treequel/control'
 
-include Treequel::TestConstants
+include Treequel::SpecConstants
 include Treequel::Constants
 
 #####################################################################
@@ -39,11 +27,11 @@ describe Treequel::Control do
 	end
 
 	it "provides a empty client control list by default" do
-		@obj.get_client_controls.should == []
+		expect( @obj.get_client_controls ).to eq( [] )
 	end
 
 	it "provides a empty server control list by default" do
-		@obj.get_server_controls.should == []
+		expect( @obj.get_server_controls ).to eq( [] )
 	end
 end
 

@@ -1,4 +1,4 @@
-#!/usr/bin/ruby 
+#!/usr/bin/env ruby 
 # 
 # A collection of standard filters for the manual generation tasklib.
 # 
