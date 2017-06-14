@@ -1,22 +1,4 @@
----
-title: Binding to a Directory
-layout: default
-index: 3
-filters:
-  - erb
-  - links
-  - examples
-  - editorial
-  - api
-  - textile
-example_prelude: |-
-  require 'treequel'
-  dir = Treequel.directory
----
-
-<div id="auto-toc"></div>
-
-h2(#binding). Binding to the Directory
+# Treequel: Binding to a Directory
 
 If you don't specify a user <abbr title="Distingished Name">DN</abbr> and password, a new @Directory@ object will be bound anonymously, which is usually sufficient for reading the public attributes of records, but it's likely that you'll need to bind as a particular user to write to the directory or access protected attributes:
 

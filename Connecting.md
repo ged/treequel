@@ -1,30 +1,10 @@
----
-title: Connecting to a Directory
-layout: default
-index: 2
-filters:
-  - erb
-  - links
-  - examples
-  - editorial
-  - api
-  - textile
-example_prelude: |-
-  require 'treequel'
-  dir = Treequel.directory
----
+# Treequel: Connecting to a Directory
 
-<div id="auto-toc"></div>
+Once those things are done, you can fire Treequel up via IRb and get a  Treequel::Directory object to play around with:
 
-h2(#connecting). Connecting to a Directory
-
-Once those things are done, you can fire Treequel up via IRb and get a <?api Treequel::Directory ?> object to play around with:
-
-<?example { language: irb, caption: "Fetching a directory." } ?>
-$ irb -rtreequel -rubygems
-irb> dir = Treequel.directory
-# => #<Treequel::Directory:0x69cbac localhost:389 (not connected) base="dc=acme,dc=com", bound as=anonymous, schema=(schema not loaded)>
-<?end?>
+    $ irb -rtreequel -rubygems
+    irb> dir = Treequel.directory
+    # => #<Treequel::Directory:0x69cbac localhost:389 (not connected) base="dc=acme,dc=com", bound as=anonymous, schema=(schema not loaded)>
 
 The @.directory@ method has some reasonable defaults, so if your directory is running on localhost, you want to connect using @TLS@ on the default port, and bind anonymously, this will be all you need. 
 

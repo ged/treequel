@@ -16,7 +16,7 @@ example_prelude: |-
 
 <div id="auto-toc"></div>
 
-h2. Branch Collections
+## Branch Collections
 
 So far we've been searching from a single base DN, but sometimes what you want is located in different branches of the directory.
 

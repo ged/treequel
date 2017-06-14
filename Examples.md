@@ -14,9 +14,9 @@ example_prelude: |-
   dir = Treequel.directory
 ---
 
-h2. Real-World Examples
+## Real-World Examples
 
-h3. Cross-directory Searches
+### Cross-directory Searches
 
 
 For example, this one-liner finds the first name of all @inetOrgPerson@ classes within the @People@ organizational unit that have a @uid@ that starts with the string "ma":

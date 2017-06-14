@@ -226,7 +226,7 @@ irb> slow_query.without_timeout.all.first
 <?end?>
 
 
-h3. Branchset Enumeration
+### Branchset Enumeration
 
 Branchsets are also @Enumerable@, so you can slice and dice results with its interface:
 
