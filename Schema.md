@@ -1,43 +1,27 @@
----
-title: Schema Introspection
-layout: default
-index: 9
-filters:
-  - erb
-  - links
-  - examples
-  - editorial
-  - api
-  - textile
-example_prelude: |-
-  require 'treequel'
-  dir = Treequel.directory
----
+# \Schema Introspection
 
-<div id="auto-toc"></div>
+The information about the structure of the directory comes from its
+schema, and Treequel provides instrospection tools for accessing it in
+an object-oriented manner. You can get the Treequel::Schema from the
+directory by calling its Treequel::Directory#schema method.
 
-h2(#schema-introspection). Schema Introspection
-
-The information about the structure of the directory comes from its schema, and Treequel provides instrospection tools for accessing it in an object-oriented manner. You can get the <?api Treequel::Schema ?> from the directory by calling its @#schema@ method:
-
-<?example { language: irb, caption: "Fetching the schema for a Directory." } ?>
+```ruby
 irb> dir.schema
 # => #<Treequel::Schema:0x66511b 1119 attribute types, 31 ldap syntaxes, 54 matching rule uses, 72 matching rules, 310 object classes>
-<?end?>
+```
 
+## Object Classes
 
-h3(#schema-objectclasses). Object Classes
+You can fetch information about the [ObjectClasses](http://tools.ietf.org/html/rfc4512#section-2.4) the directory knows about through the schema's Treequel::Schema#object_classes Hash:
 
-You can fetch information about the "objectClasses":http://tools.ietf.org/html/rfc4512#section-2.4 the directory knows about through the schema's @#object_classes@ Hash:
-
-<?example { language: irb, caption: "Fetching  an ObjectClass object for the 'inetOrgPerson' objectClass." } ?>
+```ruby
 irb> dir.schema.object_classes[:inetOrgPerson] 
 # => #<Treequel::Schema::StructuralObjectClass:0x65d91b inetOrgPerson(2.16.840.1.113730.3.2.2) < "organizationalPerson" "RFC2798: Internet Organizational Person" MUST: [], MAY: [:audio, :businessCategory, :carLicense, :departmentNumber, :displayName, :employeeNumber, :employeeType, :givenName, :homePhone, :homePostalAddress, :initials, :jpegPhoto, :labeledURI, :mail, :manager, :mobile, :o, :pager, :photo, :roomNumber, :secretary, :uid, :userCertificate, :x500uniqueIdentifier, :preferredLanguage, :userSMIMECertificate, :userPKCS12]>
-<?end?>
+```
 
-This hash is keyed by both OID and any associated names (as Symbols), and the value is a <?api Treequel::Schema::ObjectClass ?> object that contains the information about that objectClass parsed from the schema.
+This hash is keyed by both OID and any associated names (as Symbols), and the value is a Treequel::Schema::ObjectClass object that contains the information about that objectClass parsed from the schema.
 
-<?example { language: irb, caption: "Introspection on the inetOrgPerson objectClass." } ?>
+```ruby
 irb> inetOrgPerson = dir.schema.object_classes[:inetOrgPerson] 
 # => #<Treequel::Schema::StructuralObjectClass ...>
 irb> inetOrgPerson.oid
@@ -50,27 +34,27 @@ irb> inetOrgPerson.desc
 # => "RFC2798: Internet Organizational Person"
 irb> inetOrgPerson.sup
 # => #<Treequel::Schema::StructuralObjectClass:0x65fe6e person(2.5.6.6) < #<Treequel::Schema::AbstractObjectClass:0x6637ad top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2256: a person" MUST: [:sn, :cn], MAY: [:userPassword, :telephoneNumber, :seeAlso, :description]>
-<?end?>
+```
 
-Treequel::Branch objects provide a shortcut for looking up the @Treequel::ObjectClass@ objects that correspond to its @objectClass@ properties:
+Treequel::Branch objects provide a shortcut for looking up the Treequel::ObjectClass objects that correspond to its `objectClass` properties:
 
-<?example { language: irb, caption: "Fetching the objectClasses for an entry through its Branch." } ?>
+```ruby
 irb> dir.base.object_classes
 # => [#<Treequel::Schema::AuxiliaryObjectClass:0x68b168 dcObject(1.3.6.1.4.1.1466.344) < #<Treequel::Schema::AbstractObjectClass:0x690555 top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2247: domain component object" MUST: [:dc], MAY: []>, #<Treequel::Schema::StructuralObjectClass:0x68d02b organization(2.5.6.4) < #<Treequel::Schema::AbstractObjectClass:0x690555 top(2.5.6.0) < nil "top of the superclass chain" MUST: [:objectClass], MAY: []> "RFC2256: an organization" MUST: [:o], MAY: [:userPassword, :searchGuide, :seeAlso, :businessCategory, :x121Address, :registeredAddress, :destinationIndicator, :preferredDeliveryMethod, :telexNumber, :teletexTerminalIdentifier, :telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber, :street, :postOfficeBox, :postalCode, :postalAddress, :physicalDeliveryOfficeName, :st, :l, :description]>]
-<?end?>
+```
 
-h3(#schema-attributetypes). Attribute Types
+## Attribute Types
 
-You can also fetch introspection information on entry "attributeTypes":http://tools.ietf.org/html/rfc4512#section-2.5.1 via the schema's @#attribute_types@ Hash:
+You can also fetch introspection information on entry [attributeTypes](http://tools.ietf.org/html/rfc4512#section-2.5.1) via the schema's `#attribute_types` Hash:
 
-<?example { language: irb, caption: "Fetching an AttributeType object for the 'surname' attribute." } ?>
+```ruby
 irb> dir.schema.attribute_types[:surname]
 # => #<Treequel::Schema::AttributeType:0x146abd sn(2.5.4.4) "RFC2256: last (family) name(s) for which the entity is known by" SYNTAX: nil (length: unlimited)>
-<?end?>
+```
 
-Like with objectClasses, they are keyed both by numeric OID strings and their associated names (as Symbols), and the values are instances of <?api Treequel::Schema::AttributeType ?>.
+Like with objectClasses, they are keyed both by numeric OID strings and their associated names (as Symbols), and the values are instances of Treequel::Schema::AttributeType.
 
-<?example { language: irb, caption: "Fetching an AttributeType object for the 'inetOrgPerson' objectClass." } ?>
+```ruby
 irb> sn = dir.schema.attribute_types[:surname]
 # => #<Treequel::Schema::AttributeType:0x696ec8 sn(2.5.4.4) "RFC2256: last (family) name(s) for which the entity is known by" SYNTAX: nil (length: unlimited)>
 irb> sn.oid
@@ -96,21 +80,21 @@ irb> sn.substr_matching_rule
 # => #<Treequel::Schema::MatchingRule:0x688026 caseIgnoreSubstringsMatch(2.5.13.4)  SYNTAX: nil>
 irb> sn.user_modifiable?
 # => true
-<?end?>
+```
 
 Branches also know how to fetch the attribute types that are allowed by their objectClasses' _MUST_ and _MAY_ OIDs:
 
-<?example { language: irb, caption: "Fetching an AttributeType object for the 'inetOrgPerson' objectClass." } ?>
+```ruby
 irb> base = dir.base
 # => #<Treequel::Branch:0x1a7f8cc dc=acme,dc=com @ localhost:389 (dc=acme,dc=com, tls, anonymous) entry=nil>
 irb> base.may_oids
 # => [:userPassword, :searchGuide, :seeAlso, :businessCategory, :x121Address, :registeredAddress, :destinationIndicator, :preferredDeliveryMethod, :telexNumber, :teletexTerminalIdentifier, :telephoneNumber, :internationaliSDNNumber, :facsimileTelephoneNumber, :street, :postOfficeBox, :postalCode, :postalAddress, :physicalDeliveryOfficeName, :st, :l, :description]
 irb> base.may_attribute_types
 # => [#<Treequel::Schema::AttributeType:0x69e1af userPassword(2.5.4.35) "RFC4519/2307: password of user" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.40" (length: 128)>, #<Treequel::Schema::AttributeType:0x6968ce searchGuide(2.5.4.14) "RFC2256: search guide, deprecated by enhancedSearchGuide" SYNTAX: "1.3.6.1.4.1.1466.115.121.1.25" (length: unlimited)>, #<Treequel::Schema::AttributeType:0x69dfa7 seeAlso(2.5.4.34) "RFC4519: DN of related object" SYNTAX: nil (length: unlimited)>, ...]
-<?end?>
+```
 
-h3(#schema-otherinfo). Other Schema Information
+## Other \Schema Information
 
-The Schema object also facilitates access to the directory's "syntaxes and matching rules":http://tools.ietf.org/html/rfc4517 via the <?api Treequel::Schema::LDAPSyntax ?>, <?api Treequel::Schema::MatchingRule ?>, and <?api Treequel::Schema::MatchingRuleUse ?> classes. They are accessed via the @#ldap_syntaxes@, @#matching_rules@, and @#matching_rule_uses@ attributes of the @Schema@, respectively. They, like @#object_classes@ and @#attribute_types@, are Hashes keyed both by OID and names as Symbols.
+The Schema object also facilitates access to the directory's [syntaxes and matching rules](http://tools.ietf.org/html/rfc4517) via the Treequel::Schema::LDAPSyntax, Treequel::Schema::MatchingRule, and Treequel::Schema::MatchingRuleUse classes. They are accessed via the Treequel::Schema#ldap_syntaxes, Treequel::Schema::#matching_rules, and Treequel::Schema#matching_rule_uses attributes of the Schema, respectively. They, like `#object_classes` and `#attribute_types`, are Hashes keyed both by OID and names as Symbols.
 
 
