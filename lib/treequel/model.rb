@@ -608,6 +608,25 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
+	### Ensure the entry is loaded and then return a Method object for the method of
+	### the specified +name+. Returns +nil+ if the method isn't defined.
+	def entry_method( name )
+		self.entry
+		self.log.debug "Looking up entry method %p" % [ name ]
+		return nil unless self.singleton_class.method_defined?( name )
+		return self.method( name )
+	end
+
+
+	### Hook method -- return true if the method +sym+ is handled by #method_missing.
+	def respond_to_missing?( sym, include_all )
+		return true if self.entry_method( sym )
+		plainsym, _ = attribute_from_method( sym )
+		return true if self.find_attribute_type( plainsym )
+		return super
+	end
+
+
 	### Proxy method -- Handle calls to missing methods by searching for an attribute.
 	def method_missing( sym, *args )
 		self.log.debug "Dynamic dispatch to %p with args: %p" % [ sym, args ]
@@ -615,19 +634,9 @@ class Treequel::Model < Treequel::Branch
 		# First, if the entry hasn't yet been loaded, try loading it to make sure the
 		# object is already extended with any applicable objectClass mixins. If that ends
 		# up defining the method in question, call it.
-		if !@entry && self.entry
-			self.log.debug "  entry wasn't loaded, looking for methods added by loading it..."
-			meth = begin
-				self.method( sym )
-			rescue NoMethodError, NameError => err
-				self.log.debug "  it still didn't define %p: %s: %s" %
-					[ sym, err.class.name, err.message ]
-				nil
-			end
-			return meth.call( *args ) if meth
+		if (( meth = self.entry_method(sym) ))
+			return meth.call( *args )
 		end
-
-		# self.log.debug "  checking to see if it's a traversal call"
 
 		# Next, super to rdn-traversal if it looks like a reader but has arguments
 		plainsym, methodtype = attribute_from_method( sym )

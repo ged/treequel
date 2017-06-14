@@ -272,6 +272,10 @@ describe Treequel::Model do
 				extend Treequel::Model::ObjectClass
 				model_objectclasses :ipHost
 				def fqdn; "some.home.example.com"; end
+				def self::extended( obj )
+					Loggability[ Treequel::Model ].debug "Extending %p with %p" % [ obj, self ]
+					super
+				end
 			end
 			@obj = Treequel::Model.new( @directory, TEST_PERSON_DN )
 		end
@@ -389,20 +393,20 @@ describe Treequel::Model do
 		end
 
 		it "provides a predicate that tests true for valid non-singular attributes that have " +
-		   "at least one value" do
-			pending "implementation of Model#respond_to_missing? :mahlon:"
+		   "at least one value", log: :debug do
+			# pending "implementation of Model#respond_to_missing? :mahlon:"
 			expect( @obj ).to have_given_name()
 		end
 
 		it "provides a predicate that tests true for single-letter non-singular attributes " +
 		   "that have at least one value" do
-			pending "implementation of Model#respond_to_missing? :mahlon:"
+			# pending "implementation of Model#respond_to_missing? :mahlon:"
 			expect( @obj ).to have_l()
 		end
 
 		it "provides a predicate that tests false for valid non-singular attributes that don't " +
 		   "have at least one value" do
-			pending "implementation of Model#respond_to_missing? :mahlon:"
+			# pending "implementation of Model#respond_to_missing? :mahlon:"
 			@obj.delete( :givenName )
 			expect( @obj ).to_not have_given_name()
 		end

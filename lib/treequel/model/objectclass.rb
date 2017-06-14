@@ -39,9 +39,9 @@ module Treequel::Model::ObjectClass
 
 	# Delegate Branchset methods through #search to allow ObjectClass.filter as a shortcut for
 	# ObjectClass.search.filter
-	def_method_delegators :search, 
+	def_method_delegators :search,
 		:find, # Delegated directly to avoid 'LocalJumpError: break from proc-closure'
-		:collection, :map, :to_hash, :each, :first, 
+		:collection, :map, :to_hash, :each, :first,
 		:filter, :scope, :select, :limit, :timeout, :as, :from
 
 
