@@ -23,10 +23,10 @@ hoespec = Hoe.spec 'treequel' do
 	self.extra_rdoc_files = FileList[ '*.rdoc', '*.md' ]
 	self.license 'BSD-3-Clause'
 	self.urls = {
-		home:   'http://deveiate.org/projects/configurability',
-		code:   'http://bitbucket.org/ged/configurability',
-		docs:   'http://deveiate.org/code/configurability',
-		github: 'http://github.com/ged/configurability',
+		home:   'http://deveiate.org/projects/Treequel',
+		code:   'http://bitbucket.org/ged/Treequel',
+		docs:   'http://deveiate.org/code/treequel',
+		github: 'http://github.com/ged/treequel',
 	}
 
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'

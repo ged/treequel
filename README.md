@@ -22,7 +22,7 @@ free-form nature.
 It's inspired by and modeled after [Sequel][sequel], a
 kick-ass database library.
 
-For more information on how to use it, check out the Manual.
+For more information on how to use it, check out the [manual](manual/index_md.html).
 
 
 ## Command-Line Tools
