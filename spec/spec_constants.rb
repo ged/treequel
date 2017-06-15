@@ -128,14 +128,14 @@ module Treequel::SpecConstants # :nodoc:all
 		# Test entry hashes
 		TEST_HOSTS_ENTRY = {
 			'dn'               => [TEST_HOSTS_DN],
-			TEST_HOSTS_DN_ATTR => [TEST_HOSTS_DN_VALUE], 
+			TEST_HOSTS_DN_ATTR => [TEST_HOSTS_DN_VALUE],
 			'objectClass'      => ['top', 'organizationalUnit'],
 			'description'      => ['Hosts under acme.com'],
 		}
 
 		TEST_PEOPLE_ENTRY = {
 			'dn'               => [TEST_PEOPLE_DN],
-			TEST_PEOPLE_DN_ATTR => [TEST_PEOPLE_DN_VALUE], 
+			TEST_PEOPLE_DN_ATTR => [TEST_PEOPLE_DN_VALUE],
 			'objectClass'      => ['top', 'organizationalUnit'],
 			'description'      => ['Acme.com employees'],
 		}
@@ -154,7 +154,7 @@ module Treequel::SpecConstants # :nodoc:all
 			'gidNumber'         => ['200'],
 			'homeDirectory'     => ['/u/j/jrandom'],
 			'description'       => [
-				'Smokey the Bear is much more intense in person.', 
+				'Smokey the Bear is much more intense in person.',
 				'Alright.'
 			],
 			'objectClass'       => %w[

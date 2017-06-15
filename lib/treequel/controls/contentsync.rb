@@ -12,32 +12,32 @@ require 'treequel/constants'
 
 # A Treequel::Control module that implements the "Content Sync"
 # control (RFC 4533)
-# 
-# *NOTICE:* This control currently doesn't do anything, as it depends on 
-# Intermediate Responses, which the underlying Ruby-LDAP library doesn't 
-# support (yet). 
-# 
+#
+# *NOTICE:* This control currently doesn't do anything, as it depends on
+# Intermediate Responses, which the underlying Ruby-LDAP library doesn't
+# support (yet).
+#
 # == Usage
-# 
+#
 # As with all Controls, you must first register the control with the
 # Treequel::Directory object you're intending to search:
-#   
+#
 #   dir = Treequel.directory( 'ldap://ldap.acme.com/dc=acme,dc=com' )
 #   dir.register_controls( Treequel::ContentSyncControl )
-# 
+#
 # Once that's done, any Treequel::Branchset you create will have the #on_sync
 # method:
-# 
+#
 #   # Build DHCP records out of all the hosts in the directory, then rebuild
 #   # everything when a host record changes.
 #   hosts = dir.filter( :ou => Hosts ).collection
 #   hosts.filter( :objectClass => :ipHost ).on_sync do ||
-#       # 
+#       #
 #   end
-# 
-# See http://deveiate.org/projects/Treequel/ticket/6  Ticket: Add support for 
+#
+# See http://deveiate.org/projects/Treequel/ticket/6  Ticket: Add support for
 # the RFC4533 Content Sync operation.
-# 
+#
 module Treequel::ContentSyncControl
 	include Treequel::Control,
 	        Treequel::Constants
@@ -76,7 +76,7 @@ module Treequel::ContentSyncControl
 	end
 
 
-	### Override the Enumerable method to update the cookie value each time a page 
+	### Override the Enumerable method to update the cookie value each time a page
 	### is fetched.
 	def each( &block )
 		super do |branch|
@@ -106,7 +106,7 @@ module Treequel::ContentSyncControl
 	protected
 	#########
 
-	### Make the ASN.1 string for the control value out of the given +mode+, 
+	### Make the ASN.1 string for the control value out of the given +mode+,
 	### +cookie+, +reload_hint+.
 	def make_sync_control_value( mode, cookie, reload_hint )
 		# (http://tools.ietf.org/html/rfc4533#section-2.2):

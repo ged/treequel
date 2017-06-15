@@ -9,21 +9,21 @@ require 'treequel/control'
 require 'treequel/sequel_integration'
 
 
-# A Treequel::Control module that implements the "LDAP Control Extension for Server 
+# A Treequel::Control module that implements the "LDAP Control Extension for Server
 # Side Sorting of Search Results" (RFC 2891).
-# 
+#
 # == Usage
-# 
+#
 # As with all Controls, you must first register the control with the
 # Treequel::Directory object you're intending to search:
-#   
+#
 #   dir = Treequel.directory( 'ldap://ldap.acme.com/dc=acme,dc=com' )
 #   dir.register_controls( Treequel::SortedResultsControl )
-# 
+#
 # Once that's done, any Treequel::Branchset you create will have the
 # #order method that will allow you to specify one or more attributes by which the server
 # should sort results before returning them:
-# 
+#
 #   # Fetch people sorted by their last name, then first name, then
 #   # by employeeNumber
 #   people = dir.ou( :People )
@@ -144,14 +144,14 @@ module Treequel::SortedResultsControl
 	end
 
 
-	### Remove any server-side sorted results control associated with the receiving 
+	### Remove any server-side sorted results control associated with the receiving
 	### Branchset, returning any removed criteria as an Array.
 	def unordered!
 		return self.sort_order_criteria.slice!( 0..-1 )
 	end
 
 
-	### Override the Enumerable method to update the cookie value each time a page 
+	### Override the Enumerable method to update the cookie value each time a page
 	### is fetched.
 	def each( &block )
 		super do |branch|
@@ -175,7 +175,7 @@ module Treequel::SortedResultsControl
 	protected
 	#########
 
-	### Make the ASN.1 string for the control value out of the given +mode+, 
+	### Make the ASN.1 string for the control value out of the given +mode+,
 	### +cookie+, +reload_hint+.
 	def make_sorted_control_value( sort_criteria )
 

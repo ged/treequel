@@ -19,46 +19,46 @@ dir = Treequel.directory_from_config
 # * Knows what its directory is
 # * Has a pre-filtered BranchSet that defines its extent
 # class Treequel::Model < Treequel::Branch
-# 
+#
 # 	@directory = nil
 # 	@branchset = nil
-# 
+#
 # 	def self::directory
 # 		@directory ||= super
 # 		raise "No Directory set!" unless @directory
 # 		return @directory
 # 	end
-# 
+#
 # 	def self::directory=( new_directory )
 # 		@directory = new_directory
 # 		@object_classes
 # 	end
-# 
+#
 # 	def self::inherited( mod )
 # 		mod.instance_variable_set( :@branchset, nil )
 # 		super
 # 	end
-# 
+#
 # 	def self::model_branchset( bs )
 # 		return self.branchset = bs
 # 	end
-# 
+#
 # 	def self::all
 # 		self.branchset.all
 # 	end
-# 
+#
 # end
-# 
-# 
+#
+#
 # class Employee < Treequel::Model
 # 	model_branchset DIR.ou( :people ).filter( :objectClass => :acmeAccount )
 # 	model_objectClasses :acmeAccount, :inetOrgPerson
 # end
-# 
+#
 # pp Employee.find( :firstname => 'Scarlet' )
-# 
-# 
-# 
+#
+#
+#
 
 
 @abstract = {}

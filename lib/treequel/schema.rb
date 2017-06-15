@@ -10,12 +10,12 @@ require 'treequel/mixins'
 
 
 # This is an object that is used to parse and query a directory's schema
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <ged@FaerieMUD.org>
 # * Mahlon E. Smith <mahlon@martini.nu>
-# 
+#
 # :include: LICENSE
 #
 #--
@@ -69,7 +69,7 @@ class Treequel::Schema
 		oids = $MATCH
 		# Treequel.logger.debug "  found OIDs: %p" % [ oids ]
 
-		# If it's an OIDLIST, strip off leading and trailing parens and whitespace, then split 
+		# If it's an OIDLIST, strip off leading and trailing parens and whitespace, then split
 		# on ' $ ' and parse each OID
 		if oids.include?( '$' )
 			parse_oid = self.method( :parse_oid )
@@ -117,7 +117,7 @@ class Treequel::Schema
 	end
 
 
-	### Return a new string which is +desc+ with quotes stripped and any escaped characters 
+	### Return a new string which is +desc+ with quotes stripped and any escaped characters
 	### un-escaped.
 	def self::unquote_desc( desc )
 		return nil if desc.nil?
@@ -125,7 +125,7 @@ class Treequel::Schema
 	end
 
 
-	### Return a description of the given +descriptors+ suitable for inclusion in 
+	### Return a description of the given +descriptors+ suitable for inclusion in
 	### an RFC4512-style schema description entry.
 	def self::qdescrs( *descriptors )
 		descriptors.flatten!
@@ -139,22 +139,22 @@ class Treequel::Schema
 
     # qdstring = SQUOTE dstring SQUOTE
     # dstring = 1*( QS / QQ / QUTF8 )   ; escaped UTF-8 string
-    # 
+    #
     # QQ =  ESC %x32 %x37 ; "\27"
     # QS =  ESC %x35 ( %x43 / %x63 ) ; "\5C" / "\5c"
-    # 
+    #
     # ; Any UTF-8 encoded Unicode character
     # ; except %x27 ("\'") and %x5C ("\")
     # QUTF8    = QUTF1 / UTFMB
 
-	### Escape and quote the specified +string+ according to the rules in 
+	### Escape and quote the specified +string+ according to the rules in
 	### RFC4512/2252.
 	def self::qdstring( string )
 		return "'%s'" % [ string.to_s.gsub(/\\/, '\\\\5c').gsub(/'/, '\\\\27') ]
 	end
 
 
-	### Return a description of the given +oids+ suitable for inclusion in 
+	### Return a description of the given +oids+ suitable for inclusion in
 	### an RFC4512-style schema description entry.
 	def self::oids( *oids )
 		oids.flatten!
@@ -173,7 +173,7 @@ class Treequel::Schema
 
 	### Create a new Treequel::Schema from the specified +hash+. The +hash+ should be of the same
 	### form as the one returned by LDAP::Conn.schema, i.e., a Hash of Arrays associated with the
-	### keys "objectClasses", "ldapSyntaxes", "matchingRuleUse", "attributeTypes", and 
+	### keys "objectClasses", "ldapSyntaxes", "matchingRuleUse", "attributeTypes", and
 	### "matchingRules".
 	def initialize( hash )
 		@object_classes     = self.parse_objectclasses( hash['objectClasses'] || [] )
@@ -188,7 +188,7 @@ class Treequel::Schema
 	public
 	######
 
-	# The table of Treequel::Schema::ObjectClass objects, keyed by OID and any associated NAME 
+	# The table of Treequel::Schema::ObjectClass objects, keyed by OID and any associated NAME
 	# attributes (as Symbols), that describes the objectClasses in the directory's schema.
 	attr_reader :object_classes
 
@@ -196,7 +196,7 @@ class Treequel::Schema
 	# attributes (as Symbols), that describe the attributeTypes in the directory's schema.
 	attr_reader :attribute_types
 
-	# The hash of Treequel::Schema::LDAPSyntax objects, keyed by OID, that describe the 
+	# The hash of Treequel::Schema::LDAPSyntax objects, keyed by OID, that describe the
 	# syntaxes in the directory's schema.
 	attr_reader :ldap_syntaxes
 
@@ -262,7 +262,7 @@ class Treequel::Schema
 
 
 	### Parse the given attributeType +descriptions+ into Treequel::Schema::AttributeType objects
-	### and return them as a Hash keyed both by numeric OID and by each of its NAME attributes 
+	### and return them as a Hash keyed both by numeric OID and by each of its NAME attributes
 	### (if it has any).
 	def parse_attribute_types( descriptions )
 		return descriptions.inject( Treequel::Schema::Table.new ) do |table, desc|
@@ -305,7 +305,7 @@ class Treequel::Schema
 
 
 	### Parse the given matchingRule +descriptions+ into Treequel::Schema::MatchingRule objects
-	### and return them as a Hash keyed both by numeric OID and by each of its NAME attributes 
+	### and return them as a Hash keyed both by numeric OID and by each of its NAME attributes
 	### (if it has any).
 	def parse_matching_rules( descriptions )
 		descriptions ||= []
@@ -328,7 +328,7 @@ class Treequel::Schema
 
 
 	### Parse the given matchingRuleUse +descriptions+ into Treequel::Schema::MatchingRuleUse objects
-	### and return them as a Hash keyed both by numeric OID and by each of its NAME attributes 
+	### and return them as a Hash keyed both by numeric OID and by each of its NAME attributes
 	### (if it has any).
 	def parse_matching_rule_uses( descriptions )
 		descriptions ||= []
@@ -356,7 +356,7 @@ class Treequel::Schema
 			next unless ivar.respond_to?( :length )
 			len = self.instance_variable_get( ivar ).length
 			"%d %s" % [ len, ivar.to_s.gsub(/_/, ' ')[1..-1] ]
-		end		
+		end
 	end
 
 end # class Treequel::Schema

@@ -124,7 +124,7 @@ class Treequel::BranchCollection
 	end
 
 
-	### Iterate over the Treequel::Branches found by each member branchset, yielding each 
+	### Iterate over the Treequel::Branches found by each member branchset, yielding each
 	### one in turn.
 	def each( &block )
 		raise LocalJumpError, "no block given" unless block
@@ -166,8 +166,8 @@ class Treequel::BranchCollection
 	end
 
 
-	### Append operator: add the specified +object+ (either a Treequel::Branchset or an object 
-	### that responds to #branchset and returns a Treequel::Branchset) to the collection 
+	### Append operator: add the specified +object+ (either a Treequel::Branchset or an object
+	### that responds to #branchset and returns a Treequel::Branchset) to the collection
 	### and return the receiver.
 	def <<( object )
 		if object.respond_to?( :branchset )
@@ -180,7 +180,7 @@ class Treequel::BranchCollection
 	end
 
 
-	### Return either a new Treequel::BranchCollection that includes both the receiver's 
+	### Return either a new Treequel::BranchCollection that includes both the receiver's
 	### Branchsets and those in +other_object+ (if it responds_to #branchsets), or the results
 	### from executing the BranchCollection's search with +other_object+ appended if it doesn't.
 	def +( other_object )
@@ -194,7 +194,7 @@ class Treequel::BranchCollection
 	end
 
 
-	### Return the results from each of the receiver's Branchsets without the +other_object+, 
+	### Return the results from each of the receiver's Branchsets without the +other_object+,
 	### which must respond to #dn.
 	def -( other_object )
 		other_dn = other_object.dn
@@ -209,7 +209,7 @@ class Treequel::BranchCollection
 	end
 
 
-	### Return a new Treequel::BranchCollection that contains the intersection of the branchsets 
+	### Return a new Treequel::BranchCollection that contains the intersection of the branchsets
 	### from both collections.
 	def |( other_collection )
 		return self.class.new( self.branchsets | other_collection.branchsets )

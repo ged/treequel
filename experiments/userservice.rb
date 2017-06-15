@@ -5,13 +5,13 @@ require 'treequel'
 require 'arrow/service'
 
 
-# 
+#
 # An experimental user service.
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <ged@FaerieMUD.org>
-# 
+#
 class UserService < Arrow::Service
 
 	# Applet signature

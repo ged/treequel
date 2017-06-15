@@ -217,19 +217,6 @@ describe Treequel::BranchCollection do
 			}.to raise_exception( ArgumentError, /0 for 1/ )
 		end
 
-		# it "can create a clone of itself with ordered branchsets" do
-		# 	ordered_branchset1 = double( "branchset 3", :dn => 'cn=example3,dc=acme,dc=com', :each => 1 )
-		# 	ordered_branchset2 = double( "branchset 4", :dn => 'cn=example4,dc=acme,dc=com', :each => 1 )
-		# 	expect( @branchset1 ).to receive( :order ).with( :cn ).
-		# 		and_return( ordered_branchset1 )
-		#  	expect( @branchset2 ).to receive( :order ).with( :cn ).
-		# 		and_return( ordered_branchset2 )
-		# 
-		# 	ordered_collection = @collection.order( :cn )
-		#  	expect( ordered_collection ).to_not be_equal( @collection )
-		#  	expect( ordered_collection ).to include( ordered_branchset1, ordered_branchset2 )
-		# end
-		# 
 		it "can return the base DNs of all of its branchsets" do
 			expect( @branchset1 ).to receive( :base_dn ).and_return( :branchset1_basedn )
 			expect( @branchset2 ).to receive( :base_dn ).and_return( :branchset2_basedn )

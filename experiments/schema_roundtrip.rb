@@ -3,7 +3,7 @@
 # This is a test of the schema-parsing and regeneration code. It
 # connects to an LDAP server, loads its schema, then for each artifact
 # it compares the generated output with the original source.
-# 
+#
 # It's not really expected that every schema entry will be identical,
 # but they should be pretty close.
 

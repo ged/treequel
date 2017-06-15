@@ -10,8 +10,8 @@ module Treequel::Model::SchemaValidations
 
 	# OpenLDAP servers with syncrepl include 'entryCSN' and 'contextCSN' attributes, but
 	# don't define its attribute type in the subschema. This is a list of operational
-	# attribute types that don't appear in the subschema that shouldn't be considered when 
-	# validating MUST and MAY attributes. 
+	# attribute types that don't appear in the subschema that shouldn't be considered when
+	# validating MUST and MAY attributes.
 	# (http://www.openldap.org/its/index.cgi/Development?id=5573)
 	IGNORED_OPERATIONAL_ATTRS = [ :entryCSN, :contextCSN ]
 
@@ -80,7 +80,7 @@ module Treequel::Model::SchemaValidations
 						[ attribute, err.class.name, err.message ]
 					attrtype = self.find_attribute_type( attribute )
 					self.errors.add( attribute, "isn't a valid %s value" %
-					 	[ attrtype.syntax ? attrtype.syntax.desc : attrtype.syntax_oid ] )
+						[ attrtype.syntax ? attrtype.syntax.desc : attrtype.syntax_oid ] )
 				end
 			end
 		end

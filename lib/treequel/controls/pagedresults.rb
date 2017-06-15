@@ -10,32 +10,32 @@ require 'treequel/control'
 
 # A Treequel::Control module that implements the "LDAP Control Extension
 # for Simple Paged Results Manipulation" (RFC 2696).
-# 
+#
 # == Usage
-# 
+#
 # As with all Controls, you must first register the control with the
 # Treequel::Directory object you're intending to search:
-# 
+#
 #   dir = Treequel.directory( 'ldap://ldap.acme.com/dc=acme,dc=com' )
 #   dir.register_controls( Treequel::PagedResultsControl )
-# 
+#
 # Once that's done, any Treequel::Branchset you create will have the
 # #with_paged_results method that will allow you to specify the number
 # of results you wish to be returned per "page":
-# 
+#
 #   # Fetch people in pages
 #   people = dir.ou( :People )
 #   paged_people = people.filter( :objectClass => :person ).with_paged_results( 25 )
-# 
+#
 # The Branchset will also respond to #has_more_results?, which will
 # be true while there are additional pages to be fetched, or before
 # the search has taken place:
-# 
+#
 #   # Display each set of 25, waiting for keypress between each set
 #   while paged_people.has_more_results?
 #       # do something with this set of 25 people...
 #   end
-#   
+#
 module Treequel::PagedResultsControl
 	include Treequel::Control
 
@@ -106,14 +106,14 @@ module Treequel::PagedResultsControl
 	end
 
 
-	### Returns +true+ if results have yet to be fetched, or if they have all been 
+	### Returns +true+ if results have yet to be fetched, or if they have all been
 	### fetched.
 	def done_paging?
 		return self.paged_results_cookie == ''
 	end
 
 
-	### Override the Enumerable method to update the cookie value each time a page 
+	### Override the Enumerable method to update the cookie value each time a page
 	### is fetched.
 	def each( &block )
 		super do |branch|
@@ -136,7 +136,7 @@ module Treequel::PagedResultsControl
 	protected
 	#########
 
-	### Treequel::Control API -- Get the set of server controls currently configured for 
+	### Treequel::Control API -- Get the set of server controls currently configured for
 	### the receiver.
 	def get_server_controls
 		controls = super

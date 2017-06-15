@@ -37,7 +37,7 @@ class Treequel::Directory
 		:results_class => Treequel::Branch,
 	}
 
-	# Default mapping of SYNTAX OIDs to conversions from an LDAP string. 
+	# Default mapping of SYNTAX OIDs to conversions from an LDAP string.
 	# See #add_attribute_conversions for more information on what a valid conversion is.
 	DEFAULT_ATTRIBUTE_CONVERSIONS = {
 		OIDS::BIT_STRING_SYNTAX         => lambda {|bs, _| bs[0..-1].to_i(2) },
@@ -51,7 +51,7 @@ class Treequel::Directory
 		},
 	}
 
-	# Default mapping of SYNTAX OIDs to conversions to an LDAP string from a Ruby object. 
+	# Default mapping of SYNTAX OIDs to conversions to an LDAP string from a Ruby object.
 	# See #add_object_conversion for more information on what a valid conversion is.
 	DEFAULT_OBJECT_CONVERSIONS = {
 		OIDS::BIT_STRING_SYNTAX         => lambda {|bs, _| bs.to_i.to_s(2) },
@@ -68,7 +68,7 @@ class Treequel::Directory
 	#               &serverctrls, &clientctrls, &sec, &usec, &limit,
 	#               &s_attr, &s_proc)
 
-	# The order in which hash arguments should be extracted from Hash parameters to 
+	# The order in which hash arguments should be extracted from Hash parameters to
 	# #search
 	SEARCH_PARAMETER_ORDER = [
 		:selectattrs,
@@ -82,7 +82,7 @@ class Treequel::Directory
 		:sort_func,
 	].freeze
 
-	# Default values to pass to LDAP::Conn#search_ext2; they'll be passed in the order 
+	# Default values to pass to LDAP::Conn#search_ext2; they'll be passed in the order
 	# specified by SEARCH_PARAMETER_ORDER.
 	SEARCH_DEFAULTS = {
 		:selectattrs     => ['*'],
@@ -109,7 +109,7 @@ class Treequel::Directory
 
 	### Create a new Treequel::Directory with the given +options+. Options is a hash with one
 	### or more of the following key-value pairs:
-	### 
+	###
 	### [+:host+]
 	###    The LDAP host to connect to (default: 'localhost').
 	### [+:port+]
@@ -361,14 +361,14 @@ class Treequel::Directory
 	end
 
 
-	### Perform a +scope+ search at +base+ using the specified +filter+. The scope can be one of 
-	### +:onelevel+, +:base+, or +:subtree+. The search filter should be a RFC4515-style filter 
+	### Perform a +scope+ search at +base+ using the specified +filter+. The scope can be one of
+	### +:onelevel+, +:base+, or +:subtree+. The search filter should be a RFC4515-style filter
 	### either as a String or something that stringifies to one (e.g., a Treequel::Filter). The
 	### available search options are:
-	### 
+	###
 	### [+:results_class+]
-	###    The Class to use when wrapping results; if not specified, defaults to the class 
-	###    of +base+ if it responds to #new_from_entry, or the directory object's 
+	###    The Class to use when wrapping results; if not specified, defaults to the class
+	###    of +base+ if it responds to #new_from_entry, or the directory object's
 	###    #results_class if it does not.
 	### [+:selectattrs+]
 	###    The attributes to return from the search; defaults to '*', which means to
@@ -376,7 +376,7 @@ class Treequel::Directory
 	###    to include operational parameters as well.
 	### [+:attrsonly+]
 	###    If +true, the LDAP::Entry objects returned from the search won't have attribute values.
-	###    This has no real effect on Treequel::Branches, but is provided in case other 
+	###    This has no real effect on Treequel::Branches, but is provided in case other
 	###    +results_class+ classes need it. Defaults to +false+.
 	### [+:server_controls+]
 	###    Any server controls that should be sent with the search as an Array of LDAP::Control
@@ -390,14 +390,14 @@ class Treequel::Directory
 	### [+:limit+]
 	###    The maximum number of results to return from the server.
 	### [+:sort_attribute+]
-	###    An Array of String attribute names to sort by. 
+	###    An Array of String attribute names to sort by.
 	### [+:sort_func+]
 	###    A function that will provide sorting.
-	### 
-	### Returns the array of results, each of which is wrapped in the options[:results_class]. 
-	### If a block is given, it acts like a filter: it's called once for each result, and the 
+	###
+	### Returns the array of results, each of which is wrapped in the options[:results_class].
+	### If a block is given, it acts like a filter: it's called once for each result, and the
 	### array of return values from the block is returned instead.
-	### 
+	###
 	def search( base, scope=:subtree, filter='(objectClass=*)', options={} )
 		collectclass = nil
 
@@ -448,7 +448,7 @@ class Treequel::Directory
 	rescue RuntimeError => err
 		conn = self.conn
 
-		# The LDAP library raises a plain RuntimeError with an incorrect message if the 
+		# The LDAP library raises a plain RuntimeError with an incorrect message if the
 		# connection goes away, so it's caught here to rewrap it
 		case err.message
 		when /no result returned by search/i
@@ -490,7 +490,7 @@ class Treequel::Directory
 	end
 
 
-	### Move the entry from the specified +branch+ to the new entry specified by 
+	### Move the entry from the specified +branch+ to the new entry specified by
 	### +newdn+. Returns the (moved) branch object.
 	def move( branch, newdn )
 		source_rdn, source_parent_dn = branch.split_dn( 2 )
@@ -513,10 +513,10 @@ class Treequel::Directory
 	end
 
 
-	### Add +conversion+ mapping for attributes of specified +oid+ to a Ruby object. A 
-	### conversion is any object that responds to #[] with a String 
-	### argument(e.g., Proc, Method, Hash); the argument is the raw value String returned 
-	### from the LDAP entry, and it should return the converted value. Adding a mapping 
+	### Add +conversion+ mapping for attributes of specified +oid+ to a Ruby object. A
+	### conversion is any object that responds to #[] with a String
+	### argument(e.g., Proc, Method, Hash); the argument is the raw value String returned
+	### from the LDAP entry, and it should return the converted value. Adding a mapping
 	### with a nil +conversion+ effectively clears it.
 	def add_attribute_conversion( oid, conversion=nil )
 		conversion = Proc.new if block_given?
@@ -525,8 +525,8 @@ class Treequel::Directory
 
 
 	### Add +conversion+ mapping for the specified +oid+. A conversion is any object that
-	### responds to #[] with an object argument(e.g., Proc, Method, Hash); the argument is 
-	### the Ruby object that's being set as a value in an LDAP entry, and it should return the 
+	### responds to #[] with an object argument(e.g., Proc, Method, Hash); the argument is
+	### the Ruby object that's being set as a value in an LDAP entry, and it should return the
 	### raw LDAP string. Adding a mapping with a nil +conversion+ effectively clears it.
 	def add_object_conversion( oid, conversion=nil )
 		conversion = Proc.new if block_given?
@@ -557,7 +557,7 @@ class Treequel::Directory
 	alias_method :register_control, :register_controls
 
 
-	### Map the specified LDAP +attribute+ to its Ruby datatype if one is registered for the given 
+	### Map the specified LDAP +attribute+ to its Ruby datatype if one is registered for the given
 	### syntax +oid+. If there is no conversion registered, just return the +value+ as-is.
 	def convert_to_object( oid, attribute )
 		if conversion = @attribute_conversions[ oid ]
@@ -577,8 +577,8 @@ class Treequel::Directory
 	end
 
 
-	### Map the specified Ruby +object+ to its LDAP string equivalent if a conversion is 
-	### registered for the given syntax +oid+. If there is no conversion registered, just 
+	### Map the specified Ruby +object+ to its LDAP string equivalent if a conversion is
+	### registered for the given syntax +oid+. If there is no conversion registered, just
 	### returns the +value+ as a String (via #to_s).
 	def convert_to_attribute( oid, object )
 		return object.to_s unless conversion = @object_conversions[ oid ]
@@ -599,7 +599,7 @@ class Treequel::Directory
 	end
 
 
-	### Return an Array of OID strings representing the controls supported by the Directory, 
+	### Return an Array of OID strings representing the controls supported by the Directory,
 	### as listed in the directory's root DSE.
 	def supported_control_oids
 		return self.root_dse[:supportedControl]
@@ -614,7 +614,7 @@ class Treequel::Directory
 	end
 
 
-	### Return an Array of OID strings representing the extensions supported by the Directory, 
+	### Return an Array of OID strings representing the extensions supported by the Directory,
 	### as listed in the directory's root DSE.
 	def supported_extension_oids
 		return self.root_dse[:supportedExtension]
@@ -629,7 +629,7 @@ class Treequel::Directory
 	end
 
 
-	### Return an Array of OID strings representing the features supported by the Directory, 
+	### Return an Array of OID strings representing the features supported by the Directory,
 	### as listed in the directory's root DSE.
 	def supported_feature_oids
 		return self.root_dse[:supportedFeatures]
@@ -689,7 +689,7 @@ class Treequel::Directory
 	end
 
 
-	### Normalize the parameters to the #search method into the format expected by 
+	### Normalize the parameters to the #search method into the format expected by
 	### the LDAP::Conn#Search_ext2 method and return them as a Hash.
 	def normalize_search_parameters( base, scope, filter, parameters )
 		search_paramhash = SEARCH_DEFAULTS.merge( parameters )
@@ -699,7 +699,7 @@ class Treequel::Directory
 		scope = SCOPE[scope.to_sym] if scope.respond_to?( :to_sym ) && SCOPE.key?( scope.to_sym )
 		filter = filter.to_s
 
-		# Split seconds and microseconds from the timeout value, convert the 
+		# Split seconds and microseconds from the timeout value, convert the
 		# fractional part to µsec
 		timeout = search_paramhash.delete( :timeout ) || 0
 		search_paramhash[:timeout_s] = timeout.truncate
@@ -708,7 +708,7 @@ class Treequel::Directory
 		### Sorting in Ruby-LDAP is not significantly more useful than just sorting
 		### the returned entries from Ruby, as it happens client-side anyway (i.e., entries
 		### are still returned from the server in arbitrary/insertion order, and then the client
-		### sorts those 
+		### sorts those
 		search_paramhash[:sort_func] = nil
 		search_paramhash[:sort_attribute] = ''
 

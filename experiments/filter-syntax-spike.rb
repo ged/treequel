@@ -10,7 +10,7 @@ last_name_f_people = people.filter( :lastName => 'f*' )
 # =>
 
 last_name_f_people.all
-# => 
+# =>
 
 appperms.filter( :cn => 'plorp ')
 

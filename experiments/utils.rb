@@ -5,21 +5,21 @@
 #	Copyright (c) 2001-2008, The FaerieMUD Consortium.
 #
 #   All rights reserved.
-#   
+#
 #   Redistribution and use in source and binary forms, with or without modification, are
 #   permitted provided that the following conditions are met:
-#   
+#
 #       * Redistributions of source code must retain the above copyright notice, this
 #         list of conditions and the following disclaimer.
-#   
+#
 #       * Redistributions in binary form must reproduce the above copyright notice, this
 #         list of conditions and the following disclaimer in the documentation and/or
 #         other materials provided with the distribution.
-#   
+#
 #       * Neither the name of FaerieMUD, nor the names of its contributors may be used to
 #         endorse or promote products derived from this software without specific prior
 #         written permission.
-#   
+#
 #   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 #   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 #   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -31,7 +31,7 @@
 #   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 #   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 #   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 
 
 BEGIN {
@@ -86,13 +86,13 @@ module UtilityFunctions
 		'reverse'    => 7,
 		'concealed'  => 8,
 
-		'black'      => 30,   'on_black'   => 40, 
-		'red'        => 31,   'on_red'     => 41, 
-		'green'      => 32,   'on_green'   => 42, 
-		'yellow'     => 33,   'on_yellow'  => 43, 
-		'blue'       => 34,   'on_blue'    => 44, 
-		'magenta'    => 35,   'on_magenta' => 45, 
-		'cyan'       => 36,   'on_cyan'    => 46, 
+		'black'      => 30,   'on_black'   => 40,
+		'red'        => 31,   'on_red'     => 41,
+		'green'      => 32,   'on_green'   => 42,
+		'yellow'     => 33,   'on_yellow'  => 43,
+		'blue'       => 34,   'on_blue'    => 44,
+		'magenta'    => 35,   'on_magenta' => 45,
+		'cyan'       => 36,   'on_cyan'    => 46,
 		'white'      => 37,   'on_white'   => 47
 	}
 
@@ -102,13 +102,13 @@ module UtilityFunctions
 		#
 		# Distribution Manifest
 		# Created: #{Time::now.to_s}
-		# 
+		#
 
 	EOF
 
 	# A cache of programs found by find_program()
 	Programs = {}
-	
+
 
 	###############
 	module_function
@@ -123,7 +123,7 @@ module UtilityFunctions
 		attributes = AnsiAttributes.values_at( *attributes ).compact.join(';')
 
 		# $stderr.puts "  attr is: %p" % [attributes]
-		if attributes.empty? 
+		if attributes.empty?
 			return ''
 		else
 			return "\e[%sm" % attributes
@@ -260,7 +260,7 @@ module UtilityFunctions
 			response = readline( ansi_code('bold', 'green') +
 				"#{prompt_string} " + ansi_code('reset') ) || ''
 			response.strip!
-			if block_given? && ! yield( response ) 
+			if block_given? && ! yield( response )
 				error_message( failure_msg + "\n\n" )
 				response = nil
 			end
@@ -281,7 +281,7 @@ module UtilityFunctions
 			response = prompt( "%s [%s]" % [ prompt_string, default ] )
 			response = default if response.empty?
 
-			if block_given? && ! yield( response ) 
+			if block_given? && ! yield( response )
 				error_message( failure_msg + "\n\n" )
 				response = nil
 			end
@@ -300,7 +300,7 @@ module UtilityFunctions
 				collect {|dir| Pathnanme.new(dir) }.each do |dir|
 					file = dir + progname
 					if file.executable?
-						Programs[ progname ] = file 
+						Programs[ progname ] = file
 						break
 					end
 				end
@@ -371,7 +371,7 @@ module UtilityFunctions
 			(
 				branches |		# ...or branches/branch-name
 				tags			# ...or tags/tag-name
-			)/\w	
+			)/\w
 		)
 		$						# bound to the end
 	}ix
@@ -726,7 +726,7 @@ module UtilityFunctions
 	end
 
 
-	### Try the specified code block, printing the given 
+	### Try the specified code block, printing the given
 	def try( msg, bind=TOPLEVEL_BINDING )
 		result = ''
 		if msg =~ /^to\s/

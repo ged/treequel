@@ -13,7 +13,7 @@ module LdapAuthentification
 
 		### Create a new LdapAuthentication::Bind middleware that will wrap +app+. Supported options
 		### are:
-		### 
+		###
 		### url::
 		###   The LDAP URL (RFC4516) used to specify how to bind to the directory.
 		def initialize( app, options )

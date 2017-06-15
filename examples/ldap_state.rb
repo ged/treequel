@@ -2,12 +2,12 @@
 # vim: set nosta noet ts=4 sw=4:
 
 # Use the OpenLDAP monitoring interface (cn=Monitor) to poll a collection of LDAP
-# servers for collection information. See 
-# 
-#   http://www.openldap.org/doc/admin24/monitoringslapd.html 
-# 
+# servers for collection information. See
+#
+#   http://www.openldap.org/doc/admin24/monitoringslapd.html
+#
 # for details on how to set your servers up with this interface.
-# 
+#
 # Original ruby-ldap version by Mahlon E. Smith.
 # Ported to Treequel by Michael Granger
 

@@ -13,15 +13,15 @@ require 'treequel/mixins'
 # A Treequel::Model object:
 # * Knows what its Treequel::Branch is
 # * has one or more mixins applied to it based on its objectclasses
-# 
+#
 # module Employee
 #   extend Treequel::Model::ObjectClass
 # 	model_bases 'ou=people'
 # 	model_objectclasses :acmeAccount, :inetOrgPerson
 # end
-# 
+#
 # pp Employee.find( ~:userDisabledPassword )
-# 
+#
 
 
 class Treequel::Model < Treequel::Branch
@@ -107,7 +107,7 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
-	### Create a new Treequel::Model object from the given +entry+ hash from the 
+	### Create a new Treequel::Model object from the given +entry+ hash from the
 	### specified +directory+.
 	def self::new_from_entry( entry, directory )
 		obj = self.new( directory, entry['dn'].first, entry )
@@ -119,7 +119,7 @@ class Treequel::Model < Treequel::Branch
 	end
 
 
-	### Handle calls to missing methods by searching for an attribute 
+	### Handle calls to missing methods by searching for an attribute
 	def method_missing( sym, *args )
 		plainsym = sym.to_s.sub( /[=\?]$/, '' ).to_sym
 		return super unless self.valid_attribute_oids.include?( plainsym )

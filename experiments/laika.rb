@@ -6,7 +6,7 @@
 BEGIN {
 	require 'pathname'
 	base = Pathname( __FILE__ ).dirname.parent
-	
+
 	require base + 'experiments/utils.rb'
 	libdir = base + 'lib'
 
@@ -23,14 +23,14 @@ dir.bind( 'cn=auth,dc=acme,dc=com', 'foobar' )
 
 
 class Treequel::Model
-	
+
 end
 
 
 class Employee < Treequel::Model
 
 	def configure_schema
-		
+
 		set_schema do |dir|
 			base_branch dir.ou( :People )
 			scope :subtree
@@ -39,12 +39,12 @@ class Employee < Treequel::Model
 			many_to_many :groups, :via => Group
 		end
 	end
-	
+
 end
 
 
 class Host < Treequel::Model
-	
+
 	def configure_schema
 		set_schema do |dir|
 			base_branches dir.ou( :Hosts ),
@@ -54,11 +54,11 @@ class Host < Treequel::Model
 				dir.dc( :bennett ).ou( :Hosts )
 
 			scope :subtree
-			
+
 			belongs_to :netblock, :via => Netblock
 		end
 	end
-	
+
 end
 
 

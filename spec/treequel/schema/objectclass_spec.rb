@@ -295,11 +295,11 @@ describe Treequel::Schema::ObjectClass do
 	end
 
 
-	# Sun/Oracle OpenDS (as of 2.2, at least) "allows a non-numeric OID [as the 
+	# Sun/Oracle OpenDS (as of 2.2, at least) "allows a non-numeric OID [as the
 	# 'numericoid' part of an objectClass definition] for the purpose of convenience"
 	describe "Sun OpenDS compatibility workarounds (ticket #11)" do
 
-		SUN_ODS_DESCR_OID_OBJECTCLASS = 
+		SUN_ODS_DESCR_OID_OBJECTCLASS =
 			%{( interwovengroup-oid NAME 'interwovengroup' SUP posixgroup } +
 			%{    STRUCTURAL MAY path X-ORIGIN 'user defined' )}
 
@@ -360,12 +360,12 @@ describe Treequel::Schema::ObjectClass do
 		end
 
 		DRAFT_HOWARD_RFC2307BIS_OBJECTCLASS = %{
-		( 1.3.6.1.1.1.2.0 NAME 'posixAccount' 
-			SUP top 
-			AUXILIARY 
-			DESC 'Abstraction of an account with POSIX attributes' 
-			MUST ( cn $ uid $ uidNumber $ gidNumber $ homeDirectory ) 
-			MAY ( authPassword $ userPassword $ loginShell $ gecos $ description ) 
+		( 1.3.6.1.1.1.2.0 NAME 'posixAccount'
+			SUP top
+			AUXILIARY
+			DESC 'Abstraction of an account with POSIX attributes'
+			MUST ( cn $ uid $ uidNumber $ gidNumber $ homeDirectory )
+			MAY ( authPassword $ userPassword $ loginShell $ gecos $ description )
 			X-ORIGIN 'draft-howard-rfc2307bis' )
 		}
 

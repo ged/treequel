@@ -121,7 +121,7 @@ module Treequel
 		module_function
 		###############
 
-		### Normalize the given key, returning a downcased Symbol stripped of any invalid 
+		### Normalize the given key, returning a downcased Symbol stripped of any invalid
 		### characters, and with '-' characters converted to '_'.
 		def normalize_key( key )
 			return key if key.to_s =~ Treequel::Constants::Patterns::NUMERICOID
@@ -357,7 +357,7 @@ module Treequel
 		end
 
 
-		### Colorize the given +string+ with the specified +attributes+ and return it, handling 
+		### Colorize the given +string+ with the specified +attributes+ and return it, handling
 		### line-endings, color reset, etc.
 		def colorize( *args )
 			string = ''

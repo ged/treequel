@@ -217,7 +217,7 @@ module Treequel::Constants
 
 		# :stopdoc:
 
-		# Schema-parsing patterns based on the BNF in 
+		# Schema-parsing patterns based on the BNF in
 		# RFC 4512 (http://tools.ietf.org/html/rfc4512#section-4.1.1)
 
 		#	ALPHA   = %x41-5A / %x61-7A   ; "A"-"Z" / "a"-"z"
@@ -232,7 +232,7 @@ module Treequel::Constants
 		#	HEX     = DIGIT / %x41-46 / %x61-66 ; "0"-"9" / "A"-"F" / "a"-"f"
 		HEX = '[:xdigit:]'
 
-		#	
+		#
 		#	SP      = 1*SPACE  ; one or more " "
 		#	WSP     = 0*SPACE  ; zero or more " "
 		SP = '\x20+'
@@ -320,7 +320,7 @@ module Treequel::Constants
 		UTF3 = /
 			\xe0 [\xa0-\xbf] #{UTF0}
 			|
-			[\xe1-\xec] #{UTF0}{2} 
+			[\xe1-\xec] #{UTF0}{2}
 			|
 			\xed [\x80-\x9f] #{UTF0}
 			|
@@ -389,7 +389,7 @@ module Treequel::Constants
 		LEN = NUMBER
 
 		# noidlen = numericoid [ LCURLY len RCURLY ]
-		# NOTE: I changed this from NUMERICOID to OID to support ActiveDirectory schema 
+		# NOTE: I changed this from NUMERICOID to OID to support ActiveDirectory schema
 		#       entries
 		NOIDLEN = /#{OID} (?:#{LCURLY} #{LEN} #{RCURLY})?/x
 
@@ -424,8 +424,8 @@ module Treequel::Constants
 		QS = / #{ESC} 5c /xi
 
 
-		### NOTE: QDSTRING is zero-or-more despite the RFC's specifying it as 1 or more 
-		### to support empty DESC attributes in the wild (e.g., the ones in the 
+		### NOTE: QDSTRING is zero-or-more despite the RFC's specifying it as 1 or more
+		### to support empty DESC attributes in the wild (e.g., the ones in the
 		### attributeTypes from the 'retcode' overlay in OpenLDAP)
 
 		# dstring = 1*( QS / QQ / QUTF8 )   ; escaped UTF-8 string
@@ -437,7 +437,7 @@ module Treequel::Constants
 		QDSTRINGLIST = /(?: #{QDSTRING} (?: #{SP} #{QDSTRING} )* )?/x
 		QDSTRINGS = / #{QDSTRING} | #{LPAREN} #{WSP} #{QDSTRINGLIST} #{WSP} #{RPAREN} /x
 
-		# Workaround for attributeType declarations that have unescaped single quotes 
+		# Workaround for attributeType declarations that have unescaped single quotes
 		# in them (e.g., "Change Record Object Class Definition",
 		#   http://tools.ietf.org/html/draft-good-ldap-changelog-04)
 		# It will accept an unquoted single quote as long as it's followed by
@@ -448,7 +448,7 @@ module Treequel::Constants
 				#{SQUOTE} (?=\S)
 				|
 				# or correctly-escaped single-quoted string characters
-			 	#{DSTRING}
+				#{DSTRING}
 			)*
 		}x
 		MALFORMED_QDSTRING = / #{SQUOTE} #{MALFORMED_DSTRING} #{SQUOTE} /x
@@ -474,7 +474,7 @@ module Treequel::Constants
 		#       extensions WSP RPAREN
 
 		# Note: added 'descr' to the oid to support Sun OpenDS, which allows names instead of
-		# numericoids "for convenience". 
+		# numericoids "for convenience".
 		# (http://download.oracle.com/docs/cd/E19476-01/821-0509/object-class-description-format.html)
 		LDAP_OBJECTCLASS_DESCRIPTION = %r{
 			#{LPAREN} #{WSP}
@@ -490,7 +490,7 @@ module Treequel::Constants
 			#{WSP} #{RPAREN}
 		}x
 
-		# Support for objectClass definitions with the KIND before the SUP such as those 
+		# Support for objectClass definitions with the KIND before the SUP such as those
 		# in RFC3712
 		LDAP_MISORDERED_KIND_OBJECTCLASS_DESCRIPTION = %r{
 			#{LPAREN} #{WSP}
@@ -523,7 +523,7 @@ module Treequel::Constants
 		}x
 
 		# Support for objectClass definitions with the DESC after the SUP and KIND
-		# like draft-howard-rfc2307bis, and a bunch of "Solaris Specific" ones from 
+		# like draft-howard-rfc2307bis, and a bunch of "Solaris Specific" ones from
 		# OpenDS servers.
 		LDAP_MISORDERED_DESC_OBJECTCLASS_DESCRIPTION = %r{
 			#{LPAREN} #{WSP}
@@ -574,7 +574,7 @@ module Treequel::Constants
 		#            extensions WSP RPAREN         ; extensions
 
 		# Note: added 'descr' to the oid to support Sun OpenDS, which allows names instead of
-		# numericoids "for convenience". 
+		# numericoids "for convenience".
 		# (https://www.opends.org/wiki/page/UnderstandingAttributeTypes)
 		LDAP_ATTRIBUTE_TYPE_DESCRIPTION = %r{
 			#{LPAREN} #{WSP}
@@ -596,7 +596,7 @@ module Treequel::Constants
 		}x
 
 		# Attribute type with an unescaped single quote in the DESC; added for schemas that
-		# include the 'changelog' attributeType from 
+		# include the 'changelog' attributeType from
 		#   http://tools.ietf.org/html/draft-good-ldap-changelog-04
 		LDAP_UNESCAPE_SQUOTE_ATTRIBUTE_TYPE_DESCRIPTION = %r{
 			#{LPAREN} #{WSP}
@@ -618,7 +618,7 @@ module Treequel::Constants
 		}x
 
 		# Support for attributeType declarations which have the SYNTAX before the EQUALITY
-		# and ORDERING (e.g., changeNumber from 
+		# and ORDERING (e.g., changeNumber from
 		#   http://tools.ietf.org/html/draft-good-ldap-changelog-04 )
 		LDAP_MISORDERED_SYNTAX_ATTRIBUTE_TYPE_DESCRIPTION = %r{
 			#{LPAREN} #{WSP}
@@ -661,7 +661,7 @@ module Treequel::Constants
 
 		# Matching rule use descriptions are written according to the following
 		# ABNF:
-		# 
+		#
 		#   MatchingRuleUseDescription = LPAREN WSP
 		#       numericoid                 ; object identifier
 		#       [ SP "NAME" SP qdescrs ]   ; short names (descriptors)
@@ -682,12 +682,12 @@ module Treequel::Constants
 
 
 		# LDAP syntax definitions are written according to the ABNF:
-		# 
+		#
 		#   SyntaxDescription = LPAREN WSP
 		#       numericoid                 ; object identifier
 		#       [ SP "DESC" SP qdstring ]  ; description
 		#       extensions WSP RPAREN      ; extensions
-		#   
+		#
 		LDAP_SYNTAX_DESCRIPTION = %r{
 			#{LPAREN} #{WSP}
 				(#{NUMERICOID})                        # $1  = oid
@@ -727,7 +727,7 @@ module Treequel::Constants
 		#   final          = assertionvalue
 		LDAP_SUBSTRING_FILTER_VALUE = %r{
 			#{ASSERTIONVALUE}
-			#{ASTERISK} 
+			#{ASTERISK}
 				(?: #{ASSERTIONVALUE} #{ASTERISK} )*
 			#{ASSERTIONVALUE}
 		}x
@@ -759,9 +759,9 @@ module Treequel::Constants
 		}x
 
 
-		# 
+		#
 		# Distinguished Names (RFC4514)
-		# 
+		#
 
 		# hexpair = HEX HEX
 		HEXPAIR = /#{HEX}{2}/
@@ -863,9 +863,9 @@ module Treequel::Constants
 		}x
 
 
-		# 
+		#
 		# LDIF (RFC 2849)
-		# 
+		#
 
 		# attr-type-chars          = ALPHA / DIGIT / "-"
 		# opt-char                 = attr-type-chars

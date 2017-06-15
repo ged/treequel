@@ -42,7 +42,7 @@ require 'ldap'
 #      + #<LDAP::Mod:0x103820060 LDAP_MOD_ADD
 #      +{"$\357\302\003\001"=>["fappy"]}>]
 #    # ./spec/treequel/model_spec.rb:634
-# 
+#
 
 # And then the monkeypatch to work around the problem:
 class LDAP::Mod

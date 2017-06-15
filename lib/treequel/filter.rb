@@ -36,7 +36,7 @@ require 'treequel/sequel_integration'
 #   attr       = AttributeDescription from Section 4.1.5 of [1]
 #   matchingrule = MatchingRuleId from Section 4.1.9 of [1]
 #   value      = AttributeValue from Section 4.1.6 of [1]
-# 
+#
 class Treequel::Filter
 	extend Loggability
 	include Treequel::Constants::Patterns
@@ -101,7 +101,7 @@ class Treequel::Filter
 
 
 		### Stringify the component.
-		### :TODO: If this doesn't end up being a refactored version of all of its 
+		### :TODO: If this doesn't end up being a refactored version of all of its
 		### subclasses's #to_s methods, test that it needs overriding.
 		def to_s
 			raise NotImplementedError, "%s does not provide an implementation of #to_s" %
@@ -109,7 +109,7 @@ class Treequel::Filter
 		end
 
 
-		### Return a human-readable string representation of the component suitable 
+		### Return a human-readable string representation of the component suitable
 		### for debugging.
 		def inspect
 			return %Q{#<%s:0x%0x "%s">} % [
@@ -345,7 +345,7 @@ class Treequel::Filter
 		###	I N S T A N C E   M E T H O D S
 		#############################################################
 
-		### Create a new 'substring' item filter component that will match the specified +pattern+ 
+		### Create a new 'substring' item filter component that will match the specified +pattern+
 		### against the given +attribute+.
 		def initialize( attribute, pattern, options=nil )
 			@attribute = attribute
@@ -451,7 +451,7 @@ class Treequel::Filter
 			return expression
 
 		else
-			raise Treequel::ExpressionError, 
+			raise Treequel::ExpressionError,
 				"don't know how to turn %p into an filter component" % [ expression ]
 		end
 	end
@@ -504,7 +504,7 @@ class Treequel::Filter
 	end
 
 
-	### Parse one or more tuples contained in a Hash into an ANDed set of 
+	### Parse one or more tuples contained in a Hash into an ANDed set of
 	### Treequel::Filter::Components and return it.
 	def self::parse_hash_expression( expression )
 		self.log.debug "Parsing Hash expression %p" % [ expression ]
@@ -572,7 +572,7 @@ class Treequel::Filter
 
 		compclass = LOGICAL_COMPONENTS[ op ] or
 			raise "don't know what a %p condition is. I only know about: %p" %
-			 	[ op, LOGICAL_COMPONENTS.keys ]
+				[ op, LOGICAL_COMPONENTS.keys ]
 
 		filterlist = components.collect do |filterexp|
 			self.log.debug "  making %p into a component" % [ filterexp ]
@@ -612,7 +612,7 @@ class Treequel::Filter
 				attribute, value = *expression.args
 
 				# Turn :sn.like( 'bob' ) into (cn~=bob) 'cause it has no asterisks
-				if op == :like 
+				if op == :like
 					if value.index( '*' )
 						self.log.debug \
 							"    turning a LIKE expression with an asterisk into a substring filter"

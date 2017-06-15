@@ -330,41 +330,6 @@ describe Treequel::Branchset do
 			expect( @branchset.all ).to eq( [:matching_branches] )
 		end
 
-		#
-		# #order
-		#
-
-		# it "can create a new branchset cloned from itself with a sort-order attribute" do
-		# 	newset = @branchset.order( :uid )
-		#  	expect( newset.order ).to eq( :uid )
-		# end
-		#
-		# it "converts a string sort-order attribute to a Symbol" do
-		# 	newset = @branchset.order( 'uid' )
-		#  	expect( newset.order ).to eq( :uid )
-		# end
-		#
-		# it "can set a sorting function instead of an attribute" do
-		# 	newset = @branchset.order {|branch| branch.uid }
-		#  	expect( newset.order ).to be_a( Proc )
-		# end
-		#
-		# it "can create a new branchset cloned from itself without a sort-order attribute" do
-		# 	@branchset.options[:order] = :uid
-		# 	newset = @branchset.order( nil )
-		#  	expect( newset.order ).to eq( nil )
-		# end
-		#
-		# it "uses its order attribute list when searching" do
-		# 	@branchset.options[:order] = [ :uid ]
-		#  	expect( @branch ).to receive( :directory ).and_return( @directory )
-		#  	expect( @directory ).to receive( :search ).
-		# 		with( @branch, Treequel::Branchset::DEFAULT_SCOPE, @branchset.filter,
-		# 		      @params.merge(:sortby => ['uid']) ).
-		# 		and_yield( :matching_branches )
-		#
-		#  	expect( @branchset.all ).to eq( [:matching_branches] )
-		# end
 
 		#
 		# #limit

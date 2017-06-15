@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 
-# 
+#
 # Experimenting with the 'Content Sync' control
-# 
+#
 
 require 'rubygems'
 

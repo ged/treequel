@@ -10,7 +10,7 @@ require 'treequel/constants'
 require 'treequel/mixins'
 
 
-# This is an object that is used to store LDAP schema information in a 
+# This is an object that is used to store LDAP schema information in a
 # case-insensitive table.
 class Treequel::Schema::Table
 	extend Forwardable,

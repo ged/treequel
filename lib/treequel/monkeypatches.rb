@@ -47,7 +47,7 @@ class LDAP::Mod
 	include Treequel::LDAPModExtensions
 
 	# The following is a nasty hack to work around memory-corruption issues in
-	# LDAP::Mod. The RSTRING_PTR of the second argument to LDAP::Mod#initialize 
+	# LDAP::Mod. The RSTRING_PTR of the second argument to LDAP::Mod#initialize
 	# is used without strdup()ing it, which means if the String object that was
 	# passed to it is garbage-collected, the attribute name of the Mod object
 	# gets corrupted. This hack works around that by storing the String as an
@@ -80,7 +80,7 @@ end # class LDAP::Mod
 ### Extensions to the Time class to add LDAP (RFC4517) Generalized Time syntax
 module Treequel::TimeExtensions
 
-	### Return +self+ as a String formatted as specified in RFC4517 
+	### Return +self+ as a String formatted as specified in RFC4517
 	### (LDAP Generalized Time).
 	def ldap_generalized( fraction_digits=0 )
 		fractional_seconds =
@@ -146,7 +146,7 @@ end
 ### Extensions to the Date class to add LDAP (RFC4517) Generalized Time syntax
 module Treequel::DateExtensions
 
-	### Return +self+ as a String formatted as specified in RFC4517 
+	### Return +self+ as a String formatted as specified in RFC4517
 	### (LDAP Generalized Time).
 	def ldap_generalized( fraction_digits=0 )
 		fractional_seconds =

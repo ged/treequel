@@ -15,10 +15,10 @@ include UtilityFunctions
 $DEBUG = true
 
 module TreequelSpike
-	
+
 	class Branch
 		extend Forwardable
-		
+
 		def self::new_from_dn( dir, dn )
 			path = dn.sub( /#{dir.base}$/, '' )
 			return path.split(/,/).reverse.inject( dir ) do |prev, pair|
@@ -27,7 +27,7 @@ module TreequelSpike
 				prev.send( attribute, value )
 			end
 		end
-		
+
 		def initialize( dir, attribute, value, base, entry=nil )
 			@dir       = dir
 			@attribute = attribute
@@ -37,9 +37,9 @@ module TreequelSpike
 		end
 
 		def_delegators :@dir, :bind, :bound?
-		
+
 		attr_reader :dir, :attribute, :value, :base
-		
+
 		def method_missing( sym, *args )
 			return self.class.new( @dir.dup, sym, args.first, self.dn )
 		end
@@ -70,7 +70,7 @@ module TreequelSpike
 		def filter( filterstring )
 			return self.dir.search( self.dn, LDAP::LDAP_SCOPE_SUBTREE, filterstring )
 		end
-		
+
 		def +( other )
 			debug_msg "%p + %p" % [ self, other ]
 			return TreequelSpike::BranchCollection.new( self, other )
@@ -86,7 +86,7 @@ module TreequelSpike
 				end
 			end
 		end
-		
+
 
 		def initialize( left_branches, right_branches )
 			@branches = ( [left_branches] + [right_branches] ).flatten
@@ -108,8 +108,8 @@ module TreequelSpike
 
 		def_multi_methods :filter
 	end
-	
-	
+
+
 	class Directory
 
 		DEFAULT_OPTIONS = {
@@ -118,10 +118,10 @@ module TreequelSpike
 			:connect_type => :plain,
 			:base         => 'o=Acme',
 		}
-		
+
 		def initialize( options )
 			@options = DEFAULT_OPTIONS.merge( options )
-			
+
 			@host         = @options[:host]
 			@port         = @options[:port]
 			@connect_type = @options[:connect_type]
@@ -136,7 +136,7 @@ module TreequelSpike
 		def to_s
 			bindname = self.bound? ? self.bound_as : "unbound"
 			bindname ||= 'anonymous'
-			
+
 			return "%s:%d (%s, %s)" % [
 				self.host,
 				self.port,
@@ -162,8 +162,8 @@ module TreequelSpike
 				return LDAP::Conn.new( host, port )
 			end
 		end
-		
-		
+
+
 		def bind( as=nil, password=nil, &block )
 			if as.nil?
 				debug_msg "Binding anonymously"
@@ -174,10 +174,10 @@ module TreequelSpike
 				self.conn.bind( as.to_s, password, &block )
 				@bound_as = as.to_s
 			end
-			
+
 			return "Bound as: %p" % [ @bound_as ]
 		end
-		
+
 		def unbind
 			self.conn.unbind
 		end
@@ -199,10 +199,10 @@ module TreequelSpike
 		def method_missing( sym, *args )
 			return TreequelSpike::Branch.new( self.dup, sym, args.first, self.base )
 		end
-		
+
 	end # class Directory
-	
-	
+
+
 	###############
 	module_function
 	###############
@@ -210,7 +210,7 @@ module TreequelSpike
 	def directory( options )
 		return TreequelSpike::Directory.new( options )
 	end
-	
+
 end # module TreequelSpike
 
 

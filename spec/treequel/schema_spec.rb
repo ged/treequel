@@ -63,9 +63,9 @@ describe Treequel::Schema do
 
 	it "doesn't propagate parse errors while in lenient schema-parsing mode" do
 		schema = Treequel::Schema.new( 'objectClasses'   => [BAD_OBJECTCLASS],
-		                               'attributeTypes'  => [], 
-		                               'ldapSyntaxes'    => [], 
-		                               'matchingRules'   => [], 
+		                               'attributeTypes'  => [],
+		                               'ldapSyntaxes'    => [],
+		                               'matchingRules'   => [],
 		                               'matchingRuleUse' => [] )
 		expect( schema ).to be_a( Treequel::Schema )
 		expect( schema.object_classes.keys ).to_not include( 'slpService' )
@@ -174,7 +174,7 @@ describe Treequel::Schema do
 
 	# Dumped from an OpenDS 2.2 server with the included 'test data' -- dunno if that's
 	# representative of schemas one would find in the wild, but it doesn't parse as-is
-	# currently because of (at least) the objectClasses from RFCs 2696, 3112, 3712, and 
+	# currently because of (at least) the objectClasses from RFCs 2696, 3112, 3712, and
 	# draft-howard-rfc2307bi
 	context "OpenDS schema" do
 
@@ -194,7 +194,7 @@ describe Treequel::Schema do
 
 			expect( @schema.matching_rule_uses ).to be_empty()
 
-			# Not yet supported			
+			# Not yet supported
 			# expect( @schema.dit_structure_rules.values.uniq.length ).
 			# 	to eq( @hash['dITStructureRules'].length )
 			# expect( @schema.dit_content_rules.values.uniq.length ).

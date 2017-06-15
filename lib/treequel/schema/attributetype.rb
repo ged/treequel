@@ -10,12 +10,12 @@ require 'treequel/exceptions'
 
 
 # This is a class for representing attributeType declarations in a Treequel::Schema.
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <ged@FaerieMUD.org>
 # * Mahlon E. Smith <mahlon@martini.nu>
-# 
+#
 # :include: LICENSE
 #
 #--
@@ -228,7 +228,7 @@ class Treequel::Schema::AttributeType
 	end
 
 
-	### Return the Treequel::Schema::AttributeType instance that corresponds to 
+	### Return the Treequel::Schema::AttributeType instance that corresponds to
 	### the receiver's superior type. If the attributeType doesn't have a SUP
 	### attribute, this method returns +nil+.
 	def sup
@@ -279,7 +279,7 @@ class Treequel::Schema::AttributeType
 	end
 
 
-	### Return the Treequel::Schema::MatchingRule that corresponds to the EQUALITY 
+	### Return the Treequel::Schema::MatchingRule that corresponds to the EQUALITY
 	### matchingRule of the receiving attributeType.
 	def equality_matching_rule
 		if oid = self.eqmatch_oid
@@ -292,7 +292,7 @@ class Treequel::Schema::AttributeType
 	end
 
 
-	### Return the Treequel::Schema::MatchingRule that corresponds to the ORDERING 
+	### Return the Treequel::Schema::MatchingRule that corresponds to the ORDERING
 	### matchingRule of the receiving attributeType.
 	def ordering_matching_rule
 		if oid = self.ordmatch_oid
@@ -380,7 +380,7 @@ class Treequel::Schema::AttributeType
 
 	### Split a numeric OID with an optional length qualifier into a numeric OID and length. If
 	### no length qualifier is present, it will be nil.
-	### NOTE: Modified to support ActiveDirectory schemas, which have both quoted numeric OIDs 
+	### NOTE: Modified to support ActiveDirectory schemas, which have both quoted numeric OIDs
 	### and descriptors as syntax OIDs.
 	def split_syntax_oid( noidlen )
 		unless noidlen =~ OID_SPLIT_PATTERN

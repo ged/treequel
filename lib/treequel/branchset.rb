@@ -17,31 +17,31 @@ require 'treequel/control'
 # A branchset represents an abstract set of LDAP records returned by
 # a search in a directory. It can be used to create, retrieve, update,
 # and delete records.
-# 
+#
 # Search results are fetched on demand, so a branchset can be kept
 # around and reused indefinitely (branchsets never cache results):
-# 
+#
 #   people = directory.ou( :people )
 #   davids = people.filter(:firstName => 'david') # no records are retrieved
 #   davids.all # records are retrieved
 #   davids.all # records are retrieved again
-# 
+#
 # Most branchset methods return modified copies of the branchset
 # (functional style), so you can reuse different branchsets to access
 # data:
-# 
+#
 #   # (employeeId < 2000)
 #   veteran_davids = davids.filter( :employeeId < 2000 )
-#   
+#
 #   # (&(employeeId < 2000)(|(deactivated >= '2008-12-22')(!(deactivated=*))))
-#   active_veteran_davids = 
+#   active_veteran_davids =
 #       veteran_davids.filter([:or, ['deactivated >= ?', Date.today], [:not, [:deactivated]] ])
-#   
+#
 #   # (&(employeeId < 2000)(|(deactivated >= '2008-12-22')(!(deactivated=*)))(mobileNumber=*))
-#   active_veteran_davids_with_cellphones = 
+#   active_veteran_davids_with_cellphones =
 #       active_veteran_davids.filter( [:mobileNumber] )
-# 
-# Branchsets are Enumerable objects, so they can be manipulated using any of the 
+#
+# Branchsets are Enumerable objects, so they can be manipulated using any of the
 # Enumerable methods, such as map, inject, etc.
 class Treequel::Branchset
 	extend Loggability
@@ -76,7 +76,7 @@ class Treequel::Branchset
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new Branchset for a search from the DN of the specified +branch+ (a 
+	### Create a new Branchset for a search from the DN of the specified +branch+ (a
 	### Treequel::Branch), with the given +options+.
 	def initialize( branch, options={} )
 		@branch = branch
@@ -207,7 +207,7 @@ class Treequel::Branchset
 	end
 
 
-	### Iterate over the entries which match the current criteria and yield each of them 
+	### Iterate over the entries which match the current criteria and yield each of them
 	### as Treequel::Branch objects to the supplied block.
 	def each( &block )
 		raise LocalJumpError, "no block given" unless block
@@ -224,7 +224,7 @@ class Treequel::Branchset
 	end
 
 
-	### Fetch the first +n+ entries which matches the current criteria and return them as 
+	### Fetch the first +n+ entries which matches the current criteria and return them as
 	### instances of the object that is set as the +branch+ (e.g., Treequel::Branch). If +n+ is
 	### +nil+, returns just the first object in the Array.
 	def first( n=nil )
@@ -251,7 +251,7 @@ class Treequel::Branchset
 	end
 
 
-	### Either maps entries which match the current criteria into an Array of the given 
+	### Either maps entries which match the current criteria into an Array of the given
 	### +attribute+, or falls back to the block form if no +attribute+ is specified. If both an
 	### +attribute+ and a +block+ are given, the +block+ is called once for each +attribute+ value
 	### instead of with each Branch.
@@ -269,7 +269,7 @@ class Treequel::Branchset
 
 
 	### Map the results returned by the search into a hash keyed by the first value of +keyattr+
-	### in the entry. If the optional +valueattr+ argument is given, the values will be the 
+	### in the entry. If the optional +valueattr+ argument is given, the values will be the
 	### first corresponding attribute, else the value will be the whole entry.
 	def to_hash( keyattr, valueattr=nil )
 		return self.inject({}) do |hash, branch|
@@ -294,9 +294,9 @@ class Treequel::Branchset
 	end
 
 
-	### 
+	###
 	### Mutators
-	### 
+	###
 
 	### Returns a clone of the receiving Branchset with the given +filterspec+ added
 	### to it.
@@ -336,8 +336,8 @@ class Treequel::Branchset
 	end
 
 
-	### If called with no argument, returns the current scope of the Branchset. If 
-	### called with an argument (which should be one of the keys of 
+	### If called with no argument, returns the current scope of the Branchset. If
+	### called with an argument (which should be one of the keys of
 	### Treequel::Constants::SCOPE), returns a clone of the receiving Branchset
 	### with the +new_scope+.
 	def scope( new_scope=nil )
@@ -428,7 +428,7 @@ class Treequel::Branchset
 
 	### Return a clone of the receiving Branchset that will return instances of the
 	### give +branchclass+ instead of Treequel::Branch objects. This may be a subclass
-	### of Treequel::Branch, but it doesn't need to be as long as they duck-type the 
+	### of Treequel::Branch, but it doesn't need to be as long as they duck-type the
 	### same.
 	def as( branchclass )
 		newset = self.clone

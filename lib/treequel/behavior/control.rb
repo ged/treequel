@@ -7,10 +7,10 @@ require 'treequel'
 require 'treequel/control'
 
 
-# This is a shared behavior for specs which different Treequel::Controls share in 
+# This is a shared behavior for specs which different Treequel::Controls share in
 # common. If you're creating a Treequel::Control implementation, you can test
 # its conformity to the expectations placed on them by adding this to your spec:
-# 
+#
 #    require 'treequel/behavior/control'
 #
 #    describe YourControl do

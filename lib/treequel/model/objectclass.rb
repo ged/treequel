@@ -65,7 +65,7 @@ module Treequel::Model::ObjectClass
 
 
 	### Set or get objectClasses that the mixin requires. Also registers the mixin with
-	### Treequel::Model. If +objectclasses+ are given, they are set as the objectClasses the 
+	### Treequel::Model. If +objectclasses+ are given, they are set as the objectClasses the
 	### mixin will apply to, as an array of Symbols (or objects that respond to #to_sym).
 	def model_objectclasses( *objectclasses )
 		unless objectclasses.empty?
@@ -90,12 +90,12 @@ module Treequel::Model::ObjectClass
 	### :call-seq:
 	###   ObjectClassModule.create( dn, entryhash={} )
 	###   ObjectClassModule.create( directory, dn, entryhash={} )
-	### 
+	###
 	### In the first form, creates a new instance of the mixin's model_class in the model_class's
-	### default directory with the given +dn+ and the objectclasses specified by the mixin. 
-	### 
+	### default directory with the given +dn+ and the objectclasses specified by the mixin.
+	###
 	### In the second form, creates a new instance of the mixin's model_class in the specified
-	### +directory+ with the given +dn+ and the objectclasses specified by the mixin. 
+	### +directory+ with the given +dn+ and the objectclasses specified by the mixin.
 	###
 	### If the optional +entryhash+ is given (in either form), it will be used as the initial
 	### attributes of the new entry.

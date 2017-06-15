@@ -239,9 +239,9 @@ describe Treequel do
 			expect( Treequel.find_configfile ).to eq( pathmocks[ successful_index ] )
 		end
 
-		# 
+		#
 		# OpenLDAP-style config
-		# 
+		#
 
 		it "maps the OpenLDAP URI directive to equivalent options" do
 			expect( IO ).to receive( :foreach ).with( :a_configfile ).
@@ -278,9 +278,9 @@ describe Treequel do
 				to include( :port => 389 )
 		end
 
-		# 
+		#
 		# NSS-style config
-		# 
+		#
 
 		it "maps the nss-style uri directive to equivalent options" do
 			expect( IO ).to receive( :foreach ).with( :a_configfile ).
@@ -353,9 +353,9 @@ describe Treequel do
 			}.to_not raise_exception()
 		end
 
-		# 
+		#
 		# Environment
-		# 
+		#
 
 		it "maps the OpenLDAP LDAPURI environment variable to equivalent options" do
 			ENV['LDAPURI'] = 'ldaps://quomsohutch.linkerlinlinkin.org/o=linkerlickin'

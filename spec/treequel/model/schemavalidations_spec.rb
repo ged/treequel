@@ -15,10 +15,10 @@ describe Treequel::Model::SchemaValidations do
 		@modelobj = Treequel::Model.new( @directory, TEST_PERSON_DN )
 	end
 
-	# StructuralObjectClass ( 2.5.6.6 NAME 'person' 
-	#	DESC 'RFC2256: a person' 
-	# 	SUP top STRUCTURAL 
-	# 	MUST ( sn $ cn ) 
+	# StructuralObjectClass ( 2.5.6.6 NAME 'person'
+	#	DESC 'RFC2256: a person'
+	# 	SUP top STRUCTURAL
+	# 	MUST ( sn $ cn )
 	# 	MAY ( userPassword $ telephoneNumber $ seeAlso $ description ) )
 
 	it "adds an error if the object doesn't have at least one structural objectClass" do
@@ -66,10 +66,10 @@ describe Treequel::Model::SchemaValidations do
 	end
 
 
-	# AuxiliaryObjectClass ( 1.3.6.1.1.1.2.0 NAME 'posixAccount' 
-	# 	DESC 'Abstraction of an account with POSIX attributes' 
-	# 	SUP top AUXILIARY 
-	# 	MUST ( cn $ uid $ uidNumber $ gidNumber $ homeDirectory ) 
+	# AuxiliaryObjectClass ( 1.3.6.1.1.1.2.0 NAME 'posixAccount'
+	# 	DESC 'Abstraction of an account with POSIX attributes'
+	# 	SUP top AUXILIARY
+	# 	MUST ( cn $ uid $ uidNumber $ gidNumber $ homeDirectory )
 	# 	MAY ( userPassword $ loginShell $ gecos $ description ) )
 
 	it "adds an error if the object has a value for an attribute that doesn't match the " +

@@ -73,7 +73,7 @@ module Treequel
 	###    Treequel.directory( uri )
 	###    Treequel.directory( options )
 	###
-	### Create a Treequel::Directory object, either from an LDAP URL or a Hash of connection 
+	### Create a Treequel::Directory object, either from an LDAP URL or a Hash of connection
 	### options. The valid options are:
 	###
 	### [:host]
@@ -107,9 +107,9 @@ module Treequel
 	end
 
 
-	### Read the configuration from the specified +configfile+ and/or values in ENV and return 
-	### a Treequel::Directory for the resulting configuration. Supports OpenLDAP and nss-style 
-	### configuration-file directives, and honors the various OpenLDAP environment variables; 
+	### Read the configuration from the specified +configfile+ and/or values in ENV and return
+	### a Treequel::Directory for the resulting configuration. Supports OpenLDAP and nss-style
+	### configuration-file directives, and honors the various OpenLDAP environment variables;
 	### see ldap.conf(5) for details.
 	def self::directory_from_config( configfile=nil )
 		configfile ||= self.find_configfile or
@@ -153,7 +153,7 @@ module Treequel
 	end
 
 
-	### Find a valid ldap.conf config file by first looking in the LDAPCONF and LDAPRC environment 
+	### Find a valid ldap.conf config file by first looking in the LDAPCONF and LDAPRC environment
 	### variables, then searching the list of default paths in Treequel::COMMON_LDAP_CONF_PATHS.
 	def self::find_configfile
 		# LDAPCONF may be set to the path of a configuration file. This path can
@@ -165,7 +165,7 @@ module Treequel
 				"does not exist or isn't readable." unless configpath.readable?
 			return configpath
 
-		# The LDAPRC, if defined, should be the basename of a file in the current working 
+		# The LDAPRC, if defined, should be the basename of a file in the current working
 		# directory or in the user's home directory.
 		elsif rcname = ENV['LDAPRC']
 			Treequel.log.info "Using LDAPRC environment variable for path to ldap.conf"

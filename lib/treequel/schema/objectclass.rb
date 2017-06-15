@@ -9,12 +9,12 @@ require 'treequel/exceptions'
 
 
 # This is a collection of classes for representing objectClasses in a Treequel::Schema.
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <ged@FaerieMUD.org>
 # * Mahlon E. Smith <mahlon@martini.nu>
-# 
+#
 # :include: LICENSE
 #
 #--
@@ -58,7 +58,7 @@ class Treequel::Schema
 		end
 
 
-		### Parse an ObjectClass entry from a RFC4512-format objectClass +description+ from a 
+		### Parse an ObjectClass entry from a RFC4512-format objectClass +description+ from a
 		### +schema+.
 		def self::parse( schema, description )
 			oid, names, desc, obsolete, sup, kind, must, may, extensions = nil
@@ -95,7 +95,7 @@ class Treequel::Schema
 			# Default the 'kind' attribute
 			kind ||= DEFAULT_OBJECTCLASS_KIND
 
-			# Find the appropriate concrete class to instantiate 
+			# Find the appropriate concrete class to instantiate
 			concrete_class = Treequel::Schema::OBJECTCLASS_TYPES[ kind ] or
 				raise Treequel::Error, "no such objectClass type %p: expected one of: %p" %
 					[ kind, Treequel::Schema::OBJECTCLASS_TYPES.keys ]
@@ -119,7 +119,7 @@ class Treequel::Schema
 		###	I N S T A N C E   M E T H O D S
 		#############################################################
 
-		### Create a new ObjectClass 
+		### Create a new ObjectClass
 		def initialize( schema, oid, names=nil, desc=nil, obsolete=false, sup=nil, must_oids=[],
 		                may_oids=[], extensions=nil )
 			@schema     = schema
@@ -170,7 +170,7 @@ class Treequel::Schema
 
 
 		### Return the objectClass's MUST OIDs as Symbols (for symbolic OIDs) or Strings (for
-		### dotted-numeric OIDs). If include_sup is true, include MUST OIDs inherited from the 
+		### dotted-numeric OIDs). If include_sup is true, include MUST OIDs inherited from the
 		### objectClass's SUP, if it has one.
 		def must_oids( include_sup=true )
 			oids = @must_oids.dup
@@ -195,7 +195,7 @@ class Treequel::Schema
 
 
 		### Return the objectClass's MAY OIDs as Symbols (for symbolic OIDs) or Strings (for
-		### dotted-numeric OIDs). If include_sup is true, include MAY OIDs inherited from the 
+		### dotted-numeric OIDs). If include_sup is true, include MAY OIDs inherited from the
 		### objectClass's SUP, if it has one.
 		def may_oids( include_sup=true )
 			oids = @may_oids.dup
@@ -308,7 +308,7 @@ class Treequel::Schema
 
 
 	### An LDAP objectClass of type 'ABSTRACT'. From RFC 4512:
-	### 
+	###
 	###   An abstract object class, as the name implies, provides a base of
 	###   characteristics from which other object classes can be defined to
 	###   inherit from.  An entry cannot belong to an abstract object class
@@ -328,7 +328,7 @@ class Treequel::Schema
 
 
 	### An LDAP objectClass of type 'AUXILIARY'. From FC4512:
-	### 
+	###
 	###   Auxiliary object classes are used to augment the characteristics of
 	###   entries.  They are commonly used to augment the sets of attributes
 	###   required and allowed to be present in an entry.  They can be used to
@@ -350,42 +350,42 @@ class Treequel::Schema
 
 
 	### An LDAP objectClass of type 'STRUCTURAL'. From RFC4512:
-	### 
+	###
 	###   An object class defined for use in the structural specification of
 	###   the DIT is termed a structural object class.  Structural object
 	###   classes are used in the definition of the structure of the names
 	###   of the objects for compliant entries.
-    ###   
+    ###
 	###   An object or alias entry is characterized by precisely one
 	###   structural object class superclass chain which has a single
 	###   structural object class as the most subordinate object class.
 	###   This structural object class is referred to as the structural
 	###   object class of the entry.
-    ###   
+    ###
 	###   Structural object classes are related to associated entries:
-    ###   
+    ###
 	###     - an entry conforming to a structural object class shall
 	###       represent the real-world object constrained by the object
 	###       class;
-    ###   
+    ###
 	###     - DIT structure rules only refer to structural object classes;
 	###       the structural object class of an entry is used to specify the
 	###       position of the entry in the DIT;
-    ###   
+    ###
 	###     - the structural object class of an entry is used, along with an
 	###       associated DIT content rule, to control the content of an
 	###       entry.
-    ###   
+    ###
 	###   The structural object class of an entry shall not be changed.
-    ### 
+    ###
 	###   Each structural object class is a (direct or indirect) subclass of
 	###   the 'top' abstract object class.
-    ### 
+    ###
 	###   Structural object classes cannot subclass auxiliary object classes.
-    ### 
+    ###
 	###   Each entry is said to belong to its structural object class as well
 	###   as all classes in its structural object class's superclass chain.
-	### 
+	###
 	class StructuralObjectClass < Treequel::Schema::ObjectClass
 		Treequel::Schema::OBJECTCLASS_TYPES[ 'STRUCTURAL' ] = self
 
