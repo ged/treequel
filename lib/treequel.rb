@@ -33,7 +33,7 @@ module Treequel
 
 
 	# Library version
-	VERSION = '1.11.0'
+	VERSION = '1.12.0'
 
 	# VCS revision
 	REVISION = %q$Revision$

@@ -1,8 +1,20 @@
+## v1.12.0 [2017-06-14] Michael Granger <ged@FaerieMUD.org>
+
+Fixes:
+
+- Implement Model#respond_to_missing?
+
+Document updates:
+
+- Convert the manual to Markdown and link it to the README.
+
+
 ## v1.11.0 [2016-06-29] Mahlon E. Smith <mahlon@martini.nu>
 
  - Documentation fixes
  - Implicitly require sequel core behaviors
  - Bump minimum versions for ruby and ruby-ldap
+
 
 ## v1.10.0 [2012-08-29] Michael Granger <ged@FaerieMUD.org>
 
